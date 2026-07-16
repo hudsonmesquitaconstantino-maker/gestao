@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="icone.png">
 <style>
 :root{--bg:#0D1117;--card:#161C24;--card2:#1D2530;--bord:#2A3442;--tx:#E6EDF3;--tx2:#9AA3AE;--ac:#2EA8FF;--ok:#2FBF71;--warn:#E8B93D;--red:#E5534B;--placa:#0A3AA8}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 html,body{margin:0;padding:0;background:var(--bg);color:var(--tx);font-family:-apple-system,'SF Pro Text',Segoe UI,Roboto,sans-serif;font-size:15px}
 body{padding-bottom:calc(74px + env(safe-area-inset-bottom))}
 header{position:sticky;top:0;z-index:40;background:rgba(13,17,23,.92);backdrop-filter:blur(12px);padding:calc(8px + env(safe-area-inset-top)) 14px 8px;border-bottom:1px solid var(--bord)}
@@ -55,9 +55,10 @@ nav button .ic{display:block;font-size:20px;margin-bottom:2px}
 nav button.on{color:var(--ac)}
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:60;display:none;align-items:flex-end;justify-content:center}
 .overlay.open{display:flex}
-.sheet{background:var(--card);border:1px solid var(--bord);border-radius:18px 18px 0 0;width:100%;max-width:640px;max-height:88vh;overflow-y:auto;padding:16px 14px calc(18px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch}
+.sheet{overscroll-behavior:contain;background:var(--card);border:1px solid var(--bord);border-radius:18px 18px 0 0;width:100%;max-width:640px;max-height:88vh;overflow-y:auto;padding:16px 14px calc(18px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch}
 .sheet h3{margin:0 0 4px;font-size:16px}
 .sheet .sub{margin-bottom:8px}
+#ovAsk{z-index:85}
 #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(86px + env(safe-area-inset-bottom));background:#1D2530;border:1px solid var(--bord);color:var(--tx);padding:10px 16px;border-radius:12px;font-size:13.5px;z-index:90;display:none;max-width:88%;text-align:center;box-shadow:0 4px 18px rgba(0,0,0,.5)}
 .mono{font-family:'SF Mono',Menlo,monospace;font-size:12.5px;white-space:pre-wrap;word-break:break-word;background:#0A0E13;border:1px solid var(--bord);border-radius:10px;padding:12px;line-height:1.5}
 .kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13px;margin-top:6px}
@@ -100,7 +101,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=1; var APP_DATE='15/07/2026';
+var APP_VER=2; var APP_DATE='16/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -172,11 +173,17 @@ function ask(title,msg,okLabel,cb){
  document.getElementById('askTitle').textContent=title;
  document.getElementById('askMsg').textContent=msg;
  document.getElementById('askOk').textContent=okLabel||'Confirmar';
- askCb=cb;document.getElementById('ovAsk').classList.add('open');
+ askCb=cb;document.getElementById('ovAsk').classList.add('open');syncLock();
 }
-function askAnswer(yes){document.getElementById('ovAsk').classList.remove('open');var cb=askCb;askCb=null;if(yes&&cb)cb()}
-function openSheet(html,which){var id=which===2?'sheetBody2':'sheetBody';var ov=which===2?'ovSheet2':'ovSheet';document.getElementById(id).innerHTML=html;document.getElementById(ov).classList.add('open');document.getElementById(id).scrollTop=0}
-function closeSheet(which){document.getElementById(which===2?'ovSheet2':'ovSheet').classList.remove('open')}
+function askAnswer(yes){document.getElementById('ovAsk').classList.remove('open');syncLock();var cb=askCb;askCb=null;if(yes&&cb)cb()}
+var _locked=false,_lockY=0;
+function syncLock(){
+ var n=document.querySelectorAll('.overlay.open').length,b=document.body.style;
+ if(n>0&&!_locked){_locked=true;_lockY=window.scrollY||0;b.position='fixed';b.top=(-_lockY)+'px';b.left='0';b.right='0';b.width='100%';}
+ else if(n===0&&_locked){_locked=false;b.position='';b.top='';b.left='';b.right='';b.width='';window.scrollTo(0,_lockY);}
+}
+function openSheet(html,which){var id=which===2?'sheetBody2':'sheetBody';var ov=which===2?'ovSheet2':'ovSheet';document.getElementById(id).innerHTML=html;document.getElementById(ov).classList.add('open');document.getElementById(id).scrollTop=0;syncLock()}
+function closeSheet(which){document.getElementById(which===2?'ovSheet2':'ovSheet').classList.remove('open');syncLock()}
 
 /* ---------- âncora de rolagem ---------- */
 function keepScreenStill(fn){
@@ -194,6 +201,7 @@ function toArr(x){return Array.isArray(x)?x:(x&&typeof x==='object'?Object.keys(
 function normCarro(c){
  c=c||{};
  c.placa=c.placa||'';c.nome=c.nome||'';c.modeloCRLV=c.modeloCRLV||'';c.motor=c.motor||'';c.motorCodigo=c.motorCodigo||'';
+ if(c.motorCodigo&&!/\d/.test(c.motorCodigo))c.motorCodigo='';
  c.ano=c.ano||'';c.chassi=c.chassi||'';c.renavam=c.renavam||'';c.cor=c.cor||'';c.potencia=c.potencia||'';
  c.combustivel=c.combustivel||'';c.proprietario=c.proprietario||'';c.locadorId=c.locadorId||'hudson';
  c.exercicioCRLV=c.exercicioCRLV||'';c.kmAtual=Number(c.kmAtual)||0;c.valorRef=Number(c.valorRef)||0;
@@ -264,8 +272,8 @@ function conectar(chave){
    v=normState(v);
    if(!S){S=v;_ready=true;render();return}
    if(v.dev===DEV||v.rev<=S.rev)return;
-   var adota=function(){S=v;render()};
-   if(digitando()){var iv=setInterval(function(){if(!digitando()){clearInterval(iv);keepScreenStill(adota)}},2000)}
+   var adota=function(){S=v;if(TAB===0||TAB===3)render()};
+   if(digitando()){var iv=setInterval(function(){if(!digitando()){clearInterval(iv);S=v;if(TAB===0||TAB===3)keepScreenStill(render)}},2000)}
    else keepScreenStill(adota);
   },function(err){toast('⚠️ Sem acesso ao banco: '+err.message)});
  });
@@ -374,13 +382,13 @@ function ficha(pk){
   '<b>Motorista atual</b><span>'+(c.motorista?esc(c.motorista):'—')+'</span>'+
   '<b>Status</b><span>'+esc(c.status)+'</span>'+
   '<b>Ano fab/mod</b><span>'+esc(c.ano)+'</span>'+
-  '<b>Motor</b><span>'+esc(c.motor)+(c.motorCodigo?' · cód. '+esc(c.motorCodigo):'')+'</span>'+
+  '<b>Motor</b><span>'+esc(c.motor)+'</span>'+
   '<b>Potência</b><span>'+esc(c.potencia)+'</span>'+
   '<b>Cor</b><span>'+esc(c.cor)+'</span>'+
   '<b>Combustível</b><span>'+esc(c.combustivel)+'</span>'+
   '<b>Chassi</b><span style="font-family:Menlo,monospace;font-size:12px">'+esc(c.chassi)+'</span>'+
   '<b>Renavam</b><span>'+esc(c.renavam)+'</span>'+
-  '<b>KM atual</b><span>'+fmtKm(c.kmAtual)+' km</span>'+
+  '<b>KM de quando alugou</b><span>'+fmtKm(c.kmAtual)+' km <span style="color:var(--tx2)">(início do contrato / último registro)</span></span>'+
   '<b>Proprietário</b><span>'+esc(c.proprietario)+'</span>'+
   '<b>Valor de referência</b><span>'+(c.valorRef?'R$ '+fmtBRL(c.valorRef):'—')+'</span>'+
   '<b>Licenciamento (CRLV)</b><span>exercício '+esc(c.exercicioCRLV||'—')+'</span>'+
@@ -475,7 +483,7 @@ function formCarro(pk){
   f('Chassi','chassi',c.chassi)+f('Renavam','renavam',c.renavam)+
   '<div class="grid2">'+f('Cor','cor',c.cor)+f('Potência','potencia',c.potencia,'102CV/1400')+'</div>'+
   f('Combustível','combustivel',c.combustivel,'Flex / GNV 16m³')+
-  '<div class="grid2">'+f('KM atual','kmAtual',c.kmAtual||'')+f('Exercício CRLV','exercicioCRLV',c.exercicioCRLV,'2026')+'</div>'+
+  '<div class="grid2">'+f('KM de quando alugou / último registro','kmAtual',c.kmAtual||'')+f('Exercício CRLV','exercicioCRLV',c.exercicioCRLV,'2026')+'</div>'+
   f('Proprietário (no documento)','proprietario',c.proprietario)+
   '<label>Locador padrão dos contratos</label><select id="fc_locadorId">'+selLocadores(c.locadorId)+'</select>'+
   '<div class="grid2">'+f('Valor de referência (R$)','valorRef',c.valorRef?fmtBRL(c.valorRef):'')+f('Semanal padrão (R$)','semanalPadrao',c.semanalPadrao?fmtBRL(c.semanalPadrao):'')+'</div>'+
@@ -992,6 +1000,7 @@ function montarDocx(ct,carro){
 /* ===================== CONFIG + IMPORTAÇÃO INICIAL ===================== */
 function openCfg(){
  openSheet('<h3>⚙️ Configurações</h3>'+
+ '<p class="sub">Versão: qual index.html está rodando neste iPhone (atualiza sozinho ao abrir o app). Chave: a senha que faz os dois iPhones enxergarem a mesma nuvem — igual à do Semanal. Carros/Contratos: o que já está sincronizado.</p>'+
  '<div class="kv"><b>Versão</b><span>v'+APP_VER+' · '+APP_DATE+'</span>'+
  '<b>Chave</b><span>'+esc(localStorage.getItem('gestao_famkey')||'—')+'</span>'+
  '<b>Carros</b><span>'+Object.keys(S?S.carros:{}).length+'</span>'+
