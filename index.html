@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>GuimasCar Gestão</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GuimasCar Gestão">
+<meta name="theme-color" content="#0D1117">
+<link rel="apple-touch-icon" href="icone.png">
+<style>
+:root{--bg:#0D1117;--card:#161C24;--card2:#1D2530;--bord:#2A3442;--tx:#E6EDF3;--tx2:#9AA3AE;--ac:#2EA8FF;--ok:#2FBF71;--warn:#E8B93D;--red:#E5534B;--placa:#0A3AA8}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--tx);font-family:-apple-system,'SF Pro Text',Segoe UI,Roboto,sans-serif;font-size:15px}
+body{padding-bottom:calc(74px + env(safe-area-inset-bottom))}
+header{position:sticky;top:0;z-index:40;background:rgba(13,17,23,.92);backdrop-filter:blur(12px);padding:calc(8px + env(safe-area-inset-top)) 14px 8px;border-bottom:1px solid var(--bord)}
+h1{font-size:17px;margin:0;font-weight:700;letter-spacing:.3px}
+h1 b{color:var(--ac)}
+#verTag{font-size:10px;color:var(--tx2);margin:1px 0 0;letter-spacing:.2px}
+#syncDot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warn);margin-right:5px;vertical-align:1px}
+#syncDot.on{background:var(--ok)}
+.hbtns{position:absolute;right:10px;top:calc(10px + env(safe-area-inset-top));display:flex;gap:8px}
+.hbtn{background:var(--card2);border:1px solid var(--bord);color:var(--tx);border-radius:10px;padding:7px 11px;font-size:15px}
+main{padding:12px 12px 8px;max-width:640px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--bord);border-radius:14px;padding:12px;margin-bottom:10px}
+.card.tap:active{background:var(--card2)}
+.row{display:flex;align-items:center;gap:10px}
+.grow{flex:1;min-width:0}
+.plate{background:#fff;border:1.5px solid #333;border-radius:5px;overflow:hidden;width:92px;flex-shrink:0;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.plate .top{background:var(--placa);color:#fff;font-size:7px;letter-spacing:2px;padding:1.5px 0;font-weight:700}
+.plate .num{color:#111;font-weight:800;font-size:15.5px;letter-spacing:1px;padding:2.5px 0 3px;font-family:'SF Mono',Menlo,monospace}
+.tit{font-weight:700;font-size:15px}
+.sub{color:var(--tx2);font-size:12.5px;margin-top:2px}
+.chip{display:inline-block;background:var(--card2);border:1px solid var(--bord);border-radius:20px;padding:2px 9px;font-size:11px;color:var(--tx2);margin:2px 4px 0 0}
+.chip.ok{color:var(--ok);border-color:rgba(47,191,113,.4)}
+.chip.warn{color:var(--warn);border-color:rgba(232,185,61,.4)}
+.chip.red{color:var(--red);border-color:rgba(229,83,75,.4)}
+.btn{display:block;width:100%;background:var(--ac);color:#04121f;border:0;border-radius:12px;padding:13px;font-size:15px;font-weight:700;margin-top:10px}
+.btn.sec{background:var(--card2);color:var(--tx);border:1px solid var(--bord)}
+.btn.ok{background:var(--ok);color:#04180c}
+.btn.red{background:rgba(229,83,75,.14);color:var(--red);border:1px solid rgba(229,83,75,.4)}
+.btn.mini{width:auto;display:inline-block;padding:8px 13px;font-size:13px;margin:6px 6px 0 0}
+.btn:active{opacity:.75}
+label{display:block;font-size:12px;color:var(--tx2);margin:10px 0 4px;font-weight:600;letter-spacing:.2px}
+input,select,textarea{width:100%;background:var(--card2);border:1px solid var(--bord);border-radius:10px;color:var(--tx);padding:11px;font-size:15px;font-family:inherit;-webkit-appearance:none}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--ac)}
+textarea{min-height:74px;resize:vertical}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid3{display:grid;grid-template-columns:1.1fr 2fr 1.2fr auto;gap:6px;align-items:center;margin-top:6px}
+.xbt{background:none;border:none;color:var(--red);font-size:18px;padding:4px 6px}
+nav{position:fixed;bottom:0;left:0;right:0;z-index:40;background:rgba(13,17,23,.95);backdrop-filter:blur(12px);border-top:1px solid var(--bord);display:flex;padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;background:none;border:0;color:var(--tx2);font-size:10.5px;padding:8px 2px 9px;font-weight:600}
+nav button .ic{display:block;font-size:20px;margin-bottom:2px}
+nav button.on{color:var(--ac)}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:60;display:none;align-items:flex-end;justify-content:center}
+.overlay.open{display:flex}
+.sheet{background:var(--card);border:1px solid var(--bord);border-radius:18px 18px 0 0;width:100%;max-width:640px;max-height:88vh;overflow-y:auto;padding:16px 14px calc(18px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch}
+.sheet h3{margin:0 0 4px;font-size:16px}
+.sheet .sub{margin-bottom:8px}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(86px + env(safe-area-inset-bottom));background:#1D2530;border:1px solid var(--bord);color:var(--tx);padding:10px 16px;border-radius:12px;font-size:13.5px;z-index:90;display:none;max-width:88%;text-align:center;box-shadow:0 4px 18px rgba(0,0,0,.5)}
+.mono{font-family:'SF Mono',Menlo,monospace;font-size:12.5px;white-space:pre-wrap;word-break:break-word;background:#0A0E13;border:1px solid var(--bord);border-radius:10px;padding:12px;line-height:1.5}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13px;margin-top:6px}
+.kv b{color:var(--tx2);font-weight:600;font-size:12px}
+.sect{font-size:12px;color:var(--ac);font-weight:800;letter-spacing:.8px;margin:16px 0 6px;text-transform:uppercase}
+.search{position:sticky;top:calc(54px + env(safe-area-inset-top));z-index:30;background:var(--bg);padding:4px 0 8px}
+iframe.pdfv{width:100%;height:66vh;border:1px solid var(--bord);border-radius:10px;background:#fff}
+.filestat{font-size:12px;color:var(--tx2);margin-top:4px;line-height:1.6}
+a.dl{color:var(--ac);text-decoration:none;font-weight:700}
+</style>
+</head>
+<body>
+<header>
+<h1><b>GuimasCar</b> Gestão</h1>
+<div id="verTag"><span id="syncDot"></span></div>
+<div class="hbtns"><button class="hbtn" onclick="openCfg()">⚙️</button></div>
+</header>
+<main id="main"></main>
+<nav>
+<button id="nb0" class="on" onclick="go(0)"><span class="ic">🚗</span>Frota</button>
+<button id="nb1" onclick="go(1)"><span class="ic">🔧</span>Manutenção</button>
+<button id="nb2" onclick="go(2)"><span class="ic">📄</span>Contrato</button>
+<button id="nb3" onclick="go(3)"><span class="ic">📚</span>Histórico</button>
+</nav>
+<div id="toast"></div>
+
+<div class="overlay" id="ovAsk"><div class="sheet">
+<h3 id="askTitle"></h3><p id="askMsg" class="sub" style="font-size:14px"></p>
+<button class="btn" id="askOk" onclick="askAnswer(true)">Confirmar</button>
+<button class="btn sec" onclick="askAnswer(false)">Cancelar</button>
+</div></div>
+
+<div class="overlay" id="ovSheet"><div class="sheet" id="sheetBody"></div></div>
+<div class="overlay" id="ovSheet2"><div class="sheet" id="sheetBody2"></div></div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://unpkg.com/docx@7.8.2/build/index.umd.js"></script>
+
+<script>
+/* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
+var APP_VER=1; var APP_DATE='15/07/2026';
+var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
+
+var LOCADORES={
+ hudson:{nome:"HUDSON CONSTANTINO GUIMARAES CORREA",cpf:"168.821.197-75",rg:"297015646 – Detran/RJ"},
+ fabio:{nome:"FABIO GUIMARAES CORREA",cpf:"075.351.417-65",rg:"113075527 – IFP/RJ"},
+ michelli:{nome:"MICHELLI MESQUITA CONSTANTINO CORREA",cpf:"090.386.617-03",rg:"132397175 – Detran/RJ"},
+ marinete:{nome:"MARINETE GUIMARÃES CORRÊA STAFFOCKER",cpf:"444.875.767-68",rg:"05.357.502-3 – DETRAN/RJ"}
+};
+var LOCADOR_END="Rua José Lourenço de Azevedo, nº 181, Rocha, São Gonçalo/RJ";
+var LOCADOR_CEP="24.421-300";
+var MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+
+/* ---------- formatação ---------- */
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function fmtBRL(n){n=Number(n)||0;return n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function parseBRL(s){if(typeof s==='number')return s;s=String(s||'').replace(/[R$\s]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(s);return isNaN(n)?0:n}
+function fmtKm(n){n=parseInt(n,10)||0;return n.toLocaleString('pt-BR')}
+function hoje(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)}
+function dataBR(iso){if(!iso)return'';var p=iso.split('-');return p[2]+'/'+p[1]+'/'+p[0]}
+function dataLonga(iso){if(!iso)return'';var p=iso.split('-');return ('0'+parseInt(p[2],10)).slice(-2)+' de '+MESES[parseInt(p[1],10)-1]+' de '+p[0]}
+function mais3Meses(iso){var p=iso.split('-');var d=new Date(parseInt(p[0],10),parseInt(p[1],10)-1+3,parseInt(p[2],10));return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)}
+function periodoTexto(ini,fim){
+ if(!ini)return'';
+ if(!fim||fim===ini)return dataLonga(ini);
+ var a=ini.split('-'),b=fim.split('-');
+ var d1=('0'+parseInt(a[2],10)).slice(-2),d2=('0'+parseInt(b[2],10)).slice(-2);
+ if(a[0]===b[0]&&a[1]===b[1])return d1+' a '+d2+' de '+MESES[parseInt(b[1],10)-1]+' de '+b[0];
+ if(a[0]===b[0])return d1+' de '+MESES[parseInt(a[1],10)-1]+' a '+d2+' de '+MESES[parseInt(b[1],10)-1]+' de '+b[0];
+ return dataLonga(ini)+' a '+dataLonga(fim);
+}
+/* ---------- valor por extenso (reais) ---------- */
+function extenso(n){
+ n=Math.round((Number(n)||0)*100);var reais=Math.floor(n/100),cent=n%100;
+ var U=['','um','dois','três','quatro','cinco','seis','sete','oito','nove','dez','onze','doze','treze','quatorze','quinze','dezesseis','dezessete','dezoito','dezenove'];
+ var D=['','','vinte','trinta','quarenta','cinquenta','sessenta','setenta','oitenta','noventa'];
+ var C=['','cento','duzentos','trezentos','quatrocentos','quinhentos','seiscentos','setecentos','oitocentos','novecentos'];
+ function tri(x){
+  if(x===0)return'';if(x===100)return'cem';
+  var c=Math.floor(x/100),r=x%100,s=[];
+  if(c)s.push(C[c]);
+  if(r<20){if(r)s.push(U[r])}else{var d=Math.floor(r/10),u=r%10;s.push(D[d]+(u?' e '+U[u]:''))}
+  return s.join(' e ');
+ }
+ function num(x){
+  if(x===0)return'zero';
+  var mi=Math.floor(x/1000000),ml=Math.floor(x%1000000/1000),cc=x%1000,p=[];
+  if(mi)p.push(mi===1?'um milhão':tri(mi)+' milhões');
+  if(ml)p.push(ml===1?'mil':tri(ml)+' mil');
+  if(cc)p.push(tri(cc));
+  if(p.length>1){var last=p.pop();var conn=(cc===0||cc<100||cc%100===0)?' e ':', ';return p.join(', ')+conn+last}
+  return p[0];
+ }
+ var t='';
+ if(reais)t=num(reais)+(reais%1000000===0?' de':'')+(reais===1?' real':' reais');
+ if(cent)t+=(reais?' e ':'')+num(cent)+(cent===1?' centavo':' centavos');
+ if(!t)t='zero real';
+ return t.charAt(0).toUpperCase()+t.slice(1);
+}
+function moedaExtenso(n){return 'R$ '+fmtBRL(n)+' ('+extenso(n)+')'}
+function normPlaca(p){return String(p||'').toUpperCase().replace(/[^A-Z0-9]/g,'')}
+function fmtPlaca(p){p=normPlaca(p);return p.length===7?p.slice(0,3)+'-'+p.slice(3):p}
+function idNovo(pref){return pref+'_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e4).toString(36)}
+
+/* ---------- toast / ask ---------- */
+var _toastT=null;
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';clearTimeout(_toastT);_toastT=setTimeout(function(){t.style.display='none'},2600)}
+var askCb=null;
+function ask(title,msg,okLabel,cb){
+ document.getElementById('askTitle').textContent=title;
+ document.getElementById('askMsg').textContent=msg;
+ document.getElementById('askOk').textContent=okLabel||'Confirmar';
+ askCb=cb;document.getElementById('ovAsk').classList.add('open');
+}
+function askAnswer(yes){document.getElementById('ovAsk').classList.remove('open');var cb=askCb;askCb=null;if(yes&&cb)cb()}
+function openSheet(html,which){var id=which===2?'sheetBody2':'sheetBody';var ov=which===2?'ovSheet2':'ovSheet';document.getElementById(id).innerHTML=html;document.getElementById(ov).classList.add('open');document.getElementById(id).scrollTop=0}
+function closeSheet(which){document.getElementById(which===2?'ovSheet2':'ovSheet').classList.remove('open')}
+
+/* ---------- âncora de rolagem ---------- */
+function keepScreenStill(fn){
+ var a=null,at=0;
+ try{var cs=document.querySelectorAll('.card');for(var i=0;i<cs.length;i++){var r=cs[i].getBoundingClientRect();if(r.bottom>90){a=cs[i];at=r.top;break}}}catch(e){}
+ fn();
+ try{if(a){var d=a.getBoundingClientRect().top-at;if(d)window.scrollBy(0,d)}}catch(e){}
+}
+
+/* ---------- estado + normalização (RTDB descarta arrays/objetos vazios) ---------- */
+var DEV=localStorage.getItem('gestao_dev')||('d'+Date.now().toString(36)+Math.floor(Math.random()*1e5).toString(36));
+localStorage.setItem('gestao_dev',DEV);
+var S=null; /* estado sincronizado */
+function toArr(x){return Array.isArray(x)?x:(x&&typeof x==='object'?Object.keys(x).map(function(k){return x[k]}):[])}
+function normCarro(c){
+ c=c||{};
+ c.placa=c.placa||'';c.nome=c.nome||'';c.modeloCRLV=c.modeloCRLV||'';c.motor=c.motor||'';c.motorCodigo=c.motorCodigo||'';
+ c.ano=c.ano||'';c.chassi=c.chassi||'';c.renavam=c.renavam||'';c.cor=c.cor||'';c.potencia=c.potencia||'';
+ c.combustivel=c.combustivel||'';c.proprietario=c.proprietario||'';c.locadorId=c.locadorId||'hudson';
+ c.exercicioCRLV=c.exercicioCRLV||'';c.kmAtual=Number(c.kmAtual)||0;c.valorRef=Number(c.valorRef)||0;
+ c.motorista=c.motorista||'';c.status=c.status||'parado';
+ c.semanalPadrao=Number(c.semanalPadrao)||0;c.caucaoPadrao=Number(c.caucaoPadrao)||0;
+ c.proximasTrocas=toArr(c.proximasTrocas);c.contratoVigenteId=c.contratoVigenteId||'';
+ c.temCrlv=!!c.temCrlv;
+ return c;
+}
+function normContrato(c){
+ c=c||{};c.id=c.id||'';c.carro=c.carro||'';c.origem=c.origem||'gerado';c.status=c.status||'vigente';
+ c.locadorId=c.locadorId||'hudson';c.locadorNome=c.locadorNome||'';
+ c.locatario=c.locatario||{};var l=c.locatario;
+ l.nome=l.nome||'';l.cpf=l.cpf||'';l.rg=l.rg||'';l.cnh=l.cnh||'';l.cnhVal=l.cnhVal||'';l.endereco=l.endereco||'';l.cep=l.cep||'';l.tel=l.tel||'';
+ c.semanal=Number(c.semanal)||0;c.caucao=Number(c.caucao)||0;c.multaDiaria=Number(c.multaDiaria)||0;c.multaRescisao=Number(c.multaRescisao)||0;
+ c.inicio=c.inicio||'';c.fim=c.fim||'';c.kmInicial=Number(c.kmInicial)||0;
+ c.pix=c.pix||'';c.cl34=c.cl34||'';c.acessorios=c.acessorios||'Estepe, triângulo, chave de roda, macaco';
+ c.combustiveis=c.combustiveis||'';c.formato=c.formato||'';c.temDocx=!!c.temDocx;c.temPdf=!!c.temPdf;
+ c.encerradoEm=c.encerradoEm||'';
+ return c;
+}
+function normManut(m){
+ m=m||{};m.id=m.id||'';m.carro=m.carro||'';m.motorista=m.motorista||'';
+ m.dataIni=m.dataIni||'';m.dataFim=m.dataFim||'';m.odometro=Number(m.odometro)||0;
+ m.pecas=toArr(m.pecas).map(function(p){return{valor:Number(p.valor)||0,desc:p.desc||'',loja:p.loja||''}});
+ m.blocos=toArr(m.blocos).map(function(b){return{titulo:b.titulo||'Mecânico',nome:b.nome||'',servicos:toArr(b.servicos)}});
+ m.totalPecas=Number(m.totalPecas)||0;m.totalMO=Number(m.totalMO)||0;m.total=Number(m.total)||0;
+ m.texto=m.texto||'';m.criadoEm=m.criadoEm||0;
+ return m;
+}
+function normState(s){
+ s=s||{};s.rev=s.rev||0;s.dev=s.dev||'';
+ s.carros=s.carros||{};s.contratos=s.contratos||{};s.manutencoes=s.manutencoes||{};
+ Object.keys(s.carros).forEach(function(k){s.carros[k]=normCarro(s.carros[k])});
+ Object.keys(s.contratos).forEach(function(k){s.contratos[k]=normContrato(s.contratos[k])});
+ Object.keys(s.manutencoes).forEach(function(k){s.manutencoes[k]=normManut(s.manutencoes[k])});
+ return s;
+}
+
+/* ---------- sync (mesmo padrão do Semanal: last-write-wins, debounce, eco ignorado) ---------- */
+var DB=null,REF=null,DOCSREF=null,FAMHASH='',_pushT=null,_ready=false;
+function famHash(key){
+ return crypto.subtle.digest('SHA-256',new TextEncoder().encode('guimas:'+key))
+  .then(function(buf){return Array.prototype.map.call(new Uint8Array(buf),function(b){return('0'+b.toString(16)).slice(-2)}).join('')});
+}
+function digitando(){var a=document.activeElement;return !!(a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.tagName==='SELECT'))}
+function save(){
+ if(!S)return;
+ S.rev=Date.now();S.dev=DEV;
+ try{localStorage.setItem('gestao_cache',JSON.stringify(S))}catch(e){}
+ clearTimeout(_pushT);
+ _pushT=setTimeout(function(){
+  if(REF)REF.set(S).catch(function(e){toast('⚠️ Falha ao sincronizar: '+e.message)});
+ },1200);
+}
+function conectar(chave){
+ famHash(chave).then(function(h){
+  FAMHASH=h;
+  REF=DB.ref('familias/'+h+'/gestao');
+  DOCSREF=DB.ref('familias/'+h+'/gestaoDocs');
+  REF.on('value',function(snap){
+   var v=snap.val();
+   document.getElementById('syncDot').classList.add('on');
+   if(!v){ /* primeira vez: semear */
+    if(!S){S=normState(JSON.parse(JSON.stringify(SEED)));S.rev=Date.now();S.dev=DEV;REF.set(S);toast('🌱 Frota inicial carregada na nuvem');render()}
+    return;
+   }
+   v=normState(v);
+   if(!S){S=v;_ready=true;render();return}
+   if(v.dev===DEV||v.rev<=S.rev)return;
+   var adota=function(){S=v;render()};
+   if(digitando()){var iv=setInterval(function(){if(!digitando()){clearInterval(iv);keepScreenStill(adota)}},2000)}
+   else keepScreenStill(adota);
+  },function(err){toast('⚠️ Sem acesso ao banco: '+err.message)});
+ });
+}
+function boot(){
+ firebase.initializeApp(firebaseConfig);
+ DB=firebase.database();
+ firebase.auth().signInAnonymously().catch(function(e){toast('⚠️ Auth falhou: '+e.message)});
+ try{var c=localStorage.getItem('gestao_cache');if(c){S=normState(JSON.parse(c));render()}}catch(e){}
+ var chave=localStorage.getItem('gestao_famkey');
+ if(chave)conectar(chave);else pedirChave();
+}
+function pedirChave(){
+ openSheet('<h3>Chave da família</h3><p class="sub">Use a MESMA chave do app Semanal para os dois iPhones enxergarem os mesmos dados.</p>'+
+ '<label>Chave</label><input id="famkeyIn" autocapitalize="none" autocorrect="off" placeholder="chave da família">'+
+ '<button class="btn" onclick="salvarChave()">Conectar</button>');
+}
+function salvarChave(){
+ var k=document.getElementById('famkeyIn').value.trim().toLowerCase();
+ if(!k){toast('Digite a chave');return}
+ localStorage.setItem('gestao_famkey',k);closeSheet();conectar(k);toast('🔗 Conectando…');
+}
+
+/* ---------- auto-update (mecanismo v14/v15 do Semanal) ---------- */
+function safeToReload(){
+ try{
+  var a=document.activeElement;
+  if(a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'))return false;
+  var ovs=document.querySelectorAll('.overlay.open');if(ovs&&ovs.length)return false;
+ }catch(e){}
+ return true;
+}
+var _updFound=false;
+function checkUpdate(){
+ try{
+  fetch('index.html?upd='+Date.now(),{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){
+   var m=t.match(/APP_VER=(\d+)/);
+   if(m&&parseInt(m[1],10)>APP_VER&&!_updFound){
+    _updFound=true;toast('⬆️ Atualizando para a versão nova…');
+    setTimeout(function tryReload(){if(safeToReload()){location.reload()}else{setTimeout(tryReload,20000)}},1500);
+   }
+  }).catch(function(){});
+ }catch(e){}
+}
+setTimeout(checkUpdate,4000);
+try{
+ document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')checkUpdate()});
+ window.addEventListener('pageshow',function(e){if(e&&e.persisted)checkUpdate()});
+ window.addEventListener('focus',function(){checkUpdate()});
+}catch(e){}
+setInterval(checkUpdate,15*60*1000);
+</script>
+
+<script>
+/* ===================== TELAS ===================== */
+var TAB=0,BUSCA_H='';
+function go(t){TAB=t;for(var i=0;i<4;i++)document.getElementById('nb'+i).classList.toggle('on',i===t);window.scrollTo(0,0);render()}
+function render(){
+ var _sy=0;try{_sy=window.scrollY||0}catch(e){}
+ var m=document.getElementById('main');
+ if(!S){m.innerHTML='<div class="card"><div class="tit">Conectando…</div><div class="sub">Aguardando dados da nuvem.</div></div>';return}
+ if(TAB===0)m.innerHTML=vFrota();
+ else if(TAB===1)m.innerHTML=vManut();
+ else if(TAB===2)m.innerHTML=vContrato();
+ else m.innerHTML=vHistorico();
+ try{window.scrollTo(0,_sy)}catch(e){}
+}
+function carrosOrdenados(){
+ return Object.keys(S.carros).map(function(k){return S.carros[k]}).sort(function(a,b){
+  var st={ativo:0,parado:1,pessoal:2};
+  return (st[a.status]-st[b.status])||a.nome.localeCompare(b.nome);
+ });
+}
+function totalGasto(pk){
+ var t=0;Object.keys(S.manutencoes).forEach(function(k){if(S.manutencoes[k].carro===pk)t+=S.manutencoes[k].total});return t;
+}
+function plateHtml(p){return '<div class="plate"><div class="top">BRASIL</div><div class="num">'+esc(fmtPlaca(p))+'</div></div>'}
+
+/* ---------- FROTA ---------- */
+function vFrota(){
+ var h='<button class="btn ok" onclick="formCarro()">➕ ADICIONAR CARRO NOVO</button>';
+ carrosOrdenados().forEach(function(c){
+  var pk=normPlaca(c.placa);
+  var st=c.status==='ativo'?'<span class="chip ok">alugado</span>':(c.status==='pessoal'?'<span class="chip warn">pessoal</span>':'<span class="chip red">parado</span>');
+  h+='<div class="card tap" onclick="ficha(\''+pk+'\')"><div class="row">'+plateHtml(c.placa)+
+   '<div class="grow"><div class="tit">'+esc(c.nome)+(c.motor?' '+esc(c.motor):'')+'</div>'+
+   '<div class="sub">'+(c.motorista?'👤 '+esc(primNome(c.motorista)):'sem motorista')+'</div>'+st+
+   (c.exercicioCRLV&&c.exercicioCRLV<'2026'?'<span class="chip red">CRLV '+esc(c.exercicioCRLV)+'</span>':'')+
+   '</div><div style="color:var(--tx2)">›</div></div></div>';
+ });
+ return h;
+}
+function primNome(n){var p=String(n||'').trim().split(/\s+/);return p[0]?p[0].charAt(0)+p[0].slice(1).toLowerCase():''}
+
+/* ---------- FICHA ---------- */
+function ficha(pk){
+ var c=S.carros[pk];if(!c)return;
+ var ct=c.contratoVigenteId?S.contratos[c.contratoVigenteId]:null;
+ var anteriores=Object.keys(S.contratos).map(function(k){return S.contratos[k]})
+  .filter(function(x){return x.carro===pk&&x.status!=='vigente'})
+  .sort(function(a,b){return (b.encerradoEm||'').localeCompare(a.encerradoEm||'')});
+ var mans=Object.keys(S.manutencoes).map(function(k){return S.manutencoes[k]})
+  .filter(function(m){return m.carro===pk}).sort(function(a,b){return (b.dataIni||'').localeCompare(a.dataIni)||b.criadoEm-a.criadoEm});
+ var h='<div class="row" style="margin-bottom:8px">'+plateHtml(c.placa)+'<div class="grow"><h3 style="margin:0">'+esc(c.nome)+' '+esc(c.motor)+'</h3><div class="sub">'+esc(c.modeloCRLV)+'</div></div></div>';
+ h+='<div class="kv">'+
+  '<b>Motorista atual</b><span>'+(c.motorista?esc(c.motorista):'—')+'</span>'+
+  '<b>Status</b><span>'+esc(c.status)+'</span>'+
+  '<b>Ano fab/mod</b><span>'+esc(c.ano)+'</span>'+
+  '<b>Motor</b><span>'+esc(c.motor)+(c.motorCodigo?' · cód. '+esc(c.motorCodigo):'')+'</span>'+
+  '<b>Potência</b><span>'+esc(c.potencia)+'</span>'+
+  '<b>Cor</b><span>'+esc(c.cor)+'</span>'+
+  '<b>Combustível</b><span>'+esc(c.combustivel)+'</span>'+
+  '<b>Chassi</b><span style="font-family:Menlo,monospace;font-size:12px">'+esc(c.chassi)+'</span>'+
+  '<b>Renavam</b><span>'+esc(c.renavam)+'</span>'+
+  '<b>KM atual</b><span>'+fmtKm(c.kmAtual)+' km</span>'+
+  '<b>Proprietário</b><span>'+esc(c.proprietario)+'</span>'+
+  '<b>Valor de referência</b><span>'+(c.valorRef?'R$ '+fmtBRL(c.valorRef):'—')+'</span>'+
+  '<b>Licenciamento (CRLV)</b><span>exercício '+esc(c.exercicioCRLV||'—')+'</span>'+
+  '<b>Total gasto em manutenção</b><span style="color:var(--warn);font-weight:700">R$ '+fmtBRL(totalGasto(pk))+'</span></div>';
+ h+='<button class="btn mini sec" onclick="formCarro(\''+pk+'\')">✏️ Editar dados</button>';
+ h+='<button class="btn mini sec" onclick="editarMotorista(\''+pk+'\')">👤 Motorista</button>';
+ /* CRLV */
+ h+='<div class="sect">Documento CRLV</div>';
+ h+=c.temCrlv?'<button class="btn mini" onclick="verDoc(\''+pk+'/crlv\',\'CRLV '+esc(fmtPlaca(c.placa))+'\')">👁 Ver PDF</button>':'<div class="sub">Nenhum CRLV anexado.</div>';
+ h+='<button class="btn mini sec" onclick="pedirArquivo(\''+pk+'/crlv\',\'application/pdf\',\''+pk+'\')">🔄 '+(c.temCrlv?'Substituir':'Anexar')+' CRLV</button>';
+ /* CONTRATO */
+ h+='<div class="sect">Contrato vigente</div>';
+ if(ct){
+  h+='<div class="card" style="margin:0 0 6px">'+
+   '<div class="tit">'+esc(ct.locatario.nome)+'</div>'+
+   '<div class="sub">R$ '+fmtBRL(ct.semanal)+'/semana · caução R$ '+fmtBRL(ct.caucao)+'</div>'+
+   '<div class="sub">'+dataBR(ct.inicio)+' → '+dataBR(ct.fim)+(fimPassado(ct.fim)?' <span class="chip warn">renovação automática</span>':'')+'</div>'+
+   docBtns(ct)+
+   '<button class="btn mini red" onclick="trocarMotorista(\''+pk+'\')">🔁 Encerrar e trocar motorista</button></div>';
+ }else h+='<div class="sub">Sem contrato vigente.</div><button class="btn mini ok" onclick="go(2);setTimeout(function(){var s=document.getElementById(\'ncCarro\');if(s){s.value=\''+pk+'\';ncPuxaCarro()}},60)">📄 Criar contrato para este carro</button>';
+ if(anteriores.length){
+  h+='<div class="sect">Contratos anteriores ('+anteriores.length+')</div>';
+  anteriores.forEach(function(x){
+   h+='<div class="card" style="margin:0 0 6px"><div class="tit" style="font-size:14px">'+esc(x.locatario.nome)+'</div>'+
+    '<div class="sub">'+dataBR(x.inicio)+' → '+dataBR(x.fim)+(x.encerradoEm?' · encerrado em '+dataBR(x.encerradoEm):'')+'</div>'+docBtns(x)+'</div>';
+  });
+ }
+ /* PRÓXIMAS TROCAS */
+ h+='<div class="sect">Próximas trocas</div>';
+ if(c.proximasTrocas.length){
+  c.proximasTrocas.forEach(function(t,i){
+   h+='<div class="row" style="margin-bottom:4px"><div class="grow sub" style="font-size:13.5px;color:var(--tx)">🔩 '+esc(t.texto)+'</div><button class="xbt" onclick="rmTroca(\''+pk+'\','+i+')">✕</button></div>';
+  });
+ }else h+='<div class="sub">Nada registrado. As anotações "Próxima troca com X km" das manutenções entram aqui sozinhas.</div>';
+ h+='<button class="btn mini sec" onclick="addTroca(\''+pk+'\')">➕ Anotar troca futura</button>';
+ /* MANUTENÇÕES */
+ h+='<div class="sect">Histórico de manutenções ('+mans.length+')</div>';
+ if(!mans.length)h+='<div class="sub">Nenhuma manutenção registrada.</div>';
+ mans.forEach(function(m){
+  h+='<div class="card tap" style="margin:0 0 6px" onclick="verManut(\''+m.id+'\')"><div class="row"><div class="grow">'+
+   '<div class="tit" style="font-size:14px">'+esc(periodoTexto(m.dataIni,m.dataFim))+'</div>'+
+   '<div class="sub">'+esc(primNome(m.motorista))+' · '+fmtKm(m.odometro)+' km</div></div>'+
+   '<div style="color:var(--warn);font-weight:800">R$ '+fmtBRL(m.total)+'</div></div></div>';
+ });
+ h+='<button class="btn sec" onclick="closeSheet()">Fechar</button>';
+ openSheet(h);
+}
+function fimPassado(iso){return iso&&iso<hoje()}
+function docBtns(ct){
+ var pk=ct.carro,h='';
+ if(ct.temPdf)h+='<button class="btn mini" onclick="verDoc(\''+pk+'/ct/'+ct.id+'/pdf\',\'Contrato '+esc(primNome(ct.locatario.nome))+'\')">👁 Ler contrato</button>';
+ if(ct.temDocx)h+='<button class="btn mini sec" onclick="baixarDoc(\''+pk+'/ct/'+ct.id+'/docx\',\'Contrato '+esc(fmtPlaca(pk))+' '+esc(primNome(ct.locatario.nome))+'.docx\')">⬇️ Word</button>';
+ if(ct.temPdf)h+='<button class="btn mini sec" onclick="baixarDoc(\''+pk+'/ct/'+ct.id+'/pdf\',\'Contrato '+esc(fmtPlaca(pk))+' '+esc(primNome(ct.locatario.nome))+'.pdf\')">⬇️ PDF</button>';
+ if(ct.origem==='gerado')h+='<button class="btn mini sec" onclick="regerarContrato(\''+ct.id+'\')">📝 Regerar Word</button>';
+ return h;
+}
+function editarMotorista(pk){
+ var c=S.carros[pk];
+ openSheet('<h3>Motorista atual</h3><p class="sub">'+esc(c.nome)+' '+esc(fmtPlaca(c.placa))+'</p>'+
+ '<label>Nome</label><input id="motIn" value="'+esc(c.motorista)+'">'+
+ '<label>Status do carro</label><select id="stIn"><option value="ativo"'+(c.status==='ativo'?' selected':'')+'>Alugado</option><option value="parado"'+(c.status==='parado'?' selected':'')+'>Parado</option><option value="pessoal"'+(c.status==='pessoal'?' selected':'')+'>Pessoal</option></select>'+
+ '<button class="btn" onclick="salvarMotorista(\''+pk+'\')">Salvar</button><button class="btn sec" onclick="ficha(\''+pk+'\')">Voltar</button>',2);
+}
+function salvarMotorista(pk){
+ S.carros[pk].motorista=document.getElementById('motIn').value.trim();
+ S.carros[pk].status=document.getElementById('stIn').value;
+ save();closeSheet(2);ficha(pk);toast('✅ Salvo');render();
+}
+function addTroca(pk){
+ openSheet('<h3>Anotar troca futura</h3><label>Descrição (ex.: Troca de óleo com 111.117 km)</label><input id="trIn">'+
+ '<button class="btn" onclick="salvarTroca(\''+pk+'\')">Salvar</button><button class="btn sec" onclick="ficha(\''+pk+'\')">Voltar</button>',2);
+}
+function salvarTroca(pk){
+ var t=document.getElementById('trIn').value.trim();if(!t){toast('Escreva a anotação');return}
+ S.carros[pk].proximasTrocas.push({texto:t});save();closeSheet(2);ficha(pk);
+}
+function rmTroca(pk,i){
+ ask('Remover anotação?',S.carros[pk].proximasTrocas[i].texto,'Remover',function(){
+  S.carros[pk].proximasTrocas.splice(i,1);save();ficha(pk);
+ });
+}
+
+/* ---------- FORM CARRO (novo/editar) ---------- */
+function formCarro(pk){
+ var c=pk?S.carros[pk]:normCarro({status:'parado'});
+ var novo=!pk;
+ function f(l,id,v,ph){return '<label>'+l+'</label><input id="fc_'+id+'" value="'+esc(v)+'"'+(ph?' placeholder="'+ph+'"':'')+'>'}
+ var h='<h3>'+(novo?'Adicionar carro novo':'Editar '+esc(c.nome))+'</h3>';
+ h+=f('Placa','placa',c.placa,'ABC-1D23')+f('Nome curto (como você chama)','nome',c.nome,'Cobalt 2019')+
+  f('Motor (simples)','motor',c.motor,'1.8 8v')+f('Ano fab/modelo','ano',c.ano,'2018/2019')+
+  f('Modelo do CRLV','modeloCRLV',c.modeloCRLV)+f('Código do motor (CRLV)','motorCodigo',c.motorCodigo)+
+  f('Chassi','chassi',c.chassi)+f('Renavam','renavam',c.renavam)+
+  '<div class="grid2">'+f('Cor','cor',c.cor)+f('Potência','potencia',c.potencia,'102CV/1400')+'</div>'+
+  f('Combustível','combustivel',c.combustivel,'Flex / GNV 16m³')+
+  '<div class="grid2">'+f('KM atual','kmAtual',c.kmAtual||'')+f('Exercício CRLV','exercicioCRLV',c.exercicioCRLV,'2026')+'</div>'+
+  f('Proprietário (no documento)','proprietario',c.proprietario)+
+  '<label>Locador padrão dos contratos</label><select id="fc_locadorId">'+selLocadores(c.locadorId)+'</select>'+
+  '<div class="grid2">'+f('Valor de referência (R$)','valorRef',c.valorRef?fmtBRL(c.valorRef):'')+f('Semanal padrão (R$)','semanalPadrao',c.semanalPadrao?fmtBRL(c.semanalPadrao):'')+'</div>'+
+  f('Caução padrão (R$)','caucaoPadrao',c.caucaoPadrao?fmtBRL(c.caucaoPadrao):'');
+ if(novo)h+='<label>CRLV em PDF (opcional agora)</label><input type="file" id="fc_crlv" accept="application/pdf">';
+ h+='<button class="btn" onclick="salvarCarro(\''+(pk||'')+'\')">'+(novo?'Criar carro':'Salvar alterações')+'</button>'+
+  (novo?'':'<button class="btn red" onclick="excluirCarro(\''+pk+'\')">🗑 Excluir carro</button>')+
+  '<button class="btn sec" onclick="'+(novo?'closeSheet()':'ficha(\''+pk+'\')')+'">Cancelar</button>';
+ openSheet(h,pk?2:undefined);
+}
+function selLocadores(sel){
+ return Object.keys(LOCADORES).map(function(k){return '<option value="'+k+'"'+(k===sel?' selected':'')+'>'+esc(LOCADORES[k].nome.split(' ')[0])+' — '+esc(LOCADORES[k].cpf)+'</option>'}).join('');
+}
+function salvarCarro(pk){
+ function g(id){return (document.getElementById('fc_'+id)||{value:''}).value.trim()}
+ var placa=normPlaca(g('placa'));
+ if(placa.length!==7){toast('Placa inválida');return}
+ var novo=!pk;
+ if(novo&&S.carros[placa]){toast('Já existe carro com essa placa');return}
+ var c=novo?normCarro({}):S.carros[pk];
+ if(!novo&&placa!==pk){toast('Para trocar a placa, crie um carro novo');return}
+ c.placa=fmtPlaca(placa);c.nome=g('nome')||c.placa;c.motor=g('motor');c.ano=g('ano');
+ c.modeloCRLV=g('modeloCRLV');c.motorCodigo=g('motorCodigo');c.chassi=g('chassi').toUpperCase();c.renavam=g('renavam');
+ c.cor=g('cor');c.potencia=g('potencia');c.combustivel=g('combustivel');
+ c.kmAtual=parseInt(g('kmAtual').replace(/\D/g,''),10)||0;c.exercicioCRLV=g('exercicioCRLV');
+ c.proprietario=g('proprietario');c.locadorId=document.getElementById('fc_locadorId').value;
+ c.valorRef=parseBRL(g('valorRef'));c.semanalPadrao=parseBRL(g('semanalPadrao'));c.caucaoPadrao=parseBRL(g('caucaoPadrao'));
+ S.carros[placa]=c;save();
+ var fileIn=document.getElementById('fc_crlv');
+ if(novo&&fileIn&&fileIn.files&&fileIn.files[0]){
+  enviarArquivo(fileIn.files[0],placa+'/crlv',function(){S.carros[placa].temCrlv=true;save();render()});
+ }
+ closeSheet();closeSheet(2);render();toast(novo?'🚗 Carro criado — ecossistema pronto':'✅ Salvo');
+ if(novo)setTimeout(function(){ficha(placa)},250);
+}
+function excluirCarro(pk){
+ ask('Excluir '+S.carros[pk].nome+'?','Some da frota, mas contratos e manutenções antigos continuam no Histórico Geral.','Excluir',function(){
+  delete S.carros[pk];save();closeSheet();closeSheet(2);render();toast('🗑 Carro excluído');
+ });
+}
+
+/* ---------- DOCUMENTOS (nó separado, carregado sob demanda) ---------- */
+function verDoc(path,titulo){
+ toast('📥 Baixando documento…');
+ DOCSREF.child(path).once('value').then(function(s){
+  var d=s.val();
+  if(!d||!d.b64){toast('Documento não encontrado na nuvem — use a Importação inicial (⚙️)');return}
+  var url=b64ToUrl(d.b64,d.mime||'application/pdf');
+  openSheet('<h3>'+esc(titulo)+'</h3><iframe class="pdfv" src="'+url+'"></iframe>'+
+   '<a class="btn" style="text-align:center;text-decoration:none" href="'+url+'" download="'+esc(titulo)+'.pdf">⬇️ Baixar</a>'+
+   '<button class="btn sec" onclick="closeSheet(2)">Fechar</button>',2);
+ }).catch(function(e){toast('⚠️ '+e.message)});
+}
+function baixarDoc(path,nome){
+ toast('📥 Preparando arquivo…');
+ DOCSREF.child(path).once('value').then(function(s){
+  var d=s.val();
+  if(!d||!d.b64){toast('Arquivo não está na nuvem — use a Importação inicial (⚙️)');return}
+  var a=document.createElement('a');a.href=b64ToUrl(d.b64,d.mime||'application/octet-stream');a.download=nome;
+  document.body.appendChild(a);a.click();setTimeout(function(){document.body.removeChild(a)},400);
+ }).catch(function(e){toast('⚠️ '+e.message)});
+}
+function b64ToUrl(b64,mime){
+ var bin=atob(b64),arr=new Uint8Array(bin.length);
+ for(var i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
+ return URL.createObjectURL(new Blob([arr],{type:mime}));
+}
+var _pedirCb=null;
+function pedirArquivo(path,accept,pk){
+ var inp=document.createElement('input');inp.type='file';inp.accept=accept;
+ inp.onchange=function(){
+  if(!inp.files||!inp.files[0])return;
+  enviarArquivo(inp.files[0],path,function(){
+   if(pk){S.carros[pk].temCrlv=true;save();ficha(pk)}
+   toast('✅ Documento salvo na nuvem');
+  });
+ };
+ inp.click();
+}
+function enviarArquivo(file,path,cb){
+ var r=new FileReader();
+ r.onload=function(){
+  var b64=String(r.result).split(',')[1];
+  toast('☁️ Enviando '+file.name+'…');
+  DOCSREF.child(path).set({b64:b64,name:file.name,mime:file.type||'application/pdf',size:file.size,em:Date.now()})
+   .then(function(){if(cb)cb()})
+   .catch(function(e){toast('⚠️ Falha no envio: '+e.message)});
+ };
+ r.readAsDataURL(file);
+}
+</script>
+
+<script>
+/* ===================== NOVA MANUTENÇÃO ===================== */
+var MP=[],MB=[]; /* linhas de peças e blocos de mão de obra (rascunho) */
+function vManut(){
+ if(!MP.length)MP=[{valor:'',desc:'',loja:''}];
+ if(!MB.length)MB=[{titulo:'Mecânico',nome:'Vinícius',servicos:''}];
+ var h='<div class="card"><div class="tit">🔧 Nova manutenção</div>'+
+ '<label>Carro</label><select id="mCarro" onchange="mPuxaCarro()"><option value="">— selecione —</option>'+opcoesCarros()+'</select>'+
+ '<div id="mCarroInfo" class="sub"></div>'+
+ '<label>Motorista</label><input id="mMotorista" placeholder="sugere o atual ao escolher o carro">'+
+ '<div class="grid2"><div><label>Data (início)</label><input type="date" id="mIni" value="'+hoje()+'"></div>'+
+ '<div><label>Data fim (se for período)</label><input type="date" id="mFim"></div></div>'+
+ '<label>Odômetro (km)</label><input id="mOdo" inputmode="numeric" placeholder="101117">'+
+ '<div class="sect">Peças</div><div id="mPecas"></div>'+
+ '<button class="btn mini sec" onclick="MP.push({valor:\'\',desc:\'\',loja:\'\'});mDesenha()">➕ Peça</button>'+
+ '<div class="sect">Mão de obra</div><div id="mBlocos"></div>'+
+ '<button class="btn mini sec" onclick="MB.push({titulo:\'\',nome:\'\',servicos:\'\'});mDesenha()">➕ Bloco (Borracheiro, Retífica…)</button>'+
+ '<div class="card" style="margin-top:12px;background:var(--card2)"><div class="kv">'+
+ '<b>Peças</b><span id="mTotP">R$ 0,00</span><b>Mão de obra</b><span id="mTotM">R$ 0,00</span>'+
+ '<b>TOTAL GERAL</b><span id="mTotG" style="color:var(--warn);font-weight:800">R$ 0,00</span></div></div>'+
+ '<button class="btn ok" onclick="gerarManut()">✅ GERAR TEXTO + SALVAR NO HISTÓRICO</button>'+
+ '<div id="mSaida"></div></div>';
+ setTimeout(mDesenha,30);
+ return h;
+}
+function opcoesCarros(sel){
+ return carrosOrdenados().map(function(c){var pk=normPlaca(c.placa);
+  return '<option value="'+pk+'"'+(pk===sel?' selected':'')+'>'+esc(c.nome)+' — '+esc(fmtPlaca(c.placa))+'</option>'}).join('');
+}
+function mPuxaCarro(){
+ var pk=document.getElementById('mCarro').value,c=S.carros[pk];
+ if(!c){document.getElementById('mCarroInfo').textContent='';return}
+ document.getElementById('mCarroInfo').innerHTML='🚗 '+esc(c.nome)+' '+esc(c.motor)+' · '+esc(fmtPlaca(c.placa));
+ if(c.motorista)document.getElementById('mMotorista').value=primNome(c.motorista);
+ if(c.kmAtual)document.getElementById('mOdo').placeholder=String(c.kmAtual);
+}
+function mDesenha(){
+ var hp='';
+ MP.forEach(function(p,i){
+  hp+='<div class="grid3">'+
+   '<input placeholder="R$" inputmode="decimal" value="'+esc(p.valor)+'" oninput="MP['+i+'].valor=this.value;mTotais()">'+
+   '<input placeholder="descrição da peça" value="'+esc(p.desc)+'" oninput="MP['+i+'].desc=this.value">'+
+   '<input placeholder="loja" value="'+esc(p.loja)+'" oninput="MP['+i+'].loja=this.value">'+
+   '<button class="xbt" onclick="MP.splice('+i+',1);mDesenha()">✕</button></div>';
+ });
+ document.getElementById('mPecas').innerHTML=hp||'<div class="sub">Sem peças.</div>';
+ var hb='';
+ MB.forEach(function(b,i){
+  hb+='<div class="card" style="margin:6px 0;background:var(--card2)"><div class="grid2">'+
+   '<div><label>Título</label><input placeholder="Mecânico / Borracheiro / Retífica" value="'+esc(b.titulo)+'" oninput="MB['+i+'].titulo=this.value"></div>'+
+   '<div><label>Nome + valor</label><input placeholder="Vinícius — R$ 1.700,00" value="'+esc(b.nome)+'" oninput="MB['+i+'].nome=this.value;mTotais()"></div></div>'+
+   '<label>Serviços (um por linha; anote "Próxima troca com X km" e "GARANTIA ATÉ data" quando houver)</label>'+
+   '<textarea oninput="MB['+i+'].servicos=this.value">'+esc(b.servicos)+'</textarea>'+
+   '<button class="btn mini red" onclick="MB.splice('+i+',1);mDesenha()">Remover bloco</button></div>';
+ });
+ document.getElementById('mBlocos').innerHTML=hb;
+ mTotais();
+}
+function valorDoBloco(nome){var m=String(nome||'').match(/R\$\s*([\d\.\,]+)/);return m?parseBRL(m[1]):0}
+function mTotais(){
+ var tp=0;MP.forEach(function(p){tp+=parseBRL(p.valor)});
+ var tm=0;MB.forEach(function(b){tm+=valorDoBloco(b.nome)});
+ var el;
+ if(el=document.getElementById('mTotP'))el.textContent='R$ '+fmtBRL(tp);
+ if(el=document.getElementById('mTotM'))el.textContent='R$ '+fmtBRL(tm);
+ if(el=document.getElementById('mTotG'))el.textContent='R$ '+fmtBRL(tp+tm);
+}
+function buildManutTexto(m,carro){
+ var t='*VEÍCULO:* '+carro.nome+(carro.motor?' '+carro.motor:'')+'\n'+
+ '*PLACA:* '+fmtPlaca(carro.placa)+'\n'+
+ '*MOTORISTA:* '+m.motorista+'\n'+
+ '*DATA:* '+periodoTexto(m.dataIni,m.dataFim)+'\n'+
+ '*ODÔMETRO:* '+fmtKm(m.odometro)+' km\n'+
+ '_______________________________________\n';
+ if(m.pecas.length){
+  t+='\n*[ PEÇAS: R$ '+fmtBRL(m.totalPecas)+' ]*\n';
+  m.pecas.forEach(function(p){
+   t+='• R$ '+fmtBRL(p.valor)+' - '+p.desc+(p.loja?' ('+p.loja+')':'')+'\n';
+  });
+ }
+ if(m.blocos.length){
+  t+='\n*[ MÃO DE OBRA: R$ '+fmtBRL(m.totalMO)+' ]*\n';
+  m.blocos.forEach(function(b){
+   t+='*'+(b.titulo||'Mecânico')+':* '+(b.nome||'')+'\n';
+   b.servicos.forEach(function(s){t+='• '+s+'\n'});
+  });
+ }
+ t+='\n*TOTAL GERAL: R$ '+fmtBRL(m.total)+'*';
+ return t;
+}
+function gerarManut(){
+ var pk=document.getElementById('mCarro').value;
+ if(!pk){toast('Escolha o carro');return}
+ var carro=S.carros[pk];
+ var mot=document.getElementById('mMotorista').value.trim();
+ if(!mot){toast('Informe o motorista');return}
+ var ini=document.getElementById('mIni').value,fim=document.getElementById('mFim').value;
+ if(!ini){toast('Informe a data');return}
+ var odo=parseInt(document.getElementById('mOdo').value.replace(/\D/g,''),10)||0;
+ var pecas=MP.filter(function(p){return p.desc.trim()||parseBRL(p.valor)>0}).map(function(p){return{valor:parseBRL(p.valor),desc:p.desc.trim(),loja:p.loja.trim()}});
+ var blocos=MB.filter(function(b){return b.nome.trim()||b.servicos.trim()}).map(function(b){
+  return{titulo:(b.titulo||'Mecânico').trim(),nome:b.nome.trim(),servicos:b.servicos.split('\n').map(function(s){return s.trim()}).filter(Boolean)};
+ });
+ var tp=0;pecas.forEach(function(p){tp+=p.valor});
+ var tm=0;blocos.forEach(function(b){tm+=valorDoBloco(b.nome)});
+ var m=normManut({id:idNovo('mn'),carro:pk,motorista:mot,dataIni:ini,dataFim:fim||'',odometro:odo,
+  pecas:pecas,blocos:blocos,totalPecas:tp,totalMO:tm,total:tp+tm,criadoEm:Date.now()});
+ m.texto=buildManutTexto(m,carro);
+ S.manutencoes[m.id]=m;
+ if(odo>carro.kmAtual)carro.kmAtual=odo;
+ /* próximas trocas automáticas */
+ blocos.forEach(function(b){b.servicos.forEach(function(s){
+  if(/pr[óo]xima\s+troca/i.test(s))carro.proximasTrocas.push({texto:s});
+ })});
+ save();
+ document.getElementById('mSaida').innerHTML='<div class="sect">Texto gerado (padrão WhatsApp)</div>'+
+  '<div class="mono" id="mTexto">'+esc(m.texto)+'</div>'+
+  '<button class="btn" onclick="copiarManut(\''+m.id+'\')">📋 COPIAR</button>';
+ toast('✅ Gravado no histórico do '+carro.nome);
+ MP=[];MB=[];
+}
+function copiarTexto(t){
+ if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){toast('📋 Copiado!')},function(){copiarFallback(t)})}
+ else copiarFallback(t);
+}
+function copiarFallback(t){
+ var ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';
+ document.body.appendChild(ta);ta.focus();ta.select();
+ try{document.execCommand('copy');toast('📋 Copiado!')}catch(e){toast('Segure no texto e copie manualmente')}
+ document.body.removeChild(ta);
+}
+function copiarManut(id){copiarTexto(S.manutencoes[id].texto)}
+function verManut(id){
+ var m=S.manutencoes[id];if(!m)return;
+ var c=S.carros[m.carro]||{nome:m.carro,placa:m.carro,motor:''};
+ openSheet('<h3>'+esc(c.nome)+' — '+esc(periodoTexto(m.dataIni,m.dataFim))+'</h3>'+
+  '<div class="mono">'+esc(m.texto)+'</div>'+
+  '<button class="btn" onclick="copiarManut(\''+id+'\')">📋 Copiar</button>'+
+  '<button class="btn red" onclick="excluirManut(\''+id+'\')">🗑 Excluir manutenção</button>'+
+  '<button class="btn sec" onclick="closeSheet(2)">Fechar</button>',2);
+}
+function excluirManut(id){
+ var m=S.manutencoes[id];
+ ask('Excluir manutenção?','R$ '+fmtBRL(m.total)+' de '+periodoTexto(m.dataIni,m.dataFim)+' sai do histórico e do total do carro.','Excluir',function(){
+  delete S.manutencoes[id];save();closeSheet(2);render();toast('🗑 Excluída');
+ });
+}
+
+/* ===================== HISTÓRICO GERAL ===================== */
+function vHistorico(){
+ var todas=Object.keys(S.manutencoes).map(function(k){return S.manutencoes[k]})
+  .sort(function(a,b){return (b.dataIni||'').localeCompare(a.dataIni)||b.criadoEm-a.criadoEm});
+ var q=BUSCA_H.toLowerCase();
+ if(q)todas=todas.filter(function(m){
+  var c=S.carros[m.carro]||{};
+  return (m.motorista+' '+m.carro+' '+(c.nome||'')+' '+(c.placa||'')+' '+m.texto).toLowerCase().indexOf(q)>=0;
+ });
+ var h='<div class="search"><input placeholder="🔎 Buscar por placa, motorista, peça…" value="'+esc(BUSCA_H)+'" oninput="BUSCA_H=this.value;render()"></div>';
+ /* total por carro */
+ var tot={};Object.keys(S.manutencoes).forEach(function(k){var m=S.manutencoes[k];tot[m.carro]=(tot[m.carro]||0)+m.total});
+ var chips=Object.keys(tot).sort(function(a,b){return tot[b]-tot[a]});
+ if(chips.length&&!q){
+  h+='<div class="card"><div class="tit" style="font-size:13px;margin-bottom:4px">💰 Total gasto por carro</div>';
+  chips.forEach(function(pk){var c=S.carros[pk];h+='<span class="chip warn">'+esc(c?c.nome:pk)+' · R$ '+fmtBRL(tot[pk])+'</span>'});
+  h+='</div>';
+ }
+ if(!todas.length)h+='<div class="card"><div class="sub">Nenhuma manutenção'+(q?' encontrada para essa busca':' registrada ainda')+'.</div></div>';
+ todas.forEach(function(m){
+  var c=S.carros[m.carro]||{nome:m.carro,placa:m.carro};
+  h+='<div class="card tap" onclick="verManut(\''+m.id+'\')"><div class="row">'+plateHtml(c.placa)+
+   '<div class="grow"><div class="tit" style="font-size:14px">'+esc(c.nome)+'</div>'+
+   '<div class="sub">'+esc(periodoTexto(m.dataIni,m.dataFim))+' · '+esc(primNome(m.motorista))+'</div></div>'+
+   '<div style="color:var(--warn);font-weight:800">R$ '+fmtBRL(m.total)+'</div></div></div>';
+ });
+ return h;
+}
+</script>
+
+<script>
+/* ===================== NOVO CONTRATO ===================== */
+function vContrato(){
+ var h='<div class="card"><div class="tit">📄 Novo contrato de locação</div>'+
+ '<label>Carro</label><select id="ncCarro" onchange="ncPuxaCarro()"><option value="">— selecione —</option>'+opcoesCarros()+'</select>'+
+ '<div id="ncCarroInfo" class="sub"></div>'+
+ '<label>Locador</label><select id="ncLocador">'+selLocadores('hudson')+'</select>'+
+ '<div class="sect">Locatário (motorista novo)</div>'+
+ '<label>Nome completo</label><input id="ncNome">'+
+ '<div class="grid2"><div><label>CPF</label><input id="ncCpf" inputmode="numeric" placeholder="000.000.000-00"></div>'+
+ '<div><label>RG + órgão</label><input id="ncRg" placeholder="12345678 – DETRAN/RJ"></div></div>'+
+ '<div class="grid2"><div><label>CNH</label><input id="ncCnh" inputmode="numeric"></div>'+
+ '<div><label>Validade CNH</label><input type="date" id="ncCnhVal"></div></div>'+
+ '<label>Endereço completo</label><input id="ncEnd" placeholder="Rua…, nº, bairro, cidade/UF">'+
+ '<div class="grid2"><div><label>CEP</label><input id="ncCep" inputmode="numeric"></div>'+
+ '<div><label>Telefone</label><input id="ncTel" inputmode="tel" placeholder="(21) 9…"></div></div>'+
+ '<div class="sect">Valores e prazo</div>'+
+ '<div class="grid2"><div><label>Semanal (R$)</label><input id="ncSemanal" inputmode="decimal" oninput="ncCl34Auto()"></div>'+
+ '<div><label>Caução (R$)</label><input id="ncCaucao" inputmode="decimal" oninput="ncMultaAuto()"></div></div>'+
+ '<div class="grid2"><div><label>Multa diária de atraso (R$)</label><input id="ncMultaDia" inputmode="decimal" value="115,00"></div>'+
+ '<div><label>Multa de rescisão (R$)</label><input id="ncMultaResc" inputmode="decimal"></div></div>'+
+ '<div class="grid2"><div><label>Início</label><input type="date" id="ncIni" value="'+hoje()+'" onchange="document.getElementById(\'ncFim\').value=mais3Meses(this.value)"></div>'+
+ '<div><label>Fim (padrão 3 meses)</label><input type="date" id="ncFim" value="'+mais3Meses(hoje())+'"></div></div>'+
+ '<label>Quilometragem inicial</label><input id="ncKm" inputmode="numeric">'+
+ '<label>Acessórios</label><input id="ncAcess" value="Estepe, triângulo, chave de roda, macaco">'+
+ '<label>Combustíveis</label><input id="ncComb" placeholder="Etanol / GNV 16m³">'+
+ '<div class="sect">PIX de recebimento</div>'+
+ '<div class="grid2"><div><label>Banco</label><input id="ncPixBanco" value="Inter"></div>'+
+ '<div><label>Favorecido</label><input id="ncPixFav" value="Fabio"></div></div>'+
+ '<label>Chave PIX (CPF)</label><input id="ncPixChave" value="075.351.417-65">'+
+ '<div class="sect">Cláusula 3.4 — pagamento antecipado (livre)</div>'+
+ '<textarea id="ncCl34"></textarea>'+
+ '<button class="btn ok" onclick="gerarContrato()">📝 GERAR CONTRATO WORD + REGISTRAR</button>'+
+ '<div class="sub" style="margin-top:8px">O contrato entra como vigente na ficha do carro. Se já houver um vigente, ele vai para os anteriores automaticamente.</div></div>';
+ return h;
+}
+function ncPuxaCarro(){
+ var pk=document.getElementById('ncCarro').value,c=S.carros[pk];
+ var info=document.getElementById('ncCarroInfo');
+ if(!c){info.textContent='';return}
+ info.innerHTML='🚗 '+esc(c.nome)+' '+esc(c.motor)+' · '+esc(c.ano)+' · '+esc(fmtPlaca(c.placa))+' · '+fmtKm(c.kmAtual)+' km · ref. '+(c.valorRef?'R$ '+fmtBRL(c.valorRef):'—');
+ document.getElementById('ncLocador').value=c.locadorId;
+ if(c.semanalPadrao)document.getElementById('ncSemanal').value=fmtBRL(c.semanalPadrao);
+ if(c.caucaoPadrao){document.getElementById('ncCaucao').value=fmtBRL(c.caucaoPadrao);ncMultaAuto()}
+ document.getElementById('ncKm').value=c.kmAtual||'';
+ document.getElementById('ncComb').value=c.combustivel||'';
+ ncCl34Auto();
+}
+function ncMultaAuto(){var v=document.getElementById('ncCaucao').value;document.getElementById('ncMultaResc').value=v}
+function ncCl34Auto(){
+ var el=document.getElementById('ncCl34');if(!el||el.dataset.manual==='1')return;
+ var s=parseBRL(document.getElementById('ncSemanal').value);
+ el.value='Do Pagamento Antecipado: No ato da assinatura, o LOCATÁRIO pagará a semana final do contrato de forma antecipada ('+(s?'R$ '+fmtBRL(s):'R$ 0,00')+').';
+}
+document.addEventListener('input',function(e){if(e.target&&e.target.id==='ncCl34')e.target.dataset.manual='1'});
+
+function dadosContratoDoForm(){
+ function g(id){return document.getElementById(id).value.trim()}
+ var pk=g('ncCarro');if(!pk){toast('Escolha o carro');return null}
+ if(!g('ncNome')){toast('Nome do locatário é obrigatório');return null}
+ if(!g('ncIni')||!g('ncFim')){toast('Preencha as datas');return null}
+ var cnh=g('ncCnh'),cnhVal=g('ncCnhVal');
+ return normContrato({
+  id:idNovo('ct'),carro:pk,origem:'gerado',status:'vigente',
+  locadorId:g('ncLocador'),locadorNome:LOCADORES[g('ncLocador')].nome,
+  locatario:{nome:g('ncNome').toUpperCase(),cpf:g('ncCpf'),
+   rg:g('ncRg')+(cnh?' | CNH '+cnh+(cnhVal?' (val. '+dataBR(cnhVal)+')':''):''),
+   cnh:cnh,cnhVal:cnhVal,endereco:g('ncEnd'),cep:g('ncCep'),tel:g('ncTel')},
+  semanal:parseBRL(g('ncSemanal')),caucao:parseBRL(g('ncCaucao')),
+  multaDiaria:parseBRL(g('ncMultaDia'))||115,multaRescisao:parseBRL(g('ncMultaResc'))||parseBRL(g('ncCaucao')),
+  inicio:g('ncIni'),fim:g('ncFim'),kmInicial:parseInt(g('ncKm').replace(/\D/g,''),10)||0,
+  pix:g('ncPixBanco')+' / '+g('ncPixFav')+' / '+g('ncPixChave'),
+  cl34:g('ncCl34'),acessorios:g('ncAcess'),combustiveis:g('ncComb'),temDocx:false,temPdf:false
+ });
+}
+function gerarContrato(){
+ var ct=dadosContratoDoForm();if(!ct)return;
+ var c=S.carros[ct.carro];
+ toast('📝 Gerando Word…');
+ montarDocx(ct,c).then(function(blob){
+  /* registrar no estado */
+  if(c.contratoVigenteId&&S.contratos[c.contratoVigenteId]){
+   S.contratos[c.contratoVigenteId].status='encerrado';
+   S.contratos[c.contratoVigenteId].encerradoEm=hoje();
+  }
+  S.contratos[ct.id]=ct;
+  c.contratoVigenteId=ct.id;c.motorista=ct.locatario.nome;c.status='ativo';
+  if(ct.kmInicial)c.kmAtual=ct.kmInicial;
+  c.semanalPadrao=ct.semanal;c.caucaoPadrao=ct.caucao;
+  save();
+  /* baixar + subir para a nuvem */
+  var nome='Contrato '+c.nome+' '+fmtPlaca(c.placa)+' '+dataBR(ct.inicio).replace(/\//g,'_')+'.docx';
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nome;
+  document.body.appendChild(a);a.click();setTimeout(function(){document.body.removeChild(a)},400);
+  var r=new FileReader();
+  r.onload=function(){
+   var b64=String(r.result).split(',')[1];
+   DOCSREF.child(ct.carro+'/ct/'+ct.id+'/docx').set({b64:b64,name:nome,mime:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',size:blob.size,em:Date.now()})
+    .then(function(){S.contratos[ct.id].temDocx=true;save();toast('✅ Contrato registrado, baixado e salvo na nuvem');render()});
+  };
+  r.readAsDataURL(blob);
+ }).catch(function(e){toast('⚠️ Erro ao gerar: '+e.message)});
+}
+function trocarMotorista(pk){
+ var c=S.carros[pk];
+ ask('Trocar motorista do '+c.nome+'?','O contrato de '+primNome(c.motorista)+' será encerrado e vai para os contratos anteriores (nada se perde). Em seguida você cria o novo.','Encerrar e continuar',function(){
+  if(c.contratoVigenteId&&S.contratos[c.contratoVigenteId]){
+   S.contratos[c.contratoVigenteId].status='encerrado';
+   S.contratos[c.contratoVigenteId].encerradoEm=hoje();
+  }
+  c.contratoVigenteId='';c.motorista='';c.status='parado';
+  save();closeSheet();go(2);
+  setTimeout(function(){var s=document.getElementById('ncCarro');if(s){s.value=pk;ncPuxaCarro()}},80);
+  toast('🔁 Contrato encerrado — preencha o novo motorista');
+ });
+}
+function regerarContrato(id){
+ var ct=S.contratos[id],c=S.carros[ct.carro];
+ toast('📝 Regerando Word…');
+ montarDocx(ct,c).then(function(blob){
+  var nome='Contrato '+c.nome+' '+fmtPlaca(c.placa)+' '+dataBR(ct.inicio).replace(/\//g,'_')+'.docx';
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nome;
+  document.body.appendChild(a);a.click();setTimeout(function(){document.body.removeChild(a)},400);
+ }).catch(function(e){toast('⚠️ '+e.message)});
+}
+
+/* ---------- GERADOR DOCX (modelo GuimasCar, 11 cláusulas) ---------- */
+function montarDocx(ct,carro){
+ var D=window.docx;
+ var loc=LOCADORES[ct.locadorId]||{nome:ct.locadorNome,cpf:'',rg:''};
+ var lt=ct.locatario;
+ var W=D.WidthType.DXA,TOTAL=9640;
+ function run(t,opt){opt=opt||{};return new D.TextRun({text:t,bold:!!opt.b,size:opt.sz||21,font:'Calibri'})}
+ function par(t,opt){opt=opt||{};return new D.Paragraph({children:[run(t,opt)],alignment:opt.center?D.AlignmentType.CENTER:D.AlignmentType.LEFT,spacing:{after:opt.after==null?80:opt.after,before:opt.before||0}})}
+ function parRuns(runs,opt){opt=opt||{};return new D.Paragraph({children:runs,spacing:{after:opt.after==null?80:opt.after}})}
+ function cell(paras,w,shade){
+  return new D.TableCell({children:paras,width:{size:w,type:W},shading:shade?{type:D.ShadingType.CLEAR,fill:'D9D9D9'}:undefined,margins:{top:80,bottom:80,left:120,right:120}});
+ }
+ function headerBar(txt){
+  return new D.Table({columnWidths:[TOTAL],width:{size:TOTAL,type:W},rows:[new D.TableRow({children:[cell([par(txt,{b:true,center:true,after:0})],TOTAL,true)]})]});
+ }
+ function box(paras){
+  return new D.Table({columnWidths:[TOTAL],width:{size:TOTAL,type:W},rows:[new D.TableRow({children:[cell(paras,TOTAL)]})]});
+ }
+ function esp(){return par('',{after:60})}
+ /* identificação */
+ var meio=TOTAL/2;
+ var idTable=new D.Table({columnWidths:[meio,meio],width:{size:TOTAL,type:W},rows:[new D.TableRow({children:[
+  cell([par('LOCADOR',{b:true}),par('Nome: '+loc.nome),par('CPF: '+loc.cpf),par('RG / Doc: '+loc.rg),par('Endereço: '+LOCADOR_END),par('CEP: '+LOCADOR_CEP)],meio),
+  cell([par('LOCATÁRIO',{b:true}),par('Nome: '+lt.nome),par('CPF: '+lt.cpf),par('RG / Doc: '+lt.rg),par('Endereço: '+lt.endereco),par('CEP: '+lt.cep),par('Telefone: '+lt.tel)],meio)
+ ]})]});
+ /* tabela do veículo */
+ var vw1=3200,vw2=TOTAL-3200-240;
+ function vrow(a,b){return new D.TableRow({children:[cell([par(a,{after:0})],vw1),cell([par(b,{b:true,after:0})],vw2)]})}
+ var vehTable=new D.Table({columnWidths:[vw1,vw2],width:{size:vw1+vw2,type:W},rows:[
+  vrow('Modelo',carro.nome+' '+carro.motor),
+  vrow('Ano Fabricação/Modelo',carro.ano),
+  vrow('Placa',fmtPlaca(carro.placa)),
+  vrow('Chassi',carro.chassi),
+  vrow('Quilometragem Inicial',fmtKm(ct.kmInicial)+' KM'),
+  vrow('Acessórios',ct.acessorios),
+  vrow('Combustíveis',ct.combustiveis||carro.combustivel)
+ ]});
+ var pixParts=ct.pix.split('/').map(function(x){return x.trim()});
+ var docChildren=[
+  par('CONTRATO PARTICULAR DE LOCAÇÃO DE VEÍCULO AUTOMOTOR',{b:true,center:true,sz:26,after:160}),
+  headerBar('IDENTIFICAÇÃO DAS PARTES CONTRATANTES'),idTable,esp(),
+  headerBar('CLÁUSULA PRIMEIRA – DO OBJETO'),
+  box([par('1.1. O presente contrato tem como objeto a locação do veículo de propriedade do LOCADOR, com as seguintes características:'),vehTable,esp(),
+   par('1.2. O valor de referência de mercado do veículo para fins deste contrato é fixado em '+moedaExtenso(carro.valorRef)+'.')]),esp(),
+  headerBar('CLÁUSULA SEGUNDA – DO PRAZO E DA RENOVAÇÃO'),
+  box([par('2.1. A locação terá início em '+dataLonga(ct.inicio)+' e término previsto para '+dataLonga(ct.fim)+'.'),
+   par('2.2. O contrato poderá ser renovado automaticamente por igual período (3 meses), desde que haja interesse mútuo manifestado por escrito ou meio eletrônico (WhatsApp/E-mail) com antecedência mínima de 15 (quinze) dias, ocasião em que os valores poderão ser reajustados.')]),esp(),
+  headerBar('CLÁUSULA TERCEIRA – DO PREÇO E FORMA DE PAGAMENTO'),
+  box([par('3.1. O valor do aluguel semanal é de '+moedaExtenso(ct.semanal)+'.'),
+   par('3.2. O pagamento deverá ser efetuado semanalmente, todas as Quartas-feiras até às 12:00h, mediante depósito ou transferência PIX para:'),
+   par('▪ Banco: '+(pixParts[0]||'')),par('▪ Favorecido: '+(pixParts[1]||'')),par('▪ Chave PIX (CPF): '+(pixParts[2]||'')),
+   par('3.3. Do Atraso: O não pagamento no prazo estipulado acarretará a cobrança de multa diária de '+moedaExtenso(ct.multaDiaria)+' por dia de atraso, limitando-se ao domingo da semana corrente.'),
+   par('Parágrafo Único: Caso o pagamento não seja regularizado até o domingo, o LOCATÁRIO obriga-se a devolver o veículo na segunda-feira subsequente, às 07:30h, sob pena de configuração de apropriação indébita e autorização para bloqueio imediato do veículo via rastreador.'),
+   par('3.4. '+ct.cl34.replace(/^3\.4\.?\s*/,'')),
+   par('Observação: Em caso de rescisão antecipada por culpa do LOCATÁRIO, este valor não será reembolsado nem utilizado para abater dívidas, sendo retido a título de penalidade.')]),esp(),
+  headerBar('CLÁUSULA QUARTA – DA GARANTIA (CAUÇÃO)'),
+  box([par('4.1. O LOCATÁRIO entrega neste ato, a título de CAUÇÃO, a quantia de '+moedaExtenso(ct.caucao)+'.'),
+   par('4.2. Finalidade da Caução: Este valor visa garantir prioritariamente o pagamento da Franquia do Seguro em caso de sinistro.'),
+   par('4.2.1. Em caso de sinistro com acionamento do seguro, se o valor da franquia for superior à caução, o LOCATÁRIO deverá complementar a diferença imediatamente.'),
+   par('4.3. Devolução: Não havendo avarias, multas, sinistros ou pendências financeiras, a caução será devolvida ao LOCATÁRIO no prazo de 30 (trinta) dias após o término do contrato, tempo necessário para verificação de multas de trânsito tardias.'),
+   par('4.4. Perda da Caução: O valor será retido integralmente em favor do LOCADOR nos casos de:'),
+   par('▪ Roubo/Furto onde o veículo não seja recuperado (para cobrir despesas administrativas/franquia);'),
+   par('▪ Rescisão contratual motivada por infração do LOCATÁRIO;'),
+   par('▪ Danos mecânicos ou estéticos não reparados pelo LOCATÁRIO.')]),esp(),
+  headerBar('CLÁUSULA QUINTA – DAS OBRIGAÇÕES E USO DO VEÍCULO'),
+  box([par('5.1. O veículo será utilizado exclusivamente dentro dos limites do Estado do Rio de Janeiro e somente pelo LOCATÁRIO identificado neste contrato. É expressamente vedada a sublocação, empréstimo ou cessão a terceiros.'),
+   par('5.2. Da Vistoria Quinzenal: O LOCATÁRIO obriga-se a apresentar o veículo para vistoria quinzenal todas as Quartas-feiras, no período da manhã, em local indicado pelo LOCADOR.'),
+   par('5.3. Deveres de Conservação: O LOCATÁRIO deve zelar pelo veículo como se fosse seu, guardando-o em local seguro (garagem ou estacionamento fechado) durante o pernoite.')]),esp(),
+  headerBar('CLÁUSULA SEXTA – DA MANUTENÇÃO E CONSERVAÇÃO'),
+  box([par('Fica estabelecido o seguinte regime de responsabilidade sobre as manutenções, considerando que o veículo é entregue com todos os filtros e óleos trocados:'),
+   par('A) Manutenção Compartilhada (50% LOCADOR / 50% LOCATÁRIO): Todas as manutenções mecânicas, elétricas, suspensão, freios, pneus e demais peças decorrentes do desgaste natural do uso ou quebras imprevistas serão custeadas na proporção de 50% para o LOCADOR e 50% para o LOCATÁRIO.'),
+   par('▪ Procedimento: O LOCATÁRIO deve informar o problema antes da execução e o serviço deve ser realizado por mecânico indicado ou aprovado pelo LOCADOR.'),
+   par('B) Manutenção Exclusiva do LOCATÁRIO (100%): Compete exclusivamente ao LOCATÁRIO arcar com o custo integral dos seguintes itens de consumo periódico, visto que recebeu o veículo com estes itens novos/trocados:'),
+   par('▪ Troca de óleo do motor;'),par('▪ Filtro de óleo;'),par('▪ Filtro de ar do motor;'),
+   par('▪ Filtro de combustível;'),par('▪ Filtro de cabine (ar-condicionado);'),par('▪ Refil da bomba de combustível.'),
+   par('C) Danos por Mau Uso: Qualquer dano causado comprovadamente por negligência, imperícia ou imprudência (ex: condução perigosa, queda em buracos severos que danifiquem rodas/suspensão fora do desgaste natural, falta de água/óleo) será de responsabilidade integral (100%) do LOCATÁRIO.'),
+   par('D) Oficina: Todas as manutenções, inclusive as de responsabilidade do LOCATÁRIO, deverão ser executadas em oficina designada pelo LOCADOR.')]),esp(),
+  headerBar('CLÁUSULA SÉTIMA – DOS SINISTROS E SEGURO'),
+  box([par('7.1. O veículo possui seguro contratado pelo LOCADOR. No entanto, a existência do seguro não isenta o LOCATÁRIO de responsabilidade em casos de dolo ou culpa grave.'),
+   par('7.2. O LOCATÁRIO será integralmente responsável (civil e criminalmente) e arcará com todos os prejuízos (inclusive o valor do carro, se o seguro negar a cobertura) caso o sinistro ocorra sob as seguintes condições:'),
+   par('▪ Embriaguez ao volante ou uso de substâncias tóxicas;'),par('▪ Excesso de velocidade ou direção perigosa;'),
+   par('▪ Fuga do local do acidente;'),par('▪ Condução por pessoa não autorizada neste contrato.'),
+   par('7.3. Lucros Cessantes: Durante o período em que o veículo estiver parado para conserto por culpa do LOCATÁRIO (acidente ou mau uso), o valor das diárias continuará sendo cobrado normalmente.')]),esp(),
+  headerBar('CLÁUSULA OITAVA – DAS INFRAÇÕES DE TRÂNSITO (MULTAS)'),
+  box([par('8.1. O LOCATÁRIO assume inteira responsabilidade por todas as multas de trânsito decorrentes de infrações cometidas no período em que estiver com a posse do veículo.'),
+   par('8.2. O LOCATÁRIO obriga-se a fornecer seus dados para a Indicação do Real Infrator imediatamente após a notificação.'),
+   par('8.3. O valor da multa deverá ser pago/reembolsado ao LOCADOR até a semana posterior ao recebimento da notificação, independentemente de recurso.')]),esp(),
+  headerBar('CLÁUSULA NONA – DA RESCISÃO E PENALIDADES'),
+  box([par('9.1. O contrato poderá ser rescindido de pleno direito pelo LOCADOR, com exigência de devolução imediata do bem e retenção da caução, nos seguintes casos:'),
+   par('▪ Atraso no pagamento semanal;'),par('▪ Não apresentação do veículo para vistoria quinzenal;'),
+   par('▪ Ocorrência de mais de 02 (duas) multas de trânsito no mesmo mês;'),par('▪ Manutenção negligenciada ou avarias não comunicadas.'),
+   par('9.2. Caso o LOCATÁRIO deseje rescindir o contrato antes do prazo final ('+dataBR(ct.fim)+'), deverá pagar multa contratual no valor de '+moedaExtenso(ct.multaRescisao)+', salvo se a rescisão partir do LOCADOR sem culpa do Locatário.')]),esp(),
+  headerBar('CLÁUSULA DÉCIMA – DA DEVOLUÇÃO DO VEÍCULO'),
+  box([par('10.1. Ao final do contrato, o veículo deverá ser devolvido nas mesmas condições de recebimento: limpo, higienizado, e sem avarias.'),
+   par('10.2. A não devolução do veículo na data estipulada configurará Apropriação Indébita (Art. 168 do Código Penal), autorizando o LOCADOR a solicitar Busca e Apreensão e registro de ocorrência policial.')]),esp(),
+  headerBar('CLÁUSULA DÉCIMA PRIMEIRA – DO FORO'),
+  box([par('As partes elegem o Foro da Comarca de São Gonçalo/RJ para dirimir quaisquer dúvidas ou litígios oriundos deste contrato, renunciando a qualquer outro.')]),esp(),
+  par('E, por estarem assim justos e contratados, assinam o presente em 02 (duas) vias de igual teor e forma.',{after:160}),
+  par('São Gonçalo, '+dataLonga(ct.inicio)+'.',{after:400}),
+  new D.Table({columnWidths:[meio,meio],width:{size:TOTAL,type:W},rows:[
+   new D.TableRow({children:[cell([par('LOCADOR',{b:true,center:true})],meio),cell([par('LOCATÁRIO',{b:true,center:true})],meio)]}),
+   new D.TableRow({children:[
+    cell([par('',{after:300}),par('________________________________',{center:true,after:0}),par(loc.nome,{center:true,after:0}),par('CPF: '+loc.cpf,{center:true,after:0})],meio),
+    cell([par('',{after:300}),par('________________________________',{center:true,after:0}),par(lt.nome,{center:true,after:0}),par('CPF: '+lt.cpf,{center:true,after:0})],meio)
+   ]})
+  ]})
+ ];
+ var doc=new D.Document({
+  sections:[{
+   properties:{page:{margin:{top:900,bottom:900,left:1000,right:1000}}},
+   footers:{default:new D.Footer({children:[new D.Paragraph({children:[new D.TextRun({text:'GuimasCar | Locação de Veículos',size:18,color:'666666',font:'Calibri'})],alignment:D.AlignmentType.CENTER})]})},
+   children:docChildren
+  }]
+ });
+ return D.Packer.toBlob(doc);
+}
+
+/* ===================== CONFIG + IMPORTAÇÃO INICIAL ===================== */
+function openCfg(){
+ openSheet('<h3>⚙️ Configurações</h3>'+
+ '<div class="kv"><b>Versão</b><span>v'+APP_VER+' · '+APP_DATE+'</span>'+
+ '<b>Chave</b><span>'+esc(localStorage.getItem('gestao_famkey')||'—')+'</span>'+
+ '<b>Carros</b><span>'+Object.keys(S?S.carros:{}).length+'</span>'+
+ '<b>Contratos</b><span>'+Object.keys(S?S.contratos:{}).length+'</span></div>'+
+ '<div class="sect">Importação inicial de documentos</div>'+
+ '<p class="sub">Selecione de uma vez os arquivos do pacote (CRLV-PLACA.pdf, CONTRATO-PLACA.docx, CONTRATOPDF-PLACA.pdf). O app encaixa cada um no carro certo.</p>'+
+ '<input type="file" id="impIn" multiple accept=".pdf,.docx">'+
+ '<button class="btn" onclick="importar()">☁️ Enviar para a nuvem</button>'+
+ '<div class="filestat" id="impStat"></div>'+
+ '<div class="sect">Conexão</div>'+
+ '<button class="btn sec" onclick="closeSheet();pedirChave()">🔑 Trocar chave da família</button>'+
+ '<button class="btn sec" onclick="checkUpdate();toast(\'🔎 Verificando atualização…\')">⬆️ Verificar atualização</button>'+
+ '<button class="btn sec" onclick="closeSheet()">Fechar</button>');
+}
+function importar(){
+ var inp=document.getElementById('impIn');
+ if(!inp.files||!inp.files.length){toast('Selecione os arquivos');return}
+ var files=Array.prototype.slice.call(inp.files),i=0,ok=0,falha=[];
+ var stat=document.getElementById('impStat');
+ function prox(){
+  if(i>=files.length){
+   save();render();
+   stat.innerHTML+='<br><b>✅ Concluído: '+ok+' enviados'+(falha.length?' · ⚠️ ignorados: '+falha.join(', '):'')+'</b>';
+   toast('☁️ Importação concluída');return;
+  }
+  var f=files[i++],m,path=null,marca=null;
+  var nome=f.name.replace(/\.pdf$|\.docx$/i,'');
+  if(m=nome.match(/^CRLV-([A-Z0-9]{7})$/i)){var pk=m[1].toUpperCase();if(S.carros[pk]){path=pk+'/crlv';marca=function(){S.carros[pk].temCrlv=true}}}
+  else if(m=nome.match(/^CONTRATOPDF-([A-Z0-9]{7})$/i)){var pk2=m[1].toUpperCase(),c2=S.carros[pk2];if(c2&&c2.contratoVigenteId){path=pk2+'/ct/'+c2.contratoVigenteId+'/pdf';marca=function(){S.contratos[c2.contratoVigenteId].temPdf=true}}}
+  else if(m=nome.match(/^CONTRATO-([A-Z0-9]{7})$/i)){var pk3=m[1].toUpperCase(),c3=S.carros[pk3];if(c3&&c3.contratoVigenteId){path=pk3+'/ct/'+c3.contratoVigenteId+'/docx';marca=function(){S.contratos[c3.contratoVigenteId].temDocx=true}}}
+  if(!path){falha.push(f.name);stat.innerHTML+='⚠️ '+esc(f.name)+' não reconhecido<br>';prox();return}
+  var r=new FileReader();
+  r.onload=function(){
+   var b64=String(r.result).split(',')[1];
+   DOCSREF.child(path).set({b64:b64,name:f.name,mime:f.type||'application/pdf',size:f.size,em:Date.now()}).then(function(){
+    ok++;if(marca)marca();stat.innerHTML='☁️ '+ok+'/'+files.length+' — '+esc(f.name)+'<br>'+stat.innerHTML;prox();
+   }).catch(function(e){falha.push(f.name);stat.innerHTML+='⚠️ '+esc(f.name)+': '+esc(e.message)+'<br>';prox()});
+  };
+  r.readAsDataURL(f);
+ }
+ stat.innerHTML='Enviando '+files.length+' arquivos…<br>';
+ prox();
+}
+</script>
+
+<script>
+var SEED={"carros":{"FHP4B47":{"placa":"FHP-4B47","nome":"Versa 2014","modeloCRLV":"I/NISSAN VERSA 16SL FLEX","motor":"","motorCodigo":"HR16811120G","ano":"2013/2014","chassi":"3N1CN7AD8EK397369","renavam":"00551426829","cor":"Preta","potencia":"111CV/1598","combustivel":"Flex / GNV","proprietario":"Michelli (mãe)","locadorId":"michelli","exercicioCRLV":"2025","kmAtual":0,"valorRef":41000.0,"motorista":"ANDRE LUIZ PATRIARCA DA COSTA MENEZES","status":"ativo","semanalPadrao":700.0,"caucaoPadrao":2200.0,"proximasTrocas":[],"contratoVigenteId":"ct_FHP4B47_1","temCrlv":true},"LQZ6C72":{"placa":"LQZ-6C72","nome":"Fiesta 2014","modeloCRLV":"FORD/FIESTA FLEX","motor":"1.0 8v Rocam","motorCodigo":"SM9AE8062678","ano":"2013/2014","chassi":"9BFZF55A2E8062678","renavam":"00591403021","cor":"Preta","potencia":"73CV/999","combustivel":"Flex / GNV","proprietario":"Michelli (mãe)","locadorId":"michelli","exercicioCRLV":"2025","kmAtual":0,"valorRef":0,"motorista":"","status":"parado","semanalPadrao":0,"caucaoPadrao":0,"proximasTrocas":[],"contratoVigenteId":"","temCrlv":true},"OYZ9079":{"placa":"OYZ-9079","nome":"Cobalt 2015","modeloCRLV":"CHEVROLET/COBALT 1.4 LT","motor":"","motorCodigo":"BK1103228","ano":"2014/2015","chassi":"9BGJB69X0FB102146","renavam":"01012563054","cor":"Branca","potencia":"102CV/1400","combustivel":"Flex / GNV","proprietario":"Marinete (avó)","locadorId":"marinete","exercicioCRLV":"2026","kmAtual":0,"valorRef":45000.0,"motorista":"BRUNO DOS SANTOS BATISTA","status":"ativo","semanalPadrao":700.0,"caucaoPadrao":2000.0,"proximasTrocas":[],"contratoVigenteId":"ct_OYZ9079_1","temCrlv":true},"PVC8G42":{"placa":"PVC-8G42","nome":"Sandero 2015","modeloCRLV":"RENAULT/SANDERO EXPR 16","motor":"","motorCodigo":"K7MM764Q139858","ano":"2014/2015","chassi":"93Y5SRD64FJ550573","renavam":"01028269215","cor":"Prata","potencia":"106CV/1597","combustivel":"Flex / GNV","proprietario":"Hudson","locadorId":"hudson","exercicioCRLV":"2026","kmAtual":0,"valorRef":40000.0,"motorista":"JORGE EDUARDO SOARES DE ARAUJO","status":"ativo","semanalPadrao":700.0,"caucaoPadrao":2200.0,"proximasTrocas":[],"contratoVigenteId":"ct_PVC8G42_1","temCrlv":true},"AZH5D13":{"placa":"AZH-5D13","nome":"Ka Sedan 2015","modeloCRLV":"FORD/KA SE 1.5 SD","motor":"1.5 16v","motorCodigo":"U2KAF8197855","ano":"2015/2015","chassi":"9BFZH54J8F8197855","renavam":"01037135790","cor":"Prata","potencia":"110CV/1600","combustivel":"Etanol / GNV 16m³","proprietario":"Hudson","locadorId":"hudson","exercicioCRLV":"2026","kmAtual":192347,"valorRef":38000.0,"motorista":"HIGOR ULLRICH MACEDO","status":"ativo","semanalPadrao":800.0,"caucaoPadrao":2200.0,"proximasTrocas":[],"contratoVigenteId":"ct_AZH5D13_1","temCrlv":true},"LSK2B23":{"placa":"LSK-2B23","nome":"Siena 2016","modeloCRLV":"FIAT/SIENA ESSENCE 1.6","motor":"1.6 16v","motorCodigo":"310A50112742286","ano":"2015/2016","chassi":"9BD19716TG3264610","renavam":"01076312761","cor":"Branca","potencia":"117CV/1600","combustivel":"Flex / GNV","proprietario":"Michelli (mãe)","locadorId":"michelli","exercicioCRLV":"2026","kmAtual":0,"valorRef":0,"motorista":"","status":"parado","semanalPadrao":0,"caucaoPadrao":0,"proximasTrocas":[],"contratoVigenteId":"","temCrlv":true},"PWL8H97":{"placa":"PWL-8H97","nome":"Logan Expr 16 M","modeloCRLV":"RENAULT/LOGAN EXPR 16 M","motor":"","motorCodigo":"K7MM764Q201838","ano":"2015/2016","chassi":"93Y4SRD64GJ977625","renavam":"01058800687","cor":"Prata","potencia":"106CV/1600","combustivel":"Flex / GNV","proprietario":"Hudson","locadorId":"hudson","exercicioCRLV":"2025","kmAtual":0,"valorRef":39000.0,"motorista":"SAMUEL LUIZ EDUARDO CASTRO MIRANDA","status":"ativo","semanalPadrao":700.0,"caucaoPadrao":2200.0,"proximasTrocas":[],"contratoVigenteId":"ct_PWL8H97_1","temCrlv":true},"GBV3B96":{"placa":"GBV-3B96","nome":"Logan 2016","modeloCRLV":"RENAULT/LOGAN EXPR 16 M","motor":"1.6 8v","motorCodigo":"K7MM764Q216043","ano":"2015/2016","chassi":"93Y4SRD64GJ187079","renavam":"01075259875","cor":"Branca","potencia":"106CV/1598","combustivel":"Flex / GNV","proprietario":"Hudson","locadorId":"hudson","exercicioCRLV":"2026","kmAtual":407400,"valorRef":36000.0,"motorista":"VANDERLEI NUNES ELOY","status":"ativo","semanalPadrao":800.0,"caucaoPadrao":2200.0,"proximasTrocas":[],"contratoVigenteId":"ct_GBV3B96_1","temCrlv":true},"PXO9H80":{"placa":"PXO-9H80","nome":"Logan 2016","modeloCRLV":"RENAULT/LOGAN EXPR 16 M","motor":"1.6 8v","motorCodigo":"K7MM764Q233257","ano":"2016/2016","chassi":"93Y4SRD64GJ318837","renavam":"01082370557","cor":"Prata","potencia":"106CV/1598","combustivel":"Etanol / GNV 16m³","proprietario":"Hudson","locadorId":"hudson","exercicioCRLV":"2025","kmAtual":280950,"valorRef":36000.0,"motorista":"GILBERTO TENORIO OLIVEIRA","status":"ativo","semanalPadrao":800.0,"caucaoPadrao":2000.0,"proximasTrocas":[],"contratoVigenteId":"ct_PXO9H80_1","temCrlv":true},"KYI8I20":{"placa":"KYI-8I20","nome":"Logan 2017","modeloCRLV":"RENAULT/LOGAN DYNA 16 M","motor":"","motorCodigo":"K7MM764Q258571","ano":"2016/2017","chassi":"93Y4SRD64HJ556039","renavam":"01101536036","cor":"Branca","potencia":"106CV/1598","combustivel":"Flex / GNV","proprietario":"Hudson","locadorId":"hudson","exercicioCRLV":"2026","kmAtual":0,"valorRef":40000.0,"motorista":"ALESSANDRO PACHECO DE OLIVEIRA","status":"ativo","semanalPadrao":700.0,"caucaoPadrao":2200.0,"proximasTrocas":[],"contratoVigenteId":"ct_KYI8I20_1","temCrlv":true},"PYO4A55":{"placa":"PYO-4A55","nome":"Sandero 2017","modeloCRLV":"RENAULT/SANDERO EXPR 10","motor":"","motorCodigo":"D4DJ754Q196911","ano":"2016/2017","chassi":"93Y5SRD04HJ572182","renavam":"01101551175","cor":"Prata","potencia":"80CV/998","combustivel":"Flex / GNV","proprietario":"Hudson","locadorId":"hudson","exercicioCRLV":"2026","kmAtual":0,"valorRef":40000.0,"motorista":"EDSON DE MARLON JOAQUIM PERES","status":"ativo","semanalPadrao":750.0,"caucaoPadrao":2000.0,"proximasTrocas":[],"contratoVigenteId":"ct_PYO4A55_1","temCrlv":true},"KXJ8F38":{"placa":"KXJ-8F38","nome":"Logan 2017","modeloCRLV":"RENAULT/LOGAN EXP 16 SCE","motor":"","motorCodigo":"H4ME734Q006757","ano":"2016/2017","chassi":"93Y4SRFH4HJ666638","renavam":"01112199273","cor":"Branca","potencia":"118CV/1598","combustivel":"Flex / GNV","proprietario":"Fábio","locadorId":"fabio","exercicioCRLV":"2026","kmAtual":0,"valorRef":50000.0,"motorista":"ELCIMAR DA SILVA COUTO","status":"ativo","semanalPadrao":700.0,"caucaoPadrao":2200.0,"proximasTrocas":[],"contratoVigenteId":"ct_KXJ8F38_1","temCrlv":true},"LSY7B47":{"placa":"LSY-7B47","nome":"Logan 2017","modeloCRLV":"RENAULT/LOGAN EXP 16 SCE","motor":"","motorCodigo":"H4ME734Q014018","ano":"2017/2017","chassi":"93Y4SRFH4HJ778565","renavam":"01114798506","cor":"Branca","potencia":"118CV/1598","combustivel":"Flex / GNV","proprietario":"Hudson","locadorId":"hudson","exercicioCRLV":"2026","kmAtual":0,"valorRef":41000.0,"motorista":"REINALDO FONSECA SCHMITZ","status":"ativo","semanalPadrao":750.0,"caucaoPadrao":2200.0,"proximasTrocas":[],"contratoVigenteId":"ct_LSY7B47_1","temCrlv":true},"PZT0F79":{"placa":"PZT-0F79","nome":"Ka Sedan 2018","modeloCRLV":"FORD/KA SE 1.5 SD B","motor":"1.5 16v","motorCodigo":"U2KAJ8017592","ano":"2017/2018","chassi":"9BFZH54J1J8017592","renavam":"01121281025","cor":"Prata","potencia":"110CV/1498","combustivel":"Etanol / GNV 16m³","proprietario":"Hudson","locadorId":"hudson","exercicioCRLV":"2026","kmAtual":139890,"valorRef":43000.0,"motorista":"GIOVANE SANTOS DA COSTA","status":"ativo","semanalPadrao":800.0,"caucaoPadrao":2000.0,"proximasTrocas":[],"contratoVigenteId":"ct_PZT0F79_1","temCrlv":true},"IXY2H87":{"placa":"IXY-2H87","nome":"Uno Way 2018","modeloCRLV":"FIAT/UNO WAY 1.0 E","motor":"1.0 6v","motorCodigo":"MODELO","ano":"2017/2018","chassi":"9BD195B6NJ0810265","renavam":"01123010690","cor":"Branca","potencia":"77CV/1000","combustivel":"Flex / GNV","proprietario":"Hudson","locadorId":"hudson","exercicioCRLV":"2026","kmAtual":0,"valorRef":0,"motorista":"","status":"parado","semanalPadrao":0,"caucaoPadrao":0,"proximasTrocas":[],"contratoVigenteId":"","temCrlv":true},"QMW8H90":{"placa":"QMW-8H90","nome":"Uno 2018","modeloCRLV":"FIAT/UNO DRIVE 1.0","motor":"","motorCodigo":"MODELO","ano":"2017/2018","chassi":"9BD195B4NJ0824578","renavam":"01129195055","cor":"Prata","potencia":"77CV/999","combustivel":"Flex / GNV","proprietario":"Hudson","locadorId":"hudson","exercicioCRLV":"2026","kmAtual":0,"valorRef":39000.0,"motorista":"MARCELO LOPES DOS SANTOS","status":"ativo","semanalPadrao":750.0,"caucaoPadrao":2000.0,"proximasTrocas":[],"contratoVigenteId":"ct_QMW8H90_1","temCrlv":true},"QEK3D83":{"placa":"QEK-3D83","nome":"Argo 2018","modeloCRLV":"FIAT/ARGO DRIVE 1.0","motor":"1.0 6v","motorCodigo":"MODELO","ano":"2017/2018","chassi":"9BD358A4NJYH49958","renavam":"01143184880","cor":"Branca","potencia":"77CV/1000","combustivel":"Etanol / GNV 10m³","proprietario":"Hudson","locadorId":"hudson","exercicioCRLV":"2026","kmAtual":143630,"valorRef":49000.0,"motorista":"EVERTON CLEITON DOS SANTOS LIMA","status":"ativo","semanalPadrao":850.0,"caucaoPadrao":2500.0,"proximasTrocas":[],"contratoVigenteId":"ct_QEK3D83_1","temCrlv":true},"IYZ7E28":{"placa":"IYZ-7E28","nome":"Cobalt 2019","modeloCRLV":"CHEVROLET/COBALT 18M LTZ","motor":"1.8 8v","motorCodigo":"GFN029550","ano":"2018/2019","chassi":"9BGJC6920KB153212","renavam":"01176506843","cor":"Prata","potencia":"111CV/1800","combustivel":"Etanol / GNV 16m³","proprietario":"Hudson","locadorId":"hudson","exercicioCRLV":"2026","kmAtual":63515,"valorRef":57000.0,"motorista":"EUGENIO DOS SANTOS","status":"ativo","semanalPadrao":850.0,"caucaoPadrao":2500.0,"proximasTrocas":[],"contratoVigenteId":"ct_IYZ7E28_1","temCrlv":true},"QQF8J26":{"placa":"QQF-8J26","nome":"Logan 2019","modeloCRLV":"RENAULT/LOGAN EXP 16 SCE","motor":"","motorCodigo":"H4ME734Q060833","ano":"2019/2019","chassi":"93Y4SRFH4KJ783391","renavam":"01183446508","cor":"Preta","potencia":"118CV/1600","combustivel":"Flex / GNV","proprietario":"Hudson","locadorId":"hudson","exercicioCRLV":"2025","kmAtual":0,"valorRef":44000.0,"motorista":"CARLOS ROBERTO REIS DE SOUZA FILHO","status":"ativo","semanalPadrao":800.0,"caucaoPadrao":2200.0,"proximasTrocas":[],"contratoVigenteId":"ct_QQF8J26_1","temCrlv":true},"LUH7G30":{"placa":"LUH-7G30","nome":"Mobi 2019","modeloCRLV":"FIAT/MOBI LIKE","motor":"1.0 8v","motorCodigo":"MODELO","ano":"2019/2019","chassi":"9BD341A5XKY613176","renavam":"01187906287","cor":"Branca","potencia":"75CV/1000","combustivel":"Flex","proprietario":"Hudson","locadorId":"hudson","exercicioCRLV":"2026","kmAtual":33753,"valorRef":44000.0,"motorista":"RAPHAEL DE SOUZA NESTADO","status":"ativo","semanalPadrao":800.0,"caucaoPadrao":2200.0,"proximasTrocas":[],"contratoVigenteId":"ct_LUH7G30_1","temCrlv":true},"LMX7B24":{"placa":"LMX-7B24","nome":"Grand Siena 2019","modeloCRLV":"FIAT/SIENA ATTRACTIV 1.4","motor":"","motorCodigo":"327A0113482466","ano":"2019/2019","chassi":"9BD19713HK3375280","renavam":"01196886293","cor":"Branca","potencia":"88CV/1400","combustivel":"Flex / GNV","proprietario":"Fábio","locadorId":"fabio","exercicioCRLV":"2026","kmAtual":126000,"valorRef":40000.0,"motorista":"LADI ALVES COELHO JUNIOR","status":"ativo","semanalPadrao":800.0,"caucaoPadrao":2200.0,"proximasTrocas":[],"contratoVigenteId":"ct_LMX7B24_1","temCrlv":true},"QUB5G52":{"placa":"QUB-5G52","nome":"Voyage 2020","modeloCRLV":"VW/VOYAGE 1.6L MB5","motor":"1.6 8v","motorCodigo":"CCRAV9897","ano":"2019/2020","chassi":"9BWDB45U6LT026058","renavam":"01195334394","cor":"Branca","potencia":"104CV/1598","combustivel":"Etanol / GNV 16m³","proprietario":"Fábio","locadorId":"fabio","exercicioCRLV":"2026","kmAtual":365194,"valorRef":49000.0,"motorista":"FABRICIO DOS SANTOS RIBEIRO","status":"ativo","semanalPadrao":850.0,"caucaoPadrao":2200.0,"proximasTrocas":[],"contratoVigenteId":"ct_QUB5G52_1","temCrlv":true},"QUB5B64":{"placa":"QUB-5B64","nome":"Onix 2019","modeloCRLV":"CHEVROLET/ONIX 1.0MT LT","motor":"1.0 8v","motorCodigo":"JTSSJ3143","ano":"2019/2019","chassi":"9BGKS48U0KG410614","renavam":"01195314407","cor":"Cinza","potencia":"80CV/999","combustivel":"Flex / GNV","proprietario":"Hudson","locadorId":"hudson","exercicioCRLV":"2026","kmAtual":103778,"valorRef":55000.0,"motorista":"HELTON GOMES DE OLIVEIRA","status":"ativo","semanalPadrao":800.0,"caucaoPadrao":2000.0,"proximasTrocas":[],"contratoVigenteId":"ct_QUB5B64_1","temCrlv":true},"LUO2B58":{"placa":"LUO-2B58","nome":"Cronos 2019","modeloCRLV":"I/FIAT CRONOS DRIVE 1.3","motor":"1.3 8v","motorCodigo":"MODELO","ano":"2019/2019","chassi":"8AP359A1DKU064412","renavam":"01208477690","cor":"Prata","potencia":"109CV/1300","combustivel":"Etanol / GNV 16m³","proprietario":"Hudson","locadorId":"hudson","exercicioCRLV":"2026","kmAtual":202442,"valorRef":60000.0,"motorista":"LUCAS SANTANA DE MELO","status":"ativo","semanalPadrao":850.0,"caucaoPadrao":2500.0,"proximasTrocas":[],"contratoVigenteId":"ct_LUO2B58_1","temCrlv":true},"RJZ1B66":{"placa":"RJZ-1B66","nome":"Mobi 2020","modeloCRLV":"FIAT/MOBI LIKE","motor":"1.0 8v","motorCodigo":"MODELO","ano":"2019/2020","chassi":"9BD341A5XLY660714","renavam":"01235959888","cor":"Branca","potencia":"75CV/1000","combustivel":"Flex","proprietario":"Hudson","locadorId":"hudson","exercicioCRLV":"2026","kmAtual":76710,"valorRef":45000.0,"motorista":"CHRISTIAN DA SILVA ALMEIDA","status":"ativo","semanalPadrao":800.0,"caucaoPadrao":2200.0,"proximasTrocas":[],"contratoVigenteId":"ct_RJZ1B66_1","temCrlv":true},"DVS7C98":{"placa":"DVS-7C98","nome":"Hilux 2020","modeloCRLV":"I/TOYOTA HILUX CDSRVA2GF","motor":"2.7 16v","motorCodigo":"2TRA755513DASP","ano":"2020/2020","chassi":"","renavam":"01239098992","cor":"Prata","potencia":"159CV/999","combustivel":"Flex / GNV","proprietario":"Hudson","locadorId":"hudson","exercicioCRLV":"2026","kmAtual":0,"valorRef":0,"motorista":"","status":"pessoal","semanalPadrao":0,"caucaoPadrao":0,"proximasTrocas":[],"contratoVigenteId":"","temCrlv":true},"RGB3E35":{"placa":"RGB-3E35","nome":"Mobi 2021","modeloCRLV":"FIAT/MOBI LIKE","motor":"1.0 8v","motorCodigo":"MODELO","ano":"2020/2021","chassi":"9BD341ACXMY706149","renavam":"01246775325","cor":"Prata","potencia":"75CV/999","combustivel":"Flex","proprietario":"Hudson","locadorId":"hudson","exercicioCRLV":"2026","kmAtual":84515,"valorRef":47000.0,"motorista":"CARLOS EDUARDO VILLELA SALDANHA","status":"ativo","semanalPadrao":800.0,"caucaoPadrao":2000.0,"proximasTrocas":[],"contratoVigenteId":"ct_RGB3E35_1","temCrlv":true},"RUK6I75":{"placa":"RUK-6I75","nome":"Argo 2023","modeloCRLV":"FIAT/ARGO DRIVE 1.0","motor":"1.0 6v","motorCodigo":"MODELO","ano":"2022/2023","chassi":"9BD358AFVPYM22053","renavam":"01320244715","cor":"Prata","potencia":"75CV/333","combustivel":"Flex","proprietario":"Hudson","locadorId":"hudson","exercicioCRLV":"2026","kmAtual":75630,"valorRef":65000.0,"motorista":"ROMULO DA SILVA RODRIGUES","status":"ativo","semanalPadrao":850.0,"caucaoPadrao":2500.0,"proximasTrocas":[],"contratoVigenteId":"ct_RUK6I75_1","temCrlv":true},"RVX9H52":{"placa":"RVX-9H52","nome":"Argo 2023","modeloCRLV":"FIAT/ARGO 1.0","motor":"1.0 6v","motorCodigo":"MODELO","ano":"2022/2023","chassi":"9BD358ACVPYM49097","renavam":"01333018417","cor":"Prata","potencia":"75CV/999","combustivel":"Flex","proprietario":"Hudson","locadorId":"hudson","exercicioCRLV":"2026","kmAtual":48912,"valorRef":62000.0,"motorista":"RICARDO BARRETO DE VASCONCELOS DE CARVALHO","status":"ativo","semanalPadrao":850.0,"caucaoPadrao":2500.0,"proximasTrocas":[],"contratoVigenteId":"ct_RVX9H52_1","temCrlv":true},"LMY2A63":{"placa":"LMY-2A63","nome":"Grand Siena 2019","modeloCRLV":"FIAT/SIENA ATTRACTIV 1.4","motor":"1.4 8v","motorCodigo":"327A0113486553","ano":"2019/2019","chassi":"9BD19713HK3377439","renavam":"01198091697","cor":"Branca","potencia":"88CV/1400","combustivel":"Etanol / GNV 16m³","proprietario":"Euromove (empresa do amigo)","locadorId":"fabio","exercicioCRLV":"2026","kmAtual":463337,"valorRef":47000.0,"motorista":"RODRIGO DE OLIVEIRA ROSA","status":"ativo","semanalPadrao":800.0,"caucaoPadrao":2200.0,"proximasTrocas":[],"contratoVigenteId":"ct_LMY2A63_1","temCrlv":true}},"contratos":{"ct_FHP4B47_1":{"id":"ct_FHP4B47_1","carro":"FHP4B47","origem":"importado","status":"vigente","locadorId":"michelli","locadorNome":"MICHELLI MESQUITA CONSTANTINO CORREA","locatario":{"nome":"ANDRE LUIZ PATRIARCA DA COSTA MENEZES","cpf":"137.250.087-10","rg":"257752337 DETRAN RJ.e CPF nº 137.2","endereco":"","cep":"24917-620","tel":""},"semanal":700.0,"caucao":2200.0,"multaDiaria":115,"multaRescisao":2200.0,"inicio":"2025-07-30","fim":"2025-11-05","kmInicial":0,"pix":"Inter / Fabio / 075.351.417-65","cl34":"semanal antecipado não poderá ser usado, perdendo junto ao calção","formato":"antigo-prosa","temDocx":true,"temPdf":true},"ct_OYZ9079_1":{"id":"ct_OYZ9079_1","carro":"OYZ9079","origem":"importado","status":"vigente","locadorId":"marinete","locadorNome":"MARINETE GUIMARÃES CORRÊA STAFFOCKER","locatario":{"nome":"BRUNO DOS SANTOS BATISTA","cpf":"100.248.567-38","rg":"121978555 DIC RJ e CPF nº 100.248.","endereco":"RuaRua Doutor Sergio Arouca 47 Jardim 04 - Nova Iguaçu - Rio de Janeiro - RJ","cep":"26292-335","tel":""},"semanal":700.0,"caucao":2000.0,"multaDiaria":115,"multaRescisao":2000.0,"inicio":"2025-10-29","fim":"2026-02-04","kmInicial":0,"pix":"Inter / Fabio / 075.351.417-65","cl34":"semanal antecipado não poderá ser usado, perdendo junto ao calção","formato":"antigo-prosa","temDocx":true,"temPdf":true},"ct_PVC8G42_1":{"id":"ct_PVC8G42_1","carro":"PVC8G42","origem":"importado","status":"vigente","locadorId":"hudson","locadorNome":"HUDSON CONSTANTINO GUIMARÃES CORRÊA","locatario":{"nome":"JORGE EDUARDO SOARES DE ARAUJO","cpf":"011.188.057-20","rg":"091052167 DIC RJ e CPF nº 011.188.","endereco":"Rua salo Brand 120 casa 08 - Ilha da Conceição - Niterói - RJ","cep":"24050-070","tel":""},"semanal":700.0,"caucao":2200.0,"multaDiaria":115,"multaRescisao":2200.0,"inicio":"2025-06-06","fim":"2025-09-10","kmInicial":0,"pix":"Inter / Fabio / 075.351.417-65","cl34":"semanal antecipado não poderá ser usado, perdendo junto ao calção","formato":"antigo-prosa","temDocx":true,"temPdf":true},"ct_AZH5D13_1":{"id":"ct_AZH5D13_1","carro":"AZH5D13","origem":"importado","status":"vigente","locadorId":"hudson","locadorNome":"HUDSON CONSTANTINO GUIMARAES CORREA","locatario":{"nome":"HIGOR ULLRICH MACEDO","cpf":"169.694.537-23","rg":"RG 16969453723– DETRAN/RJ | CNH 08157746231 (val. 07/12/2031)","endereco":"Rua Tocantins, LT 08 QD 11, Rodovia Amaral Peixoto, Marica/RJ","cep":"24.900-001","tel":"(21) 98984-6507"},"semanal":800.0,"caucao":2200.0,"multaDiaria":115.0,"multaRescisao":2200.0,"inicio":"2026-07-02","fim":"2026-10-07","kmInicial":192347,"pix":"Inter / Fabio / 075.351.417-65","cl34":"No ato da assinatura, o LOCATÁRIO pagará a semana final do contrato de forma antecipada (R$ 800,00). da seguinte forma: R$ 800,00 em 05/07/2026 (Domingo);","formato":"atual-tabela","temDocx":true,"temPdf":true},"ct_PWL8H97_1":{"id":"ct_PWL8H97_1","carro":"PWL8H97","origem":"importado","status":"vigente","locadorId":"hudson","locadorNome":"HUDSON CONSTANTINO GUIMARÃES CORRÊA","locatario":{"nome":"SAMUEL LUIZ EDUARDO CASTRO MIRANDA","cpf":"110.817.217-23","rg":"209291483 DETRAN RJ e CPF nº 110.8","endereco":"Rua Itaocara, 366, AP 309 - Trindade - São Gonçalo - RJ","cep":"24.456-595","tel":""},"semanal":700.0,"caucao":2200.0,"multaDiaria":115,"multaRescisao":2200.0,"inicio":"2025-01-26","fim":"2025-04-30","kmInicial":0,"pix":"Inter / Fabio / 075.351.417-65","cl34":"semanal antecipado refere-se ao pagamento da última semana do contrato","formato":"antigo-prosa","temDocx":true,"temPdf":true},"ct_GBV3B96_1":{"id":"ct_GBV3B96_1","carro":"GBV3B96","origem":"importado","status":"vigente","locadorId":"hudson","locadorNome":"HUDSON CONSTANTINO GUIMARAES CORREA","locatario":{"nome":"VANDERLEI NUNES ELOY","cpf":"026.375.227-55","rg":"089954044 – DETRAN/RJ e CNH nº 06799137 | CNH nº 06799137805 (Validade 05/10/2028)","endereco":"Rua Clodomiro Antunes da Costa , 817, Arsenal, São Gonçalo/RJ","cep":"24.751-360.","tel":"(21) 96880-1644"},"semanal":800.0,"caucao":2200.0,"multaDiaria":115.0,"multaRescisao":2200.0,"inicio":"2026-05-20","fim":"2026-08-26","kmInicial":407400,"pix":"Inter / Fabio / 075.351.417-65","cl34":"No ato da assinatura, o LOCATÁRIO pagará a semana final do contrato de forma antecipada (R$ 800,00).","formato":"intermediario","temDocx":true,"temPdf":true},"ct_PXO9H80_1":{"id":"ct_PXO9H80_1","carro":"PXO9H80","origem":"importado","status":"vigente","locadorId":"hudson","locadorNome":"HUDSON CONSTANTINO GUIMARAES CORREA","locatario":{"nome":"GILBERTO TENORIO OLIVEIRA","cpf":"141.281.567-36","rg":"4693039S0030 – MTPS/RJ e CNH nº 06749 | CNH nº 06749846802 (Validade 23/06/2026)","endereco":"Rua na Guilherme Veloso, 119, Praca Seca, Rio de Janeiro/RJ","cep":"22.733-020.","tel":"(21) 99708-0393"},"semanal":800.0,"caucao":2000.0,"multaDiaria":115.0,"multaRescisao":2000.0,"inicio":"2026-02-12","fim":"2026-05-13","kmInicial":280950,"pix":"Inter / Fabio / 075.351.417-65","cl34":"No ato da assinatura, o LOCATÁRIO pagará a semana final do contrato de forma antecipada (R$ 800,00).","formato":"intermediario","temDocx":true,"temPdf":true},"ct_KYI8I20_1":{"id":"ct_KYI8I20_1","carro":"KYI8I20","origem":"importado","status":"vigente","locadorId":"hudson","locadorNome":"HUDSON CONSTANTINO GUIMARÃES CORRÊA","locatario":{"nome":"ALESSANDRO PACHECO DE OLIVEIRA","cpf":"071.037.987-02","rg":"107092009 Detran RJ e CPF nº 071.0","endereco":"RUA DR","cep":"24710-395","tel":""},"semanal":700.0,"caucao":2200.0,"multaDiaria":115,"multaRescisao":2200.0,"inicio":"2025-06-13","fim":"2025-09-17","kmInicial":0,"pix":"Inter / Fabio / 075.351.417-65","cl34":"semanal antecipado não poderá ser usado, perdendo junto ao calção","formato":"antigo-prosa","temDocx":true,"temPdf":true},"ct_PYO4A55_1":{"id":"ct_PYO4A55_1","carro":"PYO4A55","origem":"importado","status":"vigente","locadorId":"hudson","locadorNome":"HUDSON CONSTANTINO GUIMARÃES CORRÊA","locatario":{"nome":"EDSON DE MARLON JOAQUIM PERES","cpf":"149.143.987-45","rg":"234894004 DETRAN RJ e CPF nº 149.1","endereco":"","cep":"24.412-460","tel":""},"semanal":750.0,"caucao":2000.0,"multaDiaria":115,"multaRescisao":2000.0,"inicio":"2025-10-23","fim":"2026-01-28","kmInicial":0,"pix":"Inter / Fabio / 075.351.417-65","cl34":"semanal antecipado não poderá ser usado, perdendo junto ao calção","formato":"antigo-prosa","temDocx":true,"temPdf":true},"ct_KXJ8F38_1":{"id":"ct_KXJ8F38_1","carro":"KXJ8F38","origem":"importado","status":"vigente","locadorId":"fabio","locadorNome":"FABIO GUIMARÃES CORRÊA","locatario":{"nome":"ELCIMAR DA SILVA COUTO","cpf":"715.500.547-91","rg":"053518056 DETRAN RJ e CPF nº 715.5","endereco":"","cep":"24346-190","tel":""},"semanal":700.0,"caucao":2200.0,"multaDiaria":115,"multaRescisao":2200.0,"inicio":"2025-04-04","fim":"2025-07-09","kmInicial":0,"pix":"Inter / Fabio / 075.351.417-65","cl34":"","formato":"antigo-prosa","temDocx":true,"temPdf":true},"ct_LSY7B47_1":{"id":"ct_LSY7B47_1","carro":"LSY7B47","origem":"importado","status":"vigente","locadorId":"hudson","locadorNome":"HUDSON CONSTANTINO GUIMARÃES CORRÊA","locatario":{"nome":"REINALDO FONSECA SCHMITZ","cpf":"076.654.887-22","rg":"7472S159 MTPS RJ e CPF nº 076","endereco":"","cep":"24.932-955","tel":""},"semanal":750.0,"caucao":2200.0,"multaDiaria":115,"multaRescisao":2200.0,"inicio":"2025-11-29","fim":"2026-03-04","kmInicial":0,"pix":"Inter / Fabio / 075.351.417-65","cl34":"semanal antecipado não poderá ser usado, perdendo junto ao calção","formato":"antigo-prosa","temDocx":true,"temPdf":true},"ct_PZT0F79_1":{"id":"ct_PZT0F79_1","carro":"PZT0F79","origem":"importado","status":"vigente","locadorId":"hudson","locadorNome":"HUDSON CONSTANTINO GUIMARAES CORREA","locatario":{"nome":"GIOVANE SANTOS DA COSTA","cpf":"111.148.467-83","rg":"RG 213229362 – DIC/RJ | CNH 05709833603 (val. 17/01/2033)","endereco":"Rua Austria, 402 Rio do Ouro, São Gonçalo/RJ","cep":"24.753-470","tel":"(21) 98374-9591"},"semanal":800.0,"caucao":2000.0,"multaDiaria":115.0,"multaRescisao":2000.0,"inicio":"2026-06-12","fim":"2026-09-16","kmInicial":139890,"pix":"Inter / Fabio / 075.351.417-65","cl34":"No ato da assinatura, o LOCATÁRIO pagará a semana final do contrato de forma antecipada (R$ 800,00). da seguinte forma: R$ 800,00 em 14/06/2026 (Domingo);","formato":"atual-tabela","temDocx":true,"temPdf":true},"ct_QMW8H90_1":{"id":"ct_QMW8H90_1","carro":"QMW8H90","origem":"importado","status":"vigente","locadorId":"hudson","locadorNome":"HUDSON CONSTANTINO GUIMARÃES CORRÊA","locatario":{"nome":"MARCELO LOPES DOS SANTOS","cpf":"178.791.187-05","rg":"294594494 DETRAN RJ e CPF nº 178.7","endereco":"RuaR S DAMASO 135 - CAMPO GRANDE - RIO DE JANEIRO - RJ","cep":"23081-230","tel":""},"semanal":750.0,"caucao":2000.0,"multaDiaria":115,"multaRescisao":2000.0,"inicio":"2025-10-14","fim":"2025-01-14","kmInicial":0,"pix":"Inter / Fabio / 075.351.417-65","cl34":"semanal antecipado não poderá ser usado, perdendo junto ao calção","formato":"antigo-prosa","temDocx":true,"temPdf":true},"ct_QEK3D83_1":{"id":"ct_QEK3D83_1","carro":"QEK3D83","origem":"importado","status":"vigente","locadorId":"hudson","locadorNome":"HUDSON CONSTANTINO GUIMARAES CORREA","locatario":{"nome":"EVERTON CLEITON DOS SANTOS LIMA","cpf":"116.158.127-84","rg":"202504544 – Detran/RJ e CNH nº 03334712 | CNH nº 03334712415 (Validade 03/08/2033)","endereco":"Rua R Santos Guedes, QD 130 LOTE 28, Jardim Atlantico Central, Itaipuaçu, Maricá/RJ","cep":"24.934-615.","tel":"(21) 97661-6917"},"semanal":850.0,"caucao":2500.0,"multaDiaria":122.0,"multaRescisao":2500.0,"inicio":"2026-05-29","fim":"2026-09-02","kmInicial":143630,"pix":"Inter / Fabio / 075.351.417-65","cl34":"No ato da assinatura, o LOCATÁRIO pagará a semana final do contrato de forma antecipada (R$ 850,00).","formato":"intermediario","temDocx":true,"temPdf":true},"ct_IYZ7E28_1":{"id":"ct_IYZ7E28_1","carro":"IYZ7E28","origem":"importado","status":"vigente","locadorId":"hudson","locadorNome":"HUDSON CONSTANTINO GUIMARAES CORREA","locatario":{"nome":"EUGENIO DOS SANTOS","cpf":"088.401.207-77","rg":"123139487 – Detran/RJ e CNH nº 04278117 | CNH nº 04278117833 (Validade 08/05/2033)","endereco":"Rua Doutor Manuel Marreiros, 894 AP 03, Bancarios, Rio de Janeiro/RJ","cep":"21.910-080.","tel":"(21) 99838-9086"},"semanal":850.0,"caucao":2500.0,"multaDiaria":122.0,"multaRescisao":2500.0,"inicio":"2026-02-26","fim":"2026-05-27","kmInicial":63515,"pix":"Inter / Fabio / 075.351.417-65","cl34":"No ato da assinatura, o LOCATÁRIO pagará a semana final do contrato de forma antecipada (R$ 850,00).","formato":"intermediario","temDocx":true,"temPdf":true},"ct_QQF8J26_1":{"id":"ct_QQF8J26_1","carro":"QQF8J26","origem":"importado","status":"vigente","locadorId":"hudson","locadorNome":"HUDSON CONSTANTINO GUIMARÃES CORRÊA","locatario":{"nome":"CARLOS ROBERTO REIS DE SOUZA FILHO","cpf":"043.983.027-35","rg":"104347570 IFP RJ e CPF nº 043.983.","endereco":"Rua Doutor Francisco Portela 2457 APT 102 – Patronato – São Gonçalo - RJ","cep":"24435-001","tel":""},"semanal":800.0,"caucao":2200.0,"multaDiaria":115,"multaRescisao":2200.0,"inicio":"2025-12-12","fim":"2026-03-18","kmInicial":0,"pix":"Inter / Fabio / 075.351.417-65","cl34":"semanal antecipado não poderá ser usado, perdendo junto ao calção","formato":"antigo-prosa","temDocx":true,"temPdf":true},"ct_LUH7G30_1":{"id":"ct_LUH7G30_1","carro":"LUH7G30","origem":"importado","status":"vigente","locadorId":"hudson","locadorNome":"HUDSON CONSTANTINO GUIMARAES CORREA","locatario":{"nome":"RAPHAEL DE SOUZA NESTADO","cpf":"110.259.207-24","rg":"207102849 – Detran/RJ e CNH nº 04070558 | CNH nº 04070558591 (Validade 27/09/2031)","endereco":"Rua Tomas Rodrigues, 165, Nova Cidade, São Gonçalo/RJ","cep":"24.455-070.","tel":"(21) 98828-9406"},"semanal":800.0,"caucao":2200.0,"multaDiaria":115.0,"multaRescisao":2200.0,"inicio":"2026-04-05","fim":"2026-07-08","kmInicial":33753,"pix":"Inter / Fabio / 075.351.417-65","cl34":"","formato":"intermediario","temDocx":true,"temPdf":true},"ct_LMX7B24_1":{"id":"ct_LMX7B24_1","carro":"LMX7B24","origem":"importado","status":"vigente","locadorId":"fabio","locadorNome":"FABIO GUIMARAES CORREA","locatario":{"nome":"LADI ALVES COELHO JUNIOR","cpf":"082.886.787-93","rg":"123220949 – Detran/RJ e CNH nº 03328627 | CNH nº 03328627094 (Validade 11/11/2035)","endereco":"Rua 20, Casa 01, Lote 17 Quadra 85, Jardim Atlantico, Marica/RJ","cep":"24.935-815.","tel":"(21) 96494-1540"},"semanal":800.0,"caucao":2200.0,"multaDiaria":115.0,"multaRescisao":2200.0,"inicio":"2026-01-22","fim":"2026-04-22","kmInicial":126000,"pix":"Inter / Fabio / 075.351.417-65","cl34":"No ato da assinatura, o LOCATÁRIO pagará a semana final do contrato de forma antecipada (R$ 800,00).","formato":"intermediario","temDocx":true,"temPdf":true},"ct_QUB5G52_1":{"id":"ct_QUB5G52_1","carro":"QUB5G52","origem":"importado","status":"vigente","locadorId":"fabio","locadorNome":"FABIO GUIMARAES CORREA","locatario":{"nome":"FABRICIO DOS SANTOS RIBEIRO","cpf":"162.955.547-92","rg":"241554518 – Detran/RJ e CNH nº 08843031 | CNH nº 08843031160 (Validade 28/07/2031)","endereco":"Ladeira Major Rocha, 550, Casa 01, Ponta d Areia, Niterói/RJ","cep":"24.040-210.","tel":"(21) 96988-4826"},"semanal":850.0,"caucao":2200.0,"multaDiaria":122.0,"multaRescisao":2200.0,"inicio":"2026-02-11","fim":"2026-05-13","kmInicial":365194,"pix":"Inter / Fabio / 075.351.417-65","cl34":"No ato da assinatura, o LOCATÁRIO pagará a semana final do contrato de forma antecipada (R$ 850,00).","formato":"intermediario","temDocx":true,"temPdf":true},"ct_QUB5B64_1":{"id":"ct_QUB5B64_1","carro":"QUB5B64","origem":"importado","status":"vigente","locadorId":"hudson","locadorNome":"HUDSON CONSTANTINO GUIMARAES CORREA","locatario":{"nome":"HELTON GOMES DE OLIVEIRA","cpf":"108.135.267-10","rg":"133137505 – IFP/RJ e CNH nº 03574515662 | CNH nº 03574515662 (Validade 03/10/2034)","endereco":"Rua Rio Verde, 25, Laranjal, São Gonçalo/RJ","cep":"24.720-280.","tel":"(21) 97249-3101"},"semanal":800.0,"caucao":2000.0,"multaDiaria":115.0,"multaRescisao":2000.0,"inicio":"2026-05-19","fim":"2026-08-19","kmInicial":103778,"pix":"Inter / Fabio / 075.351.417-65","cl34":"No ato da assinatura, o LOCATÁRIO pagará a semana final do contrato de forma antecipada (R$ 800,00).","formato":"intermediario","temDocx":true,"temPdf":true},"ct_LUO2B58_1":{"id":"ct_LUO2B58_1","carro":"LUO2B58","origem":"importado","status":"vigente","locadorId":"hudson","locadorNome":"HUDSON CONSTANTINO GUIMARAES CORREA","locatario":{"nome":"LUCAS SANTANA DE MELO","cpf":"118.093.087-80","rg":"220350581 – Detran/RJ e CNH nº 08855099 | CNH nº 08855099000 (Validade 07/11/2033)","endereco":"Rua Cairucu, 665, Vila Valqueire, Rio de Janeiro/RJ","cep":"21.330-180.","tel":"(21) 99119-4255"},"semanal":850.0,"caucao":2500.0,"multaDiaria":122.0,"multaRescisao":2500.0,"inicio":"2026-03-06","fim":"2026-06-10","kmInicial":202442,"pix":"Inter / Fabio / 075.351.417-65","cl34":"No ato da assinatura, o LOCATÁRIO pagará a semana final do contrato de forma antecipada (R$ 850,00).","formato":"intermediario","temDocx":true,"temPdf":true},"ct_RJZ1B66_1":{"id":"ct_RJZ1B66_1","carro":"RJZ1B66","origem":"importado","status":"vigente","locadorId":"hudson","locadorNome":"HUDSON CONSTANTINO GUIMARAES CORREA","locatario":{"nome":"CHRISTIAN DA SILVA ALMEIDA","cpf":"161.788.947-40","rg":"289760324 – Detran/RJ e CNH nº 07610551 | CNH nº 07610551973 (Validade 04/02/2036)","endereco":"Rua Alberto Coelho, 91, Raul Veiga, São Gonçalo/RJ","cep":"24.740-010.","tel":"(21) 97675-5355"},"semanal":800.0,"caucao":2200.0,"multaDiaria":115.0,"multaRescisao":1800.0,"inicio":"2026-04-18","fim":"2026-07-22","kmInicial":76710,"pix":"Inter / Fabio / 075.351.417-65","cl34":"No ato da assinatura, o LOCATÁRIO pagará a semana final do contrato de forma antecipada (R$ 800,00).","formato":"intermediario","temDocx":true,"temPdf":true},"ct_RGB3E35_1":{"id":"ct_RGB3E35_1","carro":"RGB3E35","origem":"importado","status":"vigente","locadorId":"hudson","locadorNome":"HUDSON CONSTANTINO GUIMARAES CORREA","locatario":{"nome":"CARLOS EDUARDO VILLELA SALDANHA","cpf":"796.100.137-91","rg":"RG 070990312 – IFP/RJ | CNH 04336229905 (val. 21/03/2028)","endereco":"Rua C, 125 QD, Vilatur, Saquarema/RJ","cep":"28.992-410","tel":"(21) 99630-8583"},"semanal":800.0,"caucao":2000.0,"multaDiaria":115.0,"multaRescisao":2000.0,"inicio":"2026-07-14","fim":"2026-10-14","kmInicial":84515,"pix":"Inter / Fabio / 075.351.417-65","cl34":"No ato da assinatura, o LOCATÁRIO pagará a semana final do contrato de forma antecipada (R$ 800,00).","formato":"atual-tabela","temDocx":true,"temPdf":true},"ct_RUK6I75_1":{"id":"ct_RUK6I75_1","carro":"RUK6I75","origem":"importado","status":"vigente","locadorId":"hudson","locadorNome":"HUDSON CONSTANTINO GUIMARAES CORREA","locatario":{"nome":"ROMULO DA SILVA RODRIGUES","cpf":"015.655.392-90","rg":"79560 – MTE/PA e CNH nº 07518140657 | CNH nº 07518140657 (Validade 31/03/2035)","endereco":"Rua Aristides A de Azevedo , LT 05 QC C APTO 201, São Jose, Marica/RJ","cep":"24.931-800.","tel":"(21) 99665-6791"},"semanal":850.0,"caucao":2500.0,"multaDiaria":122.0,"multaRescisao":2500.0,"inicio":"2026-05-20","fim":"2026-08-26","kmInicial":75630,"pix":"Inter / Fabio / 075.351.417-65","cl34":"No ato da assinatura, o LOCATÁRIO pagará a semana final do contrato de forma antecipada (R$ 850,00).","formato":"intermediario","temDocx":true,"temPdf":true},"ct_RVX9H52_1":{"id":"ct_RVX9H52_1","carro":"RVX9H52","origem":"importado","status":"vigente","locadorId":"hudson","locadorNome":"HUDSON CONSTANTINO GUIMARAES CORREA","locatario":{"nome":"RICARDO BARRETO DE VASCONCELOS DE CARVALHO","cpf":"110.452.907-69","rg":"RG 0207821158 – DIC/RJ | CNH 05814652337 (val. 09/03/2036)","endereco":"Estrada São Pedro, 115 B08/308, Pacheco, São Gonçalo/RJ","cep":"24.736-220","tel":"(21) 97422-5891"},"semanal":850.0,"caucao":2500.0,"multaDiaria":122.0,"multaRescisao":2500.0,"inicio":"2026-06-03","fim":"2026-09-09","kmInicial":48912,"pix":"Inter / Fabio / 075.351.417-65","cl34":"No ato da assinatura, o LOCATÁRIO pagará a semana final do contrato de forma antecipada (R$ 850,00).","formato":"atual-tabela","temDocx":true,"temPdf":true},"ct_LMY2A63_1":{"id":"ct_LMY2A63_1","carro":"LMY2A63","origem":"importado","status":"vigente","locadorId":"fabio","locadorNome":"FABIO GUIMARAES CORREA","locatario":{"nome":"RODRIGO DE OLIVEIRA ROSA","cpf":"091.821.417-38","rg":"RG 114802119 – DETRAN/RJ | CNH 04982411096 (val. 09/12/2034)","endereco":"Rua Jose Maria Pinto Duarte, LT 20 QD 22 Novo Mexico, São Gonçalo/RJ","cep":"24.750-055","tel":"(21) 97512-2834"},"semanal":800.0,"caucao":2200.0,"multaDiaria":115.0,"multaRescisao":2200.0,"inicio":"2026-07-02","fim":"2026-10-07","kmInicial":463337,"pix":"Inter / Fabio / 075.351.417-65","cl34":"No ato da assinatura, o LOCATÁRIO pagará a semana final do contrato de forma antecipada (R$ 800,00).","formato":"atual-tabela","temDocx":true,"temPdf":true}},"manutencoes":{}};
+if('serviceWorker' in navigator){try{navigator.serviceWorker.register('sw.js')}catch(e){}}
+boot();render();
+</script>
+</body>
+</html>
