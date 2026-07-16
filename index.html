@@ -55,7 +55,7 @@ nav button .ic{display:block;font-size:20px;margin-bottom:2px}
 nav button.on{color:var(--ac)}
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:60;display:none;align-items:flex-end;justify-content:center}
 .overlay.open{display:flex}
-.sheet{overscroll-behavior:contain;background:var(--card);border:1px solid var(--bord);border-radius:18px 18px 0 0;width:100%;max-width:640px;max-height:88vh;overflow-y:auto;padding:16px 14px calc(18px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch}
+.sheet{overscroll-behavior:contain;background:var(--card);border:1px solid var(--bord);border-radius:18px 18px 0 0;width:100%;max-width:640px;max-height:80vh;max-height:86dvh;overflow-y:auto;padding:16px 14px calc(18px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch}
 .sheet h3{margin:0 0 4px;font-size:16px}
 .sheet .sub{margin-bottom:8px}
 #ovAsk{z-index:85}
@@ -65,7 +65,8 @@ nav button.on{color:var(--ac)}
 .kv b{color:var(--tx2);font-weight:600;font-size:12px}
 .sect{font-size:12px;color:var(--ac);font-weight:800;letter-spacing:.8px;margin:16px 0 6px;text-transform:uppercase}
 .search{position:sticky;top:calc(54px + env(safe-area-inset-top));z-index:30;background:var(--bg);padding:4px 0 8px}
-iframe.pdfv{width:100%;height:66vh;border:1px solid var(--bord);border-radius:10px;background:#fff}
+iframe.pdfv{width:100%;height:60vh;border:1px solid var(--bord);border-radius:10px;background:#fff}
+canvas.pdfpg{width:100%;display:block;margin:0 0 8px;border:1px solid var(--bord);border-radius:8px;background:#fff}
 .filestat{font-size:12px;color:var(--tx2);margin-top:4px;line-height:1.6}
 a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 </style>
@@ -101,7 +102,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=2; var APP_DATE='16/07/2026';
+var APP_VER=3; var APP_DATE='16/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -165,6 +166,19 @@ function normPlaca(p){return String(p||'').toUpperCase().replace(/[^A-Z0-9]/g,''
 function fmtPlaca(p){p=normPlaca(p);return p.length===7?p.slice(0,3)+'-'+p.slice(3):p}
 function idNovo(pref){return pref+'_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e4).toString(36)}
 
+/* ---------- bibliotecas sob demanda ---------- */
+function loadScript(src){return new Promise(function(res,rej){var s=document.createElement('script');s.src=src;s.onload=res;s.onerror=function(){rej(new Error('Sem internet para carregar componente'))};document.head.appendChild(s)})}
+function garantirPdfjs(){
+ if(window.pdfjsLib)return Promise.resolve();
+ return loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js').then(function(){
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+ });
+}
+function garantirJspdf(){
+ if(window.jspdf&&window.jspdf.jsPDF)return Promise.resolve();
+ return loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+}
+function blobB64(blob){return new Promise(function(res,rej){var r=new FileReader();r.onload=function(){res(String(r.result).split(',')[1])};r.onerror=rej;r.readAsDataURL(blob)})}
 /* ---------- toast / ask ---------- */
 var _toastT=null;
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';clearTimeout(_toastT);_toastT=setTimeout(function(){t.style.display='none'},2600)}
@@ -531,11 +545,37 @@ function verDoc(path,titulo){
  DOCSREF.child(path).once('value').then(function(s){
   var d=s.val();
   if(!d||!d.b64){toast('Documento não encontrado na nuvem — use a Importação inicial (⚙️)');return}
-  var url=b64ToUrl(d.b64,d.mime||'application/pdf');
-  openSheet('<h3>'+esc(titulo)+'</h3><iframe class="pdfv" src="'+url+'"></iframe>'+
-   '<a class="btn" style="text-align:center;text-decoration:none" href="'+url+'" download="'+esc(titulo)+'.pdf">⬇️ Baixar</a>'+
-   '<button class="btn sec" onclick="closeSheet(2)">Fechar</button>',2);
+  abrirPdf(d.b64,titulo);
  }).catch(function(e){toast('⚠️ '+e.message)});
+}
+function abrirPdf(b64,titulo){
+ var url=b64ToUrl(b64,'application/pdf');
+ openSheet('<h3>'+esc(titulo)+'</h3><div id="pdfHost" class="sub">Preparando páginas…</div>'+
+  '<a class="btn" style="text-align:center;text-decoration:none;color:#04121f" href="'+url+'" download="'+esc(titulo)+'.pdf">⬇️ Baixar</a>'+
+  '<button class="btn sec" onclick="closeSheet(2)">Fechar</button>',2);
+ garantirPdfjs().then(function(){
+  var bin=atob(b64),arr=new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
+  return pdfjsLib.getDocument({data:arr}).promise;
+ }).then(function(pdf){
+  var host=document.getElementById('pdfHost');if(!host)return;
+  host.innerHTML='';host.removeAttribute('class');
+  var w=host.clientWidth||(document.getElementById('sheetBody2').clientWidth-28);
+  var dpr=Math.min(window.devicePixelRatio||1,2);
+  (function pg(n){
+   if(n>pdf.numPages)return;
+   pdf.getPage(n).then(function(page){
+    var vp0=page.getViewport({scale:1});
+    var vp=page.getViewport({scale:(w/vp0.width)*dpr});
+    var cv=document.createElement('canvas');cv.className='pdfpg';cv.width=vp.width;cv.height=vp.height;
+    host.appendChild(cv);
+    page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise.then(function(){pg(n+1)});
+   });
+  })(1);
+ }).catch(function(e){
+  var host=document.getElementById('pdfHost');
+  if(host)host.outerHTML='<iframe class="pdfv" src="'+url+'"></iframe>';
+ });
 }
 function baixarDoc(path,nome){
  toast('📥 Preparando arquivo…');
@@ -784,7 +824,9 @@ function vContrato(){
  '<div class="grid2"><div><label>Banco</label><input id="ncPixBanco" value="Inter"></div>'+
  '<div><label>Favorecido</label><input id="ncPixFav" value="Fabio"></div></div>'+
  '<label>Chave PIX (CPF)</label><input id="ncPixChave" value="075.351.417-65">'+
- '<div class="sect">Cláusula 3.4 — pagamento antecipado (livre)</div>'+
+ '<div class="sect">Cláusula 3.4 — semana antecipada</div>'+
+ '<label>Este contrato tem semana antecipada?</label>'+
+ '<select id="ncTem34" onchange="ncCl34Auto(true)"><option value="sim">Sim — incluir cláusula 3.4</option><option value="nao">Não — gerar contrato sem a cláusula 3.4</option></select>'+
  '<textarea id="ncCl34"></textarea>'+
  '<button class="btn ok" onclick="gerarContrato()">📝 GERAR CONTRATO WORD + REGISTRAR</button>'+
  '<div class="sub" style="margin-top:8px">O contrato entra como vigente na ficha do carro. Se já houver um vigente, ele vai para os anteriores automaticamente.</div></div>';
@@ -803,8 +845,12 @@ function ncPuxaCarro(){
  ncCl34Auto();
 }
 function ncMultaAuto(){var v=document.getElementById('ncCaucao').value;document.getElementById('ncMultaResc').value=v}
-function ncCl34Auto(){
- var el=document.getElementById('ncCl34');if(!el||el.dataset.manual==='1')return;
+function ncCl34Auto(force){
+ var el=document.getElementById('ncCl34'),sel=document.getElementById('ncTem34');
+ if(!el)return;
+ if(sel&&sel.value==='nao'){el.style.display='none';return}
+ el.style.display='';
+ if(el.dataset.manual==='1'&&!force)return;
  var s=parseBRL(document.getElementById('ncSemanal').value);
  el.value='Do Pagamento Antecipado: No ato da assinatura, o LOCATÁRIO pagará a semana final do contrato de forma antecipada ('+(s?'R$ '+fmtBRL(s):'R$ 0,00')+').';
 }
@@ -826,7 +872,7 @@ function dadosContratoDoForm(){
   multaDiaria:parseBRL(g('ncMultaDia'))||115,multaRescisao:parseBRL(g('ncMultaResc'))||parseBRL(g('ncCaucao')),
   inicio:g('ncIni'),fim:g('ncFim'),kmInicial:parseInt(g('ncKm').replace(/\D/g,''),10)||0,
   pix:g('ncPixBanco')+' / '+g('ncPixFav')+' / '+g('ncPixChave'),
-  cl34:g('ncCl34'),acessorios:g('ncAcess'),combustiveis:g('ncComb'),temDocx:false,temPdf:false
+  cl34:(document.getElementById('ncTem34').value==='nao')?'':g('ncCl34'),acessorios:g('ncAcess'),combustiveis:g('ncComb'),temDocx:false,temPdf:false
  });
 }
 function gerarContrato(){
@@ -848,13 +894,20 @@ function gerarContrato(){
   var nome='Contrato '+c.nome+' '+fmtPlaca(c.placa)+' '+dataBR(ct.inicio).replace(/\//g,'_')+'.docx';
   var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nome;
   document.body.appendChild(a);a.click();setTimeout(function(){document.body.removeChild(a)},400);
-  var r=new FileReader();
-  r.onload=function(){
-   var b64=String(r.result).split(',')[1];
-   DOCSREF.child(ct.carro+'/ct/'+ct.id+'/docx').set({b64:b64,name:nome,mime:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',size:blob.size,em:Date.now()})
-    .then(function(){S.contratos[ct.id].temDocx=true;save();toast('✅ Contrato registrado, baixado e salvo na nuvem');render()});
-  };
-  r.readAsDataURL(blob);
+  blobB64(blob).then(function(b64){
+   return DOCSREF.child(ct.carro+'/ct/'+ct.id+'/docx').set({b64:b64,name:nome,mime:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',size:blob.size,em:Date.now()});
+  }).then(function(){
+   S.contratos[ct.id].temDocx=true;save();
+   toast('✅ Word baixado e salvo · gerando PDF…');render();
+   return montarPdf(ct,c);
+  }).then(function(pb){
+   return blobB64(pb).then(function(pb64){
+    return DOCSREF.child(ct.carro+'/ct/'+ct.id+'/pdf').set({b64:pb64,name:nome.replace('.docx','.pdf'),mime:'application/pdf',size:pb.size,em:Date.now()});
+   });
+  }).then(function(){
+   S.contratos[ct.id].temPdf=true;save();render();
+   toast('📄 PDF do contrato salvo na nuvem — já dá para Ler na ficha');
+  }).catch(function(e){toast('⚠️ Word ok, mas o PDF falhou: '+e.message)});
  }).catch(function(e){toast('⚠️ Erro ao gerar: '+e.message)});
 }
 function trocarMotorista(pk){
@@ -881,6 +934,121 @@ function regerarContrato(id){
 }
 
 /* ---------- GERADOR DOCX (modelo GuimasCar, 11 cláusulas) ---------- */
+function vehLinhas(ct,carro){
+ return [['Modelo',carro.nome+' '+carro.motor],['Ano Fabricação/Modelo',carro.ano],['Placa',fmtPlaca(carro.placa)],
+ ['Chassi',carro.chassi],['Quilometragem Inicial',fmtKm(ct.kmInicial)+' KM'],['Acessórios',ct.acessorios],
+ ['Combustíveis',ct.combustiveis||carro.combustivel]];
+}
+function clausulasContrato(ct,carro){
+ var pix=ct.pix.split('/').map(function(x){return x.trim()});
+ var c3=[
+  {p:'3.1. O valor do aluguel semanal é de '+moedaExtenso(ct.semanal)+'.'},
+  {p:'3.2. O pagamento deverá ser efetuado semanalmente, todas as Quartas-feiras até às 12:00h, mediante depósito ou transferência PIX para:'},
+  {p:'▪ Banco: '+(pix[0]||'')},{p:'▪ Favorecido: '+(pix[1]||'')},{p:'▪ Chave PIX (CPF): '+(pix[2]||'')},
+  {p:'3.3. Do Atraso: O não pagamento no prazo estipulado acarretará a cobrança de multa diária de '+moedaExtenso(ct.multaDiaria)+' por dia de atraso, limitando-se ao domingo da semana corrente.'},
+  {p:'Parágrafo Único: Caso o pagamento não seja regularizado até o domingo, o LOCATÁRIO obriga-se a devolver o veículo na segunda-feira subsequente, às 07:30h, sob pena de configuração de apropriação indébita e autorização para bloqueio imediato do veículo via rastreador.'}
+ ];
+ if(ct.cl34){
+  c3.push({p:'3.4. '+ct.cl34.replace(/^3\.4\.?\s*/,'')});
+  c3.push({p:'Observação: Em caso de rescisão antecipada por culpa do LOCATÁRIO, este valor não será reembolsado nem utilizado para abater dívidas, sendo retido a título de penalidade.'});
+ }
+ return [
+  {h:'CLÁUSULA PRIMEIRA – DO OBJETO',itens:[
+   {p:'1.1. O presente contrato tem como objeto a locação do veículo de propriedade do LOCADOR, com as seguintes características:'},
+   {veh:1},
+   {p:'1.2. O valor de referência de mercado do veículo para fins deste contrato é fixado em '+moedaExtenso(carro.valorRef)+'.'}]},
+  {h:'CLÁUSULA SEGUNDA – DO PRAZO E DA RENOVAÇÃO',itens:[
+   {p:'2.1. A locação terá início em '+dataLonga(ct.inicio)+' e término previsto para '+dataLonga(ct.fim)+'.'},
+   {p:'2.2. O contrato poderá ser renovado automaticamente por igual período (3 meses), desde que haja interesse mútuo manifestado por escrito ou meio eletrônico (WhatsApp/E-mail) com antecedência mínima de 15 (quinze) dias, ocasião em que os valores poderão ser reajustados.'}]},
+  {h:'CLÁUSULA TERCEIRA – DO PREÇO E FORMA DE PAGAMENTO',itens:c3},
+  {h:'CLÁUSULA QUARTA – DA GARANTIA (CAUÇÃO)',itens:[
+   {p:'4.1. O LOCATÁRIO entrega neste ato, a título de CAUÇÃO, a quantia de '+moedaExtenso(ct.caucao)+'.'},
+   {p:'4.2. Finalidade da Caução: Este valor visa garantir prioritariamente o pagamento da Franquia do Seguro em caso de sinistro.'},
+   {p:'4.2.1. Em caso de sinistro com acionamento do seguro, se o valor da franquia for superior à caução, o LOCATÁRIO deverá complementar a diferença imediatamente.'},
+   {p:'4.3. Devolução: Não havendo avarias, multas, sinistros ou pendências financeiras, a caução será devolvida ao LOCATÁRIO no prazo de 30 (trinta) dias após o término do contrato, tempo necessário para verificação de multas de trânsito tardias.'},
+   {p:'4.4. Perda da Caução: O valor será retido integralmente em favor do LOCADOR nos casos de:'},
+   {p:'▪ Roubo/Furto onde o veículo não seja recuperado (para cobrir despesas administrativas/franquia);'},
+   {p:'▪ Rescisão contratual motivada por infração do LOCATÁRIO;'},
+   {p:'▪ Danos mecânicos ou estéticos não reparados pelo LOCATÁRIO.'}]},
+  {h:'CLÁUSULA QUINTA – DAS OBRIGAÇÕES E USO DO VEÍCULO',itens:[
+   {p:'5.1. O veículo será utilizado exclusivamente dentro dos limites do Estado do Rio de Janeiro e somente pelo LOCATÁRIO identificado neste contrato. É expressamente vedada a sublocação, empréstimo ou cessão a terceiros.'},
+   {p:'5.2. Da Vistoria Quinzenal: O LOCATÁRIO obriga-se a apresentar o veículo para vistoria quinzenal todas as Quartas-feiras, no período da manhã, em local indicado pelo LOCADOR.'},
+   {p:'5.3. Deveres de Conservação: O LOCATÁRIO deve zelar pelo veículo como se fosse seu, guardando-o em local seguro (garagem ou estacionamento fechado) durante o pernoite.'}]},
+  {h:'CLÁUSULA SEXTA – DA MANUTENÇÃO E CONSERVAÇÃO',itens:[
+   {p:'Fica estabelecido o seguinte regime de responsabilidade sobre as manutenções, considerando que o veículo é entregue com todos os filtros e óleos trocados:'},
+   {p:'A) Manutenção Compartilhada (50% LOCADOR / 50% LOCATÁRIO): Todas as manutenções mecânicas, elétricas, suspensão, freios, pneus e demais peças decorrentes do desgaste natural do uso ou quebras imprevistas serão custeadas na proporção de 50% para o LOCADOR e 50% para o LOCATÁRIO.'},
+   {p:'▪ Procedimento: O LOCATÁRIO deve informar o problema antes da execução e o serviço deve ser realizado por mecânico indicado ou aprovado pelo LOCADOR.'},
+   {p:'B) Manutenção Exclusiva do LOCATÁRIO (100%): Compete exclusivamente ao LOCATÁRIO arcar com o custo integral dos seguintes itens de consumo periódico, visto que recebeu o veículo com estes itens novos/trocados:'},
+   {p:'▪ Troca de óleo do motor;'},{p:'▪ Filtro de óleo;'},{p:'▪ Filtro de ar do motor;'},
+   {p:'▪ Filtro de combustível;'},{p:'▪ Filtro de cabine (ar-condicionado);'},{p:'▪ Refil da bomba de combustível.'},
+   {p:'C) Danos por Mau Uso: Qualquer dano causado comprovadamente por negligência, imperícia ou imprudência (ex: condução perigosa, queda em buracos severos que danifiquem rodas/suspensão fora do desgaste natural, falta de água/óleo) será de responsabilidade integral (100%) do LOCATÁRIO.'},
+   {p:'D) Oficina: Todas as manutenções, inclusive as de responsabilidade do LOCATÁRIO, deverão ser executadas em oficina designada pelo LOCADOR.'}]},
+  {h:'CLÁUSULA SÉTIMA – DOS SINISTROS E SEGURO',itens:[
+   {p:'7.1. O veículo possui seguro contratado pelo LOCADOR. No entanto, a existência do seguro não isenta o LOCATÁRIO de responsabilidade em casos de dolo ou culpa grave.'},
+   {p:'7.2. O LOCATÁRIO será integralmente responsável (civil e criminalmente) e arcará com todos os prejuízos (inclusive o valor do carro, se o seguro negar a cobertura) caso o sinistro ocorra sob as seguintes condições:'},
+   {p:'▪ Embriaguez ao volante ou uso de substâncias tóxicas;'},{p:'▪ Excesso de velocidade ou direção perigosa;'},
+   {p:'▪ Fuga do local do acidente;'},{p:'▪ Condução por pessoa não autorizada neste contrato.'},
+   {p:'7.3. Lucros Cessantes: Durante o período em que o veículo estiver parado para conserto por culpa do LOCATÁRIO (acidente ou mau uso), o valor das diárias continuará sendo cobrado normalmente.'}]},
+  {h:'CLÁUSULA OITAVA – DAS INFRAÇÕES DE TRÂNSITO (MULTAS)',itens:[
+   {p:'8.1. O LOCATÁRIO assume inteira responsabilidade por todas as multas de trânsito decorrentes de infrações cometidas no período em que estiver com a posse do veículo.'},
+   {p:'8.2. O LOCATÁRIO obriga-se a fornecer seus dados para a Indicação do Real Infrator imediatamente após a notificação.'},
+   {p:'8.3. O valor da multa deverá ser pago/reembolsado ao LOCADOR até a semana posterior ao recebimento da notificação, independentemente de recurso.'}]},
+  {h:'CLÁUSULA NONA – DA RESCISÃO E PENALIDADES',itens:[
+   {p:'9.1. O contrato poderá ser rescindido de pleno direito pelo LOCADOR, com exigência de devolução imediata do bem e retenção da caução, nos seguintes casos:'},
+   {p:'▪ Atraso no pagamento semanal;'},{p:'▪ Não apresentação do veículo para vistoria quinzenal;'},
+   {p:'▪ Ocorrência de mais de 02 (duas) multas de trânsito no mesmo mês;'},{p:'▪ Manutenção negligenciada ou avarias não comunicadas.'},
+   {p:'9.2. Caso o LOCATÁRIO deseje rescindir o contrato antes do prazo final ('+dataBR(ct.fim)+'), deverá pagar multa contratual no valor de '+moedaExtenso(ct.multaRescisao)+', salvo se a rescisão partir do LOCADOR sem culpa do Locatário.'}]},
+  {h:'CLÁUSULA DÉCIMA – DA DEVOLUÇÃO DO VEÍCULO',itens:[
+   {p:'10.1. Ao final do contrato, o veículo deverá ser devolvido nas mesmas condições de recebimento: limpo, higienizado, e sem avarias.'},
+   {p:'10.2. A não devolução do veículo na data estipulada configurará Apropriação Indébita (Art. 168 do Código Penal), autorizando o LOCADOR a solicitar Busca e Apreensão e registro de ocorrência policial.'}]},
+  {h:'CLÁUSULA DÉCIMA PRIMEIRA – DO FORO',itens:[
+   {p:'As partes elegem o Foro da Comarca de São Gonçalo/RJ para dirimir quaisquer dúvidas ou litígios oriundos deste contrato, renunciando a qualquer outro.'}]}
+ ];
+}
+/* ---------- PDF do contrato (jsPDF, mesmo conteúdo do Word) ---------- */
+function montarPdf(ct,carro){
+ return garantirJspdf().then(function(){
+  var J=window.jspdf.jsPDF,doc=new J({unit:'pt',format:'a4'});
+  var W=doc.internal.pageSize.getWidth(),H=doc.internal.pageSize.getHeight(),M=48,y=M,lh=13;
+  var loc=LOCADORES[ct.locadorId]||{nome:ct.locadorNome,cpf:'',rg:''},lt=ct.locatario;
+  function need(h){if(y+h>H-M-20){doc.addPage();y=M}}
+  function para(t,o){
+   o=o||{};t=String(t).replace(/▪/g,'•');
+   doc.setFont('helvetica',o.b?'bold':'normal');doc.setFontSize(o.sz||9.5);doc.setTextColor(20);
+   var lines=doc.splitTextToSize(t,W-2*M-8);
+   lines.forEach(function(L){need(lh);doc.text(L,o.center?W/2:M+4,y,o.center?{align:'center'}:undefined);y+=lh});
+   y+=o.gap==null?3:o.gap;
+  }
+  function titulo(t){
+   need(26);doc.setFillColor(217,217,217);doc.rect(M,y-4,W-2*M,17,'F');
+   doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(20);
+   doc.text(t,W/2,y+8,{align:'center'});y+=22;
+  }
+  para('CONTRATO PARTICULAR DE LOCAÇÃO DE VEÍCULO AUTOMOTOR',{b:true,sz:13,center:true,gap:10});
+  titulo('IDENTIFICAÇÃO DAS PARTES CONTRATANTES');
+  para('LOCADOR: '+loc.nome+', CPF '+loc.cpf+', RG '+loc.rg+', residente e domiciliado na '+LOCADOR_END+', CEP '+LOCADOR_CEP+'.');
+  para('LOCATÁRIO: '+lt.nome+', CPF '+lt.cpf+', RG '+lt.rg+', telefone '+lt.tel+', residente e domiciliado em '+lt.endereco+', CEP '+lt.cep+'.');
+  para('As partes acima identificadas têm, entre si, justo e acertado o presente Contrato de Locação de Veículo, que se regerá pelas cláusulas seguintes.',{gap:8});
+  clausulasContrato(ct,carro).forEach(function(cl){
+   titulo(cl.h);
+   cl.itens.forEach(function(it){
+    if(it.veh)vehLinhas(ct,carro).forEach(function(l){para('• '+l[0]+': '+l[1])});
+    else para(it.p);
+   });
+   y+=4;
+  });
+  para('E, por estarem assim justos e contratados, assinam o presente em 02 (duas) vias de igual teor e forma.',{gap:8});
+  para('São Gonçalo, '+dataLonga(ct.inicio)+'.',{gap:34});
+  para('________________________________',{center:true,gap:1});
+  para(loc.nome+' — LOCADOR — CPF '+loc.cpf,{center:true,gap:26});
+  para('________________________________',{center:true,gap:1});
+  para(lt.nome+' — LOCATÁRIO — CPF '+lt.cpf,{center:true,gap:6});
+  var n=doc.getNumberOfPages();
+  for(var i=1;i<=n;i++){doc.setPage(i);doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(130);doc.text('GuimasCar | Locação de Veículos',W/2,H-22,{align:'center'})}
+  return doc.output('blob');
+ });
+}
+
 function montarDocx(ct,carro){
  var D=window.docx;
  var loc=LOCADORES[ct.locadorId]||{nome:ct.locadorNome,cpf:'',rg:''};
@@ -917,66 +1085,20 @@ function montarDocx(ct,carro){
   vrow('Acessórios',ct.acessorios),
   vrow('Combustíveis',ct.combustiveis||carro.combustivel)
  ]});
- var pixParts=ct.pix.split('/').map(function(x){return x.trim()});
+ var secoes=[];
+ clausulasContrato(ct,carro).forEach(function(cl){
+  secoes.push(headerBar(cl.h));
+  var paras=[];
+  cl.itens.forEach(function(it){
+   if(it.veh)paras.push(vehTable);
+   else paras.push(par(it.p));
+  });
+  secoes.push(box(paras));secoes.push(esp());
+ });
  var docChildren=[
   par('CONTRATO PARTICULAR DE LOCAÇÃO DE VEÍCULO AUTOMOTOR',{b:true,center:true,sz:26,after:160}),
-  headerBar('IDENTIFICAÇÃO DAS PARTES CONTRATANTES'),idTable,esp(),
-  headerBar('CLÁUSULA PRIMEIRA – DO OBJETO'),
-  box([par('1.1. O presente contrato tem como objeto a locação do veículo de propriedade do LOCADOR, com as seguintes características:'),vehTable,esp(),
-   par('1.2. O valor de referência de mercado do veículo para fins deste contrato é fixado em '+moedaExtenso(carro.valorRef)+'.')]),esp(),
-  headerBar('CLÁUSULA SEGUNDA – DO PRAZO E DA RENOVAÇÃO'),
-  box([par('2.1. A locação terá início em '+dataLonga(ct.inicio)+' e término previsto para '+dataLonga(ct.fim)+'.'),
-   par('2.2. O contrato poderá ser renovado automaticamente por igual período (3 meses), desde que haja interesse mútuo manifestado por escrito ou meio eletrônico (WhatsApp/E-mail) com antecedência mínima de 15 (quinze) dias, ocasião em que os valores poderão ser reajustados.')]),esp(),
-  headerBar('CLÁUSULA TERCEIRA – DO PREÇO E FORMA DE PAGAMENTO'),
-  box([par('3.1. O valor do aluguel semanal é de '+moedaExtenso(ct.semanal)+'.'),
-   par('3.2. O pagamento deverá ser efetuado semanalmente, todas as Quartas-feiras até às 12:00h, mediante depósito ou transferência PIX para:'),
-   par('▪ Banco: '+(pixParts[0]||'')),par('▪ Favorecido: '+(pixParts[1]||'')),par('▪ Chave PIX (CPF): '+(pixParts[2]||'')),
-   par('3.3. Do Atraso: O não pagamento no prazo estipulado acarretará a cobrança de multa diária de '+moedaExtenso(ct.multaDiaria)+' por dia de atraso, limitando-se ao domingo da semana corrente.'),
-   par('Parágrafo Único: Caso o pagamento não seja regularizado até o domingo, o LOCATÁRIO obriga-se a devolver o veículo na segunda-feira subsequente, às 07:30h, sob pena de configuração de apropriação indébita e autorização para bloqueio imediato do veículo via rastreador.'),
-   par('3.4. '+ct.cl34.replace(/^3\.4\.?\s*/,'')),
-   par('Observação: Em caso de rescisão antecipada por culpa do LOCATÁRIO, este valor não será reembolsado nem utilizado para abater dívidas, sendo retido a título de penalidade.')]),esp(),
-  headerBar('CLÁUSULA QUARTA – DA GARANTIA (CAUÇÃO)'),
-  box([par('4.1. O LOCATÁRIO entrega neste ato, a título de CAUÇÃO, a quantia de '+moedaExtenso(ct.caucao)+'.'),
-   par('4.2. Finalidade da Caução: Este valor visa garantir prioritariamente o pagamento da Franquia do Seguro em caso de sinistro.'),
-   par('4.2.1. Em caso de sinistro com acionamento do seguro, se o valor da franquia for superior à caução, o LOCATÁRIO deverá complementar a diferença imediatamente.'),
-   par('4.3. Devolução: Não havendo avarias, multas, sinistros ou pendências financeiras, a caução será devolvida ao LOCATÁRIO no prazo de 30 (trinta) dias após o término do contrato, tempo necessário para verificação de multas de trânsito tardias.'),
-   par('4.4. Perda da Caução: O valor será retido integralmente em favor do LOCADOR nos casos de:'),
-   par('▪ Roubo/Furto onde o veículo não seja recuperado (para cobrir despesas administrativas/franquia);'),
-   par('▪ Rescisão contratual motivada por infração do LOCATÁRIO;'),
-   par('▪ Danos mecânicos ou estéticos não reparados pelo LOCATÁRIO.')]),esp(),
-  headerBar('CLÁUSULA QUINTA – DAS OBRIGAÇÕES E USO DO VEÍCULO'),
-  box([par('5.1. O veículo será utilizado exclusivamente dentro dos limites do Estado do Rio de Janeiro e somente pelo LOCATÁRIO identificado neste contrato. É expressamente vedada a sublocação, empréstimo ou cessão a terceiros.'),
-   par('5.2. Da Vistoria Quinzenal: O LOCATÁRIO obriga-se a apresentar o veículo para vistoria quinzenal todas as Quartas-feiras, no período da manhã, em local indicado pelo LOCADOR.'),
-   par('5.3. Deveres de Conservação: O LOCATÁRIO deve zelar pelo veículo como se fosse seu, guardando-o em local seguro (garagem ou estacionamento fechado) durante o pernoite.')]),esp(),
-  headerBar('CLÁUSULA SEXTA – DA MANUTENÇÃO E CONSERVAÇÃO'),
-  box([par('Fica estabelecido o seguinte regime de responsabilidade sobre as manutenções, considerando que o veículo é entregue com todos os filtros e óleos trocados:'),
-   par('A) Manutenção Compartilhada (50% LOCADOR / 50% LOCATÁRIO): Todas as manutenções mecânicas, elétricas, suspensão, freios, pneus e demais peças decorrentes do desgaste natural do uso ou quebras imprevistas serão custeadas na proporção de 50% para o LOCADOR e 50% para o LOCATÁRIO.'),
-   par('▪ Procedimento: O LOCATÁRIO deve informar o problema antes da execução e o serviço deve ser realizado por mecânico indicado ou aprovado pelo LOCADOR.'),
-   par('B) Manutenção Exclusiva do LOCATÁRIO (100%): Compete exclusivamente ao LOCATÁRIO arcar com o custo integral dos seguintes itens de consumo periódico, visto que recebeu o veículo com estes itens novos/trocados:'),
-   par('▪ Troca de óleo do motor;'),par('▪ Filtro de óleo;'),par('▪ Filtro de ar do motor;'),
-   par('▪ Filtro de combustível;'),par('▪ Filtro de cabine (ar-condicionado);'),par('▪ Refil da bomba de combustível.'),
-   par('C) Danos por Mau Uso: Qualquer dano causado comprovadamente por negligência, imperícia ou imprudência (ex: condução perigosa, queda em buracos severos que danifiquem rodas/suspensão fora do desgaste natural, falta de água/óleo) será de responsabilidade integral (100%) do LOCATÁRIO.'),
-   par('D) Oficina: Todas as manutenções, inclusive as de responsabilidade do LOCATÁRIO, deverão ser executadas em oficina designada pelo LOCADOR.')]),esp(),
-  headerBar('CLÁUSULA SÉTIMA – DOS SINISTROS E SEGURO'),
-  box([par('7.1. O veículo possui seguro contratado pelo LOCADOR. No entanto, a existência do seguro não isenta o LOCATÁRIO de responsabilidade em casos de dolo ou culpa grave.'),
-   par('7.2. O LOCATÁRIO será integralmente responsável (civil e criminalmente) e arcará com todos os prejuízos (inclusive o valor do carro, se o seguro negar a cobertura) caso o sinistro ocorra sob as seguintes condições:'),
-   par('▪ Embriaguez ao volante ou uso de substâncias tóxicas;'),par('▪ Excesso de velocidade ou direção perigosa;'),
-   par('▪ Fuga do local do acidente;'),par('▪ Condução por pessoa não autorizada neste contrato.'),
-   par('7.3. Lucros Cessantes: Durante o período em que o veículo estiver parado para conserto por culpa do LOCATÁRIO (acidente ou mau uso), o valor das diárias continuará sendo cobrado normalmente.')]),esp(),
-  headerBar('CLÁUSULA OITAVA – DAS INFRAÇÕES DE TRÂNSITO (MULTAS)'),
-  box([par('8.1. O LOCATÁRIO assume inteira responsabilidade por todas as multas de trânsito decorrentes de infrações cometidas no período em que estiver com a posse do veículo.'),
-   par('8.2. O LOCATÁRIO obriga-se a fornecer seus dados para a Indicação do Real Infrator imediatamente após a notificação.'),
-   par('8.3. O valor da multa deverá ser pago/reembolsado ao LOCADOR até a semana posterior ao recebimento da notificação, independentemente de recurso.')]),esp(),
-  headerBar('CLÁUSULA NONA – DA RESCISÃO E PENALIDADES'),
-  box([par('9.1. O contrato poderá ser rescindido de pleno direito pelo LOCADOR, com exigência de devolução imediata do bem e retenção da caução, nos seguintes casos:'),
-   par('▪ Atraso no pagamento semanal;'),par('▪ Não apresentação do veículo para vistoria quinzenal;'),
-   par('▪ Ocorrência de mais de 02 (duas) multas de trânsito no mesmo mês;'),par('▪ Manutenção negligenciada ou avarias não comunicadas.'),
-   par('9.2. Caso o LOCATÁRIO deseje rescindir o contrato antes do prazo final ('+dataBR(ct.fim)+'), deverá pagar multa contratual no valor de '+moedaExtenso(ct.multaRescisao)+', salvo se a rescisão partir do LOCADOR sem culpa do Locatário.')]),esp(),
-  headerBar('CLÁUSULA DÉCIMA – DA DEVOLUÇÃO DO VEÍCULO'),
-  box([par('10.1. Ao final do contrato, o veículo deverá ser devolvido nas mesmas condições de recebimento: limpo, higienizado, e sem avarias.'),
-   par('10.2. A não devolução do veículo na data estipulada configurará Apropriação Indébita (Art. 168 do Código Penal), autorizando o LOCADOR a solicitar Busca e Apreensão e registro de ocorrência policial.')]),esp(),
-  headerBar('CLÁUSULA DÉCIMA PRIMEIRA – DO FORO'),
-  box([par('As partes elegem o Foro da Comarca de São Gonçalo/RJ para dirimir quaisquer dúvidas ou litígios oriundos deste contrato, renunciando a qualquer outro.')]),esp(),
+  headerBar('IDENTIFICAÇÃO DAS PARTES CONTRATANTES'),idTable,esp()
+ ].concat(secoes).concat([
   par('E, por estarem assim justos e contratados, assinam o presente em 02 (duas) vias de igual teor e forma.',{after:160}),
   par('São Gonçalo, '+dataLonga(ct.inicio)+'.',{after:400}),
   new D.Table({columnWidths:[meio,meio],width:{size:TOTAL,type:W},rows:[
@@ -986,7 +1108,7 @@ function montarDocx(ct,carro){
     cell([par('',{after:300}),par('________________________________',{center:true,after:0}),par(lt.nome,{center:true,after:0}),par('CPF: '+lt.cpf,{center:true,after:0})],meio)
    ]})
   ]})
- ];
+ ]);
  var doc=new D.Document({
   sections:[{
    properties:{page:{margin:{top:900,bottom:900,left:1000,right:1000}}},
