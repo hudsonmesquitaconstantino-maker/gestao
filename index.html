@@ -132,7 +132,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=18; var APP_DATE='16/07/2026';
+var APP_VER=19; var APP_DATE='16/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -270,7 +270,7 @@ function normCarro(c){
  if(c.motorCodigo&&!/\d/.test(c.motorCodigo))c.motorCodigo='';
  c.ano=c.ano||'';c.chassi=c.chassi||'';c.renavam=c.renavam||'';c.cor=c.cor||'';c.potencia=c.potencia||'';
  c.combustivel=c.combustivel||'';c.proprietario=c.proprietario||'';c.locadorId=c.locadorId||'hudson';
- c.exercicioCRLV=c.exercicioCRLV||'';c.kmAtual=Number(c.kmAtual)||0;c.kmUltima=Number(c.kmUltima)||0;c.kmUltimaData=c.kmUltimaData||'';c.valorRef=Number(c.valorRef)||0;
+ c.exercicioCRLV=c.exercicioCRLV||'';c.codigoRadio=c.codigoRadio||'';c.kmAtual=Number(c.kmAtual)||0;c.kmUltima=Number(c.kmUltima)||0;c.kmUltimaData=c.kmUltimaData||'';c.valorRef=Number(c.valorRef)||0;
  c.motorista=c.motorista||'';c.status=c.status||'parado';
  c.semanalPadrao=Number(c.semanalPadrao)||0;c.caucaoPadrao=Number(c.caucaoPadrao)||0;
  c.proximasTrocas=toArr(c.proximasTrocas);c.contratoVigenteId=c.contratoVigenteId||'';
@@ -585,6 +585,7 @@ function ficha(pk){window._fichaPk=pk;
   '<b>Combustível</b><span>'+esc(c.combustivel)+'</span>'+
   '<b>Chassi</b><span style="font-family:Menlo,monospace;font-size:12px">'+esc(c.chassi)+'</span>'+
   '<b>Renavam</b><span>'+esc(c.renavam)+'</span>'+
+  '<b>Código do rádio</b><span>'+esc(c.codigoRadio||'—')+'</span>'+
   '<b>KM de quando alugou</b><span>'+fmtKm(c.kmAtual)+' km <span style="color:var(--tx2)">(início do contrato)</span></span>'+
   '<b>Última quilometragem</b><span>'+fmtKm(c.kmUltima||c.kmAtual)+' km'+(c.kmUltimaData?' <span style="color:var(--tx2)">· em '+dataBR(c.kmUltimaData)+'</span>':' <span style="color:var(--tx2)">(último registro)</span>')+'</span>'+
   '<b>Proprietário</b><span>'+esc(c.proprietario)+'</span>'+
@@ -688,6 +689,7 @@ function formCarro(pk){
   f('Motor (simples)','motor',c.motor,'1.8 8v')+f('Ano fab/modelo','ano',c.ano,'2018/2019')+
   f('Modelo do CRLV','modeloCRLV',c.modeloCRLV)+f('Código do motor (CRLV)','motorCodigo',c.motorCodigo)+
   f('Chassi','chassi',c.chassi)+f('Renavam','renavam',c.renavam)+
+  f('Código do rádio','codigoRadio',c.codigoRadio||'')+
   '<div class="grid2">'+f('Cor','cor',c.cor)+f('Potência','potencia',c.potencia,'102CV/1400')+'</div>'+
   f('Combustível','combustivel',c.combustivel,'Flex / GNV 16m³')+
   '<div class="grid2">'+f('KM de quando alugou','kmAtual',c.kmAtual||'')+f('Última quilometragem','kmUltima',c.kmUltima||'')+'</div>'+
@@ -717,7 +719,7 @@ function salvarCarro(pk){
  c.placa=fmtPlaca(placa);c.nome=g('nome')||c.placa;c.motor=g('motor');c.ano=g('ano');
  c.modeloCRLV=g('modeloCRLV');c.motorCodigo=g('motorCodigo');c.chassi=g('chassi').toUpperCase();c.renavam=g('renavam');
  c.cor=g('cor');c.potencia=g('potencia');c.combustivel=g('combustivel');
- c.kmAtual=parseInt(g('kmAtual').replace(/\D/g,''),10)||0;c.kmUltima=parseInt(g('kmUltima').replace(/\D/g,''),10)||c.kmAtual;c.kmUltimaData=(document.getElementById('e_kmUltimaData')||{value:''}).value||c.kmUltimaData||'';c.exercicioCRLV=g('exercicioCRLV');
+ c.kmAtual=parseInt(g('kmAtual').replace(/\D/g,''),10)||0;c.kmUltima=parseInt(g('kmUltima').replace(/\D/g,''),10)||c.kmAtual;c.kmUltimaData=(document.getElementById('e_kmUltimaData')||{value:''}).value||c.kmUltimaData||'';c.exercicioCRLV=g('exercicioCRLV');c.codigoRadio=g('codigoRadio');
  c.proprietario=g('proprietario');c.locadorId=document.getElementById('fc_locadorId').value;
  c.valorRef=parseBRL(g('valorRef'));c.semanalPadrao=parseBRL(g('semanalPadrao'));c.caucaoPadrao=parseBRL(g('caucaoPadrao'));
  S.carros[placa]=c;save();
@@ -1073,6 +1075,7 @@ function obsListaHtml(lst,dentroSheet){
    '<div class="ck" onclick="obsToggle(\''+o.id+'\')"></div>'+
    '<div class="tx">'+esc(o.texto)+
     (o.data||o.feito?'<div class="dt">'+(o.data?'anotado: '+dataBR(o.data):'')+(o.feito&&o.feitoEm?' · ✅ feito em '+dataBR(o.feitoEm):'')+'</div>':'')+'</div>'+
+   '<div class="x" onclick="obsEditar(\''+o.id+'\')">✎</div>'+
    '<div class="x" onclick="obsExcluir(\''+o.id+'\')">✕</div>'+
   '</div>';
  }).join('');
@@ -1091,6 +1094,23 @@ function obsExcluir(id){
   if(window._fichaPk)ficha(window._fichaPk);
   toast('🗑 Excluída');
  });
+}
+function obsEditar(id){
+ var o=S.observacoes[id];if(!o)return;
+ openSheet('<h3>✎ Editar observação</h3>'+
+  '<p class="sub">Ajuste o texto (ex.: risque o que já foi feito e deixe só o que falta).</p>'+
+  '<label>Texto da observação</label><textarea id="obsTxtEd" style="min-height:110px">'+esc(o.texto)+'</textarea>'+
+  '<button class="btn ok" onclick="obsEditarSalvar(\''+id+'\')">Salvar alteração</button>'+
+  '<button class="btn sec" onclick="closeSheet(2)">Voltar sem mexer</button>',2);
+}
+function obsEditarSalvar(id){
+ var o=S.observacoes[id];if(!o)return;
+ var e=document.getElementById('obsTxtEd');var tx=(e&&e.value||'').trim();
+ if(!tx){toast('O texto não pode ficar vazio — para apagar use o ✕');return}
+ o.texto=tx;o.editadoEm=Date.now();
+ save();closeSheet(2);render();
+ if(window._fichaPk)ficha(window._fichaPk);
+ toast('✎ Observação atualizada');
 }
 function obsNova(pk){
  var t=pk?'Nova observação — '+esc(S.carros[pk]?tituloCarro(S.carros[pk]):pk):'Nova observação geral (empresa)';
