@@ -121,7 +121,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=10; var APP_DATE='16/07/2026';
+var APP_VER=11; var APP_DATE='16/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -385,10 +385,26 @@ function checkUpdate(manual){
    var nv=m?parseInt(m[1],10):0;
    if(nv>APP_VER&&!_updFound){
     _updFound=true;toast('⬆️ Atualizando para a v'+nv+'…');
+    var aplicar=function(){
+     /* 1) grava a versão nova no cache que o atalho usa (próximas aberturas já nascem novas) */
+     try{
+      if(window.caches&&caches.open){
+       var base=location.pathname.replace(/index\.html$/,'');
+       var mk=function(){return new Response(t,{headers:{'Content-Type':'text/html; charset=utf-8'}})};
+       caches.open('gestao-guimas-v1').then(function(c){
+        c.put(new Request(base),mk()).catch(function(){});
+        c.put(new Request(base+'index.html'),mk()).catch(function(){});
+       }).catch(function(){});
+      }
+     }catch(e){}
+     /* 2) troca o app em memória AGORA, sem navegar (funciona no atalho da tela de início) */
+     setTimeout(function(){
+      try{document.open();document.write(t);document.close()}
+      catch(e){try{location.replace(location.pathname+'?v='+nv)}catch(e2){location.reload()}}
+     },350);
+    };
     setTimeout(function tryReload(){
-     if(safeToReload()){
-      try{location.replace(location.pathname+'?v='+nv)}catch(e){location.reload()}
-     }else{setTimeout(tryReload,20000)}
+     if(safeToReload()){aplicar()}else{setTimeout(tryReload,20000)}
     },1200);
    }else if(manual&&!_updFound){
     toast(nv&&nv<=APP_VER?'✅ v'+APP_VER+' já é a versão mais recente publicada':'⚠️ Não consegui ler a versão publicada');
