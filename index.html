@@ -90,6 +90,14 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 .cdoc .cass th{background:#1f3864;color:#fff;padding:6px;font-size:12.5px}
 .cdoc .cass td{border:1px solid #9db3cc;padding:26px 8px 10px;text-align:center;font-size:12.5px}
 .cdoc .cline{border-top:1.5px solid #1a2433;margin:26px 12px 8px}
+
+.obs{display:flex;gap:10px;align-items:flex-start;background:var(--card2);border-radius:10px;padding:10px;margin:0 0 6px}
+.obs .ck{min-width:26px;height:26px;border:2px solid var(--tx2);border-radius:50%;margin-top:1px}
+.obs.done .ck{background:var(--ok);border-color:var(--ok)}
+.obs.done .tx{text-decoration:line-through;color:var(--tx2)}
+.obs .tx{flex:1;font-size:14px;line-height:1.4}
+.obs .dt{font-size:11px;color:var(--tx2);margin-top:3px}
+.obs .x{color:var(--tx2);padding:2px 6px;font-size:15px}
 </style>
 </head>
 <body>
@@ -104,6 +112,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <button id="nb1" onclick="go(1)"><span class="ic">🔧</span>Manutenção</button>
 <button id="nb2" onclick="go(2)"><span class="ic">📄</span>Contrato</button>
 <button id="nb3" onclick="go(3)"><span class="ic">📚</span>Histórico</button>
+<button id="nb4" onclick="go(4)"><span class="ic">📝</span>Observações</button>
 </nav>
 <div id="toast"></div>
 
@@ -121,7 +130,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=13; var APP_DATE='16/07/2026';
+var APP_VER=14; var APP_DATE='16/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -293,7 +302,7 @@ function normManut(m){
 }
 function normState(s){
  s=s||{};s.rev=s.rev||0;s.dev=s.dev||'';
- s.carros=s.carros||{};s.contratos=s.contratos||{};s.manutencoes=s.manutencoes||{};
+ s.carros=s.carros||{};s.contratos=s.contratos||{};s.manutencoes=s.manutencoes||{};s.observacoes=s.observacoes||{};
  Object.keys(s.carros).forEach(function(k){
   var c=s.carros[k]||{};
   if(c.proprietario)c.proprietario=String(c.proprietario).replace(/\s*\((mãe|avó|empresa do amigo)\)/g,'');
@@ -306,6 +315,35 @@ function normState(s){
  Object.keys(s.carros).forEach(function(k){s.carros[k]=normCarro(s.carros[k])});
  Object.keys(s.contratos).forEach(function(k){s.contratos[k]=normContrato(s.contratos[k])});
  Object.keys(s.manutencoes).forEach(function(k){s.manutencoes[k]=normManut(s.manutencoes[k])});
+ if(!s.migObsIniciais){s.migObsIniciais=true;
+ if(!s.observacoes['ob_seed_001'])s.observacoes['ob_seed_001']={"id": "ob_seed_001", "carro": "KYI8I20", "texto": "Alessandro: trocar o para-choque dianteiro e pintar no Delaias", "data": "2026-06-01", "criadoEm": 1752770000001, "feito": false, "feitoEm": ""};
+ if(!s.observacoes['ob_seed_002'])s.observacoes['ob_seed_002']={"id": "ob_seed_002", "carro": "QQF8J26", "texto": "Carlos: pintar o para-choque traseiro e tampa de mala, as 2 portas lado direito, para-lama traseiro lado direito e comprar as letras da escrita Renault e L do Logan traseira", "data": "2026-08-03", "criadoEm": 1752770000002, "feito": false, "feitoEm": ""};
+ if(!s.observacoes['ob_seed_003'])s.observacoes['ob_seed_003']={"id": "ob_seed_003", "carro": "QQF8J26", "texto": "Carlos: comprar a placa do comando do ar-condicionado no ferro-velho", "data": "2026-07-03", "criadoEm": 1752770000003, "feito": false, "feitoEm": ""};
+ if(!s.observacoes['ob_seed_004'])s.observacoes['ob_seed_004']={"id": "ob_seed_004", "carro": "LSY7B47", "texto": "Reinaldo: trocar as calhas de chuva", "data": "2026-07-03", "criadoEm": 1752770000004, "feito": false, "feitoEm": ""};
+ if(!s.observacoes['ob_seed_005'])s.observacoes['ob_seed_005']={"id": "ob_seed_005", "carro": "QQF8J26", "texto": "Carlos: fazer a revisão geral no Bruno", "data": "2026-07-03", "criadoEm": 1752770000005, "feito": false, "feitoEm": ""};
+ if(!s.observacoes['ob_seed_006'])s.observacoes['ob_seed_006']={"id": "ob_seed_006", "carro": "IYZ7E28", "texto": "Eugenio: trocar o rolamento do alternador e do compressor de ar", "data": "2026-07-03", "criadoEm": 1752770000006, "feito": false, "feitoEm": ""};
+ if(!s.observacoes['ob_seed_007'])s.observacoes['ob_seed_007']={"id": "ob_seed_007", "carro": "QMW8H90", "texto": "Marcelo: vai fazer a revisão geral no Vinícius", "data": "2026-07-03", "criadoEm": 1752770000007, "feito": false, "feitoEm": ""};
+ if(!s.observacoes['ob_seed_008'])s.observacoes['ob_seed_008']={"id": "ob_seed_008", "carro": "QUB5B64", "texto": "Helton: vai lanternar e pintar as duas portas do lado direito e para-lama traseiro lado direito no Delaias", "data": "2026-07-06", "criadoEm": 1752770000008, "feito": false, "feitoEm": ""};
+ if(!s.observacoes['ob_seed_009'])s.observacoes['ob_seed_009']={"id": "ob_seed_009", "carro": "AZH5D13", "texto": "Higor: TEM QUE TROCAR O PNEU TRASEIRO LADO ESQUERDO", "data": "2026-07-06", "criadoEm": 1752770000009, "feito": false, "feitoEm": ""};
+ if(!s.observacoes['ob_seed_010'])s.observacoes['ob_seed_010']={"id": "ob_seed_010", "carro": "QEK3D83", "texto": "Everton: tem que trocar o óleo", "data": "2026-07-16", "criadoEm": 1752770000010, "feito": false, "feitoEm": ""};
+ if(!s.observacoes['ob_seed_011'])s.observacoes['ob_seed_011']={"id": "ob_seed_011", "carro": "KXJ8F38", "texto": "Elcimar: fazer a lanternagem e pintura do para-choque traseiro, polir o para-lama traseiro lado esquerdo, ver todos os arranhados do carro e fazer as morças das portas do lado direito, no Delaias", "data": "", "criadoEm": 1752770000011, "feito": false, "feitoEm": ""};
+ if(!s.observacoes['ob_seed_012'])s.observacoes['ob_seed_012']={"id": "ob_seed_012", "carro": "PVC8G42", "texto": "Jorge: vai pintar o para-choque traseiro, pintar a porta traseira lado esquerdo e direito e trocar a lanterna de placa no Delaias", "data": "", "criadoEm": 1752770000012, "feito": false, "feitoEm": ""};
+ if(!s.observacoes['ob_seed_013'])s.observacoes['ob_seed_013']={"id": "ob_seed_013", "carro": "PVC8G42", "texto": "Jorge: tem que consertar com algum eletricista o brake light (luz de freio) que não está funcionando", "data": "", "criadoEm": 1752770000013, "feito": false, "feitoEm": ""};
+ if(!s.observacoes['ob_seed_014'])s.observacoes['ob_seed_014']={"id": "ob_seed_014", "carro": "PVC8G42", "texto": "Jorge: tem que comprar o botão do vidro elétrico do motorista no ferro-velho (o atual está ruim)", "data": "", "criadoEm": 1752770000014, "feito": false, "feitoEm": ""};
+ if(!s.observacoes['ob_seed_015'])s.observacoes['ob_seed_015']={"id": "ob_seed_015", "carro": "QQF8J26", "texto": "Carlos: tem que comprar uma calota dianteira lado esquerdo", "data": "", "criadoEm": 1752770000015, "feito": false, "feitoEm": ""};
+ if(!s.observacoes['ob_seed_016'])s.observacoes['ob_seed_016']={"id": "ob_seed_016", "carro": "FHP4B47", "texto": "André: tem que procurar a bucha do pedal da embreagem pra trocar com Antonio", "data": "", "criadoEm": 1752770000016, "feito": false, "feitoEm": ""};
+ if(!s.observacoes['ob_seed_017'])s.observacoes['ob_seed_017']={"id": "ob_seed_017", "carro": "FHP4B47", "texto": "André: tem que levar o carro no eletricista pra ver o elevador do vidro do carona", "data": "", "criadoEm": 1752770000017, "feito": false, "feitoEm": ""};
+ if(!s.observacoes['ob_seed_018'])s.observacoes['ob_seed_018']={"id": "ob_seed_018", "carro": "FHP4B47", "texto": "André: tem que levar o carro no eletricista pra fazer uma revisão na caixa de fusível", "data": "", "criadoEm": 1752770000018, "feito": false, "feitoEm": ""};
+ if(!s.observacoes['ob_seed_019'])s.observacoes['ob_seed_019']={"id": "ob_seed_019", "carro": "FHP4B47", "texto": "André: vai comprar o tubo do filtro de ar do motor", "data": "", "criadoEm": 1752770000019, "feito": false, "feitoEm": ""};
+ if(!s.observacoes['ob_seed_020'])s.observacoes['ob_seed_020']={"id": "ob_seed_020", "carro": "KYI8I20", "texto": "Alessandro: tem que trocar o miolo da porta do motorista", "data": "", "criadoEm": 1752770000020, "feito": false, "feitoEm": ""};
+ if(!s.observacoes['ob_seed_021'])s.observacoes['ob_seed_021']={"id": "ob_seed_021", "carro": "LMX7B24", "texto": "Alves: fazer a lanternagem e pintura da porta traseira lado esquerdo e para-lama traseiro lado esquerdo, capô, para-choque dianteiro e para-lama dianteiro lado esquerdo no Delaias, e trocar o retrovisor do lado esquerdo por original", "data": "", "criadoEm": 1752770000021, "feito": false, "feitoEm": ""};
+ if(!s.observacoes['ob_seed_022'])s.observacoes['ob_seed_022']={"id": "ob_seed_022", "carro": "PYO4A55", "texto": "Marlon: tem que comprar a parte de vidro do farol de milha do lado esquerdo e as lâmpadas de milha, e o acabamento do banco do passageiro lado direito", "data": "", "criadoEm": 1752770000022, "feito": false, "feitoEm": ""};
+ if(!s.observacoes['ob_seed_023'])s.observacoes['ob_seed_023']={"id": "ob_seed_023", "carro": "PXO9H80", "texto": "Gilberto: tem que pintar o para-choque dianteiro", "data": "", "criadoEm": 1752770000023, "feito": false, "feitoEm": ""};
+ if(!s.observacoes['ob_seed_024'])s.observacoes['ob_seed_024']={"id": "ob_seed_024", "carro": "PYO4A55", "texto": "Marlon: fazer a troca da porta traseira lado esquerdo, lanternagem e pintura do para-choque traseiro, da tampa de mala, para-lama traseiro lado esquerdo, porta dianteira lado esquerdo, para-choque dianteiro e porta dianteira lado direito", "data": "", "criadoEm": 1752770000024, "feito": false, "feitoEm": ""};
+ if(!s.observacoes['ob_seed_025'])s.observacoes['ob_seed_025']={"id": "ob_seed_025", "carro": "LMY2A63", "texto": "Ver com Bruno reboquista pra resolver o Grand Siena vermelho na Águia Car", "data": "", "criadoEm": 1752770000025, "feito": false, "feitoEm": ""};
+ if(!s.observacoes['ob_seed_026'])s.observacoes['ob_seed_026']={"id": "ob_seed_026", "carro": "", "texto": "Acertar R$ 100,00 ao Eliel referente à troca da válvula do cilindro do GNV do Voyage 20 QUB", "data": "2026-07-14", "criadoEm": 1752770000026, "feito": false, "feitoEm": ""};
+ if(!s.observacoes['ob_seed_027'])s.observacoes['ob_seed_027']={"id": "ob_seed_027", "carro": "", "texto": "Acertar R$ 450,00 referente a 3 pneus meia-vida Dunlop 175/65R14 — 1 do Uno 18 IXY (no Rafael) e 2 do Ka 18 PZT", "data": "2026-07-14", "criadoEm": 1752770000027, "feito": false, "feitoEm": ""};
+ }
  Object.keys(s.carros).forEach(function(k){var c=s.carros[k];if(c.kmUltima<c.kmAtual)c.kmUltima=c.kmAtual});
  Object.keys(s.manutencoes).forEach(function(k){var m=s.manutencoes[k],c=s.carros[m.carro];if(c&&m.odometro>c.kmUltima)c.kmUltima=m.odometro});
  return s;
@@ -342,9 +380,9 @@ function conectar(chave){
    v=normState(v);
    if(!S){S=v;_ready=true;render();setTimeout(function(){atualizarFipe()},2500);return}
    if(v.dev===DEV||v.rev<=S.rev)return;
-   var adota=function(){S=v;if(TAB===0||TAB===3)render();
+   var adota=function(){S=v;if(TAB===0||TAB===3||TAB===4)render();
     try{if(window._fichaPk&&document.getElementById('ovSheet').classList.contains('open')&&!document.getElementById('ovSheet2').classList.contains('open'))ficha(window._fichaPk)}catch(e){}};
-   if(digitando()){var iv=setInterval(function(){if(!digitando()){clearInterval(iv);S=v;if(TAB===0||TAB===3)keepScreenStill(render)}},2000)}
+   if(digitando()){var iv=setInterval(function(){if(!digitando()){clearInterval(iv);S=v;if(TAB===0||TAB===3||TAB===4)keepScreenStill(render)}},2000)}
    else keepScreenStill(adota);
   },function(err){toast('⚠️ Sem acesso ao banco: '+err.message)});
  });
@@ -423,7 +461,7 @@ setInterval(checkUpdate,15*60*1000);
 <script>
 /* ===================== TELAS ===================== */
 var TAB=0,BUSCA_H='';
-function go(t){TAB=t;for(var i=0;i<4;i++)document.getElementById('nb'+i).classList.toggle('on',i===t);window.scrollTo(0,0);render()}
+function go(t){TAB=t;for(var i=0;i<5;i++)document.getElementById('nb'+i).classList.toggle('on',i===t);window.scrollTo(0,0);render()}
 function render(){
  var _sy=0;try{_sy=window.scrollY||0}catch(e){}
  var m=document.getElementById('main');
@@ -431,7 +469,8 @@ function render(){
  if(TAB===0)m.innerHTML=vFrota();
  else if(TAB===1)m.innerHTML=vManut();
  else if(TAB===2)m.innerHTML=vContrato();
- else m.innerHTML=vHistorico();
+ else if(TAB===3)m.innerHTML=vHistorico();
+ else m.innerHTML=vObs();
  try{window.scrollTo(0,_sy)}catch(e){}
 }
 function carrosOrdenados(){
@@ -506,7 +545,12 @@ function ficha(pk){window._fichaPk=pk;
  if(anteriores.length){
   h+='<div class="sect">Contratos anteriores ('+anteriores.length+')</div>';
   anteriores.forEach(function(x){
-   h+='<div class="card" style="margin:0 0 6px"><div class="tit" style="font-size:14px">'+esc(x.locatario.nome)+'</div>'+
+   h+='<div class="sect">Observações / pendências ('+obsDoCarro(pk,false).length+')</div>';
+ h+=obsListaHtml(obsDoCarro(pk,false),true);
+ h+='<button class="btn mini sec" onclick="obsNova(\''+pk+'\')">➕ Nova observação deste carro</button>';
+ var _oc=obsDoCarro(pk,true);
+ if(_oc.length)h+='<details style="margin:8px 0"><summary class="sub">✅ Concluídas ('+_oc.length+')</summary>'+obsListaHtml(_oc,true)+'</details>';
+ h+='<div class="card" style="margin:0 0 6px"><div class="tit" style="font-size:14px">'+esc(x.locatario.nome)+'</div>'+
     '<div class="sub">'+dataBR(x.inicio)+' → '+dataBR(x.fim)+(x.encerradoEm?' · encerrado em '+dataBR(x.encerradoEm):'')+'</div>'+docBtns(x)+
     '<button class="btn mini red" onclick="excluirContrato(\''+x.id+'\')">🗑 Excluir contrato</button></div>';
   });
@@ -943,6 +987,87 @@ function mRasc(){ /* rascunho contra fechamento do app */
  }catch(e){}
 }
 function mRascLimpa(){try{localStorage.removeItem(RASC_K)}catch(e){}}
+
+/* ===================== OBSERVAÇÕES / PENDÊNCIAS ===================== */
+function obsDoCarro(pk,feito){
+ return Object.keys(S.observacoes||{}).map(function(k){return S.observacoes[k]})
+  .filter(function(o){return o.carro===pk&&!!o.feito===!!feito})
+  .sort(function(a,b){return (b.criadoEm||0)-(a.criadoEm||0)});
+}
+function obsGerais(feito){
+ return Object.keys(S.observacoes||{}).map(function(k){return S.observacoes[k]})
+  .filter(function(o){return !o.carro&&!!o.feito===!!feito})
+  .sort(function(a,b){return (b.criadoEm||0)-(a.criadoEm||0)});
+}
+function obsListaHtml(lst,dentroSheet){
+ if(!lst.length)return '<div class="sub" style="margin:0 0 8px">Nada pendente. 🎉</div>';
+ return lst.map(function(o){
+  return '<div class="obs'+(o.feito?' done':'')+'">'+
+   '<div class="ck" onclick="obsToggle(\''+o.id+'\')"></div>'+
+   '<div class="tx" onclick="obsToggle(\''+o.id+'\')">'+esc(o.texto)+
+    (o.data||o.feito?'<div class="dt">'+(o.data?'anotado: '+dataBR(o.data):'')+(o.feito&&o.feitoEm?' · ✅ feito em '+dataBR(o.feitoEm):'')+'</div>':'')+'</div>'+
+   '<div class="x" onclick="obsExcluir(\''+o.id+'\')">✕</div>'+
+  '</div>';
+ }).join('');
+}
+function obsToggle(id){
+ var o=S.observacoes[id];if(!o)return;
+ o.feito=!o.feito;o.feitoEm=o.feito?hoje():'';
+ save();render();
+ if(window._fichaPk)ficha(window._fichaPk);
+ toast(o.feito?'✅ Marcada como feita':'↩️ Voltou para pendentes');
+}
+function obsExcluir(id){
+ var o=S.observacoes[id];if(!o)return;
+ ask('Excluir esta observação?',o.texto.slice(0,80)+'…','Excluir',function(){
+  delete S.observacoes[id];save();render();
+  if(window._fichaPk)ficha(window._fichaPk);
+  toast('🗑 Excluída');
+ });
+}
+function obsNova(pk){
+ var t=pk?'Nova observação — '+esc(S.carros[pk]?tituloCarro(S.carros[pk]):pk):'Nova observação geral (empresa)';
+ openSheet('<h3>'+t+'</h3>'+
+  (pk?'':'<p class="sub">Use para acertos com lojas/pessoas e pendências que não são de um carro específico.</p>')+
+  '<label>Escreva a pendência</label><textarea id="obsTxt" style="min-height:90px"></textarea>'+
+  '<button class="btn ok" onclick="obsSalvar(\''+(pk||'')+'\')">Salvar</button>'+
+  '<button class="btn sec" onclick="closeSheet(2)">Voltar</button>',2);
+ setTimeout(function(){var e=document.getElementById('obsTxt');if(e)e.focus()},250);
+}
+function obsSalvar(pk){
+ var e=document.getElementById('obsTxt');var tx=(e&&e.value||'').trim();
+ if(!tx){toast('Escreva a observação');return}
+ var id=idNovo('ob');
+ S.observacoes[id]={id:id,carro:pk||'',texto:tx,data:hoje(),criadoEm:Date.now(),feito:false,feitoEm:''};
+ save();closeSheet(2);render();
+ if(pk&&window._fichaPk)ficha(pk);
+ toast('📝 Observação salva'+(pk?'' :' nas gerais'));
+}
+function vObs(){
+ var pend=obsGerais(false),conc=obsGerais(true);
+ var h='<div class="card"><div class="tit">📝 Observações gerais (empresa)</div>'+
+  '<p class="sub">Acertos com lojas e pendências que não são de um carro. As pendências de cada carro ficam na ficha do carro.</p>'+
+  '<button class="btn" onclick="obsNova(\'\')">➕ Nova observação geral</button>'+
+  '<div class="sect">Pendentes ('+pend.length+')</div>'+obsListaHtml(pend,false)+
+  (conc.length?'<details style="margin:8px 0"><summary class="sub">✅ Concluídas ('+conc.length+')</summary>'+obsListaHtml(conc,false)+'</details>':'')+
+ '</div>';
+ /* pendências por carro (visão geral que substitui o Notas) */
+ var carros={};
+ Object.keys(S.observacoes||{}).forEach(function(k){var o=S.observacoes[k];if(o.carro&&!o.feito)carros[o.carro]=(carros[o.carro]||0)+1});
+ var pks=Object.keys(carros);
+ h+='<div class="card"><div class="tit">🚗 Pendências por carro</div>';
+ if(!pks.length)h+='<div class="sub">Nenhum carro com pendência aberta.</div>';
+ else pks.sort().forEach(function(pk){
+  var c=S.carros[pk];if(!c)return;
+  h+='<div class="card tap" style="margin:0 0 6px" onclick="ficha(\''+pk+'\')"><div class="row"><div class="grow">'+
+   '<div class="tit" style="font-size:14px">'+esc(tituloCarro(c))+' — '+esc(fmtPlaca(c.placa))+'</div>'+
+   '<div class="sub">'+esc(primNome(c.motorista||''))+'</div></div>'+
+   '<div style="color:var(--warn);font-weight:800">'+carros[pk]+' pendente'+(carros[pk]>1?'s':'')+'</div></div></div>';
+ });
+ h+='</div>';
+ return h;
+}
+
 function vManut(){
  var rasc=null;try{rasc=JSON.parse(localStorage.getItem(RASC_K)||'null')}catch(e){}
  if(rasc&&(rasc.MP||[]).concat(rasc.MB||[]).some(function(x){return (x.valor||x.desc||x.servicos||'').toString().trim()})){
