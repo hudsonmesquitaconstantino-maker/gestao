@@ -132,7 +132,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=17; var APP_DATE='16/07/2026';
+var APP_VER=18; var APP_DATE='16/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -386,8 +386,12 @@ function conectar(chave){
   FAMHASH=h;
   REF=DB.ref('familias/'+h+'/gestao');
   DOCSREF=DB.ref('familias/'+h+'/gestaoDocs');
-  REF.on('value',function(snap){
-   var v=snap.val();
+  REF.on('value',function(snap){aplicarSnapshot(snap.val())},function(err){toast('⚠️ Sem acesso ao banco: '+err.message)});
+  vigiarConexao();
+ });
+}
+function aplicarSnapshot(v){
+   _lastSnap=Date.now();
    document.getElementById('syncDot').classList.add('on');
    if(!v){ /* nuvem vazia p/ esta chave */
     _gotCloud=true;_ready=true;
@@ -418,8 +422,36 @@ function conectar(chave){
     try{if(window._fichaPk&&document.getElementById('ovSheet').classList.contains('open')&&!document.getElementById('ovSheet2').classList.contains('open'))ficha(window._fichaPk)}catch(e){}};
    if(digitando()){var iv=setInterval(function(){if(!digitando()){clearInterval(iv);keepScreenStill(adota)}},2000)}
    else keepScreenStill(adota);
-  },function(err){toast('⚠️ Sem acesso ao banco: '+err.message)});
+}
+var _lastSnap=0,_connOk=false,_resyncT=null;
+function resync(){ /* busca ativa: mesmo caminho do tempo real */
+ if(!REF)return;
+ REF.once('value').then(function(s){aplicarSnapshot(s.val())}).catch(function(){});
+}
+function religar(){
+ try{firebase.database().goOnline()}catch(e){}
+ clearTimeout(_resyncT);_resyncT=setTimeout(resync,900);
+}
+function vigiarConexao(){
+ try{
+  DB.ref('.info/connected').on('value',function(s){
+   _connOk=(s.val()===true);
+   var d=document.getElementById('syncDot');if(d)d.classList.toggle('on',_connOk);
+   if(!_connOk&&document.visibilityState==='visible')setTimeout(function(){try{firebase.database().goOnline()}catch(e){}},1500);
+  });
+ }catch(e){}
+ /* volta ao 1º plano => religa e ressincroniza na hora */
+ ['visibilitychange','pageshow','focus','online'].forEach(function(ev){
+  window.addEventListener(ev,function(){
+   if(ev==='visibilitychange'&&document.visibilityState!=='visible')return;
+   religar();
+  });
  });
+ /* vigia: a cada 25s com app visível, se a conexão morreu, ressuscita */
+ setInterval(function(){
+  if(document.visibilityState!=='visible')return;
+  if(!_connOk){try{firebase.database().goOffline()}catch(e){};setTimeout(religar,400)}
+ },25000);
 }
 function boot(){
  firebase.initializeApp(firebaseConfig);
