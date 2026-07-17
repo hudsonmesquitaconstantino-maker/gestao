@@ -121,7 +121,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=12; var APP_DATE='16/07/2026';
+var APP_VER=13; var APP_DATE='16/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -534,10 +534,10 @@ function ficha(pk){window._fichaPk=pk;
 function fimPassado(iso){return iso&&iso<hoje()}
 function docBtns(ct){
  var pk=ct.carro,h='';
- if(ct.temPdf)h+='<button class="btn mini" onclick="verDoc(\''+pk+'/ct/'+ct.id+'/pdf\',\'Contrato '+esc(primNome(ct.locatario.nome))+'\')">👁 Ler contrato</button>';
+ if(ct.temPdf)h+='<button class="btn mini" onclick="verDoc(\''+pk+'/ct/'+ct.id+'/pdf\',\'Contrato '+esc(primNome(ct.locatario.nome))+'\',\''+pk+'\',\'pdf\')">👁 Ler contrato</button>';
  else if(ct.origem==='gerado')h+='<button class="btn mini" onclick="verContratoHtml(\''+ct.id+'\')">👁 Ler contrato</button>';
- if(ct.temDocx)h+='<button class="btn mini sec" onclick="baixarDoc(\''+pk+'/ct/'+ct.id+'/docx\',\'Contrato '+esc(fmtPlaca(pk))+' '+esc(primNome(ct.locatario.nome))+'.docx\')">⬇️ Word</button>';
- if(ct.temPdf)h+='<button class="btn mini sec" onclick="baixarDoc(\''+pk+'/ct/'+ct.id+'/pdf\',\'Contrato '+esc(fmtPlaca(pk))+' '+esc(primNome(ct.locatario.nome))+'.pdf\')">⬇️ PDF</button>';
+ if(ct.temDocx)h+='<button class="btn mini sec" onclick="baixarDoc(\''+pk+'/ct/'+ct.id+'/docx\',\'Contrato '+esc(fmtPlaca(pk))+' '+esc(primNome(ct.locatario.nome))+'.docx\',\''+pk+'\',\'docx\')">⬇️ Word</button>';
+ if(ct.temPdf)h+='<button class="btn mini sec" onclick="baixarDoc(\''+pk+'/ct/'+ct.id+'/pdf\',\'Contrato '+esc(fmtPlaca(pk))+' '+esc(primNome(ct.locatario.nome))+'.pdf\',\''+pk+'\',\'pdf\')">⬇️ PDF</button>';
  if(ct.origem==='gerado')h+='<button class="btn mini sec" onclick="regerarContrato(\''+ct.id+'\')">📝 Regerar Word</button>';
  return h;
 }
@@ -628,26 +628,39 @@ function idb(){return new Promise(function(res,rej){var r=indexedDB.open('gestao
 function idbGet(k){return idb().then(function(db){return new Promise(function(res){var t=db.transaction('d').objectStore('d').get(k);t.onsuccess=function(){res(t.result||null)};t.onerror=function(){res(null)}})}).catch(function(){return null})}
 function idbSet(k,v){return idb().then(function(db){return new Promise(function(res){var t=db.transaction('d','readwrite');t.objectStore('d').put(v,k);t.oncomplete=function(){res(true)};t.onerror=function(){res(false)}})}).catch(function(){return false})}
 function idbDel(k){return idb().then(function(db){return new Promise(function(res){var t=db.transaction('d','readwrite');t.objectStore('d').delete(k);t.oncomplete=function(){res(true)};t.onerror=function(){res(false)}})}).catch(function(){return false})}
-function pegarDoc(path){ /* aparelho primeiro; se não tiver, nuvem (e guarda p/ offline) */
+function pegarDoc(path,pk,tipo){ /* aparelho → nuvem → autocorreção do caminho */
  return idbGet(path).then(function(d){
   if(d&&d.b64)return d;
   return DOCSREF.child(path).once('value').then(function(s){
    var v=s.val();
-   if(v&&v.b64)idbSet(path,v);
-   return v;
+   if(v&&v.b64){idbSet(path,v);return v}
+   if(!pk||!tipo)return v;
+   /* autocorreção: procura o arquivo deste carro na nuvem (contrato pode estar sob outro id) */
+   return DOCSREF.child(pk+'/ct').once('value').then(function(s2){
+    var todos=s2.val()||{},achado=null,achId=null;
+    Object.keys(todos).forEach(function(cid){
+     var n=todos[cid]||{};
+     if(!achado&&n[tipo]&&n[tipo].b64){achado=n[tipo];achId=cid}
+    });
+    if(achado){
+     idbSet(path,achado);
+     DOCSREF.child(path).set(achado).catch(function(){}); /* conserta o endereço p/ próxima vez */
+    }
+    return achado;
+   });
   });
  });
 }
-function verDoc(path,titulo){
+function verDoc(path,titulo,pk,tipo){
  toast('📄 Abrindo…');
- pegarDoc(path).then(function(d){
+ pegarDoc(path,pk,tipo).then(function(d){
   if(!d||!d.b64){toast('Documento não encontrado — rode a Importação inicial ou o download offline (⚙️)');return}
   abrirPdf(d.b64,titulo);
  }).catch(function(e){toast('⚠️ '+e.message)});
 }
-function verDocx(path,titulo){ /* abre o Word real (visual idêntico ao modelo) via QuickLook do iPhone */
+function verDocx(path,titulo,pk,tipo){
  toast('📄 Abrindo o Word…');
- pegarDoc(path).then(function(d){
+ pegarDoc(path,pk,tipo).then(function(d){
   if(!d||!d.b64){toast('Arquivo não encontrado — gere/regere o contrato ou rode o download offline (⚙️)');return}
   var url=b64ToUrl(d.b64,d.mime||'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
   var w=window.open(url,'_blank');
@@ -683,9 +696,9 @@ function abrirPdf(b64,titulo){
   if(host)host.outerHTML='<iframe class="pdfv" src="'+url+'"></iframe>';
  });
 }
-function baixarDoc(path,nome){
+function baixarDoc(path,nome,pk,tipo){
  toast('📥 Preparando arquivo…');
- pegarDoc(path).then(function(d){
+ pegarDoc(path,pk,tipo).then(function(d){
   if(!d||!d.b64){toast('Arquivo não encontrado — rode a Importação inicial ou o download offline (⚙️)');return}
   var a=document.createElement('a');a.href=b64ToUrl(d.b64,d.mime||'application/octet-stream');a.download=nome;
   document.body.appendChild(a);a.click();setTimeout(function(){document.body.removeChild(a)},400);
