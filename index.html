@@ -100,6 +100,10 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 .obs .x{color:var(--tx2);padding:2px 6px;font-size:15px}
 
 .taflex{min-height:38px;height:38px;resize:none;overflow:hidden;line-height:1.3;padding:8px}
+
+.prow2{display:grid;grid-template-columns:84px 1fr 26px;gap:6px;align-items:start;margin:0 0 6px}
+.obsdate{color:var(--acc);font-weight:800;font-size:12.5px;margin:10px 0 6px;letter-spacing:.3px}
+.obsdate.late{color:var(--warn)}
 </style>
 </head>
 <body>
@@ -132,7 +136,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=19; var APP_DATE='16/07/2026';
+var APP_VER=20; var APP_DATE='16/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -304,8 +308,8 @@ function normManut(m){
 }
 function normState(s){
  s=s||{};s.rev=s.rev||0;s.dev=s.dev||'';
- s.carros=s.carros||{};s.contratos=s.contratos||{};s.manutencoes=s.manutencoes||{};s.observacoes=s.observacoes||{};s.apagados=s.apagados||{};
- Object.keys(s.apagados).forEach(function(id){delete s.manutencoes[id];delete s.contratos[id];delete s.observacoes[id]});
+ s.carros=s.carros||{};s.contratos=s.contratos||{};s.manutencoes=s.manutencoes||{};s.observacoes=s.observacoes||{};s.termos=s.termos||{};s.apagados=s.apagados||{};
+ Object.keys(s.apagados).forEach(function(id){delete s.manutencoes[id];delete s.contratos[id];delete s.observacoes[id];delete s.termos[id]});
  Object.keys(s.carros).forEach(function(k){
   var c=s.carros[k]||{};
   if(c.proprietario)c.proprietario=String(c.proprietario).replace(/\s*\((mãe|avó|empresa do amigo)\)/g,'');
@@ -358,7 +362,7 @@ var DB=null,REF=null,DOCSREF=null,FAMHASH='',_pushT=null,_ready=false,_gotCloud=
 function mergeColecoes(base,extra){ /* une item a item; respeita exclusões (túmulos) */
  var add=0;base.apagados=base.apagados||{};var ea=(extra&&extra.apagados)||{};
  Object.keys(ea).forEach(function(k){base.apagados[k]=ea[k]});
- ['manutencoes','contratos','observacoes'].forEach(function(c){
+ ['manutencoes','contratos','observacoes','termos'].forEach(function(c){
   base[c]=base[c]||{};var e=(extra&&extra[c])||{};
   Object.keys(e).forEach(function(k){if(!base[c][k]&&!base.apagados[k]){base[c][k]=e[k];add++}});
   Object.keys(base.apagados).forEach(function(k){if(base[c][k])delete base[c][k]});
@@ -615,6 +619,18 @@ function ficha(pk){window._fichaPk=pk;
    h+='<div class="card" style="margin:0 0 6px"><div class="tit" style="font-size:14px">'+esc(x.locatario.nome)+'</div>'+
     '<div class="sub">'+dataBR(x.inicio)+' → '+dataBR(x.fim)+(x.encerradoEm?' · encerrado em '+dataBR(x.encerradoEm):'')+'</div>'+docBtns(x)+
     '<button class="btn mini red" onclick="excluirContrato(\''+x.id+'\')">🗑 Excluir contrato</button></div>';
+  });
+ }
+h+='<div class="sect">Devolução do carro</div>';
+ h+='<button class="btn mini sec" onclick="abrirTermo(\''+pk+'\')">🧾 Gerar termo de devolução / acerto de contas</button>';
+ var _tms=Object.keys(S.termos||{}).map(function(k){return S.termos[k]}).filter(function(t){return t.carro===pk}).sort(function(a,b){return (b.criadoEm||0)-(a.criadoEm||0)});
+ if(_tms.length){
+  h+='<div class="sect">Termos de devolução ('+_tms.length+')</div>';
+  _tms.forEach(function(t){
+   h+='<div class="card" style="margin:0 0 6px"><div class="tit" style="font-size:14px">'+esc(primNome(t.motorista||''))+' · '+esc(t.motivo||'')+'</div>'+
+    '<div class="sub">'+dataBR(t.dataFim||'')+' · '+(t.aDevolver?'a devolver':'devido pelo motorista')+' R$ '+fmtBRL(t.saldo||0)+'</div>'+
+    '<button class="btn mini" onclick="verTermo(\''+t.id+'\')">👁 Ver / copiar</button>'+
+    '<button class="btn mini red" onclick="excluirTermo(\''+t.id+'\')">🗑 Excluir</button></div>';
   });
  }
  /* OBSERVAÇÕES DO CARRO */
@@ -1057,6 +1073,191 @@ function mRasc(){ /* rascunho contra fechamento do app */
 }
 function mRascLimpa(){try{localStorage.removeItem(RASC_K)}catch(e){}}
 
+
+/* ===================== TERMO DE DEVOLUÇÃO E ACERTO DE CONTAS ===================== */
+var TP=[],TB=[],TI=[],TD=[],TC=[],_termoPk='';
+var RASC_T='gestao_rascunho_termo';
+function tRasc(){try{var g=function(i){var e=document.getElementById(i);return e?e.value:''};
+ localStorage.setItem(RASC_T,JSON.stringify({pk:_termoPk,mot:g('tvMot'),motivo:g('tvMotivo'),ini:g('tvIni'),fim:g('tvFim'),odo:g('tvOdo'),TP:TP,TB:TB,TI:TI,TD:TD,TC:TC,em:Date.now()}));}catch(e){}}
+function tRascLimpa(){try{localStorage.removeItem(RASC_T)}catch(e){}}
+function abrirTermo(pk){
+ _termoPk=pk;
+ var c=S.carros[pk],ct=c.contratoVigenteId?S.contratos[c.contratoVigenteId]:null;
+ var rasc=null;try{rasc=JSON.parse(localStorage.getItem(RASC_T)||'null')}catch(e){}
+ if(rasc&&rasc.pk===pk){TP=rasc.TP||[];TB=rasc.TB||[];TI=rasc.TI||[];TD=rasc.TD||[];TC=rasc.TC||[]}
+ else{
+  TP=[{valor:'',desc:'',loja:''}];
+  TB=[{titulo:'Mecânico',nome:'Vinícius',valor:'',servicos:''}];
+  TI=[{valor:'',desc:''}];
+  TD=[{valor:'',desc:'Semanal pendente'}];
+  TC=ct?[{valor:ct.caucao||'',desc:'Caução retida no início do contrato'}]:[{valor:'',desc:''}];
+ }
+ var h='<h3>🧾 Termo de devolução — '+esc(tituloCarro(c))+' ('+esc(fmtPlaca(pk))+')</h3>'+
+  '<p class="sub">Preencha como na manutenção. Ao gerar: o contrato vigente é encerrado e vai para o histórico, e o carro fica sem motorista — tudo automático.</p>'+
+  '<label>Motorista</label><input id="tvMot" oninput="tRasc()" value="'+esc((rasc&&rasc.pk===pk&&rasc.mot)||(ct?ct.locatario.nome:c.motorista||''))+'">'+
+  '<label>Motivo da devolução</label><select id="tvMotivo" onchange="tCalc()"><option'+((rasc&&rasc.motivo)==='Quebra de Contrato'?' selected':'')+'>Fim do Contrato</option><option'+((rasc&&rasc.motivo)==='Quebra de Contrato'?' selected':'')+'>Quebra de Contrato</option></select>'+
+  '<div class="grid2"><div><label>Início do contrato</label><input type="date" id="tvIni" onchange="tCalc()" value="'+esc((rasc&&rasc.ini)||(ct?ct.inicio:''))+'"></div>'+
+  '<div><label>Data da devolução</label><input type="date" id="tvFim" onchange="tCalc()" value="'+esc((rasc&&rasc.fim)||hoje())+'"></div></div>'+
+  '<label>Odômetro na devolução (km)</label><input id="tvOdo" inputmode="numeric" oninput="tRasc()" value="'+esc((rasc&&rasc.odo)||'')+'" placeholder="'+(c.kmUltima||c.kmAtual||'')+'">'+
+  '<div class="sect">1. Manutenção corretiva — divisão 50/50 · Peças</div><div id="tvPecas"></div>'+
+  '<button class="btn mini sec" onclick="TP.push({valor:\'\',desc:\'\',loja:\'\'});tDesenha()">➕ Peça</button>'+
+  '<div class="sect">Mão de obra (um bloco por profissional)</div><div id="tvBlocos"></div>'+
+  '<button class="btn mini sec" onclick="TB.push({titulo:\'Mecânico\',nome:\'\',valor:\'\',servicos:\'\'});tDesenha()">➕ Mão de obra</button>'+
+  '<div class="sect">2. Custos de uso integral — 100% motorista</div><div id="tvInteg"></div>'+
+  '<button class="btn mini sec" onclick="TI.push({valor:\'\',desc:\'\'});tDesenha()">➕ Custo integral</button>'+
+  '<div class="sect">3. Balanço — Débitos</div><div id="tvDeb"></div>'+
+  '<button class="btn mini sec" onclick="TD.push({valor:\'\',desc:\'\'});tDesenha()">➕ Débito</button>'+
+  '<div class="sect">3. Balanço — Créditos (caução etc.)</div><div id="tvCred"></div>'+
+  '<button class="btn mini sec" onclick="TC.push({valor:\'\',desc:\'\'});tDesenha()">➕ Crédito</button>'+
+  '<div class="sect">Resumo</div><div class="filestat" id="tvResumo"></div>'+
+  '<button class="btn ok" onclick="gerarTermo()">🧾 GERAR TERMO + ENCERRAR CONTRATO</button>'+
+  '<button class="btn sec" onclick="closeSheet(2)">Voltar</button>';
+ openSheet(h,2);
+ setTimeout(function(){tDesenha();if(rasc&&rasc.pk===pk)toast('📝 Rascunho do termo recuperado')},60);
+}
+function tNum(v){v=String(v==null?'':v).replace(/\./g,'').replace(',','.');var n=parseFloat(v);return isNaN(n)?0:n}
+function tDesenha(){
+ var hp=TP.map(function(p,i){return '<div class="prow">'+
+  '<input inputmode="decimal" placeholder="valor" value="'+esc(p.valor)+'" oninput="TP['+i+'].valor=this.value;tCalc()">'+
+  '<textarea rows="1" class="taflex" placeholder="descrição da peça" oninput="TP['+i+'].desc=this.value;tRasc();taGrow(this)">'+esc(p.desc)+'</textarea>'+
+  '<input placeholder="loja" value="'+esc(p.loja)+'" oninput="TP['+i+'].loja=this.value;tRasc()">'+
+  '<div class="x" onclick="TP.splice('+i+',1);tDesenha()">✕</div></div>'}).join('');
+ document.getElementById('tvPecas').innerHTML=hp||'<div class="sub">Sem peças.</div>';
+ var hb=TB.map(function(b,i){return '<div class="card" style="margin:0 0 8px">'+
+  '<div class="grid2"><div><label>Título</label><input value="'+esc(b.titulo)+'" oninput="TB['+i+'].titulo=this.value;tRasc()" placeholder="Mecânico / Borracheiro / Auto Center"></div>'+
+  '<div><label>Profissional</label><input value="'+esc(b.nome)+'" oninput="TB['+i+'].nome=this.value;tRasc()"></div></div>'+
+  '<label>Valor (deixe vazio se não houver)</label><input inputmode="decimal" value="'+esc(b.valor)+'" oninput="TB['+i+'].valor=this.value;tCalc()">'+
+  '<label>Serviços (um por linha)</label><textarea rows="2" class="taflex" oninput="TB['+i+'].servicos=this.value;tRasc();taGrow(this)">'+esc(b.servicos)+'</textarea>'+
+  '<button class="btn mini red" onclick="TB.splice('+i+',1);tDesenha()">✕ Remover bloco</button></div>'}).join('');
+ document.getElementById('tvBlocos').innerHTML=hb||'<div class="sub">Sem mão de obra.</div>';
+ var hi=TI.map(function(x,i){return '<div class="prow2">'+
+  '<input inputmode="decimal" placeholder="valor" value="'+esc(x.valor)+'" oninput="TI['+i+'].valor=this.value;tCalc()">'+
+  '<textarea rows="1" class="taflex" placeholder="descrição (ex.: troca de óleo + mão de obra)" oninput="TI['+i+'].desc=this.value;tRasc();taGrow(this)">'+esc(x.desc)+'</textarea>'+
+  '<div class="x" onclick="TI.splice('+i+',1);tDesenha()">✕</div></div>'}).join('');
+ document.getElementById('tvInteg').innerHTML=hi||'<div class="sub">Nenhum.</div>';
+ var hd=TD.map(function(x,i){return '<div class="prow2">'+
+  '<input inputmode="decimal" placeholder="valor" value="'+esc(x.valor)+'" oninput="TD['+i+'].valor=this.value;tCalc()">'+
+  '<textarea rows="1" class="taflex" placeholder="descrição (ex.: Semanal pendente)" oninput="TD['+i+'].desc=this.value;tRasc();taGrow(this)">'+esc(x.desc)+'</textarea>'+
+  '<div class="x" onclick="TD.splice('+i+',1);tDesenha()">✕</div></div>'}).join('');
+ document.getElementById('tvDeb').innerHTML=hd||'<div class="sub">Nenhum.</div>';
+ var hc=TC.map(function(x,i){return '<div class="prow2">'+
+  '<input inputmode="decimal" placeholder="valor" value="'+esc(x.valor)+'" oninput="TC['+i+'].valor=this.value;tCalc()">'+
+  '<textarea rows="1" class="taflex" placeholder="descrição (ex.: Caução retida no início do contrato)" oninput="TC['+i+'].desc=this.value;tRasc();taGrow(this)">'+esc(x.desc)+'</textarea>'+
+  '<div class="x" onclick="TC.splice('+i+',1);tDesenha()">✕</div></div>'}).join('');
+ document.getElementById('tvCred').innerHTML=hc||'<div class="sub">Nenhum.</div>';
+ setTimeout(function(){document.querySelectorAll('#ovSheetBody2 .taflex').forEach(function(t){taGrow(t)})},30);
+ tCalc();
+}
+function tTot(a){return a.reduce(function(s,x){return s+tNum(x.valor)},0)}
+function tCalc(){
+ tRasc();
+ var tp=tTot(TP),tmo=tTot(TB),tm=tp+tmo,cota=tm/2,ti=tTot(TI),td=tTot(TD),tc=tTot(TC);
+ var saldo=cota+ti+td-tc;
+ var el=document.getElementById('tvResumo');if(!el)return;
+ el.innerHTML='🔩 Peças: R$ '+fmtBRL(tp)+' · 🛠 M.obra: R$ '+fmtBRL(tmo)+' → Manutenção: R$ '+fmtBRL(tm)+'<br>'+
+  '½ Cota do motorista: <b>R$ '+fmtBRL(cota)+'</b> · 💯 Integrais: R$ '+fmtBRL(ti)+'<br>'+
+  '➕ Débitos: R$ '+fmtBRL(td)+' · ➖ Créditos: R$ '+fmtBRL(tc)+'<br>'+
+  (saldo>=0?'<b style="color:var(--warn)">SALDO DEVIDO PELO MOTORISTA: R$ '+fmtBRL(saldo)+'</b>'
+   :'<b style="color:var(--ok)">SALDO A DEVOLVER AO MOTORISTA: R$ '+fmtBRL(-saldo)+'</b>');
+}
+function diasEntre(a,b){var pa=a.split('-'),pb=b.split('-');return Math.round((new Date(+pb[0],+pb[1]-1,+pb[2])-new Date(+pa[0],+pa[1]-1,+pa[2]))/864e5)}
+function somaDias(iso,n){var p=iso.split('-'),d=new Date(+p[0],+p[1]-1,+p[2]);d.setDate(d.getDate()+n);return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)}
+function buildTermoTexto(t,carro){
+ var x='*TERMO DE DEVOLUÇÃO E ACERTO DE CONTAS*\n\n';
+ x+='VEÍCULO: '+carro.nome+' '+(carro.motor||'')+'\n';
+ x+='PLACA: '+fmtPlaca(carro.placa)+'\n';
+ x+='MOTORISTA: '+t.motorista+'\n';
+ x+='PERÍODO DO CONTRATO: '+periodoTexto(t.dataIni,t.dataFim)+' (Total: '+diasEntre(t.dataIni,t.dataFim)+' dias)\n';
+ x+='*MOTIVO DA DEVOLUÇÃO:* '+t.motivo+'\n';
+ x+='*ODÔMETRO:* '+fmtKm(t.odometro)+' km\n\n';
+ x+='*[ 1. MANUTENÇÃO CORRETIVA - DIVISÃO 50/50 ]*\n\n';
+ x+='PEÇAS: R$ '+fmtBRL(t.totalPecas)+'\n';
+ t.pecas.forEach(function(p){x+='• R$ '+fmtBRL(p.valor)+' - '+p.desc+(p.loja?' ('+p.loja+')':'')+'\n'});
+ t.blocos.forEach(function(b){
+  x+='\n'+b.titulo+' - '+b.nome+(tNum(b.valor)?': R$ '+fmtBRL(tNum(b.valor)):'')+'\n';
+  String(b.servicos||'').split('\n').map(function(s){return s.trim()}).filter(Boolean).forEach(function(s){x+='• '+s+'\n'});
+ });
+ x+='\nTotal da Manutenção: R$ '+fmtBRL(t.totalManut)+'\n';
+ x+='Cota do Motorista (50%): R$ '+fmtBRL(t.cota)+'\n\n';
+ x+='*[ 2. CUSTOS DE USO INTEGRAL - 100% MOTORISTA ]*\n';
+ t.integrais.forEach(function(i){x+='• R$ '+fmtBRL(tNum(i.valor))+' - '+i.desc+'\n'});
+ x+='\nTotal de Custos Integrais: R$ '+fmtBRL(t.totalIntegrais)+'\n\n';
+ x+='*[ 3. BALANÇO FINANCEIRO DO CONTRATO ]*\n\n';
+ if(t.debitos.length){x+='DÉBITOS:\n';t.debitos.forEach(function(d){x+='• R$ '+fmtBRL(tNum(d.valor))+' - '+d.desc+'\n'});x+='\n'}
+ if(t.creditos.length){x+='CRÉDITOS:\n';t.creditos.forEach(function(cq){x+='• R$ '+fmtBRL(tNum(cq.valor))+' - '+cq.desc+'\n'});x+='\n'}
+ x+='*[ RESUMO FINAL ]*\n';
+ x+='(+) Cota Manutenção (50%): R$ '+fmtBRL(t.cota)+'\n';
+ x+='(+) Custos Integrais (100%): R$ '+fmtBRL(t.totalIntegrais)+'\n';
+ x+='(+) Débitos Pendentes: R$ '+fmtBRL(t.totalDebitos)+'\n';
+ if(t.creditos.length)x+='(-) Créditos Abatidos (Caução): R$ '+fmtBRL(t.totalCreditos)+'\n';
+ x+='\n'+(t.aDevolver?'*SALDO LÍQUIDO A DEVOLVER: R$ '+fmtBRL(t.saldo)+'*':'*SALDO LÍQUIDO DEVIDO PELO MOTORISTA: R$ '+fmtBRL(t.saldo)+'*')+'\n';
+ if(t.motivo==='Fim do Contrato'){
+  x+='\n*[ CRONOGRAMA DE RESSARCIMENTO ]*\n';
+  x+='Conforme política de frota da empresa, o saldo residual da caução é liberado após o ciclo de 30 dias contados da entrega do veículo. Este período é obrigatório para a conferência de multas de trânsito em processamento no Detran e vistorias técnicas de encerramento de contrato.\n\n';
+  x+='DATA PROGRAMADA PARA DEPÓSITO: '+dataBR(somaDias(t.dataFim,30))+'\n';
+  x+='MÉTODO DE PAGAMENTO: Transferência via PIX\n\n';
+  x+='Atenção: Por favor, responda a esta mensagem enviando a sua Chave PIX e o nome do titular da conta para deixarmos programado no sistema.';
+ }
+ return x;
+}
+function gerarTermo(){
+ var g=function(i){var e=document.getElementById(i);return e?e.value:''};
+ var pk=_termoPk,c=S.carros[pk];
+ var mot=g('tvMot').trim(),motivo=g('tvMotivo'),ini=g('tvIni'),fim=g('tvFim');
+ if(!mot){toast('Informe o motorista');return}
+ if(!ini||!fim){toast('Informe as datas do período');return}
+ var odo=parseInt(String(g('tvOdo')).replace(/\D/g,''),10)||0;
+ var pecas=TP.filter(function(p){return p.desc||tNum(p.valor)}).map(function(p){return {valor:tNum(p.valor),desc:p.desc,loja:p.loja}});
+ var blocos=TB.filter(function(b){return (b.nome||b.servicos||tNum(b.valor))});
+ var integrais=TI.filter(function(x){return x.desc||tNum(x.valor)});
+ var debitos=TD.filter(function(x){return x.desc&&(tNum(x.valor)||x.desc)}).filter(function(x){return x.desc||tNum(x.valor)});
+ var creditos=TC.filter(function(x){return x.desc||tNum(x.valor)});
+ var tp=pecas.reduce(function(s,p){return s+p.valor},0),tmo=blocos.reduce(function(s,b){return s+tNum(b.valor)},0);
+ var tm=tp+tmo,cota=tm/2;
+ var ti=integrais.reduce(function(s,x){return s+tNum(x.valor)},0);
+ var td=debitos.reduce(function(s,x){return s+tNum(x.valor)},0);
+ var tc=creditos.reduce(function(s,x){return s+tNum(x.valor)},0);
+ var saldoRaw=cota+ti+td-tc;
+ var id=idNovo('tm');
+ var t={id:id,carro:pk,motorista:mot,motivo:motivo,dataIni:ini,dataFim:fim,odometro:odo,
+  pecas:pecas,blocos:blocos,integrais:integrais,debitos:debitos,creditos:creditos,
+  totalPecas:tp,totalMO:tmo,totalManut:tm,cota:cota,totalIntegrais:ti,totalDebitos:td,totalCreditos:tc,
+  saldo:Math.abs(saldoRaw),aDevolver:saldoRaw<0,criadoEm:Date.now()};
+ t.texto=buildTermoTexto(t,c);
+ S.termos[id]=t;
+ /* ---- AUTOMAÇÃO: encerra contrato, carro fica sem motorista ---- */
+ if(c.contratoVigenteId&&S.contratos[c.contratoVigenteId]){
+  S.contratos[c.contratoVigenteId].status='encerrado';
+  S.contratos[c.contratoVigenteId].encerradoEm=fim;
+ }
+ c.contratoVigenteId='';c.motorista='';c.status='parado';
+ if(odo&&odo>(c.kmUltima||0)){c.kmUltima=odo;c.kmUltimaData=fim}
+ save();tRascLimpa();
+ closeSheet(2);ficha(pk);render();
+ toast('🧾 Termo gerado · contrato encerrado (foi p/ o histórico) · carro sem motorista');
+ setTimeout(function(){verTermo(id)},350);
+}
+function verTermo(id){
+ var t=S.termos[id];if(!t)return;
+ openSheet('<h3>🧾 Termo — '+esc(primNome(t.motorista))+'</h3>'+
+  '<pre style="white-space:pre-wrap;background:var(--card2);border-radius:10px;padding:12px;font-size:12.5px;line-height:1.45">'+esc(t.texto)+'</pre>'+
+  '<button class="btn" onclick="copiarTermo(\''+id+'\')">📋 Copiar (padrão WhatsApp)</button>'+
+  '<button class="btn sec" onclick="closeSheet(2)">Fechar</button>',2);
+}
+function copiarTermo(id){
+ var t=S.termos[id];if(!t)return;
+ if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t.texto).then(function(){toast('📋 Copiado')},function(){toast('Segure no texto e copie manualmente')});
+ else toast('Segure no texto e copie manualmente');
+}
+function excluirTermo(id){
+ var t=S.termos[id];if(!t)return;
+ ask('Excluir este termo?','De '+primNome(t.motorista)+' — não afeta o contrato já encerrado.','Excluir',function(){
+  S.apagados[id]=Date.now();delete S.termos[id];save();
+  if(window._fichaPk)ficha(window._fichaPk);
+  toast('🗑 Termo excluído');
+ });
+}
+
 /* ===================== OBSERVAÇÕES / PENDÊNCIAS ===================== */
 function obsDoCarro(pk,feito){
  return Object.keys(S.observacoes||{}).map(function(k){return S.observacoes[k]})
@@ -1068,9 +1269,31 @@ function obsGerais(feito){
   .filter(function(o){return !o.carro&&!!o.feito===!!feito})
   .sort(function(a,b){return (b.criadoEm||0)-(a.criadoEm||0)});
 }
+function obsDataCab(iso){
+ var DS=['dom','seg','ter','qua','qui','sáb'.replace('á','a')?'sex':'sex','sáb'];
+ DS=['dom','seg','ter','qua','qui','sex','sáb'];
+ var p=iso.split('-'),d=new Date(+p[0],+p[1]-1,+p[2]);
+ var atras=iso<hoje();
+ return '<div class="obsdate'+(atras?' late':'')+'">📅 '+DS[d.getDay()]+', '+dataBR(iso)+(atras?' · atrasada':'')+'</div>';
+}
 function obsListaHtml(lst,dentroSheet){
  if(!lst.length)return '<div class="sub" style="margin:0 0 8px">Nada pendente. 🎉</div>';
- return lst.map(function(o){
+ var pend=!lst[0].feito;
+ if(pend){ /* agrupar por data prevista, como o Lembretes */
+  var com=lst.filter(function(o){return o.quando}).sort(function(a,b){return a.quando<b.quando?-1:1});
+  var sem=lst.filter(function(o){return !o.quando});
+  var h='',ult='';
+  com.forEach(function(o){
+   if(o.quando!==ult){h+=obsDataCab(o.quando);ult=o.quando}
+   h+=obsItemHtml(o);
+  });
+  if(sem.length){if(com.length)h+='<div class="obsdate">🗒 Sem data</div>';sem.forEach(function(o){h+=obsItemHtml(o)})}
+  return h;
+ }
+ return lst.map(obsItemHtml).join('');
+}
+function obsItemHtml(o){
+ return [o].map(function(o){
   return '<div class="obs'+(o.feito?' done':'')+'">'+
    '<div class="ck" onclick="obsToggle(\''+o.id+'\')"></div>'+
    '<div class="tx">'+esc(o.texto)+
@@ -1100,6 +1323,7 @@ function obsEditar(id){
  openSheet('<h3>✎ Editar observação</h3>'+
   '<p class="sub">Ajuste o texto (ex.: risque o que já foi feito e deixe só o que falta).</p>'+
   '<label>Texto da observação</label><textarea id="obsTxtEd" style="min-height:110px">'+esc(o.texto)+'</textarea>'+
+  '<label>Para quando (opcional)</label><input type="date" id="obsQuandoEd" value="'+esc(o.quando||'')+'">'+
   '<button class="btn ok" onclick="obsEditarSalvar(\''+id+'\')">Salvar alteração</button>'+
   '<button class="btn sec" onclick="closeSheet(2)">Voltar sem mexer</button>',2);
 }
@@ -1107,7 +1331,7 @@ function obsEditarSalvar(id){
  var o=S.observacoes[id];if(!o)return;
  var e=document.getElementById('obsTxtEd');var tx=(e&&e.value||'').trim();
  if(!tx){toast('O texto não pode ficar vazio — para apagar use o ✕');return}
- o.texto=tx;o.editadoEm=Date.now();
+ o.texto=tx;o.quando=(document.getElementById('obsQuandoEd')||{value:''}).value||'';o.editadoEm=Date.now();
  save();closeSheet(2);render();
  if(window._fichaPk)ficha(window._fichaPk);
  toast('✎ Observação atualizada');
@@ -1117,6 +1341,7 @@ function obsNova(pk){
  openSheet('<h3>'+t+'</h3>'+
   (pk?'':'<p class="sub">Use para acertos com lojas/pessoas e pendências que não são de um carro específico.</p>')+
   '<label>Escreva a pendência</label><textarea id="obsTxt" style="min-height:90px"></textarea>'+
+  '<label>Para quando (opcional — organiza por data, estilo Lembretes)</label><input type="date" id="obsQuando">'+
   '<button class="btn ok" onclick="obsSalvar(\''+(pk||'')+'\')">Salvar</button>'+
   '<button class="btn sec" onclick="closeSheet(2)">Voltar</button>',2);
  setTimeout(function(){var e=document.getElementById('obsTxt');if(e)e.focus()},250);
@@ -1125,7 +1350,8 @@ function obsSalvar(pk){
  var e=document.getElementById('obsTxt');var tx=(e&&e.value||'').trim();
  if(!tx){toast('Escreva a observação');return}
  var id=idNovo('ob');
- S.observacoes[id]={id:id,carro:pk||'',texto:tx,data:hoje(),criadoEm:Date.now(),feito:false,feitoEm:''};
+ var q=(document.getElementById('obsQuando')||{value:''}).value||'';
+ S.observacoes[id]={id:id,carro:pk||'',texto:tx,data:hoje(),quando:q,criadoEm:Date.now(),feito:false,feitoEm:''};
  save();closeSheet(2);render();
  if(pk&&window._fichaPk)ficha(pk);
  toast('📝 Observação salva'+(pk?'' :' nas gerais'));
