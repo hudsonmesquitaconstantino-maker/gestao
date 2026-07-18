@@ -136,7 +136,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=22; var APP_DATE='16/07/2026';
+var APP_VER=23; var APP_DATE='16/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -395,6 +395,11 @@ function normState(s){
 
 /* ---------- sync (mesmo padrão do Semanal: last-write-wins, debounce, eco ignorado) ---------- */
 var DB=null,REF=null,DOCSREF=null,FAMHASH='',_pushT=null,_ready=false,_gotCloud=false,_saveQueued=false;
+function buscaMatch(hay,q){
+ var termos=semAcento(q).split(/\s+/).filter(Boolean);
+ if(!termos.length)return true;
+ return termos.every(function(t){return hay.indexOf(t)>=0});
+}
 function alertasCarro(c){
  var a=[];var km=c.kmUltima||c.kmAtual||0;
  if(km&&c.proxOleoKm){var f=c.proxOleoKm-km;
@@ -605,9 +610,10 @@ function plateHtml(p){return '<div class="plate"><div class="top">BRASIL</div><d
 /* ---------- FROTA ---------- */
 function semAcento(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
 function fAplica(){
- var q=semAcento((document.getElementById('fBusca')||{value:''}).value.trim());
+ var q=((document.getElementById('fBusca')||{value:''}).value||'').trim();
+ var at=document.getElementById('fAten');if(at)at.style.display=q?'none':'';
  document.querySelectorAll('[data-busca]').forEach(function(el){
-  el.style.display=(!q||el.getAttribute('data-busca').indexOf(q)>=0)?'':'none';
+  el.style.display=buscaMatch(el.getAttribute('data-busca'),q)?'':'none';
  });
 }
 function vFrota(){
@@ -619,7 +625,7 @@ function vFrota(){
   if(al.length)atengeral.push({c:c,al:al});
  });
  if(atengeral.length){
-  h+='<div class="card"><div class="tit">⚠️ Atenção ('+atengeral.length+' carro'+(atengeral.length>1?'s':'')+')</div>';
+  h+='<div class="card" id="fAten"><div class="tit">⚠️ Atenção ('+atengeral.length+' carro'+(atengeral.length>1?'s':'')+')</div>';
   atengeral.forEach(function(x){
    var pk=normPlaca(x.c.placa);
    h+='<div class="card tap" style="margin:0 0 6px" onclick="ficha(\''+pk+'\')"><div class="tit" style="font-size:14px">'+esc(tituloCarro(x.c))+' — '+esc(fmtPlaca(x.c.placa))+'</div>'+
@@ -1673,27 +1679,33 @@ function excluirManut(id){
 }
 
 /* ===================== HISTÓRICO GERAL ===================== */
+function hAplica(){
+ var q=((document.getElementById('hBusca')||{value:''}).value||'').trim();
+ var t=document.getElementById('hTot');if(t)t.style.display=q?'none':'';
+ var achou=0;
+ document.querySelectorAll('[data-hbusca]').forEach(function(el){
+  var ok=buscaMatch(el.getAttribute('data-hbusca'),q);
+  el.style.display=ok?'':'none';if(ok)achou++;
+ });
+ var z=document.getElementById('hZero');if(z)z.style.display=achou?'none':'';
+}
 function vHistorico(){
  var todas=Object.keys(S.manutencoes).map(function(k){return S.manutencoes[k]})
   .sort(function(a,b){return (b.dataIni||'').localeCompare(a.dataIni)||b.criadoEm-a.criadoEm});
- var q=BUSCA_H.toLowerCase();
- if(q)todas=todas.filter(function(m){
-  var c=S.carros[m.carro]||{};
-  return (m.motorista+' '+m.carro+' '+(c.nome||'')+' '+(c.placa||'')+' '+m.texto).toLowerCase().indexOf(q)>=0;
- });
- var h='<div class="search"><input placeholder="🔎 Buscar por placa, motorista, peça…" value="'+esc(BUSCA_H)+'" oninput="BUSCA_H=this.value;render()"></div>';
- /* total por carro */
+ var h='<div class="search"><input id="hBusca" placeholder="🔎 Buscar: alternador, bateria, motorista, placa…" oninput="hAplica()"></div>';
  var tot={};Object.keys(S.manutencoes).forEach(function(k){var m=S.manutencoes[k];tot[m.carro]=(tot[m.carro]||0)+m.total});
  var chips=Object.keys(tot).sort(function(a,b){return tot[b]-tot[a]});
- if(chips.length&&!q){
-  h+='<div class="card"><div class="tit" style="font-size:13px;margin-bottom:4px">💰 Total gasto por carro</div>';
+ if(chips.length){
+  h+='<div class="card" id="hTot"><div class="tit" style="font-size:13px;margin-bottom:4px">💰 Total gasto por carro</div>';
   chips.forEach(function(pk){var c=S.carros[pk];h+='<span class="chip warn">'+esc(c?c.nome:pk)+' · R$ '+fmtBRL(tot[pk])+'</span>'});
   h+='</div>';
  }
- if(!todas.length)h+='<div class="card"><div class="sub">Nenhuma manutenção'+(q?' encontrada para essa busca':' registrada ainda')+'.</div></div>';
+ if(!todas.length)h+='<div class="card"><div class="sub">Nenhuma manutenção registrada ainda.</div></div>';
+ else h+='<div class="card" id="hZero" style="display:none"><div class="sub">Nenhuma manutenção encontrada para essa busca.</div></div>';
  todas.forEach(function(m){
   var c=S.carros[m.carro]||{nome:m.carro,placa:m.carro};
-  h+='<div class="card tap" onclick="verManut(\''+m.id+'\')"><div class="row">'+plateHtml(c.placa)+
+  var db=semAcento(m.motorista+' '+m.carro+' '+fmtPlaca(m.carro)+' '+(c.nome||'')+' '+tituloCarro(c)+' '+(m.texto||''));
+  h+='<div class="card tap" data-hbusca="'+esc(db)+'" onclick="verManut(\''+m.id+'\')"><div class="row">'+plateHtml(c.placa)+
    '<div class="grow"><div class="tit" style="font-size:14px">'+esc(tituloCarro(c))+'</div>'+
    '<div class="sub">'+esc(periodoTexto(m.dataIni,m.dataFim))+' · '+esc(primNome(m.motorista))+'</div></div>'+
    '<div style="color:var(--warn);font-weight:800">R$ '+fmtBRL(m.total)+'</div></div></div>';
