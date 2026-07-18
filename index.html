@@ -136,7 +136,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=20; var APP_DATE='16/07/2026';
+var APP_VER=21; var APP_DATE='16/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -323,6 +323,42 @@ function normState(s){
  Object.keys(s.contratos).forEach(function(k){s.contratos[k]=normContrato(s.contratos[k])});
  Object.keys(s.manutencoes).forEach(function(k){s.manutencoes[k]=normManut(s.manutencoes[k])});
  if(s.observacoes&&s.observacoes.ob_seed_025&&s.observacoes.ob_seed_025.carro){s.observacoes.ob_seed_025.carro='';s.observacoes.ob_seed_025.texto='Ver com Bruno reboquista pra resolver o Grand Siena vermelho (carro de fora da frota do app) na Águia Car'}
+ if(!s.migGrupos1){s.migGrupos1=true;var GW={};
+ GW['PZT0F79']={"oleoTipo": "5W30", "proxOleoKm": 157108, "temCorreia": true, "proxCorreiaKm": 170350, "ultTrocas": {"alternador": {"km": 133929, "data": "2026-04-08"}, "arranque": {"km": 133929, "data": "2026-04-08"}, "freios": {"km": 138303, "data": "2026-05-14"}, "ventoinha": {"km": 125624, "data": "2026-01-30"}, "radiador": {"km": 139890, "data": "2026-06-08"}}};
+ GW['IYZ7E28']={"oleoTipo": "0W20", "proxOleoKm": 111117, "temCorreia": true, "proxCorreiaKm": 135833, "ultTrocas": {"vela": {"km": 97597, "data": "2026-06-24"}, "cabos": {"km": 81989, "data": "2026-04-29"}, "embreagem": {"km": 81989, "data": "2026-04-29"}, "arranque": {"km": 63350, "data": "2026-02-13"}}};
+ GW['QUB5G52']={"oleoTipo": "5W40", "proxOleoKm": 395001, "temCorreia": true, "proxCorreiaKm": 435498, "ultTrocas": {"vela": {"km": 387401, "data": "2026-05-25"}, "cabos": {"km": 387401, "data": "2026-05-25"}, "embreagem": {"km": 382702, "data": "2026-05-07"}, "bateria": {"km": 390006, "data": "2026-06-08"}, "alternador": {"km": 307392, "data": "2025-04-17"}, "arranque": {"km": 389036, "data": "2026-06-04"}, "freios": {"km": 382702, "data": "2026-05-07"}, "radiador": {"km": 298294, "data": "2025-03-06"}}};
+ GW['GBV3B96']={"oleoTipo": "10W40", "proxOleoKm": 420593, "temCorreia": true, "proxCorreiaKm": 436527, "ultTrocas": {"vela": {"km": 391246, "data": "2026-01-05"}, "cabos": {"km": 391246, "data": "2026-01-05"}, "embreagem": {"km": 324096, "data": "2024-12-17"}, "bateria": {"km": 407190, "data": "2026-05-07"}, "alternador": {"km": 407141, "data": "2026-05-05"}, "arranque": {"km": 395388, "data": "2026-02-10"}, "freios": {"km": 405762, "data": "2026-04-24"}, "ventoinha": {"km": 392329, "data": "2026-01-22"}, "radiador": {"km": 323062, "data": "2024-12-10"}}};
+ GW['LSK2B23']={"oleoTipo": "5W30", "proxOleoKm": 379010, "temCorreia": false, "proxCorreiaKm": 0, "ultTrocas": {"vela": {"km": 349600, "data": "2026-02-02"}, "cabos": {"km": 349600, "data": "2026-02-02"}, "embreagem": {"km": 368171, "data": "2026-07-01"}, "bateria": {"km": 349607, "data": "2026-03-06"}, "alternador": {"km": 333414, "data": "2025-11-24"}, "arranque": {"km": 339420, "data": "2025-12-15"}, "freios": {"km": 349600, "data": "2026-02-02"}, "radiador": {"km": 0, "data": "2024-05-10"}}};
+ GW['KXJ8F38']={"oleoTipo": "10W40", "proxOleoKm": 420733, "temCorreia": false, "proxCorreiaKm": 0, "ultTrocas": {"vela": {"km": 392870, "data": "2026-04-24"}, "embreagem": {"km": 392870, "data": "2026-04-24"}, "bateria": {"km": 375874, "data": "2026-02-10"}, "freios": {"km": 358905, "data": "2025-12-01"}, "ventoinha": {"km": 271371, "data": "2024-09-16"}, "radiador": {"km": 362705, "data": "2025-12-18"}}};
+ GW['RUK6I75']={"oleoTipo": "0W20", "proxOleoKm": 85619, "temCorreia": false, "proxCorreiaKm": 0, "ultTrocas": {"bateria": {"km": 79678, "data": "2026-07-02"}, "radiador": {"km": 77327, "data": "2026-06-01"}}};
+ GW['PXO9H80']={"oleoTipo": "10W40", "proxOleoKm": 294900, "temCorreia": true, "proxCorreiaKm": 294991, "ultTrocas": {"vela": {"km": 291492, "data": "2026-06-15"}, "cabos": {"km": 269870, "data": "2025-12-18"}, "bateria": {"km": 266627, "data": "2025-11-05"}, "arranque": {"km": 291492, "data": "2026-06-15"}, "freios": {"km": 294095, "data": "2026-07-06"}, "ventoinha": {"km": 274480, "data": "2026-01-08"}, "radiador": {"km": 211220, "data": "2024-07-23"}}};
+ GW['AZH5D13']={"oleoTipo": "5W30", "proxOleoKm": 198000, "temCorreia": true, "proxCorreiaKm": 236000, "ultTrocas": {"vela": {"km": 191703, "data": "2026-06-25"}, "embreagem": {"km": 150000, "data": "2025-08-12"}, "bateria": {"km": 192343, "data": "2026-07-02"}, "freios": {"km": 161530, "data": "2025-11-12"}}};
+ GW['RVX9H52']={"oleoTipo": "0W20", "proxOleoKm": 64775, "temCorreia": false, "proxCorreiaKm": 0, "ultTrocas": {"freios": {"km": 35090, "data": "2025-12-19"}}};
+ GW['LMX7B24']={"oleoTipo": "15W40", "proxOleoKm": 171255, "temCorreia": true, "proxCorreiaKm": 209262, "ultTrocas": {"vela": {"km": 120678, "data": "2025-11-06"}, "cabos": {"km": 88275, "data": "2025-05-14"}, "embreagem": {"km": 115872, "data": "2025-09-16"}, "bateria": {"km": 137264, "data": "2026-03-07"}, "alternador": {"km": 167116, "data": "2026-07-08"}, "arranque": {"km": 106394, "data": "2025-07-22"}, "freios": {"km": 137613, "data": "2026-03-12"}, "radiador": {"km": 115872, "data": "2025-09-16"}}};
+ GW['KYI8I20']={"oleoTipo": "10W40", "proxOleoKm": 388000, "temCorreia": true, "proxCorreiaKm": 429431, "ultTrocas": {"vela": {"km": 383988, "data": "2026-07-02"}, "cabos": {"km": 383988, "data": "2026-07-02"}, "embreagem": {"km": 330453, "data": "2025-06-05"}, "bateria": {"km": 379845, "data": "2026-05-29"}, "alternador": {"km": 385658, "data": "2026-07-17"}, "arranque": {"km": 330120, "data": "2025-04-04"}, "freios": {"km": 318323, "data": "2025-01-02"}, "ventoinha": {"km": 331653, "data": "2025-06-23"}, "radiador": {"km": 334346, "data": "2025-07-14"}}};
+ GW['QEK3D83']={"oleoTipo": "0W20", "proxOleoKm": 150000, "temCorreia": false, "proxCorreiaKm": 0, "ultTrocas": {"vela": {"km": 143825, "data": "2026-05-30"}, "embreagem": {"km": 121030, "data": "2026-02-13"}, "bateria": {"km": 133054, "data": "2026-04-14"}, "freios": {"km": 143630, "data": "2026-05-29"}}};
+ GW['QQF8J26']={"oleoTipo": "10W40", "proxOleoKm": 379698, "temCorreia": false, "proxCorreiaKm": 0, "ultTrocas": {"vela": {"km": 345000, "data": "2026-02-10"}, "bateria": {"km": 375119, "data": "2026-06-26"}, "freios": {"km": 371772, "data": "2026-06-12"}, "ventoinha": {"km": 233406, "data": "2024-09-23"}, "radiador": {"km": 345070, "data": "2026-02-11"}}};
+ GW['LMY2A63']={"oleoTipo": "15W40", "proxOleoKm": 470331, "temCorreia": true, "proxCorreiaKm": 508331, "ultTrocas": {"vela": {"km": 456713, "data": "2026-03-20"}, "cabos": {"km": 456713, "data": "2026-03-20"}, "embreagem": {"km": 456713, "data": "2026-03-20"}, "bateria": {"km": 444278, "data": "2025-11-06"}, "alternador": {"km": 368236, "data": "2024-12-03"}, "freios": {"km": 456713, "data": "2026-03-20"}, "radiador": {"km": 454459, "data": "2026-02-19"}}};
+ GW['LUH7G30']={"oleoTipo": "5W30", "proxOleoKm": 50423, "temCorreia": true, "proxCorreiaKm": 73000, "ultTrocas": {}};
+ GW['PVC8G42']={"oleoTipo": "10W40", "proxOleoKm": 323141, "temCorreia": true, "proxCorreiaKm": 342885, "ultTrocas": {"vela": {"km": 301364, "data": "2026-04-06"}, "cabos": {"km": 301364, "data": "2026-04-06"}, "embreagem": {"km": 297885, "data": "2026-03-21"}, "bateria": {"km": 261855, "data": "2025-10-16"}, "alternador": {"km": 293767, "data": "2026-03-02"}, "arranque": {"km": 309488, "data": "2026-05-26"}, "freios": {"km": 304223, "data": "2026-04-20"}, "ventoinha": {"km": 307607, "data": "2026-05-18"}, "radiador": {"km": 220895, "data": "2025-03-22"}}};
+ GW['QUB5B64']={"oleoTipo": "5W30 Dexos1", "proxOleoKm": 110000, "temCorreia": true, "proxCorreiaKm": 142175, "ultTrocas": {"vela": {"km": 97175, "data": "2026-03-19"}, "arranque": {"km": 105229, "data": "2026-05-30"}}};
+ GW['PWL8H97']={"oleoTipo": "10W40", "proxOleoKm": 246444, "temCorreia": true, "proxCorreiaKm": 278921, "ultTrocas": {"vela": {"km": 187682, "data": "2025-07-01"}, "cabos": {"km": 187682, "data": "2025-07-01"}, "embreagem": {"km": 197944, "data": "2025-08-08"}, "bateria": {"km": 148220, "data": "2025-01-23"}, "alternador": {"km": 180742, "data": "2025-06-04"}, "arranque": {"km": 148095, "data": "2025-01-15"}, "freios": {"km": 218276, "data": "2025-10-18"}, "ventoinha": {"km": 157883, "data": "2025-03-07"}, "radiador": {"km": 157883, "data": "2025-03-07"}}};
+ GW['FHP4B47']={"oleoTipo": "5W30", "proxOleoKm": 271718, "temCorreia": false, "proxCorreiaKm": 0, "ultTrocas": {"embreagem": {"km": 216142, "data": "2025-07-04"}, "bateria": {"km": 216282, "data": "2025-07-05"}, "freios": {"km": 238789, "data": "2025-09-30"}}};
+ GW['LQZ6C72']={"oleoTipo": "15W40", "proxOleoKm": 275870, "temCorreia": false, "proxCorreiaKm": 0, "ultTrocas": {"vela": {"km": 268870, "data": "2026-03-21"}, "cabos": {"km": 268870, "data": "2026-03-21"}, "bateria": {"km": 266259, "data": "2025-12-01"}, "alternador": {"km": 0, "data": "2024-06-20"}, "freios": {"km": 268870, "data": "2026-03-21"}}};
+ GW['IXY2H87']={"oleoTipo": "0W20", "proxOleoKm": 207000, "temCorreia": false, "proxCorreiaKm": 0, "ultTrocas": {"embreagem": {"km": 158867, "data": "2025-11-22"}, "bateria": {"km": 153222, "data": "2025-09-29"}, "freios": {"km": 183283, "data": "2026-04-17"}}};
+ GW['RJZ1B66']={"oleoTipo": "5W30 Selenia Perform", "proxOleoKm": 86661, "temCorreia": true, "proxCorreiaKm": 121661, "ultTrocas": {}};
+ GW['LSY7B47']={"oleoTipo": "10W40", "proxOleoKm": 307688, "temCorreia": false, "proxCorreiaKm": 0, "ultTrocas": {"vela": {"km": 300688, "data": "2026-05-13"}, "embreagem": {"km": 223796, "data": "2024-11-16"}, "bateria": {"km": 294842, "data": "2026-02-02"}, "freios": {"km": 300688, "data": "2026-05-13"}, "radiador": {"km": 300413, "data": "2026-04-20"}}};
+ GW['PYO4A55']={"oleoTipo": "10W40", "proxOleoKm": 342386, "temCorreia": true, "proxCorreiaKm": 348390, "ultTrocas": {"vela": {"km": 300878, "data": "2025-10-07"}, "cabos": {"km": 300878, "data": "2025-10-07"}, "embreagem": {"km": 282010, "data": "2025-05-01"}, "bateria": {"km": 321760, "data": "2026-01-22"}, "alternador": {"km": 274671, "data": "2025-02-19"}, "freios": {"km": 343084, "data": "2026-05-19"}, "ventoinha": {"km": 273818, "data": "2025-02-14"}}};
+ GW['RGB3E35']={"oleoTipo": "5W30", "proxOleoKm": 91500, "temCorreia": true, "proxCorreiaKm": 115127, "ultTrocas": {"vela": {"km": 71232, "data": "2026-01-05"}, "cabos": {"km": 71232, "data": "2026-01-05"}}};
+ GW['DVS7C98']={"oleoTipo": "5W30", "proxOleoKm": 65490, "temCorreia": false, "proxCorreiaKm": 0, "ultTrocas": {"freios": {"km": 59897, "data": "2026-05-14"}}};
+ GW['OYZ9079']={"oleoTipo": "5W30", "proxOleoKm": 174906, "temCorreia": true, "proxCorreiaKm": 194218, "ultTrocas": {"vela": {"km": 129435, "data": "2026-01-14"}, "cabos": {"km": 129435, "data": "2026-01-14"}, "embreagem": {"km": 153320, "data": "2026-05-05"}, "bateria": {"km": 113200, "data": "2025-10-24"}, "alternador": {"km": 63226, "data": "2024-08-15"}, "arranque": {"km": 143503, "data": "2026-03-17"}, "freios": {"km": 112811, "data": "2025-09-20"}, "ventoinha": {"km": 142504, "data": "2026-03-12"}}};
+ GW['LUO2B58']={"oleoTipo": "0W20", "proxOleoKm": 229271, "temCorreia": false, "proxCorreiaKm": 0, "ultTrocas": {"embreagem": {"km": 209527, "data": "2026-04-15"}, "bateria": {"km": 179596, "data": "2025-10-29"}}};
+ GW['QMW8H90']={"oleoTipo": "0W20", "proxOleoKm": 233830, "temCorreia": false, "proxCorreiaKm": 0, "ultTrocas": {"vela": {"km": 136171, "data": "2024-11-23"}, "embreagem": {"km": 167978, "data": "2025-04-29"}, "bateria": {"km": 186845, "data": "2025-09-25"}, "freios": {"km": 173389, "data": "2025-05-29"}}};
+  Object.keys(GW).forEach(function(pk){var c=s.carros[pk];if(!c)return;var g=GW[pk];
+   c.oleoTipo=g.oleoTipo;c.proxOleoKm=g.proxOleoKm;c.temCorreia=g.temCorreia;c.proxCorreiaKm=g.proxCorreiaKm;
+   c.ultTrocas=c.ultTrocas||{};Object.keys(g.ultTrocas).forEach(function(k){if(!c.ultTrocas[k])c.ultTrocas[k]=g.ultTrocas[k]});
+  });
+ }
  if(!s.migObsIniciais){s.migObsIniciais=true;
  if(!s.observacoes['ob_seed_001'])s.observacoes['ob_seed_001']={"id": "ob_seed_001", "carro": "KYI8I20", "texto": "Alessandro: trocar o para-choque dianteiro e pintar no Delaias", "data": "2026-06-01", "criadoEm": 1752770000001, "feito": false, "feitoEm": ""};
  if(!s.observacoes['ob_seed_002'])s.observacoes['ob_seed_002']={"id": "ob_seed_002", "carro": "QQF8J26", "texto": "Carlos: pintar o para-choque traseiro e tampa de mala, as 2 portas lado direito, para-lama traseiro lado direito e comprar as letras da escrita Renault e L do Logan traseira", "data": "2026-08-03", "criadoEm": 1752770000002, "feito": false, "feitoEm": ""};
@@ -359,6 +395,18 @@ function normState(s){
 
 /* ---------- sync (mesmo padrão do Semanal: last-write-wins, debounce, eco ignorado) ---------- */
 var DB=null,REF=null,DOCSREF=null,FAMHASH='',_pushT=null,_ready=false,_gotCloud=false,_saveQueued=false;
+function alertasCarro(c){
+ var a=[];var km=c.kmUltima||c.kmAtual||0;
+ if(km&&c.proxOleoKm){var f=c.proxOleoKm-km;
+  if(f<=0)a.push({n:'red',t:'🛢 Óleo VENCIDO — passou '+fmtKm(-f)+' km da troca ('+fmtKm(c.proxOleoKm)+')'});
+  else if(f<=1500)a.push({n:'yel',t:'🛢 Óleo perto: faltam '+fmtKm(f)+' km ('+fmtKm(c.proxOleoKm)+')'});}
+ if(km&&c.temCorreia&&c.proxCorreiaKm){var f2=c.proxCorreiaKm-km;
+  if(f2<=0)a.push({n:'red',t:'⚙️ Correia dentada VENCIDA ('+fmtKm(c.proxCorreiaKm)+')'});
+  else if(f2<=2000)a.push({n:'yel',t:'⚙️ Correia dentada perto: faltam '+fmtKm(f2)+' km'});}
+ var ano=(new Date()).getFullYear();
+ if(c.exercicioCRLV&&parseInt(c.exercicioCRLV,10)<ano)a.push({n:'red',t:'📄 CRLV atrasado (exercício '+c.exercicioCRLV+')'});
+ return a;
+}
 function mergeColecoes(base,extra){ /* une item a item; respeita exclusões (túmulos) */
  var add=0;base.apagados=base.apagados||{};var ea=(extra&&extra.apagados)||{};
  Object.keys(ea).forEach(function(k){base.apagados[k]=ea[k]});
@@ -555,15 +603,40 @@ function totalGasto(pk){
 function plateHtml(p){return '<div class="plate"><div class="top">BRASIL</div><div class="num">'+esc(fmtPlaca(p))+'</div></div>'}
 
 /* ---------- FROTA ---------- */
+function semAcento(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
+function fAplica(){
+ var q=semAcento((document.getElementById('fBusca')||{value:''}).value.trim());
+ document.querySelectorAll('[data-busca]').forEach(function(el){
+  el.style.display=(!q||el.getAttribute('data-busca').indexOf(q)>=0)?'':'none';
+ });
+}
 function vFrota(){
- var h='<button class="btn ok" onclick="formCarro()">➕ ADICIONAR CARRO NOVO</button>';
+ var h='<input id="fBusca" placeholder="🔎 Buscar por placa, modelo ou motorista…" oninput="fAplica()" style="margin:0 0 10px">';
+ /* painel de atenção */
+ var atengeral=[];
+ carrosOrdenados().forEach(function(c){
+  var al=alertasCarro(c);
+  if(al.length)atengeral.push({c:c,al:al});
+ });
+ if(atengeral.length){
+  h+='<div class="card"><div class="tit">⚠️ Atenção ('+atengeral.length+' carro'+(atengeral.length>1?'s':'')+')</div>';
+  atengeral.forEach(function(x){
+   var pk=normPlaca(x.c.placa);
+   h+='<div class="card tap" style="margin:0 0 6px" onclick="ficha(\''+pk+'\')"><div class="tit" style="font-size:14px">'+esc(tituloCarro(x.c))+' — '+esc(fmtPlaca(x.c.placa))+'</div>'+
+    x.al.map(function(a){return '<div class="sub" style="color:var(--'+(a.n==='red'?'warn':'tx')+')">'+a.t+'</div>'}).join('')+'</div>';
+  });
+  h+='</div>';
+ }
+ h+='<button class="btn ok" onclick="formCarro()">➕ ADICIONAR CARRO NOVO</button>';
  carrosOrdenados().forEach(function(c){
   var pk=normPlaca(c.placa);
   var st=c.status==='ativo'?'<span class="chip ok">alugado</span>':(c.status==='pessoal'?'<span class="chip warn">pessoal</span>':'<span class="chip red">parado</span>');
-  h+='<div class="card tap" onclick="ficha(\''+pk+'\')"><div class="row">'+plateHtml(c.placa)+
+  var al=alertasCarro(c);
+  var chips=al.map(function(a){return '<span class="chip '+(a.n==='red'?'red':'warn')+'">'+a.t.split('—')[0].split(':')[0].trim()+'</span>'}).join('');
+  var db=semAcento(fmtPlaca(c.placa)+' '+c.placa+' '+tituloCarro(c)+' '+c.nome+' '+(c.motorista||''));
+  h+='<div class="card tap" data-busca="'+esc(db)+'" onclick="ficha(\''+pk+'\')"><div class="row">'+plateHtml(c.placa)+
    '<div class="grow"><div class="tit">'+esc(tituloCarro(c))+'</div>'+
-   '<div class="sub">'+(c.motorista?'👤 '+esc(primNome(c.motorista)):'sem motorista')+'</div>'+st+
-   (c.exercicioCRLV&&c.exercicioCRLV<'2026'?'<span class="chip red">CRLV '+esc(c.exercicioCRLV)+'</span>':'')+
+   '<div class="sub">'+(c.motorista?'👤 '+esc(primNome(c.motorista)):'sem motorista')+'</div>'+st+chips+
    '</div><div style="color:var(--tx2)">›</div></div></div>';
  });
  return h;
@@ -600,7 +673,24 @@ function ficha(pk){window._fichaPk=pk;
  h+='<button class="btn mini sec" onclick="editarMotorista(\''+pk+'\')">👤 Motorista</button>';
  h+='<button class="btn mini sec" onclick="fipeFluxo(\''+pk+'\')">💰 '+(c.fipeM?'FIPE vinculada':'Vincular FIPE')+'</button>';
  /* CRLV */
- h+='<div class="sect">Documento CRLV</div>';
+ (function(){
+  var km=c.kmUltima||c.kmAtual||0;
+  h+='<div class="sect">Manutenção programada</div>';
+  var fo=c.proxOleoKm?(c.proxOleoKm-km):null;
+  h+='<div class="kv"><b>🛢 Óleo'+(c.oleoTipo?' ('+esc(c.oleoTipo)+')':'')+'</b><span>'+(c.proxOleoKm?('próxima: '+fmtKm(c.proxOleoKm)+' km'+(km?(fo<=0?' · <span style="color:var(--warn)">VENCIDO</span>':' · faltam '+fmtKm(fo)+' km'):'')):'—')+'</span></div>';
+  if(c.temCorreia){
+   var fc=c.proxCorreiaKm?(c.proxCorreiaKm-km):null;
+   h+='<div class="kv"><b>⚙️ Correia dentada</b><span>'+(c.proxCorreiaKm?('próxima: '+fmtKm(c.proxCorreiaKm)+' km'+(km?(fc<=0?' · <span style="color:var(--warn)">VENCIDA</span>':' · faltam '+fmtKm(fc)+' km'):'')):'—')+'</span></div>';
+  }else h+='<div class="kv"><b>⚙️ Comando</b><span>corrente (sem correia dentada)</span></div>';
+  var COMPS=[['vela','🔥 Vela'],['cabos','🔥 Cabos de vela'],['embreagem','⚙️ Embreagem'],['bateria','🔋 Bateria'],['alternador','⚡ Alternador'],['arranque','🔑 Arranque'],['freios','🛑 Freios (pastilha)'],['ventoinha','❄️ Ventoinha'],['radiador','🌡 Radiador'],['correia','⚙️ Correia dentada (última)']];
+  h+='<div class="sect">Últimas trocas (componentes)</div>';
+  COMPS.forEach(function(par){
+   if(par[0]==='correia'&&!c.temCorreia)return;
+   var u=(c.ultTrocas||{})[par[0]];
+   h+='<div class="kv"><b>'+par[1]+'</b><span>'+(u&&(u.km||u.data)?((u.km?fmtKm(u.km)+' km':'')+(u.km&&u.data?' · ':'')+(u.data?dataBR(u.data):'')):'—')+'</span></div>';
+  });
+ })();
+ h+=h+='<div class="sect">Documento CRLV</div>';
  h+=c.temCrlv?'<button class="btn mini" onclick="verDoc(\''+pk+'/crlv\',\'CRLV '+esc(fmtPlaca(c.placa))+'\')">👁 Ver PDF</button>':'<div class="sub">Nenhum CRLV anexado.</div>';
  h+='<button class="btn mini sec" onclick="pedirArquivo(\''+pk+'/crlv\',\'application/pdf\',\''+pk+'\')">🔄 '+(c.temCrlv?'Substituir':'Anexar')+' CRLV</button>';
  /* CONTRATO */
@@ -1258,6 +1348,45 @@ function excluirTermo(id){
  });
 }
 
+
+/* ===================== DETECÇÃO AUTOMÁTICA DE COMPONENTES ===================== */
+function detectarComponentes(m){
+ var out={comps:{},proxOleo:0,proxCorreia:0};
+ var linhas=[];
+ (m.blocos||[]).forEach(function(b){String(b.servicos||'').split('\n').forEach(function(s){if(s.trim())linhas.push(s)})});
+ (m.pecas||[]).forEach(function(p){if(p.desc)linhas.push(p.desc)});
+ linhas.forEach(function(raw){
+  var l=semAcento(raw);
+  var mprox=l.match(/proxima[^0-9]*([0-9][0-9.,]*)\s*km/);
+  var prox=mprox?parseInt(mprox[1].replace(/[.,]/g,''),10):0;
+  if(/\bcabo/.test(l))out.comps.cabos=true;
+  else if(/\bvela/.test(l))out.comps.vela=true;
+  if(/embreagem/.test(l))out.comps.embreagem=true;
+  if(/bateria/.test(l))out.comps.bateria=true;
+  if(/alternador/.test(l))out.comps.alternador=true;
+  if(/arranque|motor de partida/.test(l))out.comps.arranque=true;
+  if(/pastilha|\bfreio/.test(l))out.comps.freios=true;
+  if(/ventoinha/.test(l))out.comps.ventoinha=true;
+  if(/radiador/.test(l))out.comps.radiador=true;
+  if(/correia\s+dentada/.test(l)){out.comps.correia=true;if(prox)out.proxCorreia=prox;}
+  if(/\boleo/.test(l)&&!/caixa|cambio|direcao|freio/.test(l)){out.comps.oleo=true;if(prox)out.proxOleo=prox;}
+ });
+ return out;
+}
+function aplicarDeteccao(m,carro){
+ var d=detectarComponentes(m);
+ var odo=Number(m.odometro)||0,dt=m.dataFim||m.dataIni||hoje();
+ carro.ultTrocas=carro.ultTrocas||{};
+ var marcados=[];
+ Object.keys(d.comps).forEach(function(comp){
+  var at=carro.ultTrocas[comp];
+  if(!at||!at.km||odo>=at.km){carro.ultTrocas[comp]={km:odo,data:dt};marcados.push(comp)}
+ });
+ if(d.comps.oleo&&d.proxOleo)carro.proxOleoKm=d.proxOleo;
+ if(d.comps.correia)carro.proxCorreiaKm=d.proxCorreia||(odo+40000);
+ return marcados;
+}
+
 /* ===================== OBSERVAÇÕES / PENDÊNCIAS ===================== */
 function obsDoCarro(pk,feito){
  return Object.keys(S.observacoes||{}).map(function(k){return S.observacoes[k]})
@@ -1502,6 +1631,8 @@ function gerarManut(){
  m.texto=buildManutTexto(m,carro);
  S.manutencoes[m.id]=m;
  if(odo>(carro.kmUltima||0)){carro.kmUltima=odo;carro.kmUltimaData=fim||ini}
+ var _marc=aplicarDeteccao(m,carro);
+ if(_marc.length)setTimeout(function(){toast('🤖 Atualizado automático: '+_marc.join(', '))},900);
  /* próximas trocas automáticas */
  blocos.forEach(function(b){b.servicos.forEach(function(s){
   if(/pr[óo]xima\s+troca/i.test(s))carro.proximasTrocas.push({texto:s});
