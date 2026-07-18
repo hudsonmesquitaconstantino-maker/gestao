@@ -136,7 +136,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=21; var APP_DATE='16/07/2026';
+var APP_VER=22; var APP_DATE='16/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -690,7 +690,7 @@ function ficha(pk){window._fichaPk=pk;
    h+='<div class="kv"><b>'+par[1]+'</b><span>'+(u&&(u.km||u.data)?((u.km?fmtKm(u.km)+' km':'')+(u.km&&u.data?' · ':'')+(u.data?dataBR(u.data):'')):'—')+'</span></div>';
   });
  })();
- h+=h+='<div class="sect">Documento CRLV</div>';
+ h+='<div class="sect">Documento CRLV</div>';
  h+=c.temCrlv?'<button class="btn mini" onclick="verDoc(\''+pk+'/crlv\',\'CRLV '+esc(fmtPlaca(c.placa))+'\')">👁 Ver PDF</button>':'<div class="sub">Nenhum CRLV anexado.</div>';
  h+='<button class="btn mini sec" onclick="pedirArquivo(\''+pk+'/crlv\',\'application/pdf\',\''+pk+'\')">🔄 '+(c.temCrlv?'Substituir':'Anexar')+' CRLV</button>';
  /* CONTRATO */
