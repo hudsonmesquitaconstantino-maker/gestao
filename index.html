@@ -151,7 +151,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=30; var APP_DATE='16/07/2026';
+var APP_VER=32; var APP_DATE='16/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -294,6 +294,7 @@ function normCarro(c){
  c.semanalPadrao=Number(c.semanalPadrao)||0;c.caucaoPadrao=Number(c.caucaoPadrao)||0;
  c.proximasTrocas=toArr(c.proximasTrocas);c.contratoVigenteId=c.contratoVigenteId||'';
  c.temCrlv=!!c.temCrlv;
+ c.gnvRequalif=c.gnvRequalif||'';c.procLeilao=c.procLeilao||'Não';c.procFinanciado=c.procFinanciado||'Não';c.procObs=c.procObs||'';
  return c;
 }
 function normContrato(c){
@@ -324,7 +325,8 @@ function normManut(m){
 function normState(s){
  s=s||{};s.rev=s.rev||0;s.dev=s.dev||'';
  s.carros=s.carros||{};s.contratos=s.contratos||{};s.manutencoes=s.manutencoes||{};s.observacoes=s.observacoes||{};s.termos=s.termos||{};s.apagados=s.apagados||{};
- Object.keys(s.apagados).forEach(function(id){delete s.manutencoes[id];delete s.contratos[id];delete s.observacoes[id];delete s.termos[id]});
+ Object.keys(s.apagados).forEach(function(id){delete s.manutencoes[id];delete s.contratos[id];delete s.observacoes[id];delete s.termos[id];
+  if(id.indexOf('car_')===0)delete s.carros[id.slice(4)];});
  Object.keys(s.carros).forEach(function(k){
   var c=s.carros[k]||{};
   if(c.proprietario)c.proprietario=String(c.proprietario).replace(/\s*\((mãe|avó|empresa do amigo)\)/g,'');
@@ -338,6 +340,10 @@ function normState(s){
  Object.keys(s.contratos).forEach(function(k){s.contratos[k]=normContrato(s.contratos[k])});
  Object.keys(s.manutencoes).forEach(function(k){s.manutencoes[k]=normManut(s.manutencoes[k])});
  if(s.observacoes&&s.observacoes.ob_seed_025&&s.observacoes.ob_seed_025.carro){s.observacoes.ob_seed_025.carro='';s.observacoes.ob_seed_025.texto='Ver com Bruno reboquista pra resolver o Grand Siena vermelho (carro de fora da frota do app) na Águia Car'}
+ if(!s.migVistoriaGnv1){s.migVistoriaGnv1=true;var GVQ={'PWL8H97':['2028-03-01','2025'],'PXO9H80':['2028-02-01','2025'],'QQF8J26':['2026-06-01','2025'],'FHP4B47':['2030-06-01','2025'],'LSY7B47':['2029-06-01','2026'],'PVC8G42':['2027-02-01','2026'],'LUO2B58':['2028-10-01','2026'],'PZT0F79':['2030-09-01','2026'],'IXY2H87':['2029-02-01','2026'],'GBV3B96':['2030-05-01','2026'],'OYZ9079':['2029-01-01','2026'],'QEK3D83':['2026-07-01','2026'],'QMW8H90':['2031-02-01','2026'],'IYZ7E28':['2030-11-01','2026'],'AZH5D13':['2027-04-01','2026'],'QUB5B64':['2031-03-01','2026'],'KYI8I20':['2028-04-01','2026'],'LMY2A63':['2030-01-01','2026'],'PYO4A55':['2031-06-01','2026'],'DVS7C98':['2030-03-01','2026']};
+  Object.keys(GVQ).forEach(function(pk){var cc=s.carros[pk];if(!cc)return;cc.gnvRequalif=GVQ[pk][0];cc.gnvExercicio=GVQ[pk][1];});
+  if(s.carros['RGB3E35']){s.carros['RGB3E35'].procLeilao='Leilão média monta';s.carros['RGB3E35'].procObs='Recuperado de sinistro — CSV 015911624-70/2025 (Allianz), inspeção 10/11/2025';}
+ }
  if(!s.migGrupos1){s.migGrupos1=true;var GW={};
  GW['PZT0F79']={"oleoTipo": "5W30", "proxOleoKm": 157108, "temCorreia": true, "proxCorreiaKm": 170350, "ultTrocas": {"alternador": {"km": 133929, "data": "2026-04-08"}, "arranque": {"km": 133929, "data": "2026-04-08"}, "freios": {"km": 138303, "data": "2026-05-14"}, "ventoinha": {"km": 125624, "data": "2026-01-30"}, "radiador": {"km": 139890, "data": "2026-06-08"}}};
  GW['IYZ7E28']={"oleoTipo": "0W20", "proxOleoKm": 111117, "temCorreia": true, "proxCorreiaKm": 135833, "ultTrocas": {"vela": {"km": 97597, "data": "2026-06-24"}, "cabos": {"km": 81989, "data": "2026-04-29"}, "embreagem": {"km": 81989, "data": "2026-04-29"}, "arranque": {"km": 63350, "data": "2026-02-13"}}};
@@ -448,6 +454,10 @@ function alertasCarro(c){
   else if(f2<=2000)a.push({n:'yel',t:'⚙️ Correia dentada perto: faltam '+fmtKm(f2)+' km'});}
  var ano=(new Date()).getFullYear();
  if(c.exercicioCRLV&&parseInt(c.exercicioCRLV,10)<ano)a.push({n:'red',t:'📄 CRLV atrasado (exercício '+c.exercicioCRLV+')'});
+ if(semAcento(c.combustivel||'').indexOf('gnv')>=0&&c.gnvExercicio&&parseInt(c.gnvExercicio,10)<ano)a.push({n:'red',t:'🔥 Vistoria do GNV atrasada (exercício '+c.gnvExercicio+')'});
+ if(semAcento(c.combustivel||'').indexOf('gnv')>=0&&c.gnvRequalif){var hjR=hoje();
+  if(c.gnvRequalif<hjR)a.push({n:'red',t:'🧯 Requalificação do cilindro GNV VENCIDA em '+dataBR(c.gnvRequalif)});
+  else if(c.gnvRequalif.slice(0,4)===String(ano))a.push({n:'yel',t:'🧯 Requalificação do cilindro GNV vence este ano em '+dataBR(c.gnvRequalif)});}
  /* observações com data: vencidas e as da próxima semana */
  try{
   var pk=normPlaca(c.placa),hj=hoje(),lim=somaDias(hj,7);
@@ -748,6 +758,17 @@ function ficha(pk){window._fichaPk=pk;
  h+='<div class="sect">Documento CRLV</div>';
  h+=c.temCrlv?'<button class="btn mini" onclick="verDoc(\''+pk+'/crlv\',\'CRLV '+esc(fmtPlaca(c.placa))+'\')">👁 Ver PDF</button>':'<div class="sub">Nenhum CRLV anexado.</div>';
  h+='<button class="btn mini sec" onclick="pedirArquivo(\''+pk+'/crlv\',\'application/pdf\',\''+pk+'\')">🔄 '+(c.temCrlv?'Substituir':'Anexar')+' CRLV</button>';
+ if(semAcento(c.combustivel||'').indexOf('gnv')>=0||c.temGnvDoc){
+  h+='<div class="sect">Vistoria do GNV (anual)</div>';
+  h+='<div class="kv"><b>Exercício da vistoria</b><span>'+esc(c.gnvExercicio||'—')+'</span></div>';
+  h+='<div class="kv"><b>Requalificação do cilindro</b><span>'+(c.gnvRequalif?dataBR(c.gnvRequalif):'—')+'</span></div>';
+  h+=c.temGnvDoc?'<button class="btn mini" onclick="verDoc(\''+pk+'/gnv\',\'Vistoria GNV '+esc(fmtPlaca(c.placa))+'\',\''+pk+'\',\'gnv\')">👁 Ver PDF</button>':'<div class="sub">Nenhum laudo de vistoria anexado.</div>';
+  h+='<button class="btn mini sec" onclick="pedirArquivo(\''+pk+'/gnv\',\'application/pdf\',\''+pk+'\',\'temGnvDoc\')">🔄 '+(c.temGnvDoc?'Substituir':'Anexar')+' laudo do GNV</button>';
+ }
+ h+='<div class="sect">Procedência</div>';
+ h+='<div class="kv"><b>Leilão</b><span>'+esc(c.procLeilao||'Não')+'</span></div>';
+ h+='<div class="kv"><b>Financiado</b><span>'+esc(c.procFinanciado||'Não')+'</span></div>';
+ if(c.procObs)h+='<div class="kv"><b>Observações</b><span>'+esc(c.procObs)+'</span></div>';
  /* CONTRATO */
  h+='<div class="sect">Contrato vigente</div>';
  if(ct){
@@ -847,7 +868,11 @@ function formCarro(pk){
   f('Combustível','combustivel',c.combustivel,'Flex / GNV 16m³')+
   '<div class="grid2">'+f('KM de quando alugou','kmAtual',c.kmAtual||'')+f('Última quilometragem','kmUltima',c.kmUltima||'')+'</div>'+
  '<label>Data em que viu essa quilometragem</label><input type="date" id="e_kmUltimaData" value="'+esc(c.kmUltimaData||'')+'">'+
-  f('Exercício CRLV','exercicioCRLV',c.exercicioCRLV,'2026')+
+  f('Exercício CRLV','exercicioCRLV',c.exercicioCRLV,'2026')+f('Exercício vistoria GNV (se tiver gás)','gnvExercicio',c.gnvExercicio||'')+
+  '<label>Próxima requalificação do cilindro GNV</label><input type="date" id="e_gnvRequalif" value="'+esc(c.gnvRequalif||'')+'">'+
+  '<label>Leilão (procedência)</label><select id="fc_procLeilao">'+opcoesSel(['Não','Leilão pequena monta','Leilão média monta','Leilão grande monta'],c.procLeilao||'Não')+'</select>'+
+  '<label>Financiado</label><select id="fc_procFinanciado">'+opcoesSel(['Não','Sim'],c.procFinanciado||'Não')+'</select>'+
+  f('Observações de procedência','procObs',c.procObs||'')+
   f('Proprietário (no documento)','proprietario',c.proprietario)+
   '<label>Locador padrão dos contratos</label><select id="fc_locadorId">'+selLocadores(c.locadorId)+'</select>'+
   '<div class="grid2">'+f('Valor de referência (R$)','valorRef',c.valorRef?fmtBRL(c.valorRef):'')+f('Semanal padrão (R$)','semanalPadrao',c.semanalPadrao?fmtBRL(c.semanalPadrao):'')+'</div>'+
@@ -858,6 +883,7 @@ function formCarro(pk){
   '<button class="btn sec" onclick="'+(novo?'closeSheet()':'closeSheet(2)')+'">Cancelar</button>';
  openSheet(h,pk?2:undefined);
 }
+function opcoesSel(arr,sel){return arr.map(function(v){return '<option value="'+v+'"'+(v===sel?' selected':'')+'>'+v+'</option>'}).join('')}
 function selLocadores(sel){
  return Object.keys(LOCADORES).map(function(k){return '<option value="'+k+'"'+(k===sel?' selected':'')+'>'+esc(LOCADORES[k].nome.split(' ')[0])+' — '+esc(LOCADORES[k].cpf)+'</option>'}).join('');
 }
@@ -872,7 +898,8 @@ function salvarCarro(pk){
  c.placa=fmtPlaca(placa);c.nome=g('nome')||c.placa;c.motor=g('motor');c.ano=g('ano');
  c.modeloCRLV=g('modeloCRLV');c.motorCodigo=g('motorCodigo');c.chassi=g('chassi').toUpperCase();c.renavam=g('renavam');
  c.cor=g('cor');c.potencia=g('potencia');c.combustivel=g('combustivel');
- c.kmAtual=parseInt(g('kmAtual').replace(/\D/g,''),10)||0;c.kmUltima=parseInt(g('kmUltima').replace(/\D/g,''),10)||c.kmAtual;c.kmUltimaData=(document.getElementById('e_kmUltimaData')||{value:''}).value||c.kmUltimaData||'';c.exercicioCRLV=g('exercicioCRLV');c.codigoRadio=g('codigoRadio');
+ c.kmAtual=parseInt(g('kmAtual').replace(/\D/g,''),10)||0;c.kmUltima=parseInt(g('kmUltima').replace(/\D/g,''),10)||c.kmAtual;c.kmUltimaData=(document.getElementById('e_kmUltimaData')||{value:''}).value||c.kmUltimaData||'';c.exercicioCRLV=g('exercicioCRLV');c.gnvExercicio=g('gnvExercicio');c.codigoRadio=g('codigoRadio');
+ c.gnvRequalif=(document.getElementById('e_gnvRequalif')||{value:''}).value;c.procLeilao=(document.getElementById('fc_procLeilao')||{value:'Não'}).value;c.procFinanciado=(document.getElementById('fc_procFinanciado')||{value:'Não'}).value;c.procObs=g('procObs');
  c.proprietario=g('proprietario');c.locadorId=document.getElementById('fc_locadorId').value;
  c.valorRef=parseBRL(g('valorRef'));c.semanalPadrao=parseBRL(g('semanalPadrao'));c.caucaoPadrao=parseBRL(g('caucaoPadrao'));
  S.carros[placa]=c;save();
@@ -884,8 +911,28 @@ function salvarCarro(pk){
  if(novo)setTimeout(function(){ficha(placa)},250);
 }
 function excluirCarro(pk){
- ask('Excluir '+S.carros[pk].nome+'?','Some da frota, mas contratos e manutenções antigos continuam no Histórico Geral.','Excluir',function(){
-  delete S.carros[pk];save();closeSheet();closeSheet(2);render();toast('🗑 Carro excluído');
+ var c=S.carros[pk];
+ var nc=0,nm=0,no=0,nt=0;
+ Object.keys(S.contratos).forEach(function(k){if(S.contratos[k].carro===pk)nc++});
+ Object.keys(S.manutencoes).forEach(function(k){if(S.manutencoes[k].carro===pk)nm++});
+ Object.keys(S.observacoes).forEach(function(k){if(S.observacoes[k].carro===pk)no++});
+ Object.keys(S.termos).forEach(function(k){if(S.termos[k].carro===pk)nt++});
+ ask('Excluir '+c.nome+' ('+fmtPlaca(c.placa)+') DE VEZ?',
+  'Apaga TUDO deste carro da nuvem: '+nc+' contrato(s), '+nm+' manutenção(ões), '+no+' observação(ões), '+nt+' termo(s) e todos os documentos (CRLV, GNV, contratos). Não tem volta.',
+  'Excluir tudo',function(){
+  var ctIds=[];
+  Object.keys(S.contratos).forEach(function(k){var x=S.contratos[k];if(x.carro===pk){ctIds.push(k);S.apagados[k]=Date.now();delete S.contratos[k]}});
+  Object.keys(S.manutencoes).forEach(function(k){if(S.manutencoes[k].carro===pk){S.apagados[k]=Date.now();delete S.manutencoes[k]}});
+  Object.keys(S.observacoes).forEach(function(k){if(S.observacoes[k].carro===pk){S.apagados[k]=Date.now();delete S.observacoes[k]}});
+  Object.keys(S.termos).forEach(function(k){if(S.termos[k].carro===pk){S.apagados[k]=Date.now();delete S.termos[k]}});
+  S.apagados['car_'+pk]=Date.now();
+  delete S.carros[pk];
+  save();
+  try{DOCSREF.child(pk).remove()}catch(e){} /* nuvem: crlv, gnv e TODOS os contratos do carro */
+  idbDel(pk+'/crlv');idbDel(pk+'/gnv');
+  ctIds.forEach(function(id){idbDel(pk+'/ct/'+id+'/docx');idbDel(pk+'/ct/'+id+'/pdf')});
+  closeSheet();closeSheet(2);render();
+  toast('🗑 Carro e tudo dele removidos da nuvem');
  });
 }
 
@@ -977,12 +1024,12 @@ function b64ToUrl(b64,mime){
  return URL.createObjectURL(new Blob([arr],{type:mime}));
 }
 var _pedirCb=null;
-function pedirArquivo(path,accept,pk){
+function pedirArquivo(path,accept,pk,flag){
  var inp=document.createElement('input');inp.type='file';inp.accept=accept;
  inp.onchange=function(){
   if(!inp.files||!inp.files[0])return;
   enviarArquivo(inp.files[0],path,function(){
-   if(pk){S.carros[pk].temCrlv=true;save();ficha(pk)}
+   if(pk){S.carros[pk][flag||'temCrlv']=true;save();ficha(pk)}
    toast('✅ Documento salvo na nuvem');
   });
  };
@@ -2152,7 +2199,7 @@ function openCfg(){
  '<b>Carros</b><span>'+Object.keys(S?S.carros:{}).length+'</span>'+
  '<b>Contratos</b><span>'+Object.keys(S?S.contratos:{}).length+'</span></div>'+
  '<div class="sect">Importação inicial de documentos</div>'+
- '<p class="sub">Selecione de uma vez os arquivos do pacote (CRLV-PLACA.pdf, CONTRATO-PLACA.docx, CONTRATOPDF-PLACA.pdf). O app encaixa cada um no carro certo.</p>'+
+ '<p class="sub">Selecione de uma vez os arquivos do pacote (CRLV-PLACA.pdf, CONTRATO-PLACA.docx, CONTRATOPDF-PLACA.pdf, VISTORIA-PLACA.pdf). O app encaixa cada um no carro certo.</p>'+
  '<input type="file" id="impIn" multiple accept=".pdf,.docx">'+
  '<button class="btn" onclick="importar()">☁️ Enviar para a nuvem</button>'+
  '<div class="filestat" id="impStat"></div>'+
@@ -2188,6 +2235,7 @@ function importar(){
   if(m=nome.match(/^CRLV-([A-Z0-9]{7})$/i)){var pk=m[1].toUpperCase();if(S.carros[pk]){path=pk+'/crlv';marca=function(){S.carros[pk].temCrlv=true}}}
   else if(m=nome.match(/^CONTRATOPDF-([A-Z0-9]{7})$/i)){var pk2=m[1].toUpperCase(),c2=S.carros[pk2];if(c2&&c2.contratoVigenteId){path=pk2+'/ct/'+c2.contratoVigenteId+'/pdf';marca=function(){S.contratos[c2.contratoVigenteId].temPdf=true}}}
   else if(m=nome.match(/^CONTRATO-([A-Z0-9]{7})$/i)){var pk3=m[1].toUpperCase(),c3=S.carros[pk3];if(c3&&c3.contratoVigenteId){path=pk3+'/ct/'+c3.contratoVigenteId+'/docx';marca=function(){S.contratos[c3.contratoVigenteId].temDocx=true}}}
+  else if(m=nome.match(/^VISTORIA-([A-Z0-9]{7})$/i)){(function(){var pk4=m[1].toUpperCase();if(S.carros[pk4]){path=pk4+'/gnv';marca=function(){S.carros[pk4].temGnvDoc=true}}})()}
   if(!path){falha.push(f.name);stat.innerHTML+='⚠️ '+esc(f.name)+' não reconhecido<br>';prox();return}
   var r=new FileReader();
   r.onload=function(){
