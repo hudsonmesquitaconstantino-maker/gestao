@@ -104,6 +104,12 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 .prow2{display:grid;grid-template-columns:84px 1fr 26px;gap:6px;align-items:start;margin:0 0 6px}
 .obsdate{color:var(--acc);font-weight:800;font-size:12.5px;margin:10px 0 6px;letter-spacing:.3px}
 .obsdate.late{color:var(--warn)}
+
+.mv-head{display:flex;gap:10px;align-items:center;margin:4px 0 8px}
+.mv-dt{font-weight:800;font-size:15px}
+.mvrow{display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:13.5px;line-height:1.4}
+.mvval{white-space:nowrap;font-weight:700;color:var(--warn)}
+.mv-total{margin:12px 0 4px;text-align:right;font-weight:800;font-size:16px;color:var(--warn)}
 </style>
 </head>
 <body>
@@ -136,7 +142,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=23; var APP_DATE='16/07/2026';
+var APP_VER=25; var APP_DATE='16/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -410,6 +416,17 @@ function alertasCarro(c){
   else if(f2<=2000)a.push({n:'yel',t:'⚙️ Correia dentada perto: faltam '+fmtKm(f2)+' km'});}
  var ano=(new Date()).getFullYear();
  if(c.exercicioCRLV&&parseInt(c.exercicioCRLV,10)<ano)a.push({n:'red',t:'📄 CRLV atrasado (exercício '+c.exercicioCRLV+')'});
+ /* observações com data: vencidas e as da próxima semana */
+ try{
+  var pk=normPlaca(c.placa),hj=hoje(),lim=somaDias(hj,7);
+  Object.keys(S.observacoes||{}).forEach(function(k){
+   var o=S.observacoes[k];
+   if(o.carro!==pk||o.feito||!o.quando)return;
+   var tx=o.texto.length>64?o.texto.slice(0,64)+'…':o.texto;
+   if(o.quando<hj)a.push({n:'red',t:'📝 VENCIDA '+dataBR(o.quando)+' — '+tx});
+   else if(o.quando<=lim)a.push({n:'yel',t:'📝 '+dataBR(o.quando)+' — '+tx});
+  });
+ }catch(e){}
  return a;
 }
 function mergeColecoes(base,extra){ /* une item a item; respeita exclusões (túmulos) */
@@ -681,7 +698,7 @@ function ficha(pk){window._fichaPk=pk;
  /* CRLV */
  (function(){
   var km=c.kmUltima||c.kmAtual||0;
-  h+='<div class="sect">Manutenção programada</div>';
+  h+='<div class="sect">Manutenção programada <span class="x" style="display:inline;padding:0 6px" onclick="editarProg(\''+pk+'\')">✎</span></div>';
   var fo=c.proxOleoKm?(c.proxOleoKm-km):null;
   h+='<div class="kv"><b>🛢 Óleo'+(c.oleoTipo?' ('+esc(c.oleoTipo)+')':'')+'</b><span>'+(c.proxOleoKm?('próxima: '+fmtKm(c.proxOleoKm)+' km'+(km?(fo<=0?' · <span style="color:var(--warn)">VENCIDO</span>':' · faltam '+fmtKm(fo)+' km'):'')):'—')+'</span></div>';
   if(c.temCorreia){
@@ -735,14 +752,6 @@ h+='<div class="sect">Devolução do carro</div>';
  h+='<button class="btn mini sec" onclick="obsNova(\''+pk+'\')">➕ Nova observação deste carro</button>';
  var _oc=obsDoCarro(pk,true);
  if(_oc.length)h+='<details style="margin:8px 0"><summary class="sub">✅ Observações concluídas ('+_oc.length+')</summary>'+obsListaHtml(_oc,true)+'</details>';
- /* PRÓXIMAS TROCAS */
- h+='<div class="sect">Próximas trocas</div>';
- if(c.proximasTrocas.length){
-  c.proximasTrocas.forEach(function(t,i){
-   h+='<div class="row" style="margin-bottom:4px"><div class="grow sub" style="font-size:13.5px;color:var(--tx)">🔩 '+esc(t.texto)+'</div><button class="xbt" onclick="rmTroca(\''+pk+'\','+i+')">✕</button></div>';
-  });
- }else h+='<div class="sub">Nada registrado. As anotações "Próxima troca com X km" das manutenções entram aqui sozinhas.</div>';
- h+='<button class="btn mini sec" onclick="addTroca(\''+pk+'\')">➕ Anotar troca futura</button>';
  /* MANUTENÇÕES */
  h+='<div class="sect">Histórico de manutenções ('+mans.length+')</div>';
  if(!mans.length)h+='<div class="sub">Nenhuma manutenção registrada.</div>';
@@ -1052,6 +1061,29 @@ function verContratoHtml(id){
  openSheet('<h3>Contrato — '+esc(primNome(lt.nome||''))+'</h3>'+h+
   '<button class="btn" onclick="baixarDoc(\''+ct.carro+'/ct/'+id+'/docx\',\'Contrato '+esc(fmtPlaca(ct.carro))+' '+esc(primNome(lt.nome||''))+'.docx\')">⬇️ Baixar o Word (arquivo oficial p/ imprimir)</button>'+
   '<button class="btn sec" onclick="closeSheet(2)">Fechar</button>',2);
+}
+
+
+/* ---------- edição manual da manutenção programada ---------- */
+function editarProg(pk){
+ var c=S.carros[pk];
+ openSheet('<h3>✎ Manutenção programada — '+esc(fmtPlaca(pk))+'</h3>'+
+  '<p class="sub">O app continua atualizando sozinho pelas manutenções; aqui você ajusta na mão quando precisar (ex.: esticar a troca pro motorista novo).</p>'+
+  '<label>Tipo de óleo (viscosidade)</label><input id="pgOleo" value="'+esc(c.oleoTipo||'')+'" placeholder="5W30">'+
+  '<label>Próxima troca de óleo (km)</label><input id="pgProxO" inputmode="numeric" value="'+(c.proxOleoKm||'')+'">'+
+  '<label>Comando do motor</label><select id="pgCor"><option value="sim"'+(c.temCorreia?' selected':'')+'>Correia dentada</option><option value="nao"'+(!c.temCorreia?' selected':'')+'>Corrente (sem correia)</option></select>'+
+  '<label>Próxima correia dentada (km)</label><input id="pgProxC" inputmode="numeric" value="'+(c.proxCorreiaKm||'')+'">'+
+  '<button class="btn ok" onclick="salvarProg(\''+pk+'\')">Salvar</button>'+
+  '<button class="btn sec" onclick="closeSheet(2)">Voltar</button>',2);
+}
+function salvarProg(pk){
+ var c=S.carros[pk],g=function(i){return (document.getElementById(i)||{value:''}).value};
+ c.oleoTipo=g('pgOleo').trim();
+ c.proxOleoKm=parseInt(String(g('pgProxO')).replace(/\D/g,''),10)||0;
+ c.temCorreia=g('pgCor')==='sim';
+ c.proxCorreiaKm=parseInt(String(g('pgProxC')).replace(/\D/g,''),10)||0;
+ save();closeSheet(2);ficha(pk);render();
+ toast('✎ Manutenção programada atualizada');
 }
 
 /* ---------- TABELA FIPE (parallelum v1) ---------- */
@@ -1602,9 +1634,9 @@ function buildManutTexto(m,carro){
  '*ODÔMETRO:* '+fmtKm(m.odometro)+' km\n'+
  '_______________________________________\n';
  if(m.pecas.length){
-  t+='\n*[ PEÇAS: R$ '+fmtBRL(m.totalPecas)+' ]*\n';
+  t+='\n'+(m.totalPecas>0?'*[ PEÇAS: R$ '+fmtBRL(m.totalPecas)+' ]*':'*[ PEÇAS ]*')+'\n';
   m.pecas.forEach(function(p){
-   t+='• R$ '+fmtBRL(p.valor)+' - '+p.desc+(p.loja?' ('+p.loja+')':'')+'\n';
+   t+='• '+(p.valor>0?'R$ '+fmtBRL(p.valor)+' - ':'')+p.desc+(p.loja?' ('+p.loja+')':'')+'\n';
   });
  }
  if(m.blocos.length){
@@ -1614,7 +1646,7 @@ function buildManutTexto(m,carro){
    b.servicos.forEach(function(s){t+='• '+s+'\n'});
   });
  }
- t+='\n*TOTAL GERAL: R$ '+fmtBRL(m.total)+'*';
+ if(m.total>0)t+='\n*TOTAL GERAL: R$ '+fmtBRL(m.total)+'*';
  return t;
 }
 function gerarManut(){
@@ -1662,12 +1694,36 @@ function copiarFallback(t){
  document.body.removeChild(ta);
 }
 function copiarManut(id){copiarTexto(S.manutencoes[id].texto)}
+function mTexto(m){
+ if(m.texto)return m.texto;
+ var c=S.carros[m.carro]||{nome:m.carro,placa:m.carro,motor:''};
+ return buildManutTexto(m,c);
+}
 function verManut(id){
  var m=S.manutencoes[id];if(!m)return;
  var c=S.carros[m.carro]||{nome:m.carro,placa:m.carro,motor:''};
- openSheet('<h3>'+esc(c.nome)+' — '+esc(periodoTexto(m.dataIni,m.dataFim))+'</h3>'+
-  '<div class="mono">'+esc(m.texto)+'</div>'+
-  '<button class="btn" onclick="copiarManut(\''+id+'\')">📋 Copiar</button>'+
+ var h='<h3>🔧 '+esc(tituloCarro(c))+'</h3>'+
+  '<div class="mv-head">'+plateHtml(c.placa)+
+   '<div><div class="mv-dt">'+esc(periodoTexto(m.dataIni,m.dataFim))+'</div>'+
+   '<div class="sub">'+(m.motorista?'👤 '+esc(m.motorista)+' · ':'')+(m.odometro?fmtKm(m.odometro)+' km':'')+
+   (m.origem==='whatsapp'?' · <span class="chip warn">histórico WhatsApp</span>':'')+'</div></div></div>';
+ if((m.pecas||[]).length){
+  h+='<div class="sect">🔩 Peças'+(m.totalPecas>0?' — R$ '+fmtBRL(m.totalPecas):'')+'</div>';
+  m.pecas.forEach(function(p){
+   h+='<div class="mvrow"><div class="grow">'+esc(p.desc)+(p.loja?' <span class="sub">('+esc(p.loja)+')</span>':'')+'</div>'+
+    (p.valor>0?'<div class="mvval">R$ '+fmtBRL(p.valor)+'</div>':'')+'</div>';
+  });
+ }
+ (m.blocos||[]).forEach(function(b){
+  h+='<div class="sect">🛠 '+esc(b.titulo||'Mão de obra')+(b.nome?' — '+esc(b.nome):'')+(tNum(b.valor)>0?' · R$ '+fmtBRL(tNum(b.valor)):'')+'</div>';
+  var svs=Array.isArray(b.servicos)?b.servicos:String(b.servicos||'').split('\n');
+  svs.filter(function(s){return String(s).trim()}).forEach(function(s){
+   h+='<div class="mvrow"><div class="grow">• '+esc(s)+'</div></div>';
+  });
+ });
+ if(m.total>0)h+='<div class="mv-total">TOTAL: R$ '+fmtBRL(m.total)+'</div>';
+ openSheet(h+
+  '<button class="btn" onclick="copiarManut(\''+id+'\')">📋 Copiar (padrão WhatsApp)</button>'+
   '<button class="btn red" onclick="excluirManut(\''+id+'\')">🗑 Excluir manutenção</button>'+
   '<button class="btn sec" onclick="closeSheet(2)">Fechar</button>',2);
 }
@@ -1678,6 +1734,37 @@ function excluirManut(id){
  });
 }
 
+function mesclarHistorico(regs){
+ var add=0,pulou=0;
+ var exist=Object.keys(S.manutencoes).map(function(k){return S.manutencoes[k]});
+ regs.forEach(function(r){
+  if(!r||!r.id||!r.carro||!S.carros[r.carro]){pulou++;return}
+  if(S.manutencoes[r.id]||S.apagados[r.id]){pulou++;return}
+  var dup=exist.some(function(m){
+   return m.carro===r.carro&&m.dataIni===r.dataIni&&(!r.odometro||!m.odometro||Math.abs(m.odometro-r.odometro)<=5)&&Math.abs((m.total||0)-(r.total||0))<1;
+  });
+  if(dup){pulou++;return}
+  S.manutencoes[r.id]=r;add++;
+ });
+ if(add)save();
+ return {add:add,pulou:pulou};
+}
+function importarHistoricoWA(){
+ var inp=document.getElementById('waHist');
+ if(!inp||!inp.files||!inp.files.length){toast('Escolha o arquivo historico_whatsapp.json');return}
+ var st=document.getElementById('waHistStat');st.textContent='Lendo arquivo…';
+ var fr=new FileReader();
+ fr.onload=function(){
+  try{
+   var regs=JSON.parse(fr.result);
+   if(!Array.isArray(regs))throw new Error('arquivo inválido');
+   var r=mesclarHistorico(regs);
+   st.innerHTML='<b>✅ '+r.add+' manutenções importadas</b>'+(r.pulou?' · '+r.pulou+' já existiam/puladas':'')+'. Totais por carro atualizados.';
+   render();toast('📚 Histórico do WhatsApp importado');
+  }catch(e){st.textContent='⚠️ '+e.message}
+ };
+ fr.readAsText(inp.files[0]);
+}
 /* ===================== HISTÓRICO GERAL ===================== */
 function hAplica(){
  var q=((document.getElementById('hBusca')||{value:''}).value||'').trim();
@@ -1704,7 +1791,7 @@ function vHistorico(){
  else h+='<div class="card" id="hZero" style="display:none"><div class="sub">Nenhuma manutenção encontrada para essa busca.</div></div>';
  todas.forEach(function(m){
   var c=S.carros[m.carro]||{nome:m.carro,placa:m.carro};
-  var db=semAcento(m.motorista+' '+m.carro+' '+fmtPlaca(m.carro)+' '+(c.nome||'')+' '+tituloCarro(c)+' '+(m.texto||''));
+  var db=semAcento(m.motorista+' '+m.carro+' '+fmtPlaca(m.carro)+' '+(c.nome||'')+' '+tituloCarro(c)+' '+mTexto(m));
   h+='<div class="card tap" data-hbusca="'+esc(db)+'" onclick="verManut(\''+m.id+'\')"><div class="row">'+plateHtml(c.placa)+
    '<div class="grow"><div class="tit" style="font-size:14px">'+esc(tituloCarro(c))+'</div>'+
    '<div class="sub">'+esc(periodoTexto(m.dataIni,m.dataFim))+' · '+esc(primNome(m.motorista))+'</div></div>'+
@@ -2027,6 +2114,11 @@ function openCfg(){
  '<input type="file" id="impIn" multiple accept=".pdf,.docx">'+
  '<button class="btn" onclick="importar()">☁️ Enviar para a nuvem</button>'+
  '<div class="filestat" id="impStat"></div>'+
+ '<div class="sect">Histórico do WhatsApp (uma vez só)</div>'+
+ '<p class="sub">Selecione o arquivo historico_whatsapp.json. Ele adiciona as manutenções antigas dos grupos como histórico, sem duplicar as já existentes.</p>'+
+ '<input type="file" id="waHist" accept=".json">'+
+ '<button class="btn" onclick="importarHistoricoWA()">📚 Importar histórico</button>'+
+ '<div class="filestat" id="waHistStat"></div>'+
  '<div class="sect">Documentos offline</div>'+
  '<p class="sub">Guarda TODOS os CRLVs e contratos na memória deste iPhone. Depois disso, ver/baixar/compartilhar funciona sem internet.</p>'+
  '<button class="btn" onclick="baixarTudoOffline()">📥 Baixar todos para este aparelho</button>'+
