@@ -110,6 +110,15 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 .mvrow{display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:13.5px;line-height:1.4}
 .mvval{white-space:nowrap;font-weight:700;color:var(--warn)}
 .mv-total{margin:12px 0 4px;text-align:right;font-weight:800;font-size:16px;color:var(--warn)}
+.hplc{font-family:ui-monospace,Menlo,monospace;background:#fff;color:#111;border-radius:4px;padding:1px 6px;font-size:12px;letter-spacing:.5px;white-space:nowrap}
+
+.sheetwrap{position:relative;height:100%;display:flex;flex-direction:column}
+.sheetwrap .sheet{flex:1;min-height:0}
+.shx{position:absolute;top:10px;right:12px;z-index:60;width:38px;height:38px;border-radius:50%;
+ background:rgba(255,255,255,.12);color:var(--tx);border:1px solid rgba(255,255,255,.18);
+ font-size:17px;font-weight:800;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);touch-action:manipulation}
+.shx:active{background:rgba(255,255,255,.25)}
+.sheet h3{padding-right:44px}
 </style>
 </head>
 <body>
@@ -134,15 +143,15 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <button class="btn sec" onclick="askAnswer(false)">Cancelar</button>
 </div></div>
 
-<div class="overlay" id="ovSheet"><div class="sheet" id="sheetBody"></div></div>
-<div class="overlay" id="ovSheet2"><div class="sheet" id="sheetBody2"></div></div>
+<div class="overlay" id="ovSheet"><div class="sheetwrap"><button class="shx" onclick="closeSheet()" aria-label="Fechar">✕</button><div class="sheet" id="sheetBody"></div></div></div>
+<div class="overlay" id="ovSheet2"><div class="sheetwrap"><button class="shx" onclick="closeSheet(2)" aria-label="Fechar">✕</button><div class="sheet" id="sheetBody2"></div></div></div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=25; var APP_DATE='16/07/2026';
+var APP_VER=28; var APP_DATE='16/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -365,6 +374,19 @@ function normState(s){
    c.ultTrocas=c.ultTrocas||{};Object.keys(g.ultTrocas).forEach(function(k){if(!c.ultTrocas[k])c.ultTrocas[k]=g.ultTrocas[k]});
   });
  }
+ if(!s.migFixKmPosWA){s.migFixKmPosWA=true;
+  Object.keys(s.carros).forEach(function(pk){
+   var c=s.carros[pk];
+   var base=c.kmAtual||0, dt=c.kmUltimaData||'';
+   Object.keys(s.manutencoes).forEach(function(k){
+    var m=s.manutencoes[k];
+    if(m.carro!==pk||m.origem==='whatsapp')return;
+    if((m.odometro||0)>base){base=m.odometro;dt=m.dataFim||m.dataIni||dt}
+   });
+   c.kmUltima=base;
+   if(dt)c.kmUltimaData=dt;
+  });
+ }
  if(!s.migObsIniciais){s.migObsIniciais=true;
  if(!s.observacoes['ob_seed_001'])s.observacoes['ob_seed_001']={"id": "ob_seed_001", "carro": "KYI8I20", "texto": "Alessandro: trocar o para-choque dianteiro e pintar no Delaias", "data": "2026-06-01", "criadoEm": 1752770000001, "feito": false, "feitoEm": ""};
  if(!s.observacoes['ob_seed_002'])s.observacoes['ob_seed_002']={"id": "ob_seed_002", "carro": "QQF8J26", "texto": "Carlos: pintar o para-choque traseiro e tampa de mala, as 2 portas lado direito, para-lama traseiro lado direito e comprar as letras da escrita Renault e L do Logan traseira", "data": "2026-08-03", "criadoEm": 1752770000002, "feito": false, "feitoEm": ""};
@@ -395,7 +417,7 @@ function normState(s){
  if(!s.observacoes['ob_seed_027'])s.observacoes['ob_seed_027']={"id": "ob_seed_027", "carro": "", "texto": "Acertar R$ 450,00 referente a 3 pneus meia-vida Dunlop 175/65R14 — 1 do Uno 18 IXY (no Rafael) e 2 do Ka 18 PZT", "data": "2026-07-14", "criadoEm": 1752770000027, "feito": false, "feitoEm": ""};
  }
  Object.keys(s.carros).forEach(function(k){var c=s.carros[k];if(c.kmUltima<c.kmAtual)c.kmUltima=c.kmAtual});
- Object.keys(s.manutencoes).forEach(function(k){var m=s.manutencoes[k],c=s.carros[m.carro];if(c&&m.odometro>c.kmUltima)c.kmUltima=m.odometro});
+
  return s;
 }
 
@@ -1766,6 +1788,10 @@ function importarHistoricoWA(){
  fr.readAsText(inp.files[0]);
 }
 /* ===================== HISTÓRICO GERAL ===================== */
+function hFiltraPlaca(p){
+ var e=document.getElementById('hBusca');if(!e)return;
+ e.value=p;hAplica();window.scrollTo(0,0);
+}
 function hAplica(){
  var q=((document.getElementById('hBusca')||{value:''}).value||'').trim();
  var t=document.getElementById('hTot');if(t)t.style.display=q?'none':'';
@@ -1783,9 +1809,15 @@ function vHistorico(){
  var tot={};Object.keys(S.manutencoes).forEach(function(k){var m=S.manutencoes[k];tot[m.carro]=(tot[m.carro]||0)+m.total});
  var chips=Object.keys(tot).sort(function(a,b){return tot[b]-tot[a]});
  if(chips.length){
-  h+='<div class="card" id="hTot"><div class="tit" style="font-size:13px;margin-bottom:4px">💰 Total gasto por carro</div>';
-  chips.forEach(function(pk){var c=S.carros[pk];h+='<span class="chip warn">'+esc(c?c.nome:pk)+' · R$ '+fmtBRL(tot[pk])+'</span>'});
-  h+='</div>';
+  h+='<div class="card" id="hTot"><details><summary class="tit" style="font-size:14px;cursor:pointer">💰 Total gasto por carro ('+chips.length+') — toque para abrir</summary>';
+  chips.forEach(function(pk){
+   var c=S.carros[pk];
+   h+='<div class="mvrow tap" onclick="hFiltraPlaca(\''+fmtPlaca(pk)+'\')">'+
+    '<b class="hplc">'+esc(fmtPlaca(pk))+'</b>'+
+    '<div class="grow">'+esc(c?tituloCarro(c):pk)+'</div>'+
+    '<div class="mvval">R$ '+fmtBRL(tot[pk])+'</div></div>';
+  });
+  h+='<div class="sub" style="margin-top:6px">Toque num carro para ver só as manutenções dele.</div></details></div>';
  }
  if(!todas.length)h+='<div class="card"><div class="sub">Nenhuma manutenção registrada ainda.</div></div>';
  else h+='<div class="card" id="hZero" style="display:none"><div class="sub">Nenhuma manutenção encontrada para essa busca.</div></div>';
