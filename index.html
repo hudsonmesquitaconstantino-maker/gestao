@@ -114,7 +114,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 
 .sheetwrap{position:relative;height:100%;display:flex;flex-direction:column}
 .sheetwrap .sheet{flex:1;min-height:0}
-.shx{position:absolute;top:10px;right:12px;z-index:60;width:38px;height:38px;border-radius:50%;
+.shx{position:absolute;top:calc(env(safe-area-inset-top,0px) + 46px);right:12px;z-index:60;width:38px;height:38px;border-radius:50%;
  background:rgba(255,255,255,.12);color:var(--tx);border:1px solid rgba(255,255,255,.18);
  font-size:17px;font-weight:800;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);touch-action:manipulation}
 .shx:active{background:rgba(255,255,255,.25)}
@@ -151,7 +151,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=28; var APP_DATE='16/07/2026';
+var APP_VER=29; var APP_DATE='16/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
