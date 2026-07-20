@@ -151,7 +151,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=29; var APP_DATE='16/07/2026';
+var APP_VER=30; var APP_DATE='16/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -374,17 +374,27 @@ function normState(s){
    c.ultTrocas=c.ultTrocas||{};Object.keys(g.ultTrocas).forEach(function(k){if(!c.ultTrocas[k])c.ultTrocas[k]=g.ultTrocas[k]});
   });
  }
- if(!s.migFixKmPosWA){s.migFixKmPosWA=true;
+ if(!s.migFixKmPorData){s.migFixKmPorData=true;
   Object.keys(s.carros).forEach(function(pk){
    var c=s.carros[pk];
-   var base=c.kmAtual||0, dt=c.kmUltimaData||'';
+   /* regra do Hudson: vale o EVENTO MAIS RECENTE (por data) — manutenção, contrato ou edição */
+   var cand=[];
+   if(c.kmAtual){
+    var ctv=c.contratoVigenteId&&s.contratos[c.contratoVigenteId];
+    cand.push({km:c.kmAtual,dt:(ctv&&ctv.inicio)||''});
+   }
+   if(c.kmUltima&&c.kmUltimaData)cand.push({km:c.kmUltima,dt:c.kmUltimaData});
    Object.keys(s.manutencoes).forEach(function(k){
     var m=s.manutencoes[k];
-    if(m.carro!==pk||m.origem==='whatsapp')return;
-    if((m.odometro||0)>base){base=m.odometro;dt=m.dataFim||m.dataIni||dt}
+    if(m.carro!==pk||!(m.odometro>0))return;
+    var d=m.dataFim||m.dataIni||'';
+    if(d)cand.push({km:m.odometro,dt:d});
    });
-   c.kmUltima=base;
-   if(dt)c.kmUltimaData=dt;
+   if(!cand.length)return;
+   cand.sort(function(a,b){return a.dt<b.dt?1:(a.dt>b.dt?-1:(b.km-a.km))});
+   c.kmUltima=cand[0].km;
+   if(cand[0].dt)c.kmUltimaData=cand[0].dt;
+   if(c.kmUltima<0)c.kmUltima=0;
   });
  }
  if(!s.migObsIniciais){s.migObsIniciais=true;
@@ -1690,7 +1700,7 @@ function gerarManut(){
   pecas:pecas,blocos:blocos,totalPecas:tp,totalMO:tm,total:tp+tm,criadoEm:Date.now()});
  m.texto=buildManutTexto(m,carro);
  S.manutencoes[m.id]=m;
- if(odo>(carro.kmUltima||0)){carro.kmUltima=odo;carro.kmUltimaData=fim||ini}
+ if(odo>0){carro.kmUltima=odo;carro.kmUltimaData=fim||ini}
  var _marc=aplicarDeteccao(m,carro);
  if(_marc.length)setTimeout(function(){toast('🤖 Atualizado automático: '+_marc.join(', '))},900);
  /* próximas trocas automáticas */
@@ -1939,7 +1949,7 @@ function gerarContrato(){
  }
  S.contratos[ct.id]=ct;
  c.contratoVigenteId=ct.id;c.motorista=ct.locatario.nome;c.status='ativo';
- if(ct.kmInicial){c.kmAtual=ct.kmInicial;if(ct.kmInicial>(c.kmUltima||0)){c.kmUltima=ct.kmInicial;c.kmUltimaData=ct.inicio}}
+ if(ct.kmInicial){c.kmAtual=ct.kmInicial;c.kmUltima=ct.kmInicial;c.kmUltimaData=ct.inicio}
  c.semanalPadrao=ct.semanal;c.caucaoPadrao=ct.caucao;
  save();
  go(0);ficha(pk);
