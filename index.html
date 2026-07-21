@@ -66,7 +66,11 @@ nav button.on{color:var(--ac)}
 .sect{font-size:12px;color:var(--ac);font-weight:800;letter-spacing:.8px;margin:16px 0 6px;text-transform:uppercase}
 .search{position:sticky;top:calc(54px + env(safe-area-inset-top));z-index:30;background:var(--bg);padding:4px 0 8px}
 iframe.pdfv{width:100%;height:60vh;border:1px solid var(--bord);border-radius:10px;background:#fff}
-canvas.pdfpg{width:100%;display:block;margin:0 0 8px;border:1px solid var(--bord);border-radius:8px;background:#fff}
+canvas.pdfpg{display:block;margin:0 auto 8px;border:1px solid var(--bord);border-radius:8px;background:#fff}
+#pdfWrap{overflow:auto;-webkit-overflow-scrolling:touch;max-height:70vh;border-radius:10px}
+.pdfbar{display:flex;gap:6px;align-items:center;justify-content:center;margin:0 0 8px}
+.pdfbar button{flex:0 0 auto;background:#1D2530;border:1px solid var(--bord);color:var(--tx);border-radius:10px;padding:8px 14px;font-size:15px;font-weight:700}
+.pdfbar .zlab{min-width:62px;text-align:center;font-size:13px;color:var(--tx2);font-weight:700}
 .filestat{font-size:12px;color:var(--tx2);margin-top:4px;line-height:1.6}
 a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 
@@ -151,7 +155,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=32; var APP_DATE='16/07/2026';
+var APP_VER=33; var APP_DATE='20/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -343,6 +347,9 @@ function normState(s){
  if(!s.migVistoriaGnv1){s.migVistoriaGnv1=true;var GVQ={'PWL8H97':['2028-03-01','2025'],'PXO9H80':['2028-02-01','2025'],'QQF8J26':['2026-06-01','2025'],'FHP4B47':['2030-06-01','2025'],'LSY7B47':['2029-06-01','2026'],'PVC8G42':['2027-02-01','2026'],'LUO2B58':['2028-10-01','2026'],'PZT0F79':['2030-09-01','2026'],'IXY2H87':['2029-02-01','2026'],'GBV3B96':['2030-05-01','2026'],'OYZ9079':['2029-01-01','2026'],'QEK3D83':['2026-07-01','2026'],'QMW8H90':['2031-02-01','2026'],'IYZ7E28':['2030-11-01','2026'],'AZH5D13':['2027-04-01','2026'],'QUB5B64':['2031-03-01','2026'],'KYI8I20':['2028-04-01','2026'],'LMY2A63':['2030-01-01','2026'],'PYO4A55':['2031-06-01','2026'],'DVS7C98':['2030-03-01','2026']};
   Object.keys(GVQ).forEach(function(pk){var cc=s.carros[pk];if(!cc)return;cc.gnvRequalif=GVQ[pk][0];cc.gnvExercicio=GVQ[pk][1];});
   if(s.carros['RGB3E35']){s.carros['RGB3E35'].procLeilao='Leilão média monta';s.carros['RGB3E35'].procObs='Recuperado de sinistro — CSV 015911624-70/2025 (Allianz), inspeção 10/11/2025';}
+ }
+ if(!s.migProcedencia2){s.migProcedencia2=true;var PRO={'QUB5B64':['Não','Sim','CRLV: ALIENAÇÃO FIDUCIÁRIA'],'RJZ1B66':['Não','Sim','CRLV: ALIENAÇÃO FIDUCIÁRIA'],'KXJ8F38':['Não','Sim','CRLV: BIN 17126 — Banco Votorantim S.A. (gravame) • veículo modificado'],'QUB5G52':['Não','Sim','CRLV: BIN 10226 — Banco Votorantim S.A. (gravame) • veículo modificado'],'LMX7B24':['Não','Sim','CRLV: BIN 16126 — Itaú Unibanco S.A. (gravame) • veículo modificado'],'IXY2H87':['Leilão média monta','Não','CRLV: RECUPERADO DE SINISTRO — SINISTRO MÉDIA MONTA (CSV 011760727-70/2023)'],'RGB3E35':['Leilão média monta','Não','CRLV: RECUPERADO DE SINISTRO — SINISTRO MÉDIA MONTA (CSV 015911624-70/2025)'],'IYZ7E28':['Recuperado de sinistro (monta não informada)','Não','CRLV: RECUPERADO DE SINISTRO (CSV 015842261-15/2025) — monta não consta no documento'],'LSY7B47':['Recuperado de sinistro (monta não informada)','Não','CRLV: RECUPERADO DE SINISTRO (CSV 003752694-80/2019) — monta não consta no documento'],'DVS7C98':['Não','Não','CRLV: CHASSI REMARCADO'],'FHP4B47':['Não','Não','CRLV: BIN 25625 — veículo modificado (sem gravame de banco)'],'OYZ9079':['Não','Não','CRLV: BIN 3226 — veículo modificado (sem gravame de banco)'],'GBV3B96':['Não','Não','CRLV: alteração de documentação de combustível (CSV 006370186-63/2021)'],'LQZ6C72':['Não','Não','CRLV: sem observações'],'PVC8G42':['Não','Não','CRLV: sem observações'],'AZH5D13':['Não','Não','CRLV: sem observações'],'LSK2B23':['Não','Não','CRLV: sem observações'],'PWL8H97':['Não','Não','CRLV: sem observações'],'PXO9H80':['Não','Não','CRLV: sem observações'],'KYI8I20':['Não','Não','CRLV: sem observações'],'PYO4A55':['Não','Não','CRLV: sem observações'],'PZT0F79':['Não','Não','CRLV: sem observações'],'QMW8H90':['Não','Não','CRLV: sem observações'],'QEK3D83':['Não','Não','CRLV: sem observações'],'QQF8J26':['Não','Não','CRLV: sem observações'],'LUH7G30':['Não','Não','CRLV: sem observações'],'LUO2B58':['Não','Não','CRLV: sem observações'],'RUK6I75':['Não','Não','CRLV: sem observações'],'RVX9H52':['Não','Não','CRLV: sem observações']};
+  Object.keys(PRO).forEach(function(pk){var cc=s.carros[pk];if(!cc)return;cc.procLeilao=PRO[pk][0];cc.procFinanciado=PRO[pk][1];cc.procObs=PRO[pk][2];});
  }
  if(!s.migGrupos1){s.migGrupos1=true;var GW={};
  GW['PZT0F79']={"oleoTipo": "5W30", "proxOleoKm": 157108, "temCorreia": true, "proxCorreiaKm": 170350, "ultTrocas": {"alternador": {"km": 133929, "data": "2026-04-08"}, "arranque": {"km": 133929, "data": "2026-04-08"}, "freios": {"km": 138303, "data": "2026-05-14"}, "ventoinha": {"km": 125624, "data": "2026-01-30"}, "radiador": {"km": 139890, "data": "2026-06-08"}}};
@@ -870,7 +877,7 @@ function formCarro(pk){
  '<label>Data em que viu essa quilometragem</label><input type="date" id="e_kmUltimaData" value="'+esc(c.kmUltimaData||'')+'">'+
   f('Exercício CRLV','exercicioCRLV',c.exercicioCRLV,'2026')+f('Exercício vistoria GNV (se tiver gás)','gnvExercicio',c.gnvExercicio||'')+
   '<label>Próxima requalificação do cilindro GNV</label><input type="date" id="e_gnvRequalif" value="'+esc(c.gnvRequalif||'')+'">'+
-  '<label>Leilão (procedência)</label><select id="fc_procLeilao">'+opcoesSel(['Não','Leilão pequena monta','Leilão média monta','Leilão grande monta'],c.procLeilao||'Não')+'</select>'+
+  '<label>Leilão (procedência)</label><select id="fc_procLeilao">'+opcoesSel(['Não','Recuperado de sinistro (monta não informada)','Leilão pequena monta','Leilão média monta','Leilão grande monta'],c.procLeilao||'Não')+'</select>'+
   '<label>Financiado</label><select id="fc_procFinanciado">'+opcoesSel(['Não','Sim'],c.procFinanciado||'Não')+'</select>'+
   f('Observações de procedência','procObs',c.procObs||'')+
   f('Proprietário (no documento)','proprietario',c.proprietario)+
@@ -982,32 +989,67 @@ function verDocx(path,titulo,pk,tipo){
 }
 function abrirPdf(b64,titulo){
  var url=b64ToUrl(b64,'application/pdf');
- openSheet('<h3>'+esc(titulo)+'</h3><div id="pdfHost" class="sub">Preparando páginas…</div>'+
-  '<a class="btn" style="text-align:center;text-decoration:none;color:#04121f" href="'+url+'" download="'+esc(titulo)+'.pdf">⬇️ Baixar</a>'+
+ openSheet('<h3>'+esc(titulo)+'</h3>'+
+  '<div class="pdfbar"><button onclick="pdfZoom(-1)">\u2212</button><span class="zlab" id="pdfZlab">100%</span><button onclick="pdfZoom(1)">+</button><button onclick="pdfZoom(0)">\u21ba</button></div>'+
+  '<div id="pdfWrap"><div id="pdfHost" class="sub">Preparando p\u00e1ginas\u2026</div></div>'+
+  '<a class="btn" style="text-align:center;text-decoration:none;color:#04121f" href="'+url+'" download="'+esc(titulo)+'.pdf">\u2b07\ufe0f Baixar</a>'+
   '<button class="btn sec" onclick="closeSheet(2)">Fechar</button>',2);
+ PDFV={doc:null,zoom:1,base:0,url:url,rendering:false,seq:0};
  garantirPdfjs().then(function(){
   var bin=atob(b64),arr=new Uint8Array(bin.length);
   for(var i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
   return pdfjsLib.getDocument({data:arr}).promise;
  }).then(function(pdf){
-  var host=document.getElementById('pdfHost');if(!host)return;
-  host.innerHTML='';host.removeAttribute('class');
-  var w=host.clientWidth||(document.getElementById('sheetBody2').clientWidth-28);
-  var dpr=Math.min(window.devicePixelRatio||1,2);
-  (function pg(n){
-   if(n>pdf.numPages)return;
-   pdf.getPage(n).then(function(page){
-    var vp0=page.getViewport({scale:1});
-    var vp=page.getViewport({scale:(w/vp0.width)*dpr});
-    var cv=document.createElement('canvas');cv.className='pdfpg';cv.width=vp.width;cv.height=vp.height;
-    host.appendChild(cv);
-    page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise.then(function(){pg(n+1)});
-   });
-  })(1);
+  PDFV.doc=pdf; pdfRender();
  }).catch(function(e){
   var host=document.getElementById('pdfHost');
   if(host)host.outerHTML='<iframe class="pdfv" src="'+url+'"></iframe>';
  });
+}
+var PDFV={doc:null,zoom:1,base:0,url:'',rendering:false,seq:0};
+function pdfLarguraBase(){
+ var wrap=document.getElementById('pdfWrap');
+ var w=wrap?wrap.clientWidth:0;
+ if(!w){var sb=document.getElementById('sheetBody2');w=sb?sb.clientWidth-28:0}
+ if(!w)w=Math.min(window.innerWidth-32,900);
+ return w;
+}
+function pdfZoom(d){
+ if(!PDFV.doc)return;
+ if(d===0)PDFV.zoom=1;
+ else{
+  var z=PDFV.zoom+(d>0?0.5:-0.5);
+  if(z<1)z=1; if(z>5)z=5;
+  if(z===PDFV.zoom)return;
+  PDFV.zoom=z;
+ }
+ var lab=document.getElementById('pdfZlab');if(lab)lab.textContent=Math.round(PDFV.zoom*100)+'%';
+ pdfRender();
+}
+function pdfRender(){
+ var pdf=PDFV.doc,host=document.getElementById('pdfHost');
+ if(!pdf||!host)return;
+ var meuSeq=++PDFV.seq;
+ host.innerHTML='';host.removeAttribute('class');
+ var wBase=pdfLarguraBase();
+ var wCss=Math.round(wBase*PDFV.zoom);
+ /* nitidez real: renderiza na densidade do aparelho (at\u00e9 3x), com teto de pixels por p\u00e1gina */
+ var dpr=Math.min(window.devicePixelRatio||1,3);
+ var wPix=Math.round(wCss*dpr);
+ if(wPix>4600)wPix=4600;
+ (function pg(n){
+  if(n>pdf.numPages||meuSeq!==PDFV.seq)return;
+  pdf.getPage(n).then(function(page){
+   if(meuSeq!==PDFV.seq)return;
+   var vp0=page.getViewport({scale:1});
+   var vp=page.getViewport({scale:wPix/vp0.width});
+   var cv=document.createElement('canvas');cv.className='pdfpg';
+   cv.width=Math.round(vp.width);cv.height=Math.round(vp.height);
+   cv.style.width=wCss+'px';cv.style.height=Math.round(vp.height*wCss/vp.width)+'px';
+   host.appendChild(cv);
+   page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise.then(function(){pg(n+1)});
+  });
+ })(1);
 }
 function baixarDoc(path,nome,pk,tipo){
  toast('📥 Preparando arquivo…');
