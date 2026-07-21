@@ -68,13 +68,10 @@ nav button.on{color:var(--ac)}
 iframe.pdfv{width:100%;height:60vh;border:1px solid var(--bord);border-radius:10px;background:#fff}
 canvas.pdfpg{display:block;background:#fff}
 .pdfwrap{position:relative;display:block}
-.pdftxt{position:absolute;left:0;top:0;overflow:hidden;line-height:1;transform-origin:0 0;pointer-events:none;-webkit-user-select:none;user-select:none}
-.pdftxt span{position:absolute;white-space:pre;transform-origin:0% 0%;color:transparent}
+.pdftxt{position:absolute;left:0;top:0;overflow:hidden;line-height:1;transform-origin:0 0;pointer-events:auto;-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+.pdftxt span{position:absolute;white-space:pre;transform-origin:0% 0%;color:transparent;-webkit-user-select:text;user-select:text}
 .pdftxt span::selection{background:rgba(56,139,253,.45)}
 .pdftxt span::-moz-selection{background:rgba(56,139,253,.45)}
-#pdfFull.seltxt .pdftxt{pointer-events:auto;-webkit-user-select:text;user-select:text}
-#pdfFull.seltxt #pdfView{-webkit-user-select:text;user-select:text}
-.pdfic.on{background:rgba(56,139,253,.95)}
 #pdfFull{position:fixed;inset:0;z-index:200;background:#11161d}
 #pdfView{position:absolute;inset:0;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
 #pdfPages{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
@@ -167,7 +164,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=35; var APP_DATE='21/07/2026';
+var APP_VER=36; var APP_DATE='21/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -999,20 +996,18 @@ function verDocx(path,titulo,pk,tipo){
   if(!w){var a=document.createElement('a');a.href=url;a.download=(d.name||titulo+'.docx');document.body.appendChild(a);a.click();setTimeout(function(){document.body.removeChild(a)},400)}
  }).catch(function(e){toast('⚠️ '+e.message)});
 }
-var PDFV={doc:null,scale:1,fit:1,tx:0,ty:0,W:0,H:0,q:0,seq:0,url:'',alturas:[],nitPag:-1,nitQ:0,sel:false};
+var PDFV={doc:null,scale:1,fit:1,tx:0,ty:0,W:0,H:0,q:0,seq:0,url:'',alturas:[],nitPag:-1,nitQ:0};
 function abrirPdf(b64,titulo){
  var url=b64ToUrl(b64,'application/pdf');
  fecharPdf();
  var ov=document.createElement('div');ov.id='pdfFull';
  ov.innerHTML='<div class="pdftop"><div class="pdfttl">'+esc(titulo)+'</div>'+
-  '<button class="pdfic" id="pdfSelBt" onclick="pdfModoTexto()" title="Selecionar texto">\u{1F524}</button>'+
-  '<button class="pdfic" onclick="pdfCopiarTudo()" title="Copiar todo o texto">\u{1F4CB}</button>'+
   '<a class="pdfic" href="'+url+'" download="'+esc(titulo)+'.pdf">\u2b07</a>'+
   '<button class="pdfic" onclick="fecharPdf()">\u2715</button></div>'+
   '<div id="pdfView"><div id="pdfPages"></div></div>';
  document.body.appendChild(ov);
  if(document.body.classList)document.body.classList.add('noscroll');
- PDFV={doc:null,scale:1,fit:1,tx:0,ty:0,W:0,H:0,q:0,seq:0,url:url,alturas:[],nitPag:-1,nitQ:0,sel:false};
+ PDFV={doc:null,scale:1,fit:1,tx:0,ty:0,W:0,H:0,q:0,seq:0,url:url,alturas:[],nitPag:-1,nitQ:0};
  pdfLigarGestos();
  garantirPdfjs().then(function(){
   var bin=atob(b64),arr=new Uint8Array(bin.length);
@@ -1153,39 +1148,9 @@ function pdfCamadaTexto(page,wrap,escala,meu){
   }).catch(function(){});
  }catch(e){}
 }
-function pdfModoTexto(){
- var ov=document.getElementById('pdfFull');if(!ov)return;
- PDFV.sel=!PDFV.sel;
- if(ov.classList)ov.classList.toggle('seltxt',PDFV.sel);
- var b=document.getElementById('pdfSelBt');if(b&&b.classList)b.classList.toggle('on',PDFV.sel);
- toast(PDFV.sel?'\u{1F524} Toque e segure sobre o texto para selecionar e copiar':'\u270B Modo mover e zoom');
-}
-function pdfTextoDoc(){
- var pdf=PDFV.doc;if(!pdf)return Promise.resolve('');
- var saida=[];
- function pg(n){
-  if(n>pdf.numPages)return Promise.resolve(saida.join('\n'));
-  return pdf.getPage(n).then(function(p){return p.getTextContent()}).then(function(tc){
-   var linhas=[],ult=null;
-   (tc.items||[]).forEach(function(it){
-    var y=it.transform?Math.round(it.transform[5]):0;
-    if(ult===null||Math.abs(y-ult)>3){linhas.push(it.str);ult=y}
-    else linhas[linhas.length-1]+=(it.str?' '+it.str:'');
-   });
-   saida.push(linhas.join('\n'));
-   return pg(n+1);
-  });
- }
- return pg(1);
-}
-function pdfCopiarTudo(){
- if(!PDFV.doc){toast('Aguarde o documento abrir');return}
- toast('\u{1F4CB} Lendo o texto do documento\u2026');
- pdfTextoDoc().then(function(t){
-  t=(t||'').replace(/\n{3,}/g,'\n\n').trim();
-  if(!t){toast('Este PDF e imagem digitalizada: nao tem texto para copiar');return}
-  copiarTexto(t);
- }).catch(function(){toast('Nao consegui ler o texto deste PDF')});
+/* enquanto houver texto selecionado, o dedo pertence ao iOS (alças de seleção), nao ao arrasto */
+function pdfSelecionando(){
+ try{var sl=window.getSelection&&window.getSelection();return !!(sl&&!sl.isCollapsed&&String(sl).length)}catch(e){return false}
 }
 /* pinca com dois dedos, arrasto com um, toque duplo para aproximar */
 function pdfLigarGestos(){
@@ -1195,7 +1160,6 @@ function pdfLigarGestos(){
  v.addEventListener('touchstart',function(e){
   var t=e.touches;G.n=t.length;
   if(t.length===1){
-   if(PDFV.sel){G.d0=0;return}
    G.x=t[0].clientX;G.y=t[0].clientY;
    var ag=Date.now();
    if(ag-G.ultToque<300){
@@ -1218,7 +1182,7 @@ function pdfLigarGestos(){
    var f=pdfFoco(PDFV.scale,PDFV.tx,PDFV.ty,sc,G.cx,G.cy);
    PDFV.scale=sc;PDFV.tx=f.tx;PDFV.ty=f.ty;pdfAplicar();
   }else if(t.length===1){
-   if(PDFV.sel)return;
+   if(pdfSelecionando())return;   /* deixa o iOS ajustar a seleção de texto */
    e.preventDefault();
    PDFV.tx+=t[0].clientX-G.x;PDFV.ty+=t[0].clientY-G.y;
    G.x=t[0].clientX;G.y=t[0].clientY;pdfAplicar();
