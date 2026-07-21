@@ -55,7 +55,7 @@ nav button .ic{display:block;font-size:20px;margin-bottom:2px}
 nav button.on{color:var(--ac)}
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:60;display:none;align-items:flex-end;justify-content:center}
 .overlay.open{display:flex}
-.sheet{overscroll-behavior:contain;background:var(--card);border:1px solid var(--bord);border-radius:18px 18px 0 0;width:100%;max-width:640px;height:calc(100vh - 44px);height:calc(100dvh - 44px);overflow-y:auto;padding:16px 14px calc(18px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch}
+.sheet{overscroll-behavior:contain;background:var(--card);border:1px solid var(--bord);border-radius:18px 18px 0 0;width:100%;max-width:640px;height:calc(100vh - 44px);height:calc(100dvh - 44px);overflow-y:auto;padding:calc(16px + max(0px, env(safe-area-inset-top) - 34px)) 14px calc(18px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch}
 .sheet h3{margin:0 0 4px;font-size:16px}
 .sheet .sub{margin-bottom:8px}
 #ovAsk{z-index:85}
@@ -67,6 +67,14 @@ nav button.on{color:var(--ac)}
 .search{position:sticky;top:calc(54px + env(safe-area-inset-top));z-index:30;background:var(--bg);padding:4px 0 8px}
 iframe.pdfv{width:100%;height:60vh;border:1px solid var(--bord);border-radius:10px;background:#fff}
 canvas.pdfpg{display:block;background:#fff}
+.pdfwrap{position:relative;display:block}
+.pdftxt{position:absolute;left:0;top:0;overflow:hidden;line-height:1;transform-origin:0 0;pointer-events:none;-webkit-user-select:none;user-select:none}
+.pdftxt span{position:absolute;white-space:pre;transform-origin:0% 0%;color:transparent}
+.pdftxt span::selection{background:rgba(56,139,253,.45)}
+.pdftxt span::-moz-selection{background:rgba(56,139,253,.45)}
+#pdfFull.seltxt .pdftxt{pointer-events:auto;-webkit-user-select:text;user-select:text}
+#pdfFull.seltxt #pdfView{-webkit-user-select:text;user-select:text}
+.pdfic.on{background:rgba(56,139,253,.95)}
 #pdfFull{position:fixed;inset:0;z-index:200;background:#11161d}
 #pdfView{position:absolute;inset:0;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
 #pdfPages{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
@@ -159,7 +167,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=34; var APP_DATE='20/07/2026';
+var APP_VER=35; var APP_DATE='21/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -991,18 +999,20 @@ function verDocx(path,titulo,pk,tipo){
   if(!w){var a=document.createElement('a');a.href=url;a.download=(d.name||titulo+'.docx');document.body.appendChild(a);a.click();setTimeout(function(){document.body.removeChild(a)},400)}
  }).catch(function(e){toast('⚠️ '+e.message)});
 }
-var PDFV={doc:null,scale:1,fit:1,tx:0,ty:0,W:0,H:0,q:0,seq:0,url:'',alturas:[],nitPag:-1,nitQ:0};
+var PDFV={doc:null,scale:1,fit:1,tx:0,ty:0,W:0,H:0,q:0,seq:0,url:'',alturas:[],nitPag:-1,nitQ:0,sel:false};
 function abrirPdf(b64,titulo){
  var url=b64ToUrl(b64,'application/pdf');
  fecharPdf();
  var ov=document.createElement('div');ov.id='pdfFull';
  ov.innerHTML='<div class="pdftop"><div class="pdfttl">'+esc(titulo)+'</div>'+
+  '<button class="pdfic" id="pdfSelBt" onclick="pdfModoTexto()" title="Selecionar texto">\u{1F524}</button>'+
+  '<button class="pdfic" onclick="pdfCopiarTudo()" title="Copiar todo o texto">\u{1F4CB}</button>'+
   '<a class="pdfic" href="'+url+'" download="'+esc(titulo)+'.pdf">\u2b07</a>'+
   '<button class="pdfic" onclick="fecharPdf()">\u2715</button></div>'+
   '<div id="pdfView"><div id="pdfPages"></div></div>';
  document.body.appendChild(ov);
  if(document.body.classList)document.body.classList.add('noscroll');
- PDFV={doc:null,scale:1,fit:1,tx:0,ty:0,W:0,H:0,q:0,seq:0,url:url,alturas:[],nitPag:-1,nitQ:0};
+ PDFV={doc:null,scale:1,fit:1,tx:0,ty:0,W:0,H:0,q:0,seq:0,url:url,alturas:[],nitPag:-1,nitQ:0,sel:false};
  pdfLigarGestos();
  garantirPdfjs().then(function(){
   var bin=atob(b64),arr=new Uint8Array(bin.length);
@@ -1079,7 +1089,8 @@ function pdfNitidez(){
 function pdfPintar(idx,q){
  var pdf=PDFV.doc,host=document.getElementById('pdfPages');
  if(!pdf||!host)return;
- var cv=host.children?host.children[idx]:null;if(!cv)return;
+ var wrap=host.children?host.children[idx]:null;if(!wrap)return;
+ var cv=wrap.tagName==='CANVAS'?wrap:wrap.querySelector('canvas');if(!cv)return;
  var meu=PDFV.seq,W=PDFV.W;
  pdf.getPage(idx+1).then(function(page){
   if(meu!==PDFV.seq)return;
@@ -1111,10 +1122,14 @@ function pdfRender(manter){
    var wPix=Math.min(Math.round(W*q),4200);
    var vp=page.getViewport({scale:wPix/vp0.width});
    var hCss=Math.round(vp.height*W/vp.width);
+   var wrap=document.createElement('div');wrap.className='pdfwrap';
+   wrap.style.width=W+'px';wrap.style.height=hCss+'px';
    var cv=document.createElement('canvas');cv.className='pdfpg';
    cv.width=Math.round(vp.width);cv.height=Math.round(vp.height);
    cv.style.width=W+'px';cv.style.height=hCss+'px';
-   host.appendChild(cv);
+   wrap.appendChild(cv);
+   host.appendChild(wrap);
+   pdfCamadaTexto(page,wrap,W/vp0.width,meu);
    PDFV.alturas.push(hCss);
    alturaTotal+=hCss;PDFV.H=alturaTotal;
    if(!manter&&n===1){PDFV.tx=0;PDFV.ty=0;}
@@ -1122,6 +1137,55 @@ function pdfRender(manter){
    page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise.then(function(){pg(n+1)});
   });
  })(1);
+}
+/* camada de texto invisivel por cima do canvas: permite selecionar e copiar (PDF com texto de verdade) */
+function pdfCamadaTexto(page,wrap,escala,meu){
+ try{
+  if(!page.getTextContent||!pdfjsLib.renderTextLayer)return;
+  page.getTextContent().then(function(tc){
+   if(meu!==PDFV.seq||!wrap.parentNode)return;
+   if(!tc||!tc.items||!tc.items.length)return;
+   var vp=page.getViewport({scale:escala});
+   var d=document.createElement('div');d.className='pdftxt';
+   d.style.width=Math.round(vp.width)+'px';d.style.height=Math.round(vp.height)+'px';
+   wrap.appendChild(d);
+   pdfjsLib.renderTextLayer({textContent:tc,container:d,viewport:vp,textDivs:[]});
+  }).catch(function(){});
+ }catch(e){}
+}
+function pdfModoTexto(){
+ var ov=document.getElementById('pdfFull');if(!ov)return;
+ PDFV.sel=!PDFV.sel;
+ if(ov.classList)ov.classList.toggle('seltxt',PDFV.sel);
+ var b=document.getElementById('pdfSelBt');if(b&&b.classList)b.classList.toggle('on',PDFV.sel);
+ toast(PDFV.sel?'\u{1F524} Toque e segure sobre o texto para selecionar e copiar':'\u270B Modo mover e zoom');
+}
+function pdfTextoDoc(){
+ var pdf=PDFV.doc;if(!pdf)return Promise.resolve('');
+ var saida=[];
+ function pg(n){
+  if(n>pdf.numPages)return Promise.resolve(saida.join('\n'));
+  return pdf.getPage(n).then(function(p){return p.getTextContent()}).then(function(tc){
+   var linhas=[],ult=null;
+   (tc.items||[]).forEach(function(it){
+    var y=it.transform?Math.round(it.transform[5]):0;
+    if(ult===null||Math.abs(y-ult)>3){linhas.push(it.str);ult=y}
+    else linhas[linhas.length-1]+=(it.str?' '+it.str:'');
+   });
+   saida.push(linhas.join('\n'));
+   return pg(n+1);
+  });
+ }
+ return pg(1);
+}
+function pdfCopiarTudo(){
+ if(!PDFV.doc){toast('Aguarde o documento abrir');return}
+ toast('\u{1F4CB} Lendo o texto do documento\u2026');
+ pdfTextoDoc().then(function(t){
+  t=(t||'').replace(/\n{3,}/g,'\n\n').trim();
+  if(!t){toast('Este PDF e imagem digitalizada: nao tem texto para copiar');return}
+  copiarTexto(t);
+ }).catch(function(){toast('Nao consegui ler o texto deste PDF')});
 }
 /* pinca com dois dedos, arrasto com um, toque duplo para aproximar */
 function pdfLigarGestos(){
@@ -1131,6 +1195,7 @@ function pdfLigarGestos(){
  v.addEventListener('touchstart',function(e){
   var t=e.touches;G.n=t.length;
   if(t.length===1){
+   if(PDFV.sel){G.d0=0;return}
    G.x=t[0].clientX;G.y=t[0].clientY;
    var ag=Date.now();
    if(ag-G.ultToque<300){
@@ -1153,6 +1218,7 @@ function pdfLigarGestos(){
    var f=pdfFoco(PDFV.scale,PDFV.tx,PDFV.ty,sc,G.cx,G.cy);
    PDFV.scale=sc;PDFV.tx=f.tx;PDFV.ty=f.ty;pdfAplicar();
   }else if(t.length===1){
+   if(PDFV.sel)return;
    e.preventDefault();
    PDFV.tx+=t[0].clientX-G.x;PDFV.ty+=t[0].clientY-G.y;
    G.x=t[0].clientX;G.y=t[0].clientY;pdfAplicar();
@@ -2365,12 +2431,76 @@ function openCfg(){
  '<p class="sub">Guarda TODOS os CRLVs e contratos na memória deste iPhone. Depois disso, ver/baixar/compartilhar funciona sem internet.</p>'+
  '<button class="btn" onclick="baixarTudoOffline()">📥 Baixar todos para este aparelho</button>'+
  '<div class="filestat" id="offStat"></div>'+
- '<div class="sect">Conexão / sincronização</div>'+
+ '<div class="sect">Backup dos dados</div>'+
+ '<p class="sub">Gera um arquivo com TODOS os dados (carros, manutenções, contratos, observações e termos) para você salvar em Arquivos/iCloud. É a sua cópia fora do sistema: se algo for apagado por engano, dá para restaurar. Documentos (PDF/Word) não entram — eles ficam na nuvem e no botão de download offline acima.</p>'+
+ '<div class="filestat" id="bkpStat">'+bkpAviso()+'</div>'+
+ '<button class="btn" onclick="fazerBackup()">💾 Salvar backup agora</button>'+
+ '<p class="sub">Para restaurar: escolha um arquivo de backup abaixo. A restauração SOMA o que falta, nunca apaga o que já existe.</p>'+
+ '<input type="file" id="bkpIn" accept=".json">'+
+ '<button class="btn sec" onclick="restaurarBackup()">♻️ Restaurar de um backup</button>'+
+'<div class="sect">Conexão / sincronização</div>'+
  '<div class="filestat" id="syncDiag">Verificando…</div>'+
  '<button class="btn sec" onclick="syncDiagRodar()">🔍 Diagnóstico da sincronização</button>'+
  '<button class="btn sec" onclick="closeSheet();pedirChave()">🔑 Trocar chave da família</button>'+
  '<button class="btn sec" onclick="checkUpdate();toast(\'🔎 Verificando atualização…\')">⬆️ Verificar atualização</button>'+
  '<button class="btn sec" onclick="closeSheet()">Fechar</button>');
+}
+function bkpQuando(){var t=parseInt(localStorage.getItem('gestao_bkp')||'0',10);return t>0?t:0}
+function bkpAviso(){
+ var t=bkpQuando();
+ if(!t)return '\u26A0\uFE0F Você ainda não fez nenhum backup.';
+ var dias=Math.floor((Date.now()-t)/86400000);
+ var d=new Date(t),q=('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear();
+ return (dias>=30?'\u26A0\uFE0F ':'\u2705 ')+'Último backup: '+q+(dias?' ('+dias+' dias atrás)':' (hoje)');
+}
+function fazerBackup(){
+ if(!S){toast('Dados ainda carregando');return}
+ try{
+  var d=new Date(),q=d.getFullYear()+('0'+(d.getMonth()+1)).slice(-2)+('0'+d.getDate()).slice(-2);
+  var pac={app:'gestao',ver:APP_VER,em:Date.now(),dados:S};
+  var txt=JSON.stringify(pac);
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([txt],{type:'application/json'}));
+  a.download='backup-guimascar-'+q+'.json';
+  document.body.appendChild(a);a.click();setTimeout(function(){document.body.removeChild(a)},400);
+  localStorage.setItem('gestao_bkp',String(Date.now()));
+  var st=document.getElementById('bkpStat');if(st)st.innerHTML=bkpAviso();
+  toast('\u{1F4BE} Backup gerado — salve em Arquivos/iCloud');
+ }catch(e){toast('\u26A0\uFE0F '+e.message)}
+}
+function aplicarBackup(pac){
+ var d=pac&&pac.dados;
+ if(!d||!d.carros)throw new Error('arquivo não é um backup do Gestão');
+ var novosCarros=0;
+ Object.keys(d.carros).forEach(function(pk){
+  if(!S.carros[pk]&&!S.apagados['car_'+pk]){S.carros[pk]=d.carros[pk];novosCarros++}
+ });
+ var add=mesclarBackupColecoes(d);
+ if(novosCarros||add){save();render()}
+ return {carros:novosCarros,itens:add};
+}
+function mesclarBackupColecoes(d){
+ var add=0;
+ ['manutencoes','contratos','observacoes','termos'].forEach(function(c){
+  S[c]=S[c]||{};var e=d[c]||{};
+  Object.keys(e).forEach(function(k){if(!S[c][k]&&!S.apagados[k]){S[c][k]=e[k];add++}});
+ });
+ return add;
+}
+function restaurarBackup(){
+ var inp=document.getElementById('bkpIn');
+ if(!inp||!inp.files||!inp.files.length){toast('Escolha o arquivo de backup');return}
+ var st=document.getElementById('bkpStat');if(st)st.textContent='Lendo arquivo…';
+ var fr=new FileReader();
+ fr.onload=function(){
+  try{
+   var pac=JSON.parse(fr.result);
+   var r=aplicarBackup(pac);
+   if(st)st.innerHTML='<b>\u2705 Restaurado: '+r.carros+' carro(s) e '+r.itens+' registro(s) que faltavam.</b> Nada foi apagado.';
+   toast('\u267B\uFE0F Backup restaurado');
+  }catch(e){if(st)st.textContent='\u26A0\uFE0F '+e.message}
+ };
+ fr.readAsText(inp.files[0]);
 }
 function importar(){
  var inp=document.getElementById('impIn');
