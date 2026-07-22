@@ -164,7 +164,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=37; var APP_DATE='21/07/2026';
+var APP_VER=38; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -764,12 +764,13 @@ function ficha(pk){window._fichaPk=pk;
    h+='<div class="kv"><b>⚙️ Correia dentada</b><span>'+(c.proxCorreiaKm?('próxima: '+fmtKm(c.proxCorreiaKm)+' km'+(km?(fc<=0?' · <span style="color:var(--warn)">VENCIDA</span>':' · faltam '+fmtKm(fc)+' km'):'')):'—')+'</span></div>';
   }else h+='<div class="kv"><b>⚙️ Comando</b><span>corrente (sem correia dentada)</span></div>';
   var COMPS=[['vela','🔥 Vela'],['cabos','🔥 Cabos de vela'],['embreagem','⚙️ Embreagem'],['bateria','🔋 Bateria'],['alternador','⚡ Alternador'],['arranque','🔑 Arranque'],['freios','🛑 Freios (pastilha)'],['ventoinha','❄️ Ventoinha'],['radiador','🌡 Radiador'],['correia','⚙️ Correia dentada (última)']];
-  h+='<div class="sect">Últimas trocas (componentes)</div>';
+  h+='<div class="sect">Últimas trocas (componentes) <span class="x" style="display:inline;padding:0 6px" onclick="editarTrocas(\''+pk+'\')">✎</span></div>';
   COMPS.forEach(function(par){
    if(par[0]==='correia'&&!c.temCorreia)return;
    var u=(c.ultTrocas||{})[par[0]];
    h+='<div class="kv"><b>'+par[1]+'</b><span>'+(u&&(u.km||u.data)?((u.km?fmtKm(u.km)+' km':'')+(u.km&&u.data?' · ':'')+(u.data?dataBR(u.data):'')):'—')+'</span></div>';
   });
+  h+='<button class="btn mini sec" onclick="recalcTrocasUI(\''+pk+'\')">🔄 Recalcular do histórico</button>';
  })();
  h+='<div class="sect">Documento CRLV</div>';
  h+=c.temCrlv?'<button class="btn mini" onclick="verDoc(\''+pk+'/crlv\',\'CRLV '+esc(fmtPlaca(c.placa))+'\')">👁 Ver PDF</button>':'<div class="sub">Nenhum CRLV anexado.</div>';
@@ -1659,17 +1660,23 @@ function detectarComponentes(m){
   var l=semAcento(raw);
   var mprox=l.match(/proxima[^0-9]*([0-9][0-9.,]*)\s*km/);
   var prox=mprox?parseInt(mprox[1].replace(/[.,]/g,''),10):0;
-  if(/\bcabo/.test(l))out.comps.cabos=true;
-  else if(/\bvela/.test(l))out.comps.vela=true;
-  if(/embreagem/.test(l))out.comps.embreagem=true;
+  /* CABOS DE VELA: só quando a linha tem "cabo" E "vela" juntos (jogo de cabo de vela).
+     NUNCA marca em "cabo do freio de mão", "cabo de embreagem", "cabo do acelerador". */
+  if(/cabo/.test(l)&&/vela/.test(l))out.comps.cabos=true;
+  /* VELA (ignição): tem "vela" mas NÃO é linha de cabo. */
+  if(/\bvela/.test(l)&&!/cabo/.test(l))out.comps.vela=true;
+  /* EMBREAGEM: kit/disco/platô — exclui "cabo de embreagem". */
+  if(/embreagem/.test(l)&&!(/cabo/.test(l)&&!/kit|disco|plato|jogo/.test(l)))out.comps.embreagem=true;
   if(/bateria/.test(l))out.comps.bateria=true;
   if(/alternador/.test(l))out.comps.alternador=true;
   if(/arranque|motor de partida/.test(l))out.comps.arranque=true;
-  if(/pastilha|\bfreio/.test(l))out.comps.freios=true;
-  if(/ventoinha/.test(l))out.comps.ventoinha=true;
-  if(/radiador/.test(l))out.comps.radiador=true;
+  /* FREIOS = SOMENTE pastilha. Nunca "freio de mão", "cabo do freio", "disco", "fluido/óleo de freio". */
+  if(/pastilha/.test(l))out.comps.freios=true;
+  if(/ventoinha|eletroventilador/.test(l))out.comps.ventoinha=true;
+  /* RADIADOR: o radiador em si — exclui mangueira/tampa/aditivo/válvula/sensor/reservatório. */
+  if(/radiador/.test(l)&&!/mangueira|tampa|aditivo|valvula|sensor|reservatorio/.test(l))out.comps.radiador=true;
   if(/correia\s+dentada/.test(l)){out.comps.correia=true;if(prox)out.proxCorreia=prox;}
-  if(/\boleo/.test(l)&&!/caixa|cambio|direcao|freio/.test(l)){out.comps.oleo=true;if(prox)out.proxOleo=prox;}
+  if(/\boleo/.test(l)&&!/caixa|cambio|direcao|freio|diferencial/.test(l)){out.comps.oleo=true;if(prox)out.proxOleo=prox;}
  });
  return out;
 }
@@ -1680,11 +1687,80 @@ function aplicarDeteccao(m,carro){
  var marcados=[];
  Object.keys(d.comps).forEach(function(comp){
   var at=carro.ultTrocas[comp];
-  if(!at||!at.km||odo>=at.km){carro.ultTrocas[comp]={km:odo,data:dt};marcados.push(comp)}
+  if(at&&at.src==='manual')return; /* não sobrescreve o que foi ajustado na mão */
+  if(!at||!at.km||odo>=at.km){carro.ultTrocas[comp]={km:odo,data:dt,src:'auto'};marcados.push(comp)}
  });
  if(d.comps.oleo&&d.proxOleo)carro.proxOleoKm=d.proxOleo;
  if(d.comps.correia)carro.proxCorreiaKm=d.proxCorreia||(odo+40000);
  return marcados;
+}
+
+/* ===================== RECÁLCULO + EDIÇÃO DAS ÚLTIMAS TROCAS ===================== */
+var COMPS_LST=[['vela','🔥 Vela'],['cabos','🔥 Cabos de vela'],['embreagem','⚙️ Embreagem'],['bateria','🔋 Bateria'],['alternador','⚡ Alternador'],['arranque','🔑 Arranque'],['freios','🛑 Freios (pastilha)'],['ventoinha','❄️ Ventoinha'],['radiador','🌡 Radiador'],['correia','⚙️ Correia dentada']];
+function nomeComp(k){for(var i=0;i<COMPS_LST.length;i++)if(COMPS_LST[i][0]===k)return COMPS_LST[i][1];return k}
+function _dtManut(m){return m.dataFim||m.dataIni||''}
+function _odoManut(m){return Number(m.odometro)||0}
+/* Reconstrói ultTrocas do carro varrendo TODO o histórico (cronológico), pegando a última troca
+   REAL de cada componente. Preserva itens marcados na mão (src:'manual'). */
+function recalcTrocasCarro(pk){
+ var c=S.carros[pk];if(!c)return null;
+ var mans=Object.keys(S.manutencoes).map(function(k){return S.manutencoes[k]})
+  .filter(function(m){return m.carro===pk})
+  .sort(function(a,b){var oa=_odoManut(a),ob=_odoManut(b);if(oa!==ob)return oa-ob;return (_dtManut(a)||'').localeCompare(_dtManut(b)||'')});
+ var novo={},proxOleo=0,proxCorreia=0;
+ mans.forEach(function(m){
+  var d=detectarComponentes(m),odo=_odoManut(m),dt=_dtManut(m)||hoje();
+  Object.keys(d.comps).forEach(function(comp){novo[comp]={km:odo,data:dt,src:'auto'}});
+  if(d.proxOleo)proxOleo=d.proxOleo;
+  if(d.proxCorreia)proxCorreia=d.proxCorreia;
+ });
+ var antes=c.ultTrocas||{};
+ var manuais={};Object.keys(antes).forEach(function(k){if(antes[k]&&antes[k].src==='manual')manuais[k]=antes[k]});
+ var removidos=[];Object.keys(antes).forEach(function(k){
+  if(!manuais[k]&&!novo[k]&&antes[k]&&(antes[k].km||antes[k].data))removidos.push(k);
+ });
+ c.ultTrocas=Object.assign({},novo,manuais);
+ if(proxOleo)c.proxOleoKm=proxOleo;
+ if(proxCorreia&&c.temCorreia)c.proxCorreiaKm=proxCorreia;
+ return {qtd:Object.keys(novo).length,removidos:removidos};
+}
+function recalcTrocasUI(pk){
+ var c=S.carros[pk];if(!c)return;
+ ask('Recalcular componentes do histórico?','Vou varrer todas as manutenções do '+c.nome+' e reescrever as "Últimas trocas" pegando a última troca REAL de cada item. Itens marcados na mão são preservados.','Recalcular',function(){
+  var r=recalcTrocasCarro(pk);save();ficha(pk);
+  if(r&&r.removidos.length){
+   var nomes=r.removidos.map(nomeComp).join(', ');
+   setTimeout(function(){toast('⚠️ Não achei no histórico: '+nomes+'. Se foi troca real, re-adicione na mão (✎).')},900);
+  }else toast('✅ Componentes recalculados pelo histórico');
+ });
+}
+function editarTrocas(pk){
+ var c=S.carros[pk];if(!c)return;var u=c.ultTrocas||{};
+ var h='<h3>✏️ Últimas trocas — '+esc(tituloCarro(c))+'</h3>'+
+  '<p class="sub">Ajuste na mão a km e a data da última troca de cada componente. Deixe os dois vazios para limpar o item. O que você salvar aqui vira <b>manual</b> e o recálculo automático não mexe mais nele.</p>';
+ COMPS_LST.forEach(function(par){
+  if(par[0]==='correia'&&!c.temCorreia)return;
+  var v=u[par[0]]||{};
+  h+='<div class="card" style="margin:0 0 6px;background:var(--card2)"><div class="tit" style="font-size:14px">'+par[1]+(v.src==='manual'?' <span class="chip">manual</span>':'')+'</div>'+
+   '<div class="grid2"><div><label>KM</label><input id="et_km_'+par[0]+'" inputmode="numeric" value="'+(v.km?esc(String(v.km)):'')+'" placeholder="ex.: 349600"></div>'+
+   '<div><label>Data</label><input type="date" id="et_dt_'+par[0]+'" value="'+esc(v.data||'')+'"></div></div></div>';
+ });
+ h+='<button class="btn ok" onclick="salvarTrocas(\''+pk+'\')">💾 Salvar</button>'+
+  '<button class="btn sec" onclick="closeSheet(2)">Voltar</button>';
+ openSheet(h,2);
+}
+function salvarTrocas(pk){
+ var c=S.carros[pk];if(!c)return;c.ultTrocas=c.ultTrocas||{};
+ COMPS_LST.forEach(function(par){
+  if(par[0]==='correia'&&!c.temCorreia)return;
+  var ek=document.getElementById('et_km_'+par[0]),ed=document.getElementById('et_dt_'+par[0]);
+  if(!ek&&!ed)return;
+  var km=ek?(parseInt((ek.value||'').replace(/\D/g,''),10)||0):0;
+  var dt=ed?ed.value:'';
+  if(!km&&!dt)delete c.ultTrocas[par[0]];
+  else c.ultTrocas[par[0]]={km:km,data:dt,src:'manual'};
+ });
+ save();closeSheet(2);ficha(pk);toast('✅ Últimas trocas atualizadas');
 }
 
 /* ===================== OBSERVAÇÕES / PENDÊNCIAS ===================== */
@@ -1961,6 +2037,92 @@ function mTexto(m){
  var c=S.carros[m.carro]||{nome:m.carro,placa:m.carro,motor:''};
  return buildManutTexto(m,c);
 }
+/* ===================== EDITAR MANUTENÇÃO JÁ SALVA ===================== */
+var EP=[],EB=[],_edMid='';
+function editarManut(id){
+ var m=S.manutencoes[id];if(!m)return;
+ _edMid=id;
+ EP=(m.pecas||[]).map(function(p){return {valor:p.valor?fmtBRL(p.valor):'',desc:p.desc||'',loja:p.loja||''}});
+ EB=(m.blocos||[]).map(function(b){return {titulo:b.titulo||'Mecânico',nome:b.nome||'',valor:tNum(b.valor)?fmtBRL(tNum(b.valor)):'',servicos:(Array.isArray(b.servicos)?b.servicos.join('\n'):String(b.servicos||''))}});
+ if(!EP.length)EP=[{valor:'',desc:'',loja:''}];
+ if(!EB.length)EB=[{titulo:'Mecânico',nome:'',valor:'',servicos:''}];
+ var c=S.carros[m.carro]||{nome:m.carro,placa:m.carro,motor:''};
+ var h='<h3>✏️ Editar manutenção</h3>'+
+  '<p class="sub">'+esc(tituloCarro(c))+' · '+esc(fmtPlaca(c.placa))+'. Corrija peças, valores e serviços — ex.: incluir a tampa do reservatório que o mecânico esqueceu. Ao salvar, o total e os componentes são reprocessados.</p>'+
+  '<label>Motorista</label><input id="edMot" value="'+esc(m.motorista||'')+'">'+
+  '<div class="grid2"><div><label>Data (início)</label><input type="date" id="edIni" value="'+esc(m.dataIni||'')+'"></div>'+
+  '<div><label>Data fim</label><input type="date" id="edFim" value="'+esc(m.dataFim||'')+'"></div></div>'+
+  '<label>Odômetro (km)</label><input id="edOdo" inputmode="numeric" value="'+esc(m.odometro?String(m.odometro):'')+'">'+
+  '<div class="sect">🔩 Peças</div><div id="edPecas"></div>'+
+  '<button class="btn mini sec" onclick="EP.push({valor:\'\',desc:\'\',loja:\'\'});edDesenha()">➕ Peça</button>'+
+  '<div class="sect">🛠 Mão de obra</div><div id="edBlocos"></div>'+
+  '<button class="btn mini sec" onclick="EB.push({titulo:\'Mecânico\',nome:\'\',valor:\'\',servicos:\'\'});edDesenha()">➕ Bloco</button>'+
+  '<div class="card" style="margin-top:12px;background:var(--card2)"><div class="kv">'+
+  '<b>Peças</b><span id="edTotP">R$ 0,00</span><b>Mão de obra</b><span id="edTotM">R$ 0,00</span>'+
+  '<b>TOTAL GERAL</b><span id="edTotG" style="color:var(--warn);font-weight:800">R$ 0,00</span></div></div>'+
+  '<button class="btn ok" onclick="salvarEdicaoManut()">💾 Salvar alterações</button>'+
+  '<button class="btn sec" onclick="closeSheet(2)">Cancelar</button>';
+ openSheet(h,2);
+ setTimeout(edDesenha,30);
+}
+function edDesenha(){
+ var hp='';
+ EP.forEach(function(p,i){
+  hp+='<div class="grid3">'+
+   '<input placeholder="R$" inputmode="decimal" value="'+esc(p.valor)+'" oninput="EP['+i+'].valor=this.value;edTotais()">'+
+   '<textarea rows="1" class="taflex" placeholder="descrição da peça" oninput="EP['+i+'].desc=this.value;taGrow(this)">'+esc(p.desc)+'</textarea>'+
+   '<input placeholder="loja" value="'+esc(p.loja)+'" oninput="EP['+i+'].loja=this.value">'+
+   '<button class="xbt" onclick="EP.splice('+i+',1);edDesenha()">✕</button></div>';
+ });
+ document.getElementById('edPecas').innerHTML=hp||'<div class="sub">Sem peças.</div>';
+ setTimeout(function(){document.querySelectorAll('#edPecas .taflex').forEach(function(t){taGrow(t)})},30);
+ var hb='';
+ EB.forEach(function(b,i){
+  hb+='<div class="card" style="margin:6px 0;background:var(--bg)"><div class="grid2">'+
+   '<div><label>Título</label><input value="'+esc(b.titulo)+'" oninput="EB['+i+'].titulo=this.value"></div>'+
+   '<div><label>Profissional</label><input value="'+esc(b.nome)+'" oninput="EB['+i+'].nome=this.value"></div></div>'+
+   '<label>Valor (R$)</label><input inputmode="decimal" value="'+esc(b.valor)+'" oninput="EB['+i+'].valor=this.value;edTotais()">'+
+   '<label>Serviços (um por linha)</label><textarea oninput="EB['+i+'].servicos=this.value">'+esc(b.servicos)+'</textarea>'+
+   '<button class="btn mini red" onclick="EB.splice('+i+',1);edDesenha()">Remover bloco</button></div>';
+ });
+ document.getElementById('edBlocos').innerHTML=hb||'<div class="sub">Sem mão de obra.</div>';
+ edTotais();
+}
+function edTotais(){
+ var tp=0;EP.forEach(function(p){tp+=parseBRL(p.valor)});
+ var tm=0;EB.forEach(function(b){tm+=parseBRL(b.valor)});
+ var el;
+ if(el=document.getElementById('edTotP'))el.textContent='R$ '+fmtBRL(tp);
+ if(el=document.getElementById('edTotM'))el.textContent='R$ '+fmtBRL(tm);
+ if(el=document.getElementById('edTotG'))el.textContent='R$ '+fmtBRL(tp+tm);
+}
+function salvarEdicaoManut(){
+ var m=S.manutencoes[_edMid];if(!m){toast('Manutenção não encontrada');return}
+ var carro=S.carros[m.carro];
+ var pecas=EP.filter(function(p){return p.desc.trim()||parseBRL(p.valor)>0}).map(function(p){return{valor:parseBRL(p.valor),desc:p.desc.trim(),loja:p.loja.trim()}});
+ var blocos=EB.filter(function(b){return b.nome.trim()||b.servicos.trim()||parseBRL(b.valor)>0}).map(function(b){
+  return{titulo:(b.titulo||'Mecânico').trim(),nome:b.nome.trim(),valor:parseBRL(b.valor),servicos:b.servicos.split('\n').map(function(s){return s.trim()}).filter(Boolean)};
+ });
+ var tp=0;pecas.forEach(function(p){tp+=p.valor});
+ var tm=0;blocos.forEach(function(b){tm+=b.valor});
+ m.motorista=document.getElementById('edMot').value.trim()||m.motorista;
+ m.dataIni=document.getElementById('edIni').value||m.dataIni;
+ m.dataFim=document.getElementById('edFim').value||'';
+ var odo=parseInt((document.getElementById('edOdo').value||'').replace(/\D/g,''),10)||0;
+ if(odo)m.odometro=odo;
+ m.pecas=pecas;m.blocos=blocos;m.totalPecas=tp;m.totalMO=tm;m.total=tp+tm;
+ m=normManut(m);
+ if(carro){
+  m.texto=buildManutTexto(m,carro);
+  if(m.odometro>(carro.kmUltima||0)){carro.kmUltima=m.odometro;carro.kmUltimaData=m.dataFim||m.dataIni}
+ }
+ S.manutencoes[_edMid]=m;
+ if(carro)recalcTrocasCarro(m.carro); /* reprocessa os componentes de forma consistente com todo o histórico */
+ save();closeSheet(2);
+ if(window._fichaPk===m.carro)ficha(m.carro);
+ render();
+ toast('✅ Manutenção atualizada');
+}
 function verManut(id){
  var m=S.manutencoes[id];if(!m)return;
  var c=S.carros[m.carro]||{nome:m.carro,placa:m.carro,motor:''};
@@ -1985,6 +2147,7 @@ function verManut(id){
  });
  if(m.total>0)h+='<div class="mv-total">TOTAL: R$ '+fmtBRL(m.total)+'</div>';
  openSheet(h+
+  '<button class="btn ok" onclick="editarManut(\''+id+'\')">✏️ Editar manutenção</button>'+
   '<button class="btn" onclick="copiarManut(\''+id+'\')">📋 Copiar (padrão WhatsApp)</button>'+
   '<button class="btn red" onclick="excluirManut(\''+id+'\')">🗑 Excluir manutenção</button>'+
   '<button class="btn sec" onclick="closeSheet(2)">Fechar</button>',2);
