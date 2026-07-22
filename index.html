@@ -164,7 +164,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=36; var APP_DATE='21/07/2026';
+var APP_VER=37; var APP_DATE='21/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -2382,7 +2382,7 @@ function openCfg(){
  '<b>Carros</b><span>'+Object.keys(S?S.carros:{}).length+'</span>'+
  '<b>Contratos</b><span>'+Object.keys(S?S.contratos:{}).length+'</span></div>'+
  '<div class="sect">Importação inicial de documentos</div>'+
- '<p class="sub">Selecione de uma vez os arquivos do pacote (CRLV-PLACA.pdf, CONTRATO-PLACA.docx, CONTRATOPDF-PLACA.pdf, VISTORIA-PLACA.pdf). O app encaixa cada um no carro certo.</p>'+
+ '<p class="sub">Pode jogar aqui o CRLV ou a vistoria de gás <b>direto do apps do Detran</b>, sem renomear: o app lê a placa de dentro do PDF e encaixa no carro certo, atualizando o exercício. O pacote inicial com nomes (CRLV-PLACA.pdf, CONTRATO-PLACA.docx, CONTRATOPDF-PLACA.pdf, VISTORIA-PLACA.pdf) também funciona.</p>'+
  '<input type="file" id="impIn" multiple accept=".pdf,.docx">'+
  '<button class="btn" onclick="importar()">☁️ Enviar para a nuvem</button>'+
  '<div class="filestat" id="impStat"></div>'+
@@ -2471,30 +2471,97 @@ function importar(){
  if(!inp.files||!inp.files.length){toast('Selecione os arquivos');return}
  var files=Array.prototype.slice.call(inp.files),i=0,ok=0,falha=[];
  var stat=document.getElementById('impStat');
- function prox(){
-  if(i>=files.length){
-   save();render();
-   stat.innerHTML+='<br><b>✅ Concluído: '+ok+' enviados'+(falha.length?' · ⚠️ ignorados: '+falha.join(', '):'')+'</b>';
-   toast('☁️ Importação concluída');return;
-  }
-  var f=files[i++],m,path=null,marca=null;
-  var nome=f.name.replace(/\.pdf$|\.docx$/i,'');
-  if(m=nome.match(/^CRLV-([A-Z0-9]{7})$/i)){var pk=m[1].toUpperCase();if(S.carros[pk]){path=pk+'/crlv';marca=function(){S.carros[pk].temCrlv=true}}}
-  else if(m=nome.match(/^CONTRATOPDF-([A-Z0-9]{7})$/i)){var pk2=m[1].toUpperCase(),c2=S.carros[pk2];if(c2&&c2.contratoVigenteId){path=pk2+'/ct/'+c2.contratoVigenteId+'/pdf';marca=function(){S.contratos[c2.contratoVigenteId].temPdf=true}}}
-  else if(m=nome.match(/^CONTRATO-([A-Z0-9]{7})$/i)){var pk3=m[1].toUpperCase(),c3=S.carros[pk3];if(c3&&c3.contratoVigenteId){path=pk3+'/ct/'+c3.contratoVigenteId+'/docx';marca=function(){S.contratos[c3.contratoVigenteId].temDocx=true}}}
-  else if(m=nome.match(/^VISTORIA-([A-Z0-9]{7})$/i)){(function(){var pk4=m[1].toUpperCase();if(S.carros[pk4]){path=pk4+'/gnv';marca=function(){S.carros[pk4].temGnvDoc=true}}})()}
-  if(!path){falha.push(f.name);stat.innerHTML+='⚠️ '+esc(f.name)+' não reconhecido<br>';prox();return}
+ function fim(){
+  save();render();
+  stat.innerHTML+='<br><b>\u2705 Concluído: '+ok+' enviado(s)'+(falha.length?' \u00b7 \u26a0\ufe0f ignorados: '+falha.length:'')+'</b>';
+  toast('\u2601\ufe0f Importação concluída');
+ }
+ function subir(path,marca,f,extra){
   var r=new FileReader();
   r.onload=function(){
    var b64=String(r.result).split(',')[1];
    DOCSREF.child(path).set({b64:b64,name:f.name,mime:f.type||'application/pdf',size:f.size,em:Date.now()}).then(function(){
-    ok++;if(marca)marca();stat.innerHTML='☁️ '+ok+'/'+files.length+' — '+esc(f.name)+'<br>'+stat.innerHTML;prox();
-   }).catch(function(e){falha.push(f.name);stat.innerHTML+='⚠️ '+esc(f.name)+': '+esc(e.message)+'<br>';prox()});
+    ok++;if(marca)marca();stat.innerHTML='\u2601\ufe0f '+ok+' \u2014 '+esc(f.name)+(extra?' \u2192 <b>'+esc(extra)+'</b>':'')+'<br>'+stat.innerHTML;prox();
+   }).catch(function(e){falha.push(f.name);stat.innerHTML='\u26a0\ufe0f '+esc(f.name)+': '+esc(e.message)+'<br>'+stat.innerHTML;prox()});
   };
   r.readAsDataURL(f);
  }
- stat.innerHTML='Enviando '+files.length+' arquivos…<br>';
+ function prox(){
+  if(i>=files.length){fim();return}
+  var f=files[i++],m,nome=f.name.replace(/\.pdf$|\.docx$/i,'');
+  if(m=nome.match(/^CRLV-([A-Z0-9]{7})$/i)){var pk=m[1].toUpperCase();if(S.carros[pk])return subir(pk+'/crlv',function(){S.carros[pk].temCrlv=true},f,fmtPlaca(pk)+' \u00b7 CRLV');}
+  else if(m=nome.match(/^CONTRATOPDF-([A-Z0-9]{7})$/i)){var pk2=m[1].toUpperCase(),c2=S.carros[pk2];if(c2&&c2.contratoVigenteId)return subir(pk2+'/ct/'+c2.contratoVigenteId+'/pdf',function(){S.contratos[c2.contratoVigenteId].temPdf=true},f,fmtPlaca(pk2)+' \u00b7 contrato PDF');}
+  else if(m=nome.match(/^CONTRATO-([A-Z0-9]{7})$/i)){var pk3=m[1].toUpperCase(),c3=S.carros[pk3];if(c3&&c3.contratoVigenteId)return subir(pk3+'/ct/'+c3.contratoVigenteId+'/docx',function(){S.contratos[c3.contratoVigenteId].temDocx=true},f,fmtPlaca(pk3)+' \u00b7 contrato Word');}
+  else if(m=nome.match(/^VISTORIA-([A-Z0-9]{7})$/i)){var pk4=m[1].toUpperCase();if(S.carros[pk4])return subir(pk4+'/gnv',function(){S.carros[pk4].temGnvDoc=true},f,fmtPlaca(pk4)+' \u00b7 vistoria GNV');}
+  if(/\.pdf$/i.test(f.name)){return impInteligente(f,subir,stat,function(){falha.push(f.name);prox()});}
+  falha.push(f.name);stat.innerHTML='\u26a0\ufe0f '+esc(f.name)+': Word sem nome padrão (use CONTRATO-PLACA.docx)<br>'+stat.innerHTML;prox();
+ }
+ stat.innerHTML='Processando '+files.length+' arquivo(s)\u2026<br>';
  prox();
+}
+/* ---- importação inteligente: lê a placa de dentro do PDF ---- */
+function impNorm(t){return String(t||'').toUpperCase().replace(/[^A-Z0-9]/g,'')}
+function impTextoPdf(buf){
+ return garantirPdfjs().then(function(){
+  return pdfjsLib.getDocument({data:new Uint8Array(buf)}).promise;
+ }).then(function(pdf){
+  var out=[];
+  function pg(n){
+   if(n>pdf.numPages)return Promise.resolve(out.join(' '));
+   return pdf.getPage(n).then(function(p){return p.getTextContent()}).then(function(tc){
+    out.push((tc.items||[]).map(function(it){return it.str}).join(' '));return pg(n+1);
+   });
+  }
+  return pg(1);
+ });
+}
+function impPlacasNaFrota(texto){
+ var n=impNorm(texto),achadas=[];
+ Object.keys(S.carros).forEach(function(pk){if(pk.length===7&&n.indexOf(pk)>=0&&achadas.indexOf(pk)<0)achadas.push(pk)});
+ return achadas;
+}
+function impTipo(texto){
+ var t=(' '+String(texto||'')+' ').toUpperCase();
+ var sa=semAcento(t).toUpperCase();
+ if(/CERTIFICADO DE REGISTRO E LICENCIAMENTO/.test(t))return 'crlv';
+ if(/REQUALIFICA|GAS NATURAL VEICULAR|CILINDRO|INMETRO|VISTORIA DE GAS|VISTORIA GNV/.test(sa))return 'gnv';
+ if(/RENAVAM|EXERCICIO/.test(sa))return 'crlv';
+ return null;
+}
+function impAnoExerc(texto){
+ var t=semAcento(String(texto||'')).toUpperCase();
+ var m=t.match(/EXERCICIO[^0-9]{0,14}(20\d\d)/);
+ if(m)return m[1];
+ var i=t.indexOf('EXERCICIO');
+ if(i>=0){var m2=t.slice(i,i+40).match(/(20\d\d)/);if(m2)return m2[1];}
+ return '';
+}
+function impInteligente(f,subir,stat,pular){
+ var fr=new FileReader();
+ fr.onload=function(){
+  impTextoPdf(fr.result).then(function(txt){
+   var placas=impPlacasNaFrota(txt);
+   if(placas.length!==1){
+    stat.innerHTML='\u26a0\ufe0f '+esc(f.name)+': '+(placas.length===0?'não achei nenhuma placa da frota no texto (se for foto/scan, não tem texto para ler \u2014 use o nome CRLV-PLACA.pdf)':'achei mais de uma placa ('+placas.join(', ')+')')+'<br>'+stat.innerHTML;
+    return pular();
+   }
+   var pk=placas[0],tipo=impTipo(txt),c=S.carros[pk];
+   if(tipo==='crlv'){
+    var ano=impAnoExerc(txt);
+    return subir(pk+'/crlv',function(){c.temCrlv=true;if(ano)c.exercicioCRLV=ano;},f,fmtPlaca(pk)+' \u00b7 CRLV'+(ano?' '+ano:''));
+   }
+   if(tipo==='gnv'){
+    var anoG=impAnoExerc(txt);
+    return subir(pk+'/gnv',function(){c.temGnvDoc=true;if(anoG)c.gnvExercicio=anoG;},f,fmtPlaca(pk)+' \u00b7 vistoria GNV'+(anoG?' '+anoG:''));
+   }
+   stat.innerHTML='\u26a0\ufe0f '+esc(f.name)+': achei a placa '+fmtPlaca(pk)+' mas não reconheci se é CRLV ou vistoria de gás<br>'+stat.innerHTML;
+   pular();
+  }).catch(function(){
+   stat.innerHTML='\u26a0\ufe0f '+esc(f.name)+': não consegui ler o texto (documento digitalizado? use o nome CRLV-PLACA.pdf)<br>'+stat.innerHTML;
+   pular();
+  });
+ };
+ fr.readAsArrayBuffer(f);
 }
 </script>
 <script>
