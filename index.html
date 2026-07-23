@@ -164,7 +164,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=41; var APP_DATE='22/07/2026';
+var APP_VER=42; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -1785,12 +1785,21 @@ function detectarComponentes(m){
   /* RADIADOR: o radiador em si — exclui mangueira/tampa/aditivo/válvula/sensor/reservatório. */
   if(troca&&/radiador/.test(l)&&!/mangueira|tampa|aditivo|valvula|sensor|reservatorio|limpez|ventoinha|eletroventilador/.test(l))out.comps.radiador=true;
   if(/correia\s+dentada/.test(l)){if(troca)out.comps.correia=true;if(prox)out.proxCorreia=prox;}
-  /* ÓLEO DO MOTOR: não conta óleo de caixa/câmbio/direção/freio/diferencial nem "completou". */
-  if(/\boleo/.test(l)&&!/caixa|cambio|direcao|freio|diferencial|hidraulic|transmiss/.test(l)){
-   if(troca)out.comps.oleo=true;
+  /* ÓLEO DO MOTOR. Só é TROCA DE ÓLEO se a linha indicar o óleo em si: "troca do óleo",
+     "óleo do motor", "X litros", viscosidade (10w40) ou "lubrificante". Peça que só tem a
+     palavra óleo no nome — filtro, junta, sensor, bomba, vareta, bujão, retentor — NÃO é troca. */
+  var temOleo=/\boleo/.test(l);
+  var oleoOutro=/caixa|cambio|direcao|freio|diferencial|hidraulic|transmiss/.test(l);
+  var oleoDeVerdade=/troca\s+(?:do|de|dos)?\s*oleo|oleo\s+do\s+motor|\blitros?\b|\d{1,2}\s*w\s*-?\s*\d{2}|lubrificante/.test(l);
+  var soPeca=/filtro|junta|sensor|interruptor|bomba|vareta|bujao|carter|retentor|mangueira|tampa|suporte|arrefeced|trocador|valvula/.test(l);
+  if(temOleo&&!oleoOutro&&(oleoDeVerdade||!soPeca)){
+   if(troca){out.comps.oleo=true;out.linhaOleo=raw}
    if(prox)out.proxOleo=prox;
   }
+  /* "Próxima troca com X km" escrita numa linha separada, sem a palavra óleo */
+  if(prox&&!temOleo&&!/correia/.test(l))out._proxSolto=prox;
  });
+ if(out.comps.oleo&&!out.proxOleo&&out._proxSolto)out.proxOleo=out._proxSolto;
  return out;
 }
 function aplicarDeteccao(m,carro){
@@ -1862,6 +1871,32 @@ function recalcTrocasCarro(pk){
  c.ultTrocas=Object.assign({},novo,manuais);
  recalcProximasTrocas(pk);
  return {qtd:Object.keys(novo).length,removidos:removidos};
+}
+/* Relatório: para CADA carro, qual foi a última troca de óleo detectada, a linha exata
+   que gerou essa conclusão e a próxima troca resultante. Serve para conferir a frota toda
+   de uma vez, sem abrir carro por carro. */
+function diagnosticoFrota(){
+ var st=document.getElementById('recTudoStat');
+ var linhas=[],probl=0;
+ Object.keys(S.carros).forEach(function(pk){
+  var c=S.carros[pk],km=Number(c.kmUltima)||Number(c.kmAtual)||0,ultO=null;
+  manutsDoCarro(pk).forEach(function(m){
+   var d=detectarComponentes(m),odo=_odoManut(m);
+   if(d.comps.oleo&&odo>0)ultO={odo:odo,dt:_dtManut(m),prox:d.proxOleo,linha:d.linhaOleo||''};
+  });
+  var av=[];
+  if(!ultO)av.push('sem troca de óleo no histórico');
+  else if(!ultO.prox)av.push('próxima calculada — a manutenção não declarou');
+  var iv=Number(c.oleoIntervalo)||0;
+  if(iv&&(iv<3000||iv>20000))av.push('intervalo estranho: '+fmtKm(iv)+' km');
+  if(c.proxOleoKm&&km&&c.proxOleoKm<=km)av.push('ÓLEO VENCIDO — passou '+fmtKm(km-c.proxOleoKm)+' km');
+  if(av.length)probl++;
+  linhas.push('<b>'+esc(fmtPlaca(pk))+'</b> · '+fmtKm(km)+' km<br>óleo: próxima '+(c.proxOleoKm?fmtKm(c.proxOleoKm)+' km':'—')+
+   (ultO?(' · última troca '+fmtKm(ultO.odo)+' km em '+dataBR(ultO.dt)+
+   (ultO.linha?'<br><span class="sub">↳ '+esc(String(ultO.linha).slice(0,90))+'</span>':'')):'')+
+   (av.length?'<br><span style="color:var(--warn)">⚠ '+av.join(' · ')+'</span>':''));
+ });
+ if(st)st.innerHTML='<b>Diagnóstico — '+linhas.length+' carro(s), '+probl+' com aviso</b><br><br>'+linhas.join('<br><br>');
 }
 function recalcTodosCarros(){
  var st=document.getElementById('recTudoStat');
@@ -2714,6 +2749,7 @@ function openCfg(){
  '<div class="sect">Manutenção — recálculo geral</div>'+
  '<p class="sub">Revarre o histórico de TODOS os carros e reescreve as últimas trocas de componentes e as próximas trocas de óleo/correia sempre pela troca mais recente de verdade. Use uma vez agora para corrigir a frota inteira.</p>'+
  '<button class="btn" onclick="recalcTodosCarros()">🔄 Recalcular todos os carros</button>'+
+ '<button class="btn sec" onclick="diagnosticoFrota()">🔍 Diagnóstico de todos os carros</button>'+
  '<div class="filestat" id="recTudoStat"></div>'+
  '<div class="sect">Leitura dos documentos</div>'+
  '<p class="sub">O app lê sozinho o CRLV e o laudo de GNV anexados (exercício e próxima requalificação do cilindro) — ao abrir o app, ao abrir a ficha do carro e assim que você anexa um documento novo. Este botão é só um reforço: relê TUDO do zero, mesmo o que já foi lido.</p>'+
