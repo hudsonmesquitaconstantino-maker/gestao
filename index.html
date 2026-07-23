@@ -164,7 +164,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=38; var APP_DATE='22/07/2026';
+var APP_VER=39; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -781,6 +781,7 @@ function ficha(pk){window._fichaPk=pk;
   h+='<div class="kv"><b>Requalificação do cilindro</b><span>'+(c.gnvRequalif?dataBR(c.gnvRequalif):'—')+'</span></div>';
   h+=c.temGnvDoc?'<button class="btn mini" onclick="verDoc(\''+pk+'/gnv\',\'Vistoria GNV '+esc(fmtPlaca(c.placa))+'\',\''+pk+'\',\'gnv\')">👁 Ver PDF</button>':'<div class="sub">Nenhum laudo de vistoria anexado.</div>';
   h+='<button class="btn mini sec" onclick="pedirArquivo(\''+pk+'/gnv\',\'application/pdf\',\''+pk+'\',\'temGnvDoc\')">🔄 '+(c.temGnvDoc?'Substituir':'Anexar')+' laudo do GNV</button>';
+  if(c.temGnvDoc)h+='<button class="btn mini sec" onclick="lerLaudoSalvo(\''+pk+'\',\'gnv\')">📄 Ler dados do laudo</button>';
  }
  h+='<div class="sect">Procedência</div>';
  h+='<div class="kv"><b>Leilão</b><span>'+esc(c.procLeilao||'Não')+'</span></div>';
@@ -1231,7 +1232,7 @@ function lerDadosDoDoc(file,pk,flag){
    if(!txt||txt.replace(/\s/g,'').length<20){toast('⚠️ Documento sem texto (foto/scan) — preencha em ✏️ Editar dados');return}
    var achou=[];
    if(flag==='temGnvDoc'){
-    var ano=impAnoExerc(txt);if(ano){c.gnvExercicio=ano;achou.push('exercício '+ano)}
+    var ano=impExercGnv(txt);if(ano){c.gnvExercicio=ano;achou.push('exercício '+ano)}
     var rq=impRequalif(txt);if(rq){c.gnvRequalif=rq;achou.push('requalificação '+dataBR(rq))}
    }else{
     var a2=impAnoExerc(txt);if(a2){c.exercicioCRLV=a2;achou.push('exercício '+a2)}
@@ -1241,6 +1242,59 @@ function lerDadosDoDoc(file,pk,flag){
   }).catch(function(){toast('⚠️ Não consegui ler o texto do documento (foto/scan?)')});
  };
  fr.readAsArrayBuffer(file);
+}
+/* ===== LER DOCUMENTO JÁ SALVO (sem precisar reanexar) ===== */
+function aplicaDadosDoTexto(pk,tipo,txt){
+ var c=S.carros[pk];if(!c)return [];
+ var achou=[];
+ if(tipo==='gnv'){
+  var ano=impExercGnv(txt);if(ano&&ano!==c.gnvExercicio){c.gnvExercicio=ano;achou.push('exercício '+ano)}
+  var rq=impRequalif(txt);if(rq&&rq!==c.gnvRequalif){c.gnvRequalif=rq;achou.push('requalificação '+dataBR(rq))}
+ }else{
+  var a2=impAnoExerc(txt);if(a2&&a2!==c.exercicioCRLV){c.exercicioCRLV=a2;achou.push('exercício '+a2)}
+ }
+ return achou;
+}
+function lerDocSalvoTxt(pk,tipo){
+ return pegarDoc(pk+'/'+tipo,pk,tipo).then(function(d){
+  if(!d||!d.b64)return null;
+  return impTextoPdf(b64ToU8(d.b64).buffer);
+ });
+}
+function lerLaudoSalvo(pk,tipo){
+ tipo=tipo||'gnv';
+ toast('📄 Lendo o documento…');
+ lerDocSalvoTxt(pk,tipo).then(function(txt){
+  if(txt===null){toast('⚠️ Documento não encontrado neste aparelho');return}
+  if(!txt||txt.replace(/\s/g,'').length<20){toast('⚠️ Documento sem texto (foto/scan) — preencha em ✏️ Editar dados');return}
+  var achou=aplicaDadosDoTexto(pk,tipo,txt);
+  if(achou.length){save();if(window._fichaPk===pk)ficha(pk);render();toast('📄 Li do documento: '+achou.join(' · '))}
+  else toast('⚠️ Não achei esses dados no texto do documento');
+ }).catch(function(){toast('⚠️ Não consegui ler o texto do documento (foto/scan?)')});
+}
+/* Lote: relê o laudo de GNV de todos os carros que já têm laudo anexado. */
+function lerTodosLaudosGnv(){
+ var pks=Object.keys(S.carros).filter(function(pk){return S.carros[pk].temGnvDoc});
+ var st=document.getElementById('gnvLoteStat');
+ if(!pks.length){if(st)st.textContent='Nenhum carro com laudo de GNV anexado.';return}
+ var ok=0,vazio=0,erro=0,i=0;
+ function prox(){
+  if(i>=pks.length){
+   save();render();
+   if(st)st.innerHTML='✅ Concluído: '+ok+' atualizado(s) · '+vazio+' sem dados no texto · '+erro+' ilegível(is)';
+   toast('✅ '+ok+' laudo(s) lido(s)');
+   return;
+  }
+  var pk=pks[i++];
+  if(st)st.textContent='Lendo '+fmtPlaca(pk)+' ('+i+'/'+pks.length+')…';
+  lerDocSalvoTxt(pk,'gnv').then(function(txt){
+   if(!txt||txt.replace(/\s/g,'').length<20){erro++;return prox()}
+   var a=aplicaDadosDoTexto(pk,'gnv',txt);
+   if(a.length)ok++;else vazio++;
+   prox();
+  }).catch(function(){erro++;prox()});
+ }
+ prox();
 }
 function enviarArquivo(file,path,cb){
  var r=new FileReader();
@@ -2577,6 +2631,10 @@ function openCfg(){
  '<input type="file" id="waHist" accept=".json">'+
  '<button class="btn" onclick="importarHistoricoWA()">📚 Importar histórico</button>'+
  '<div class="filestat" id="waHistStat"></div>'+
+ '<div class="sect">Vistorias de GNV</div>'+
+ '<p class="sub">Lê os laudos de GNV já anexados e preenche o exercício da vistoria e a data da próxima requalificação do cilindro de cada carro. Use depois de anexar laudos novos.</p>'+
+ '<button class="btn" onclick="lerTodosLaudosGnv()">📄 Ler laudos de GNV de todos os carros</button>'+
+ '<div class="filestat" id="gnvLoteStat"></div>'+
  '<div class="sect">Documentos offline</div>'+
  '<p class="sub">Guarda TODOS os CRLVs e contratos na memória deste iPhone. Depois disso, ver/baixar/compartilhar funciona sem internet.</p>'+
  '<button class="btn" onclick="baixarTudoOffline()">📥 Baixar todos para este aparelho</button>'+
@@ -2722,21 +2780,33 @@ function impAnoExerc(texto){
  if(i>=0){var m2=t.slice(i,i+40).match(/(20\d\d)/);if(m2)return m2[1];}
  return '';
 }
-/* Data da próxima requalificação do cilindro. Estrito: só aceita data GRUDADA na palavra
-   REQUALIFICA... Se não achar, devolve vazio (não inventa). Com 2 cilindros, vale a mais próxima. */
+/* Data da PRÓXIMA requalificação do cilindro (CSV do Denatran).
+   OBRIGA a palavra PRÓXIMA — o laudo traz também a ÚLTIMA requalificação logo antes,
+   e pegar a errada gravaria uma data vencida. Com 2 cilindros, vale a mais próxima. */
 function impRequalif(texto){
  var t=semAcento(String(texto||'')).toUpperCase().replace(/\s+/g,' ');
- var achados=[],re=/REQUALIFICA[A-Z]*/g,m;
- while((m=re.exec(t))){
-  var tr=t.slice(m.index,m.index+90);
-  var d=tr.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-  if(d){achados.push(d[3]+'-'+d[2]+'-'+d[1]);continue}
-  var d2=tr.match(/(\d{2})\/(\d{4})/);
-  if(d2)achados.push(d2[2]+'-'+d2[1]+'-01');
+ var achados=[],m;
+ var re=/PROXIMA REQUALIFICA[A-Z]*[^0-9]{0,25}(\d{2})\/(\d{2})\/(20\d\d)/g;
+ while((m=re.exec(t)))achados.push(m[3]+'-'+m[2]+'-'+m[1]);
+ if(!achados.length){
+  var re2=/PROXIMA REQUALIFICA[A-Z]*[^0-9]{0,25}(\d{2})\/(20\d\d)/g;
+  while((m=re2.exec(t)))achados.push(m[2]+'-'+m[1]+'-01');
  }
  if(!achados.length)return '';
  achados.sort();
  return achados[0];
+}
+/* Exercício da vistoria de GNV. O CSV do Denatran NÃO tem a palavra "exercício":
+   o ano vem no número do CSV (…-66/2026) ou na data da inspeção. */
+function impExercGnv(texto){
+ var t=semAcento(String(texto||'')).toUpperCase().replace(/\s+/g,' ');
+ var m=t.match(/CSV N[^0-9]{0,6}[\d\.\-]{6,}\/(20\d\d)/);
+ if(m)return m[1];
+ var m2=t.match(/(\d{2})\/(\d{2})\/(20\d\d)\s{0,3}DATA DA INSPECAO/);
+ if(m2)return m2[3];
+ var m3=t.match(/DATA DA INSPECAO[^0-9]{0,6}(\d{2})\/(\d{2})\/(20\d\d)/);
+ if(m3)return m3[3];
+ return impAnoExerc(texto);
 }
 function impInteligente(f,subir,stat,pular){
  var fr=new FileReader();
