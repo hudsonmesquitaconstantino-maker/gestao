@@ -164,7 +164,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=43; var APP_DATE='22/07/2026';
+var APP_VER=44; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -321,6 +321,14 @@ function normContrato(c){
  c.pix=c.pix||'';c.cl34=c.cl34||'';c.acessorios=c.acessorios||'Estepe, triângulo, chave de roda, macaco';
  c.combustiveis=c.combustiveis||'';c.formato=c.formato||'';c.temDocx=!!c.temDocx;c.temPdf=!!c.temPdf;
  c.encerradoEm=c.encerradoEm||'';
+ /* tipo: 'locacao' (padrão) ou 'venda' (compra e venda com reserva de domínio).
+    Em 'venda', c.locatario guarda o COMPRADOR e c.locadorNome o vendedor. */
+ c.tipo=c.tipo||'locacao';
+ c.venda=c.venda||{};var v=c.venda;
+ v.valorTotal=Number(v.valorTotal)||0;v.entrada=Number(v.entrada)||0;v.abatimento=Number(v.abatimento)||0;
+ v.saldo=Number(v.saldo)||0;v.parcela=Number(v.parcela)||0;v.nParcelas=Number(v.nParcelas)||0;
+ v.ultima=Number(v.ultima)||0;v.seguroMensal=Number(v.seguroMensal)||0;v.seguroDia=Number(v.seguroDia)||0;
+ v.assinadoEm=v.assinadoEm||'';v.obs=v.obs||'';
  return c;
 }
 function normManut(m){
@@ -733,8 +741,11 @@ function ficha(pk){window._fichaPk=pk;
  setTimeout(function(){try{varrerDocsAuto({pk:pk})}catch(e){}},300);
  var c=S.carros[pk];if(!c)return;
  var ct=c.contratoVigenteId?S.contratos[c.contratoVigenteId]:null;
+ if(ct&&ct.tipo==='venda')ct=null;
+ var vendas=Object.keys(S.contratos).map(function(k){return S.contratos[k]})
+  .filter(function(x){return x.carro===pk&&x.tipo==='venda'});
  var anteriores=Object.keys(S.contratos).map(function(k){return S.contratos[k]})
-  .filter(function(x){return x.carro===pk&&x.status!=='vigente'})
+  .filter(function(x){return x.carro===pk&&x.status!=='vigente'&&x.tipo!=='venda'})
   .sort(function(a,b){return (b.encerradoEm||'').localeCompare(a.encerradoEm||'')});
  var mans=Object.keys(S.manutencoes).map(function(k){return S.manutencoes[k]})
   .filter(function(m){return m.carro===pk}).sort(function(a,b){return (b.dataIni||'').localeCompare(a.dataIni)||b.criadoEm-a.criadoEm});
@@ -809,6 +820,26 @@ function ficha(pk){window._fichaPk=pk;
     '<button class="btn mini red" onclick="excluirContrato(\''+x.id+'\')">🗑 Excluir contrato</button></div>';
   });
  }
+ /* COMPRA E VENDA (reserva de domínio) */
+ h+='<div class="sect">Compra e venda (reserva de domínio)</div>';
+ if(vendas.length){
+  vendas.forEach(function(v){
+   var d=v.venda||{},pago='';
+   h+='<div class="card" style="margin:0 0 6px">'+
+    '<div class="tit">'+esc(v.locatario.nome||'Comprador')+'</div>'+
+    (d.valorTotal?'<div class="sub">Valor R$ '+fmtBRL(d.valorTotal)+(d.entrada?' · entrada R$ '+fmtBRL(d.entrada):'')+(d.saldo?' · saldo R$ '+fmtBRL(d.saldo):'')+'</div>':'')+
+    (d.parcela?'<div class="sub">'+(d.nParcelas||'?')+'x R$ '+fmtBRL(d.parcela)+'/semana'+(d.ultima?' + última de R$ '+fmtBRL(d.ultima):'')+'</div>':'')+
+    (v.inicio||v.fim?'<div class="sub">'+dataBR(v.inicio)+' → '+dataBR(v.fim)+'</div>':'')+
+    (d.seguroMensal?'<div class="sub">Seguro R$ '+fmtBRL(d.seguroMensal)+'/mês'+(d.seguroDia?' (dia '+d.seguroDia+')':'')+' por conta do comprador</div>':'')+
+    (v.locadorNome?'<div class="sub">Vendedor: '+esc(v.locadorNome)+'</div>':'')+
+    docBtns(v)+
+    '<button class="btn mini sec" onclick="anexarContratoDoc(\''+pk+'\',\''+v.id+'\',\'docx\')">📎 Anexar Word</button>'+
+    '<button class="btn mini sec" onclick="anexarContratoDoc(\''+pk+'\',\''+v.id+'\',\'pdf\')">📎 Anexar PDF</button>'+
+    '<button class="btn mini" onclick="formVenda(\''+pk+'\',\''+v.id+'\')">✏️ Editar dados</button>'+
+    '<button class="btn mini red" onclick="excluirContrato(\''+v.id+'\')">🗑 Excluir</button></div>';
+  });
+ }else h+='<div class="sub">Sem contrato de compra e venda.</div>'+
+  '<button class="btn mini ok" onclick="formVenda(\''+pk+'\',\'\')">📄 Registrar compra e venda</button>';
 h+='<div class="sect">Devolução do carro</div>';
  h+='<button class="btn mini sec" onclick="abrirTermo(\''+pk+'\')">🧾 Gerar termo de devolução / acerto de contas</button>';
  var _tms=Object.keys(S.termos||{}).map(function(k){return S.termos[k]}).filter(function(t){return t.carro===pk}).sort(function(a,b){return (b.criadoEm||0)-(a.criadoEm||0)});
@@ -840,6 +871,101 @@ h+='<div class="sect">Devolução do carro</div>';
  openSheet(h);
 }
 function fimPassado(iso){return iso&&iso<hoje()}
+/* ===== CONTRATO DE COMPRA E VENDA (reserva de domínio) ===== */
+function anexarContratoDoc(pk,ctId,qual){
+ var ct=S.contratos[ctId];if(!ct)return;
+ var inp=document.createElement('input');inp.type='file';
+ inp.accept=qual==='pdf'?'application/pdf':'.docx';
+ inp.onchange=function(){
+  if(!inp.files||!inp.files[0])return;
+  enviarArquivo(inp.files[0],pk+'/ct/'+ctId+'/'+qual,function(){
+   if(qual==='pdf')ct.temPdf=true;else ct.temDocx=true;
+   save();ficha(pk);toast('✅ Contrato anexado');
+  });
+ };
+ inp.click();
+}
+function formVenda(pk,ctId){
+ var c=S.carros[pk];if(!c)return;
+ var v=ctId?S.contratos[ctId]:null;
+ var l=(v&&v.locatario)||{},d=(v&&v.venda)||{};
+ var h='<h3>📄 Compra e venda — '+esc(fmtPlaca(pk))+'</h3>'+
+  '<p class="sub">Contrato com reserva de domínio: o carro segue no seu nome até a quitação. Registre os dados e anexe o Word/PDF assinado.</p>'+
+  '<label>Comprador (nome completo)</label><input id="vd_nome" value="'+esc(l.nome||'')+'">'+
+  '<div class="grid2"><div><label>CPF</label><input id="vd_cpf" value="'+esc(l.cpf||'')+'"></div>'+
+  '<div><label>RG</label><input id="vd_rg" value="'+esc(l.rg||'')+'"></div></div>'+
+  '<label>Endereço</label><textarea id="vd_end">'+esc(l.endereco||'')+'</textarea>'+
+  '<label>Vendedor (proprietário no documento)</label><input id="vd_vend" value="'+esc((v&&v.locadorNome)||c.proprietario||'')+'">'+
+  '<div class="sect">Valores</div>'+
+  '<div class="grid2"><div><label>Valor total (R$)</label><input id="vd_total" inputmode="decimal" value="'+(d.valorTotal?fmtBRL(d.valorTotal):'')+'"></div>'+
+  '<div><label>Entrada (R$)</label><input id="vd_entrada" inputmode="decimal" value="'+(d.entrada?fmtBRL(d.entrada):'')+'"></div></div>'+
+  '<div class="grid2"><div><label>Abatimento/multas (R$)</label><input id="vd_abat" inputmode="decimal" value="'+(d.abatimento?fmtBRL(d.abatimento):'')+'"></div>'+
+  '<div><label>Saldo devedor (R$)</label><input id="vd_saldo" inputmode="decimal" value="'+(d.saldo?fmtBRL(d.saldo):'')+'"></div></div>'+
+  '<div class="grid3"><div><label>Parcelas</label><input id="vd_n" inputmode="numeric" value="'+(d.nParcelas||'')+'"></div>'+
+  '<div><label>Valor (R$)</label><input id="vd_parc" inputmode="decimal" value="'+(d.parcela?fmtBRL(d.parcela):'')+'"></div>'+
+  '<div><label>Última (R$)</label><input id="vd_ult" inputmode="decimal" value="'+(d.ultima?fmtBRL(d.ultima):'')+'"></div></div>'+
+  '<div class="grid2"><div><label>Início dos pagamentos</label><input type="date" id="vd_ini" value="'+esc((v&&v.inicio)||'')+'"></div>'+
+  '<div><label>Término</label><input type="date" id="vd_fim" value="'+esc((v&&v.fim)||'')+'"></div></div>'+
+  '<div class="grid2"><div><label>Seguro mensal (R$)</label><input id="vd_seg" inputmode="decimal" value="'+(d.seguroMensal?fmtBRL(d.seguroMensal):'')+'"></div>'+
+  '<div><label>Dia do seguro</label><input id="vd_segd" inputmode="numeric" value="'+(d.seguroDia||'')+'"></div></div>'+
+  '<label>Assinado em</label><input type="date" id="vd_ass" value="'+esc(d.assinadoEm||'')+'">'+
+  '<label>Observações</label><textarea id="vd_obs">'+esc(d.obs||'')+'</textarea>'+
+  '<button class="btn ok" onclick="salvarVenda(\''+pk+'\',\''+(ctId||'')+'\')">💾 Salvar</button>'+
+  '<button class="btn sec" onclick="closeSheet(2)">Cancelar</button>';
+ openSheet(h,2);
+}
+function salvarVenda(pk,ctId){
+ var g=function(id){var e=document.getElementById(id);return e?e.value.trim():''};
+ var ct=ctId?S.contratos[ctId]:normContrato({id:idNovo('ct'),carro:pk,origem:'anexado'});
+ ct.tipo='venda';ct.status='vigente';
+ ct.locatario=ct.locatario||{};
+ ct.locatario.nome=g('vd_nome');ct.locatario.cpf=g('vd_cpf');ct.locatario.rg=g('vd_rg');ct.locatario.endereco=g('vd_end');
+ ct.locadorNome=g('vd_vend');
+ ct.inicio=g('vd_ini');ct.fim=g('vd_fim');
+ ct.venda={valorTotal:parseBRL(g('vd_total')),entrada:parseBRL(g('vd_entrada')),abatimento:parseBRL(g('vd_abat')),
+  saldo:parseBRL(g('vd_saldo')),parcela:parseBRL(g('vd_parc')),nParcelas:parseInt(g('vd_n').replace(/\D/g,''),10)||0,
+  ultima:parseBRL(g('vd_ult')),seguroMensal:parseBRL(g('vd_seg')),seguroDia:parseInt(g('vd_segd').replace(/\D/g,''),10)||0,
+  assinadoEm:g('vd_ass'),obs:g('vd_obs')};
+ S.contratos[ct.id]=normContrato(ct);
+ var c=S.carros[pk];if(c)c.emVenda=true; /* carro em venda para de gerar alerta de manutenção */
+ save();closeSheet(2);ficha(pk);toast('✅ Compra e venda salva');
+}
+/* Semeia os dois contratos de compra e venda já existentes (dados lidos dos Word enviados).
+   Não sobrescreve se já houver contrato de venda para o carro. */
+function semearVendas(){
+ var base=[
+  {pk:'PWL8H97',nome:'LUIZ EDUARDO CASTRO MIRANDA',cpf:'110.817.217-23',rg:'20.929.148-3 DETRAN-RJ',
+   end:'Rua Itaocara, 366, AP 309 – Trindade – São Gonçalo/RJ – CEP 24.456-595',
+   vend:'HUDSON CONSTANTINO GUIMARÃES CORRÊA',
+   total:49300,entrada:8000,abat:325,saldo:41300,n:58,parc:700,ult:375,
+   ini:'2025-12-03',fim:'2027-01-13',seg:250,segd:10,ass:'2025-11-27',
+   obs:'Reserva de domínio. ATENÇÃO à conta: saldo declarado R$ 41.300, mas as parcelas somam R$ 40.975 (58x700 + 375). A diferença de R$ 325 é exatamente as 2 multas que o VENDEDOR assumiu pagar até a última semana. Seguro, IPVA 2026/2027, GRT, vistoria do GNV e reteste do cilindro por conta do comprador.'},
+  {pk:'FHP4B47',nome:'ANDRE LUIZ PATRIARCA DA COSTA MENEZES',cpf:'137.250.087-10',rg:'25.775.233-7 DETRAN-RJ',
+   end:'Rua Cinquenta e Sete, QD 51, LT 03 – Jardim Interlagos – Maricá/RJ – CEP 24.917-620',
+   vend:'MICHELLI MESQUITA CONSTANTINO CORREA',
+   total:52000,entrada:10000,abat:130,saldo:41870,n:59,parc:700,ult:570,
+   ini:'2026-01-21',fim:'2027-03-10',seg:250,segd:10,ass:'2026-01-15',
+   obs:'Reserva de domínio. Título executivo extrajudicial. Atraso acima de 10 dias permite rescisão e busca e apreensão. Multa: identificação do real infrator, sob pena de R$ 500.'}
+ ];
+ var criados=0,pulados=0;
+ base.forEach(function(b){
+  if(!S.carros[b.pk]){pulados++;return}
+  var ja=Object.keys(S.contratos).some(function(k){var x=S.contratos[k];return x.carro===b.pk&&x.tipo==='venda'});
+  if(ja){pulados++;return}
+  var ct=normContrato({id:idNovo('ct'),carro:b.pk,origem:'anexado',tipo:'venda',status:'vigente',
+   locadorNome:b.vend,locatario:{nome:b.nome,cpf:b.cpf,rg:b.rg,endereco:b.end},
+   inicio:b.ini,fim:b.fim,
+   venda:{valorTotal:b.total,entrada:b.entrada,abatimento:b.abat,saldo:b.saldo,parcela:b.parc,
+    nParcelas:b.n,ultima:b.ult,seguroMensal:b.seg,seguroDia:b.segd,assinadoEm:b.ass,obs:b.obs}});
+  S.contratos[ct.id]=ct;
+  S.carros[b.pk].emVenda=true;
+  criados++;
+ });
+ save();render();
+ var st=document.getElementById('recTudoStat');
+ if(st)st.innerHTML='✅ '+criados+' contrato(s) de compra e venda criado(s)'+(pulados?' · '+pulados+' já existia(m) ou carro não encontrado':'')+'.<br>Abra a ficha de cada carro e anexe o Word/PDF assinado.';
+ toast(criados?('✅ '+criados+' contrato(s) registrado(s)'):'Nada a criar');
+}
 function docBtns(ct){
  var pk=ct.carro,h='';
  if(ct.temPdf)h+='<button class="btn mini" onclick="verDoc(\''+pk+'/ct/'+ct.id+'/pdf\',\'Contrato '+esc(primNome(ct.locatario.nome))+'\',\''+pk+'\',\'pdf\')">👁 Ler contrato</button>';
@@ -2759,6 +2885,9 @@ function openCfg(){
  '<p class="sub">Revarre o histórico de TODOS os carros e reescreve as últimas trocas de componentes e as próximas trocas de óleo/correia sempre pela troca mais recente de verdade. Use uma vez agora para corrigir a frota inteira.</p>'+
  '<button class="btn" onclick="recalcTodosCarros()">🔄 Recalcular todos os carros</button>'+
  '<button class="btn sec" onclick="diagnosticoFrota()">🔍 Diagnóstico de todos os carros</button>'+
+ '<div class="sect">Compra e venda</div>'+
+ '<p class="sub">Cria os registros de compra e venda do Logan PWL-8H97 (Eduardo) e do Versa FHP-4B47 (André) com os dados dos contratos assinados. Depois é só abrir a ficha de cada carro e anexar o Word/PDF.</p>'+
+ '<button class="btn sec" onclick="semearVendas()">📄 Registrar os 2 contratos de compra e venda</button>'+
  '<div class="filestat" id="recTudoStat"></div>'+
  '<div class="sect">Leitura dos documentos</div>'+
  '<p class="sub">O app lê sozinho o CRLV e o laudo de GNV anexados (exercício e próxima requalificação do cilindro) — ao abrir o app, ao abrir a ficha do carro e assim que você anexa um documento novo. Este botão é só um reforço: relê TUDO do zero, mesmo o que já foi lido.</p>'+
