@@ -164,7 +164,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=45; var APP_DATE='22/07/2026';
+var APP_VER=46; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -832,9 +832,15 @@ function ficha(pk){window._fichaPk=pk;
     (v.inicio||v.fim?'<div class="sub">'+dataBR(v.inicio)+' → '+dataBR(v.fim)+'</div>':'')+
     (d.seguroMensal?'<div class="sub">Seguro R$ '+fmtBRL(d.seguroMensal)+'/mês'+(d.seguroDia?' (dia '+d.seguroDia+')':'')+' por conta do comprador</div>':'')+
     (v.locadorNome?'<div class="sub">Vendedor: '+esc(v.locadorNome)+'</div>':'')+
-    docBtns(v)+
-    '<button class="btn mini sec" onclick="anexarContratoDoc(\''+pk+'\',\''+v.id+'\',\'docx\')">📎 Anexar Word</button>'+
-    '<button class="btn mini sec" onclick="anexarContratoDoc(\''+pk+'\',\''+v.id+'\',\'pdf\')">📎 Anexar PDF</button>'+
+    '<div class="sub" style="margin-top:6px">Contrato assinado (PDF)</div>'+
+    (v.temPdf?('<button class="btn mini" onclick="verDoc(\''+pk+'/ct/'+v.id+'/pdf\',\'Compra e venda '+esc(fmtPlaca(pk))+'\',\''+pk+'\',\'pdf\')">👁 Ver PDF</button>'+
+      '<button class="btn mini sec" onclick="baixarDoc(\''+pk+'/ct/'+v.id+'/pdf\',\'Compra e venda '+esc(fmtPlaca(pk))+'.pdf\',\''+pk+'\',\'pdf\')">⬇️ Baixar PDF</button>'+
+      '<button class="btn mini sec" onclick="anexarContratoDoc(\''+pk+'\',\''+v.id+'\',\'pdf\')">🔄 Substituir PDF</button>')
+     :'<button class="btn mini sec" onclick="anexarContratoDoc(\''+pk+'\',\''+v.id+'\',\'pdf\')">📎 Anexar PDF</button>')+
+    '<div class="sub" style="margin-top:6px">Contrato editável (Word)</div>'+
+    (v.temDocx?('<button class="btn mini sec" onclick="baixarDoc(\''+pk+'/ct/'+v.id+'/docx\',\'Compra e venda '+esc(fmtPlaca(pk))+'.docx\')">⬇️ Baixar Word</button>'+
+      '<button class="btn mini sec" onclick="anexarContratoDoc(\''+pk+'\',\''+v.id+'\',\'docx\')">🔄 Substituir Word</button>')
+     :'<button class="btn mini sec" onclick="anexarContratoDoc(\''+pk+'\',\''+v.id+'\',\'docx\')">📎 Anexar Word</button>')+
     '<button class="btn mini" onclick="formVenda(\''+pk+'\',\''+v.id+'\')">✏️ Editar dados</button>'+
     '<button class="btn mini red" onclick="excluirContrato(\''+v.id+'\')">🗑 Excluir</button></div>';
   });
@@ -3011,6 +3017,33 @@ function importar(){
  function prox(){
   if(i>=files.length){fim();return}
   var f=files[i++],m,nome=f.name.replace(/\.pdf$|\.docx$/i,'');
+  /* Contrato de compra e venda com nome livre (ex.: "contrato compra venda Logan PWL Eduardo.docx").
+     Acha o carro pela placa completa OU por um trecho que bata em UM único carro da frota. */
+  var _n=semAcento(nome).toUpperCase().replace(/[^A-Z0-9]/g,' ');
+  if(/COMPRA/.test(_n)&&/VENDA/.test(_n)){
+   var alvo='';
+   Object.keys(S.carros).forEach(function(p){
+    if(_n.indexOf(p)>=0){alvo=p;return}
+   });
+   if(!alvo){
+    var cand=Object.keys(S.carros).filter(function(p){
+     return (' '+_n+' ').indexOf(' '+p.slice(0,3)+' ')>=0;
+    });
+    if(cand.length===1)alvo=cand[0];
+   }
+   if(alvo){
+    var cv=null;
+    Object.keys(S.contratos).forEach(function(k){var x=S.contratos[k];if(x.carro===alvo&&x.tipo==='venda')cv=x});
+    if(!cv){
+     cv=normContrato({id:idNovo('ct'),carro:alvo,origem:'anexado',tipo:'venda',status:'vigente'});
+     S.contratos[cv.id]=cv;S.carros[alvo].emVenda=true;
+    }
+    var ehPdf=/\.pdf$/i.test(f.name);
+    return subir(alvo+'/ct/'+cv.id+'/'+(ehPdf?'pdf':'docx'),function(){
+     if(ehPdf)cv.temPdf=true;else cv.temDocx=true;
+    },f,fmtPlaca(alvo)+' \u00b7 compra e venda');
+   }
+  }
   if(m=nome.match(/^CRLV-([A-Z0-9]{7})$/i)){var pk=m[1].toUpperCase();if(S.carros[pk])return subir(pk+'/crlv',function(){S.carros[pk].temCrlv=true},f,fmtPlaca(pk)+' \u00b7 CRLV');}
   else if(m=nome.match(/^CONTRATOPDF-([A-Z0-9]{7})$/i)){var pk2=m[1].toUpperCase(),c2=S.carros[pk2];if(c2&&c2.contratoVigenteId)return subir(pk2+'/ct/'+c2.contratoVigenteId+'/pdf',function(){S.contratos[c2.contratoVigenteId].temPdf=true},f,fmtPlaca(pk2)+' \u00b7 contrato PDF');}
   else if(m=nome.match(/^CONTRATO-([A-Z0-9]{7})$/i)){var pk3=m[1].toUpperCase(),c3=S.carros[pk3];if(c3&&c3.contratoVigenteId)return subir(pk3+'/ct/'+c3.contratoVigenteId+'/docx',function(){S.contratos[c3.contratoVigenteId].temDocx=true},f,fmtPlaca(pk3)+' \u00b7 contrato Word');}
