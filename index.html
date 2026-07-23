@@ -164,7 +164,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=42; var APP_DATE='22/07/2026';
+var APP_VER=43; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -308,7 +308,7 @@ function normCarro(c){
  c.proximasTrocas=toArr(c.proximasTrocas);c.contratoVigenteId=c.contratoVigenteId||'';
  c.temCrlv=!!c.temCrlv;
  c.gnvRequalif=c.gnvRequalif||'';c.procLeilao=c.procLeilao||'Não';c.procFinanciado=c.procFinanciado||'Não';c.procObs=c.procObs||'';
- c.lidoCrlv=c.lidoCrlv||'';c.lidoGnv=c.lidoGnv||'';
+ c.lidoCrlv=c.lidoCrlv||'';c.lidoGnv=c.lidoGnv||'';c.emVenda=!!c.emVenda;
  return c;
 }
 function normContrato(c){
@@ -463,6 +463,9 @@ function buscaMatch(hay,q){
 }
 function alertasCarro(c){
  var a=[];var km=c.kmUltima||c.kmAtual||0;
+ /* carro em processo de venda ao motorista: a manutenção passa a ser do comprador,
+    então ele não polui o painel com óleo/correia/CRLV/GNV atrasados. */
+ if(c.emVenda)return a;
  if(km&&c.proxOleoKm){var f=c.proxOleoKm-km;
   if(f<=0)a.push({n:'red',t:'🛢 Óleo VENCIDO — passou '+fmtKm(-f)+' km da troca ('+fmtKm(c.proxOleoKm)+')'});
   else if(f<=1500)a.push({n:'yel',t:'🛢 Óleo perto: faltam '+fmtKm(f)+' km ('+fmtKm(c.proxOleoKm)+')'});}
@@ -889,6 +892,8 @@ function formCarro(pk){
  '<label>Data em que viu essa quilometragem</label><input type="date" id="e_kmUltimaData" value="'+esc(c.kmUltimaData||'')+'">'+
   f('Exercício CRLV','exercicioCRLV',c.exercicioCRLV,'2026')+f('Exercício vistoria GNV (se tiver gás)','gnvExercicio',c.gnvExercicio||'')+
   '<label>Próxima requalificação do cilindro GNV</label><input type="date" id="e_gnvRequalif" value="'+esc(c.gnvRequalif||'')+'">'+
+  '<label>Situação do veículo</label><select id="fc_emVenda">'+opcoesSel(['Na frota (normal)','Em processo de venda ao motorista'],c.emVenda?'Em processo de venda ao motorista':'Na frota (normal)')+'</select>'+
+  '<p class="sub">Em processo de venda: o carro continua na lista, mas para de gerar avisos de manutenção (óleo, correia, CRLV, GNV) no painel — a manutenção passa a ser do comprador.</p>'+
   '<label>Leilão (procedência)</label><select id="fc_procLeilao">'+opcoesSel(['Não','Recuperado de sinistro (monta não informada)','Leilão pequena monta','Leilão média monta','Leilão grande monta'],c.procLeilao||'Não')+'</select>'+
   '<label>Financiado</label><select id="fc_procFinanciado">'+opcoesSel(['Não','Sim'],c.procFinanciado||'Não')+'</select>'+
   f('Observações de procedência','procObs',c.procObs||'')+
@@ -918,6 +923,7 @@ function salvarCarro(pk){
  c.modeloCRLV=g('modeloCRLV');c.motorCodigo=g('motorCodigo');c.chassi=g('chassi').toUpperCase();c.renavam=g('renavam');
  c.cor=g('cor');c.potencia=g('potencia');c.combustivel=g('combustivel');
  c.kmAtual=parseInt(g('kmAtual').replace(/\D/g,''),10)||0;c.kmUltima=parseInt(g('kmUltima').replace(/\D/g,''),10)||c.kmAtual;c.kmUltimaData=(document.getElementById('e_kmUltimaData')||{value:''}).value||c.kmUltimaData||'';c.exercicioCRLV=g('exercicioCRLV');c.gnvExercicio=g('gnvExercicio');c.codigoRadio=g('codigoRadio');
+ c.emVenda=((document.getElementById('fc_emVenda')||{value:''}).value||'').indexOf('venda')>=0;
  c.gnvRequalif=(document.getElementById('e_gnvRequalif')||{value:''}).value;c.procLeilao=(document.getElementById('fc_procLeilao')||{value:'Não'}).value;c.procFinanciado=(document.getElementById('fc_procFinanciado')||{value:'Não'}).value;c.procObs=g('procObs');
  c.proprietario=g('proprietario');c.locadorId=document.getElementById('fc_locadorId').value;
  c.valorRef=parseBRL(g('valorRef'));c.semanalPadrao=parseBRL(g('semanalPadrao'));c.caucaoPadrao=parseBRL(g('caucaoPadrao'));
@@ -1785,14 +1791,16 @@ function detectarComponentes(m){
   /* RADIADOR: o radiador em si — exclui mangueira/tampa/aditivo/válvula/sensor/reservatório. */
   if(troca&&/radiador/.test(l)&&!/mangueira|tampa|aditivo|valvula|sensor|reservatorio|limpez|ventoinha|eletroventilador/.test(l))out.comps.radiador=true;
   if(/correia\s+dentada/.test(l)){if(troca)out.comps.correia=true;if(prox)out.proxCorreia=prox;}
-  /* ÓLEO DO MOTOR. Só é TROCA DE ÓLEO se a linha indicar o óleo em si: "troca do óleo",
-     "óleo do motor", "X litros", viscosidade (10w40) ou "lubrificante". Peça que só tem a
-     palavra óleo no nome — filtro, junta, sensor, bomba, vareta, bujão, retentor — NÃO é troca. */
+  /* ÓLEO DO MOTOR — exige PROVA POSITIVA de que o óleo em si foi trocado.
+     Lista de peças proibidas nunca fecha (sempre aparece uma nova: cebolinha, tomada,
+     bulbo...). Então só conta se houver: "troca do óleo", "N litros", viscosidade
+     (5w30/10w40...) ou "lubrificante". Assim "Filtro de óleo do motor", "Cebolinha de
+     óleo" e "Tomada da cebolinha de óleo" NÃO são troca de óleo. */
   var temOleo=/\boleo/.test(l);
-  var oleoOutro=/caixa|cambio|direcao|freio|diferencial|hidraulic|transmiss/.test(l);
-  var oleoDeVerdade=/troca\s+(?:do|de|dos)?\s*oleo|oleo\s+do\s+motor|\blitros?\b|\d{1,2}\s*w\s*-?\s*\d{2}|lubrificante/.test(l);
-  var soPeca=/filtro|junta|sensor|interruptor|bomba|vareta|bujao|carter|retentor|mangueira|tampa|suporte|arrefeced|trocador|valvula/.test(l);
-  if(temOleo&&!oleoOutro&&(oleoDeVerdade||!soPeca)){
+  var oleoOutro=/caixa|cambio|direcao|freio|diferencial|hidraulic|transmiss/.test(l)
+   ||/\bgl-?\s*[0-9]\b|\b(?:75|80|85|140)\s*w\s*\d{2}\b|\boleo\s*90\b/.test(l); /* óleo de engrenagem */
+  var provaOleo=/troca(?:r|do|dos|da|de)?\s+(?:d[eo]s?\s+)?oleo|\b\d+\s*litros?\b|\b\d{1,2}\s*w\s*-?\s*\d{2}\b|lubrificante/.test(l);
+  if(temOleo&&!oleoOutro&&provaOleo){
    if(troca){out.comps.oleo=true;out.linhaOleo=raw}
    if(prox)out.proxOleo=prox;
   }
@@ -1885,12 +1893,13 @@ function diagnosticoFrota(){
    if(d.comps.oleo&&odo>0)ultO={odo:odo,dt:_dtManut(m),prox:d.proxOleo,linha:d.linhaOleo||''};
   });
   var av=[];
-  if(!ultO)av.push('sem troca de óleo no histórico');
+  if(c.emVenda)av.push('EM VENDA — sem avisos de manutenção');
+  else if(!ultO)av.push('sem troca de óleo no histórico');
   else if(!ultO.prox)av.push('próxima calculada — a manutenção não declarou');
   var iv=Number(c.oleoIntervalo)||0;
-  if(iv&&(iv<3000||iv>20000))av.push('intervalo estranho: '+fmtKm(iv)+' km');
-  if(c.proxOleoKm&&km&&c.proxOleoKm<=km)av.push('ÓLEO VENCIDO — passou '+fmtKm(km-c.proxOleoKm)+' km');
-  if(av.length)probl++;
+  if(!c.emVenda&&iv&&(iv<3000||iv>20000))av.push('intervalo estranho: '+fmtKm(iv)+' km');
+  if(!c.emVenda&&c.proxOleoKm&&km&&c.proxOleoKm<=km)av.push('ÓLEO VENCIDO — passou '+fmtKm(km-c.proxOleoKm)+' km');
+  if(av.length&&!c.emVenda)probl++;
   linhas.push('<b>'+esc(fmtPlaca(pk))+'</b> · '+fmtKm(km)+' km<br>óleo: próxima '+(c.proxOleoKm?fmtKm(c.proxOleoKm)+' km':'—')+
    (ultO?(' · última troca '+fmtKm(ultO.odo)+' km em '+dataBR(ultO.dt)+
    (ultO.linha?'<br><span class="sub">↳ '+esc(String(ultO.linha).slice(0,90))+'</span>':'')):'')+
