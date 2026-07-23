@@ -164,7 +164,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=44; var APP_DATE='22/07/2026';
+var APP_VER=45; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -2009,7 +2009,24 @@ function recalcTrocasCarro(pk){
 /* Relatório: para CADA carro, qual foi a última troca de óleo detectada, a linha exata
    que gerou essa conclusão e a próxima troca resultante. Serve para conferir a frota toda
    de uma vez, sem abrir carro por carro. */
+/* Recalcula a frota inteira em silêncio, sem botão e sem aviso: últimas trocas de
+   componentes e próximas trocas de óleo/correia, sempre pela troca mais recente de
+   verdade. Roda ao abrir o app e antes de qualquer diagnóstico, para que nenhum número
+   gravado antigo continue aparecendo na tela. */
+function recalcTudoSilencioso(){
+ if(!window.S||!S.carros||!S.manutencoes)return 0;
+ var mud=0;
+ Object.keys(S.carros).forEach(function(pk){
+  var c=S.carros[pk];if(!c)return;
+  var a=Number(c.proxOleoKm)||0,b=Number(c.proxCorreiaKm)||0;
+  try{recalcTrocasCarro(pk)}catch(e){}
+  if((Number(c.proxOleoKm)||0)!==a||(Number(c.proxCorreiaKm)||0)!==b)mud++;
+ });
+ if(mud){try{save()}catch(e){}}
+ return mud;
+}
 function diagnosticoFrota(){
+ recalcTudoSilencioso();
  var st=document.getElementById('recTudoStat');
  var linhas=[],probl=0;
  Object.keys(S.carros).forEach(function(pk){
@@ -2482,7 +2499,9 @@ function verManut(id){
 function excluirManut(id){
  var m=S.manutencoes[id];
  ask('Excluir manutenção?','R$ '+fmtBRL(m.total)+' de '+periodoTexto(m.dataIni,m.dataFim)+' sai do histórico e do total do carro.','Excluir',function(){
-  S.apagados[id]=Date.now();delete S.manutencoes[id];save();closeSheet(2);render();toast('🗑 Excluída');
+  var _pk=m&&m.carro;S.apagados[id]=Date.now();delete S.manutencoes[id];
+  if(_pk&&S.carros[_pk]){try{recalcTrocasCarro(_pk)}catch(e){}}
+  save();closeSheet(2);render();toast('🗑 Excluída');
  });
 }
 
@@ -2499,6 +2518,7 @@ function mesclarHistorico(regs){
   S.manutencoes[r.id]=r;add++;
  });
  if(add)save();
+ if(add)recalcTudoSilencioso(); /* histórico novo entra: refaz as trocas na hora */
  return {add:add,pulou:pulou};
 }
 function importarHistoricoWA(){
@@ -3170,6 +3190,11 @@ boot();render();
  setTimeout(growAll,400);
  /* leitura automática dos documentos, sem botão, pouco depois do app abrir */
  setTimeout(function(){try{if(window.varrerDocsAuto)varrerDocsAuto()}catch(e){}},4000);
+ /* recálculo automático das trocas: garante que nenhum número antigo gravado
+    sobreviva a uma correção de regra. Roda ao abrir e de novo quando a nuvem chega. */
+ function _recalcAuto(){try{if(window.recalcTudoSilencioso){var n=recalcTudoSilencioso();if(n&&window.render)render()}}catch(e){}}
+ setTimeout(_recalcAuto,4500);
+ setTimeout(_recalcAuto,12000);
 })();
 </script>
 </body>
