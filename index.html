@@ -164,7 +164,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=40; var APP_DATE='22/07/2026';
+var APP_VER=41; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -1720,32 +1720,76 @@ function excluirTermo(id){
 
 
 /* ===================== DETECÇÃO AUTOMÁTICA DE COMPONENTES ===================== */
+/* ===== LEITURA INTELIGENTE DO TEXTO DA MANUTENÇÃO (v41) =====
+   Entende as várias formas que o mecânico escreve, em vez de exigir um formato só. */
+function _numKm(s){
+ s=String(s||'').replace(/\s/g,'');
+ s=s.replace(/,\d{1,2}$/,'');      /* centavos, se vier */
+ s=s.replace(/[.,]/g,'');
+ var n=parseInt(s,10);
+ return isFinite(n)?n:0;
+}
+/* Quilometragem da PRÓXIMA troca declarada na linha. Aceita:
+   "próxima troca com 379.010 km", "prox. 379010", "trocar com 379 mil km",
+   "nova troca 379.010", "revisão com 379.010 km", "retorno com 379010 km". */
+function lerProxKm(linha){
+ var l=semAcento(String(linha||''));
+ var gat='(?:proxim[ao]s?|prox\\.?|nova troca|trocar com|troca com|revisao com|retorno com|voltar com)';
+ var m=l.match(new RegExp(gat+'[^0-9]{0,30}([0-9][0-9.,\\s]{1,12}?)\\s*(mil)?\\s*(?:km|quilo)'));
+ if(m)return _numKm(m[1])*(m[2]?1000:1);
+ m=l.match(new RegExp(gat+'[^0-9]{0,30}([0-9][0-9.,]{2,12})'));
+ if(m)return _numKm(m[1]);
+ return 0;
+}
+/* A linha descreve uma TROCA de fato? "Completou o óleo" ou "verificou o radiador"
+   não são troca — antes isso contava como se a peça tivesse sido substituída. */
+function _ehTroca(l){
+ if(/troc|substitu|instal|coloc|\bnovo|\bnova|reposic|revisad/.test(l))return true;
+ if(/completou|completo|complement|verific|limpez|limpou|regulag|reapert|alinham|balancead|balanceam|sangri|inspec/.test(l))return false;
+ return true; /* peça comprada, sem verbo: conta como troca */
+}
 function detectarComponentes(m){
  var out={comps:{},proxOleo:0,proxCorreia:0};
  var linhas=[];
- (m.blocos||[]).forEach(function(b){String(b.servicos||'').split('\n').forEach(function(s){if(s.trim())linhas.push(s)})});
- (m.pecas||[]).forEach(function(p){if(p.desc)linhas.push(p.desc)});
+ /* servicos pode vir como LISTA ou como texto com quebras. Antes, String(lista) grudava
+    tudo com vírgula e o bloco inteiro virava UMA linha — as palavras de um serviço
+    contaminavam as regras de outro. Cada serviço tem que ser uma linha isolada. */
+ (m.blocos||[]).forEach(function(b){
+  var sv=b&&b.servicos;
+  var arr=Array.isArray(sv)?sv:String(sv||'').split('\n');
+  arr.forEach(function(s){s=String(s||'').trim();if(s)linhas.push(s)});
+ });
+ (m.pecas||[]).forEach(function(p){if(p&&p.desc)String(p.desc).split('\n').forEach(function(s){s=s.trim();if(s)linhas.push(s)})});
  linhas.forEach(function(raw){
   var l=semAcento(raw);
-  var mprox=l.match(/proxima[^0-9]*([0-9][0-9.,]*)\s*km/);
-  var prox=mprox?parseInt(mprox[1].replace(/[.,]/g,''),10):0;
+  var odoM=Number(m.odometro)||0;
+  var prox=lerProxKm(l);
+  /* guarda de sanidade: a próxima troca tem que ser DEPOIS do km da própria manutenção */
+  if(prox&&odoM&&(prox<=odoM||prox-odoM>200000))prox=0;
+  var troca=_ehTroca(l);
   /* CABOS DE VELA: só quando a linha tem "cabo" E "vela" juntos (jogo de cabo de vela).
      NUNCA marca em "cabo do freio de mão", "cabo de embreagem", "cabo do acelerador". */
-  if(/cabo/.test(l)&&/vela/.test(l))out.comps.cabos=true;
+  if(troca&&/cabo/.test(l)&&/vela/.test(l))out.comps.cabos=true;
   /* VELA (ignição): tem "vela" mas NÃO é linha de cabo. */
-  if(/\bvela/.test(l)&&!/cabo/.test(l))out.comps.vela=true;
-  /* EMBREAGEM: kit/disco/platô — exclui "cabo de embreagem". */
-  if(/embreagem/.test(l)&&!(/cabo/.test(l)&&!/kit|disco|plato|jogo/.test(l)))out.comps.embreagem=true;
-  if(/bateria/.test(l))out.comps.bateria=true;
-  if(/alternador/.test(l))out.comps.alternador=true;
-  if(/arranque|motor de partida/.test(l))out.comps.arranque=true;
+  if(troca&&/\bvela/.test(l)&&!/cabo/.test(l))out.comps.vela=true;
+  /* EMBREAGEM: kit/disco/platô — exclui cabo, atuador, cilindro e pedal. */
+  if(troca&&/embreagem/.test(l)&&(/kit|disco|plato|jogo|rolamento/.test(l)||!/cabo|atuador|cilindro|pedal|fluido/.test(l)))out.comps.embreagem=true;
+  /* BATERIA: a bateria em si — não terminal, polo ou cabo de bateria. */
+  if(troca&&/bateria/.test(l)&&!/terminal|polo|\bcabo|suporte|base|carga|recarg/.test(l))out.comps.bateria=true;
+  /* ALTERNADOR: o alternador — não a correia nem a polia dele. */
+  if(troca&&/alternador/.test(l)&&!/correia|polia|regulador|escova/.test(l))out.comps.alternador=true;
+  if(troca&&/arranque|motor de partida/.test(l)&&!/rele|bendix|chave|bucha/.test(l))out.comps.arranque=true;
   /* FREIOS = pastilha OU disco de freio (normalmente trocam juntos). Nunca "freio de mão", "cabo do freio", "fluido/óleo de freio". */
-  if(/pastilha/.test(l)||(/disco/.test(l)&&/freio/.test(l)))out.comps.freios=true;
-  if(/ventoinha|eletroventilador/.test(l))out.comps.ventoinha=true;
+  if(troca&&(/pastilha/.test(l)||(/disco/.test(l)&&/freio/.test(l))))out.comps.freios=true;
+  if(troca&&/ventoinha|eletroventilador/.test(l)&&!/rele|resistencia|sensor|chicote/.test(l))out.comps.ventoinha=true;
   /* RADIADOR: o radiador em si — exclui mangueira/tampa/aditivo/válvula/sensor/reservatório. */
-  if(/radiador/.test(l)&&!/mangueira|tampa|aditivo|valvula|sensor|reservatorio/.test(l))out.comps.radiador=true;
-  if(/correia\s+dentada/.test(l)){out.comps.correia=true;if(prox)out.proxCorreia=prox;}
-  if(/\boleo/.test(l)&&!/caixa|cambio|direcao|freio|diferencial/.test(l)){out.comps.oleo=true;if(prox)out.proxOleo=prox;}
+  if(troca&&/radiador/.test(l)&&!/mangueira|tampa|aditivo|valvula|sensor|reservatorio|limpez|ventoinha|eletroventilador/.test(l))out.comps.radiador=true;
+  if(/correia\s+dentada/.test(l)){if(troca)out.comps.correia=true;if(prox)out.proxCorreia=prox;}
+  /* ÓLEO DO MOTOR: não conta óleo de caixa/câmbio/direção/freio/diferencial nem "completou". */
+  if(/\boleo/.test(l)&&!/caixa|cambio|direcao|freio|diferencial|hidraulic|transmiss/.test(l)){
+   if(troca)out.comps.oleo=true;
+   if(prox)out.proxOleo=prox;
+  }
  });
  return out;
 }
@@ -1759,8 +1803,7 @@ function aplicarDeteccao(m,carro){
   if(at&&at.src==='manual')return; /* não sobrescreve o que foi ajustado na mão */
   if(!at||!at.km||odo>=at.km){carro.ultTrocas[comp]={km:odo,data:dt,src:'auto'};marcados.push(comp)}
  });
- if(d.comps.oleo&&d.proxOleo)carro.proxOleoKm=d.proxOleo;
- if(d.comps.correia)carro.proxCorreiaKm=d.proxCorreia||(odo+40000);
+ if(d.comps.oleo||d.comps.correia)recalcProximasTrocas(normPlaca(carro.placa));
  return marcados;
 }
 
@@ -1769,19 +1812,47 @@ var COMPS_LST=[['vela','🔥 Vela'],['cabos','🔥 Cabos de vela'],['embreagem',
 function nomeComp(k){for(var i=0;i<COMPS_LST.length;i++)if(COMPS_LST[i][0]===k)return COMPS_LST[i][1];return k}
 function _dtManut(m){return m.dataFim||m.dataIni||''}
 function _odoManut(m){return Number(m.odometro)||0}
+/* Manutenções do carro em ordem CRONOLÓGICA (data manda; odômetro só desempata).
+   Antes ordenava por odômetro — um km errado/em branco fazia uma manutenção velha
+   virar "a mais recente" e contaminar tudo. */
+function manutsDoCarro(pk){
+ return Object.keys(S.manutencoes||{}).map(function(k){return S.manutencoes[k]})
+  .filter(function(m){return m&&m.carro===pk})
+  .sort(function(a,b){
+   var da=_dtManut(a)||'',db=_dtManut(b)||'';
+   if(da!==db)return da<db?-1:1;
+   return _odoManut(a)-_odoManut(b);
+  });
+}
+/* Próxima troca de óleo/correia = SEMPRE derivada da troca mais recente.
+   Se a troca mais recente não declarou "próxima troca com X km", calcula pelo
+   intervalo do próprio carro (aprendido do histórico). Um valor antigo NUNCA sobrevive. */
+function recalcProximasTrocas(pk){
+ var c=S.carros[pk];if(!c)return;
+ var ultO=null,ultC=null,ivO=0,ivC=0;
+ manutsDoCarro(pk).forEach(function(m){
+  var d=detectarComponentes(m),odo=_odoManut(m);
+  if(d.comps.oleo&&odo>0){ultO={odo:odo,prox:d.proxOleo};if(d.proxOleo>odo)ivO=d.proxOleo-odo}
+  if(d.comps.correia&&odo>0){ultC={odo:odo,prox:d.proxCorreia};if(d.proxCorreia>odo)ivC=d.proxCorreia-odo}
+ });
+ if(ultO){
+  if(ivO)c.oleoIntervalo=ivO;
+  c.proxOleoKm=ultO.prox||(ultO.odo+(Number(c.oleoIntervalo)||10000));
+ }
+ if(ultC&&c.temCorreia){
+  if(ivC)c.correiaIntervalo=ivC;
+  c.proxCorreiaKm=ultC.prox||(ultC.odo+(Number(c.correiaIntervalo)||40000));
+ }
+}
 /* Reconstrói ultTrocas do carro varrendo TODO o histórico (cronológico), pegando a última troca
    REAL de cada componente. Preserva itens marcados na mão (src:'manual'). */
 function recalcTrocasCarro(pk){
  var c=S.carros[pk];if(!c)return null;
- var mans=Object.keys(S.manutencoes).map(function(k){return S.manutencoes[k]})
-  .filter(function(m){return m.carro===pk})
-  .sort(function(a,b){var oa=_odoManut(a),ob=_odoManut(b);if(oa!==ob)return oa-ob;return (_dtManut(a)||'').localeCompare(_dtManut(b)||'')});
- var novo={},proxOleo=0,proxCorreia=0;
+ var mans=manutsDoCarro(pk);
+ var novo={};
  mans.forEach(function(m){
   var d=detectarComponentes(m),odo=_odoManut(m),dt=_dtManut(m)||hoje();
   Object.keys(d.comps).forEach(function(comp){novo[comp]={km:odo,data:dt,src:'auto'}});
-  if(d.proxOleo)proxOleo=d.proxOleo;
-  if(d.proxCorreia)proxCorreia=d.proxCorreia;
  });
  var antes=c.ultTrocas||{};
  var manuais={};Object.keys(antes).forEach(function(k){if(antes[k]&&antes[k].src==='manual')manuais[k]=antes[k]});
@@ -1789,9 +1860,26 @@ function recalcTrocasCarro(pk){
   if(!manuais[k]&&!novo[k]&&antes[k]&&(antes[k].km||antes[k].data))removidos.push(k);
  });
  c.ultTrocas=Object.assign({},novo,manuais);
- if(proxOleo)c.proxOleoKm=proxOleo;
- if(proxCorreia&&c.temCorreia)c.proxCorreiaKm=proxCorreia;
+ recalcProximasTrocas(pk);
  return {qtd:Object.keys(novo).length,removidos:removidos};
+}
+function recalcTodosCarros(){
+ var st=document.getElementById('recTudoStat');
+ ask('Recalcular TODOS os carros?','Vou varrer o histórico de manutenções de cada carro e reescrever as últimas trocas e as próximas trocas de óleo/correia pela troca mais recente de verdade. Itens ajustados na mão são preservados.','Recalcular tudo',function(){
+  var mud=[],n=0;
+  Object.keys(S.carros).forEach(function(pk){
+   var c=S.carros[pk],antesO=Number(c.proxOleoKm)||0,antesC=Number(c.proxCorreiaKm)||0;
+   recalcTrocasCarro(pk);n++;
+   var depoisO=Number(c.proxOleoKm)||0,depoisC=Number(c.proxCorreiaKm)||0;
+   if(antesO!==depoisO)mud.push(fmtPlaca(pk)+': óleo '+(antesO?fmtKm(antesO):'—')+' → '+(depoisO?fmtKm(depoisO):'—'));
+   if(antesC!==depoisC)mud.push(fmtPlaca(pk)+': correia '+(antesC?fmtKm(antesC):'—')+' → '+(depoisC?fmtKm(depoisC):'—'));
+  });
+  save();render();
+  var h='✅ '+n+' carro(s) recalculado(s). '+(mud.length?mud.length+' correção(ões):':'Nada mudou.');
+  if(mud.length)h+='<br>• '+mud.slice(0,40).join('<br>• ')+(mud.length>40?'<br>…':'');
+  if(st)st.innerHTML=h;
+  toast('✅ Frota recalculada');
+ });
 }
 function recalcTrocasUI(pk){
  var c=S.carros[pk];if(!c)return;
@@ -2075,7 +2163,7 @@ function gerarManut(){
   pecas:pecas,blocos:blocos,totalPecas:tp,totalMO:tm,total:tp+tm,criadoEm:Date.now()});
  m.texto=buildManutTexto(m,carro);
  S.manutencoes[m.id]=m;
- if(odo>0){carro.kmUltima=odo;carro.kmUltimaData=fim||ini}
+ if(odo>0&&odo>=(Number(carro.kmUltima)||0)){carro.kmUltima=odo;carro.kmUltimaData=fim||ini}
  var _marc=aplicarDeteccao(m,carro);
  if(_marc.length)setTimeout(function(){toast('🤖 Atualizado automático: '+_marc.join(', '))},900);
  /* próximas trocas automáticas */
@@ -2623,6 +2711,10 @@ function openCfg(){
  '<input type="file" id="waHist" accept=".json">'+
  '<button class="btn" onclick="importarHistoricoWA()">📚 Importar histórico</button>'+
  '<div class="filestat" id="waHistStat"></div>'+
+ '<div class="sect">Manutenção — recálculo geral</div>'+
+ '<p class="sub">Revarre o histórico de TODOS os carros e reescreve as últimas trocas de componentes e as próximas trocas de óleo/correia sempre pela troca mais recente de verdade. Use uma vez agora para corrigir a frota inteira.</p>'+
+ '<button class="btn" onclick="recalcTodosCarros()">🔄 Recalcular todos os carros</button>'+
+ '<div class="filestat" id="recTudoStat"></div>'+
  '<div class="sect">Leitura dos documentos</div>'+
  '<p class="sub">O app lê sozinho o CRLV e o laudo de GNV anexados (exercício e próxima requalificação do cilindro) — ao abrir o app, ao abrir a ficha do carro e assim que você anexa um documento novo. Este botão é só um reforço: relê TUDO do zero, mesmo o que já foi lido.</p>'+
  '<button class="btn sec" onclick="varrerDocsAuto({force:true,stat:\'gnvLoteStat\'})">🔁 Reler todos os documentos agora</button>'+
