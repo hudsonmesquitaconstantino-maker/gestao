@@ -164,7 +164,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=55; var APP_DATE='22/07/2026';
+var APP_VER=56; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -853,6 +853,7 @@ function ficha(pk){window._fichaPk=pk;
  h+='<div class="sect">Documento CRLV</div>';
  h+=c.temCrlv?'<button class="btn mini" onclick="verDoc(\''+pk+'/crlv\',\'CRLV '+esc(fmtPlaca(c.placa))+'\')">👁 Ver PDF</button>':'<div class="sub">Nenhum CRLV anexado.</div>';
  h+='<button class="btn mini sec" onclick="pedirArquivo(\''+pk+'/crlv\',\'application/pdf\',\''+pk+'\')">🔄 '+(c.temCrlv?'Substituir':'Anexar')+' CRLV</button>';
+ if(c.temCrlv||c.temGnvDoc)h+='<button class="btn mini sec" onclick="varrerDocsAuto({pk:\''+pk+'\',force:true})">📄 Reler documentos deste carro</button>';
  if(semAcento(c.combustivel||'').indexOf('gnv')>=0||c.temGnvDoc){
   h+='<div class="sect">Vistoria do GNV (anual)</div>';
   h+='<div class="kv"><b>Exercício da vistoria</b><span>'+esc(c.gnvExercicio||'—')+'</span></div>';
@@ -1529,7 +1530,7 @@ function _cap(s){s=String(s||'').toLowerCase();return s.charAt(0).toUpperCase()+
 /* Versão do LEITOR de documentos (CRLV/GNV). Aumente este número toda vez que a extração
    melhorar: os documentos já anexados são relidos automaticamente com a lógica nova,
    mesmo sem trocar o arquivo. */
-var LEITOR_VER=54;
+var LEITOR_VER=55;
 var _docVarr={rodando:false,visto:{}};
 function _filaDocs(pkFiltro){
  var fila=[];
