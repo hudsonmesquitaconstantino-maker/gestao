@@ -164,7 +164,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=53; var APP_DATE='22/07/2026';
+var APP_VER=54; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -1458,35 +1458,59 @@ function _rotuloCampo(k){var m={placa:'placa',chassi:'chassi',renavam:'renavam',
 /* Lê os dados do veículo de dentro do texto de um CRLV-e (layout padrão Detran).
    Tolerante a espaços e quebras. Só devolve o que reconhecer com segurança. */
 function impDadosCRLV(texto){
- var t=String(texto||'').replace(/\r/g,'\n');
- var T=t.replace(/[ \t]+/g,' ');
- var U=semAcento(T).toUpperCase();
+ var raw=String(texto||'').replace(/\r/g,'\n');
+ var U=semAcento(raw).toUpperCase();
  var o={};
- var mPlaca=T.match(/\b([A-Z]{3}[\s-]?\d[A-Z0-9]\d{2})\b/);
+ /* PLACA (formato Mercosul ou antigo). No CRLV-e a placa vem seguida do exercício:
+    "TUW5A58 2026". Pego a placa e, na mesma linha, o exercício. */
+ var mPlaca=raw.match(/\b([A-Z]{3}[\s-]?\d[A-Z0-9]\d{2})\b/);
  if(mPlaca)o.placa=mPlaca[1].replace(/[\s-]/g,'').toUpperCase();
- /* chassi: 17 caracteres, tem que conter dígitos E letras (evita pegar palavras) */
- var cha=T.toUpperCase().match(/\b([0-9A-HJ-NPR-Z]{17})\b/g);
+ /* CHASSI: 17 chars, letras + números. Único no documento. */
+ var cha=raw.toUpperCase().match(/\b([0-9A-HJ-NPR-Z]{17})\b/g);
  if(cha){for(var ci=0;ci<cha.length;ci++){if(/[0-9]/.test(cha[ci])&&/[A-Z]/.test(cha[ci])){o.chassi=cha[ci];break}}}
- /* renavam: só quando a palavra RENAVAM está perto (senão confunde com CPF) */
- var mRen=U.match(/RENAVAM[^0-9]{0,12}(\d{9,11})/);
- if(mRen)o.renavam=mRen[1];
- /* ano fab/mod */
- var mAno=U.match(/ANO\s*(?:DE\s*)?FABRICA[^0-9]{0,10}(\d{4})[\s\S]{0,30}?ANO\s*(?:DO\s*)?MODELO[^0-9]{0,10}(\d{4})/);
- if(mAno)o.ano=mAno[1]+'/'+mAno[2];
- else{var mA2=T.match(/\b(19|20)(\d{2})\s*\/\s*(19|20)(\d{2})\b/);if(mA2)o.ano=mA2[1]+mA2[2]+'/'+mA2[3]+mA2[4];}
- /* combustível: lista fechada, sem engolir a palavra seguinte */
- var mComb=U.match(/\b(ALCOOL\/GASOLINA\/ELETRICO|GASOLINA\/ALCOOL\/ELETRICO|ALCOOL\/GASOLINA|GASOLINA\/ALCOOL|GAS\/ALCOOL|FLEX|GASOLINA|ALCOOL|ETANOL|DIESEL|ELETRICO|HIBRIDO|GNV)\b/);
- if(mComb)o.combustivel=mComb[1].replace(/ELETRICO/g,'ELÉTRICO').replace(/ALCOOL/g,'ÁLCOOL');
- /* cor */
- var mCor=U.match(/\bCOR\b[^A-Z]{0,6}(BRANCA|PRATA|PRETA|CINZA|VERMELHA|AZUL|VERDE|AMARELA|MARROM|BEGE|DOURADA|LARANJA|ROSA|FANTASIA)/);
- if(mCor)o.cor=_cap(mCor[1]);
- /* potência / cilindrada */
- var mPot=U.match(/(\d{2,3})\s*CV/);
- var mCil=U.match(/(\d{3,4})\s*(?:CC\b|CILINDRADA)/);
- if(mPot)o.potencia=mPot[1]+'CV'+(mCil?'/'+mCil[1]:'');
- /* marca/modelo: para na quebra de linha ou em rótulos conhecidos */
- var mMar=t.match(/MARCA\s*\/?\s*MODELO[^A-Za-z0-9]{0,4}([A-Z0-9][A-Z0-9\/ .\-]{2,45}?)(?:\n|CHASSI|COR|ANO|CATEGORIA|ESPECIE|$)/i);
- if(mMar)o.modeloCRLV=mMar[1].trim().replace(/\s{2,}/g,' ');
+ /* RENAVAM: 11 dígitos. Vem rotulado como CÓDIGO RENAVAM, mas os valores ficam soltos
+    no fim. Pego uma linha que seja SÓ 11 dígitos e NÃO seja o número do CRV nem CPF.
+    O renavam costuma ser o primeiro bloco numérico de 11 dígitos após os rótulos. */
+ var linhas=raw.split('\n').map(function(x){return x.trim()});
+ /* o código de segurança do CLA também tem 11 dígitos, mas vem na mesma linha de "***".
+    Fico com a linha que é SÓ 11 dígitos (o renavam aparece isolado). */
+ var so11=linhas.filter(function(x){return /^\d{11}$/.test(x)});
+ if(so11.length)o.renavam=so11[0];
+ /* ANO fab/mod: dois anos na MESMA linha (só espaços/tab, nunca quebra de linha),
+    e diferente da linha da placa (que tem a placa antes). Ex.: "2026 2027". */
+ for(var ai=0;ai<linhas.length;ai++){
+  var la=linhas[ai];
+  if(/[A-Z]{3}\d/.test(la))continue; /* pula a linha da placa */
+  var ma=la.match(/^(19|20)(\d{2})[ \t]+(19|20)(\d{2})$/);
+  if(ma){o.ano=ma[1]+ma[2]+'/'+ma[3]+ma[4];break;}
+ }
+ /* COR + COMBUSTÍVEL vêm juntos numa linha: "BRANCA GASOLINA/ELETRICO" */
+ var CORES='BRANCA|PRATA|PRETA|CINZA|VERMELHA|AZUL|VERDE|AMARELA|MARROM|BEGE|DOURADA|LARANJA|ROSA|FANTASIA|CINZ';
+ var mCC=U.match(new RegExp('\\b('+CORES+')\\s+((?:GASOLINA|ALCOOL|ETANOL|DIESEL|ELETRICO|FLEX|GAS|GNV|HIBRIDO|\\/| )+)'));
+ if(mCC){
+  o.cor=_cap(mCC[1]);
+  o.combustivel=mCC[2].trim().replace(/\s+/g,' ').replace(/ELETRICO/g,'ELÉTRICO').replace(/ALCOOL/g,'ÁLCOOL');
+ }else{
+  var mCor=U.match(new RegExp('\\b('+CORES+')\\b'));if(mCor)o.cor=_cap(mCor[1]);
+  var mComb=U.match(/\b((?:GASOLINA|ALCOOL|ETANOL|DIESEL|ELETRICO|GNV)(?:\/(?:GASOLINA|ALCOOL|ETANOL|DIESEL|ELETRICO|GNV))*)\b/);
+  if(mComb)o.combustivel=mComb[1].replace(/ELETRICO/g,'ELÉTRICO').replace(/ALCOOL/g,'ÁLCOOL');
+ }
+ /* POTÊNCIA/CILINDRADA: "240CV/1497" */
+ var mPot=U.match(/(\d{2,3})\s*CV\s*\/?\s*(\d{3,4})?/);
+ if(mPot)o.potencia=mPot[1]+'CV'+(mPot[2]?'/'+mPot[2]:'');
+ /* MARCA/MODELO/VERSÃO: linha que começa com prefixo de importação/nacional
+    "I/BYD SONG PLUS GS DM" ou "FIAT/GRAND SIENA...". Pego a linha inteira. */
+ var mMod=raw.match(/^([A-Z]\/[A-Z0-9][A-Z0-9 .\-\/]{3,45})$/m)||raw.match(/^([A-Z]{2,}\/[A-Z0-9][A-Z0-9 .\-\/]{3,45})$/m);
+ if(mMod)o.modeloCRLV=mMod[1].trim().replace(/\s{2,}/g,' ');
+ /* PROPRIETÁRIO: nome logo antes do CPF/CNPJ. Pego a linha anterior a uma linha de CPF. */
+ var mCpfIdx=-1;
+ for(var i=0;i<linhas.length;i++){if(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/.test(linhas[i])||/^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/.test(linhas[i])){mCpfIdx=i;break}}
+ if(mCpfIdx>0){
+  for(var k=mCpfIdx-1;k>=0;k--){
+   var L=linhas[k];
+   if(L&&/^[A-ZÀ-Ú][A-ZÀ-Ú .]{6,}$/.test(semAcento(L).toUpperCase())&&!/RENAVAM|VEICULO|DETRAN|SENATRAN|OBSERVAC|MENSAGENS|DPVAT|TRANSITO|REPUBLICA|BRASIL/.test(semAcento(L).toUpperCase())){o.proprietario=L.trim();break}
+  }
+ }
  return o;
 }
 function _cap(s){s=String(s||'').toLowerCase();return s.charAt(0).toUpperCase()+s.slice(1)}
