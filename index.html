@@ -164,7 +164,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=56; var APP_DATE='22/07/2026';
+var APP_VER=57; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -1478,25 +1478,27 @@ function impDadosCRLV(texto){
  /* RENAVAM: 11 dígitos. Vem rotulado como CÓDIGO RENAVAM, mas os valores ficam soltos
     no fim. Pego uma linha que seja SÓ 11 dígitos e NÃO seja o número do CRV nem CPF.
     O renavam costuma ser o primeiro bloco numérico de 11 dígitos após os rótulos. */
- var linhas=raw.split('\n').map(function(x){return x.trim()});
- /* o código de segurança do CLA também tem 11 dígitos, mas vem na mesma linha de "***".
-    Fico com a linha que é SÓ 11 dígitos (o renavam aparece isolado). */
- var so11=linhas.filter(function(x){return /^\d{11}$/.test(x)});
- if(so11.length)o.renavam=so11[0];
- /* ANO fab/mod: dois anos na MESMA linha (só espaços/tab, nunca quebra de linha),
-    e diferente da linha da placa (que tem a placa antes). Ex.: "2026 2027". */
- for(var ai=0;ai<linhas.length;ai++){
-  var la=linhas[ai];
-  if(/[A-Z]{3}\d/.test(la))continue; /* pula a linha da placa */
-  var ma=la.match(/^(19|20)(\d{2})[ \t]+(19|20)(\d{2})$/);
-  if(ma){o.ano=ma[1]+ma[2]+'/'+ma[3]+ma[4];break;}
+ /* Trabalho com o texto EM UMA LINHA (é assim que o pdf.js do app entrega: itens juntados
+    por espaço). Não dependo de quebras de linha. */
+ var flat=raw.replace(/\s+/g,' ').trim();
+ /* RENAVAM: 11 dígitos isolados por espaço. O código de segurança do CLA vem seguido de
+    "***", então exijo que NÃO haja "*" logo depois. Pego o primeiro que sobrar. */
+ var rens=[],reR=/(?:^| )(\d{11})(?= )/g,mr;
+ while((mr=reR.exec(flat))){
+  var depois=flat.slice(mr.index+mr[0].length,mr.index+mr[0].length+6);
+  if(depois.indexOf('*')<0)rens.push(mr[1]);
  }
+ if(rens.length)o.renavam=rens[0];
+ /* ANO fab/mod: dois anos seguidos "2026 2027". Evito casar o exercício (que vem logo após
+    a placa) exigindo que ANTES dos dois anos NÃO venha uma placa. */
+ var mAno=flat.match(/(?:[A-Z]{3}\d[A-Z0-9]\d{2}\s+\d{4}\s+)?(\b(?:19|20)\d{2})\s+((?:19|20)\d{2})\b/);
+ if(mAno)o.ano=mAno[1]+'/'+mAno[2];
  /* COR + COMBUSTÍVEL vêm juntos numa linha: "BRANCA GASOLINA/ELETRICO" */
  var CORES='BRANCA|PRATA|PRETA|CINZA|VERMELHA|AZUL|VERDE|AMARELA|MARROM|BEGE|DOURADA|LARANJA|ROSA|FANTASIA|CINZ';
- var mCC=U.match(new RegExp('\\b('+CORES+')\\s+((?:GASOLINA|ALCOOL|ETANOL|DIESEL|ELETRICO|FLEX|GAS|GNV|HIBRIDO|\\/| )+)'));
+ var mCC=U.match(new RegExp('\\b('+CORES+')\\s+((?:GASOLINA|ALCOOL|ETANOL|DIESEL|ELETRICO|FLEX|GAS NATURAL|GAS|GNV|HIBRIDO|\\/| )+)'));
  if(mCC){
   o.cor=_cap(mCC[1]);
-  o.combustivel=mCC[2].trim().replace(/\s+/g,' ').replace(/ELETRICO/g,'ELÉTRICO').replace(/ALCOOL/g,'ÁLCOOL');
+  o.combustivel=mCC[2].trim().replace(/\s*\/\s*/g,'/').replace(/\s+/g,' ').replace(/GAS NATURAL/g,'GÁS NATURAL').replace(/ELETRICO/g,'ELÉTRICO').replace(/ALCOOL/g,'ÁLCOOL').replace(/\s+PARTICULAR.*$/,'').trim();
  }else{
   var mCor=U.match(new RegExp('\\b('+CORES+')\\b'));if(mCor)o.cor=_cap(mCor[1]);
   var mComb=U.match(/\b((?:GASOLINA|ALCOOL|ETANOL|DIESEL|ELETRICO|GNV)(?:\/(?:GASOLINA|ALCOOL|ETANOL|DIESEL|ELETRICO|GNV))*)\b/);
@@ -1505,18 +1507,19 @@ function impDadosCRLV(texto){
  /* POTÊNCIA/CILINDRADA: "240CV/1497" */
  var mPot=U.match(/(\d{2,3})\s*CV\s*\/?\s*(\d{3,4})?/);
  if(mPot)o.potencia=mPot[1]+'CV'+(mPot[2]?'/'+mPot[2]:'');
- /* MARCA/MODELO/VERSÃO: linha que começa com prefixo de importação/nacional
-    "I/BYD SONG PLUS GS DM" ou "FIAT/GRAND SIENA...". Pego a linha inteira. */
- var mMod=raw.match(/^([A-Z]\/[A-Z0-9][A-Z0-9 .\-\/]{3,45})$/m)||raw.match(/^([A-Z]{2,}\/[A-Z0-9][A-Z0-9 .\-\/]{3,45})$/m);
+ /* MARCA/MODELO/VERSÃO: "I/BYD SONG PLUS GS DM" ou "FIAT/GRAND SIENA...". Vem depois do
+    código de segurança (11 díg + ***) e antes de ESPÉCIE. Pego a partir de PREFIXO/... até
+    a próxima palavra em MAIÚSCULA isolada conhecida. */
+ var mMod=flat.match(/\*\*\*\s+([A-ZÀ-Ú]{1,4}\/[A-ZÀ-Ú0-9][A-ZÀ-Ú0-9 .\-\/]{2,40}?)\s+(?:MISTO|AUTOMOVEL|CAMINH|MOTOCICL|UTILITARIO|ESPECIE|PASSAGEIRO|\*|[A-Z]{7})/);
  if(mMod)o.modeloCRLV=mMod[1].trim().replace(/\s{2,}/g,' ');
- /* PROPRIETÁRIO: nome logo antes do CPF/CNPJ. Pego a linha anterior a uma linha de CPF. */
- var mCpfIdx=-1;
- for(var i=0;i<linhas.length;i++){if(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/.test(linhas[i])||/^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/.test(linhas[i])){mCpfIdx=i;break}}
- if(mCpfIdx>0){
-  for(var k=mCpfIdx-1;k>=0;k--){
-   var L=linhas[k];
-   if(L&&/^[A-ZÀ-Ú][A-ZÀ-Ú .]{6,}$/.test(semAcento(L).toUpperCase())&&!/RENAVAM|VEICULO|DETRAN|SENATRAN|OBSERVAC|MENSAGENS|DPVAT|TRANSITO|REPUBLICA|BRASIL/.test(semAcento(L).toUpperCase())){o.proprietario=L.trim();break}
-  }
+ else{var mM2=flat.match(/\b([A-ZÀ-Ú]{1,4}\/[A-ZÀ-Ú][A-ZÀ-Ú0-9 .\-]{4,40})\b/);if(mM2)o.modeloCRLV=mM2[1].trim();}
+ /* PROPRIETÁRIO: nome em MAIÚSCULAS imediatamente antes do CPF (000.000.000-00). */
+ var mProp=flat.match(/([A-ZÀ-Ú][A-ZÀ-Ú ]{6,60}?)\s+\d{3}\.\d{3}\.\d{3}-\d{2}/);
+ if(mProp){
+  var nome=mProp[1].trim();
+  /* corta rótulos que possam ter grudado antes do nome */
+  nome=nome.replace(/^.*\b(?:APLICAVEL|CARROCERIA|LOTACAO|NOME|CNPJ|CPF)\b\s*/i,'').trim();
+  if(nome.length>=6)o.proprietario=nome;
  }
  return o;
 }
@@ -1530,7 +1533,7 @@ function _cap(s){s=String(s||'').toLowerCase();return s.charAt(0).toUpperCase()+
 /* Versão do LEITOR de documentos (CRLV/GNV). Aumente este número toda vez que a extração
    melhorar: os documentos já anexados são relidos automaticamente com a lógica nova,
    mesmo sem trocar o arquivo. */
-var LEITOR_VER=55;
+var LEITOR_VER=57;
 var _docVarr={rodando:false,visto:{}};
 function _filaDocs(pkFiltro){
  var fila=[];
