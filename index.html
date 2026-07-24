@@ -164,7 +164,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=54; var APP_DATE='22/07/2026';
+var APP_VER=55; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -1449,7 +1449,13 @@ function aplicaDadosDoTexto(pk,tipo,txt){
   var dc=impDadosCRLV(txt);
   Object.keys(dc).forEach(function(campo){
    var v=dc[campo];if(!v)return;
-   if(!c[campo]||String(c[campo]).trim()===''||c[campo]===0){c[campo]=v;achou.push(_rotuloCampo(campo))}
+   var atual=c[campo];
+   var vazio=(!atual||String(atual).trim()===''||atual===0);
+   /* também corrige quando o valor novo é mais completo que o antigo (ex.: combustível
+      "GASOLINA" lido pela versão antiga vira "GASOLINA/ELÉTRICO"), sem sobrescrever algo
+      que o usuário tenha digitado diferente do que estava no documento. */
+   var maisCompleto=(!vazio&&campo==='combustivel'&&String(v).length>String(atual).length&&semAcento(String(v).toUpperCase()).indexOf(semAcento(String(atual).toUpperCase()))>=0);
+   if(vazio||maisCompleto){c[campo]=v;achou.push(_rotuloCampo(campo))}
   });
  }
  return achou;
@@ -1520,6 +1526,10 @@ function _cap(s){s=String(s||'').toLowerCase();return s.charAt(0).toUpperCase()+
    ao abrir a ficha de um carro e logo depois de anexar um documento novo.
    O marcador lidoCrlv/lidoGnv guarda a "assinatura" do arquivo já lido, então
    cada documento é lido UMA vez — e um documento novo (2027, por exemplo) é lido de novo. */
+/* Versão do LEITOR de documentos (CRLV/GNV). Aumente este número toda vez que a extração
+   melhorar: os documentos já anexados são relidos automaticamente com a lógica nova,
+   mesmo sem trocar o arquivo. */
+var LEITOR_VER=54;
 var _docVarr={rodando:false,visto:{}};
 function _filaDocs(pkFiltro){
  var fila=[];
@@ -1553,7 +1563,7 @@ function varrerDocsAuto(opt){
   pegarDoc(it.pk+'/'+it.tipo,it.pk,it.tipo).then(function(d){
    _docVarr.visto[it.pk+'/'+it.tipo]=1;
    if(!d||!d.b64)return prox();
-   var stamp=String(d.em||'')+'_'+String(d.size||'');
+   var stamp=String(d.em||'')+'_'+String(d.size||'')+'_L'+LEITOR_VER;
    if(c[it.campo]===stamp&&!opt.force)return prox();
    return impTextoPdf(b64ToU8(d.b64).buffer).then(function(txt){
     c[it.campo]=stamp; /* só marca depois de conseguir ler o arquivo */
