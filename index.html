@@ -164,7 +164,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=57; var APP_DATE='22/07/2026';
+var APP_VER=59; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -1472,9 +1472,30 @@ function impDadosCRLV(texto){
     "TUW5A58 2026". Pego a placa e, na mesma linha, o exercício. */
  var mPlaca=raw.match(/\b([A-Z]{3}[\s-]?\d[A-Z0-9]\d{2})\b/);
  if(mPlaca)o.placa=mPlaca[1].replace(/[\s-]/g,'').toUpperCase();
- /* CHASSI: 17 chars, letras + números. Único no documento. */
- var cha=raw.toUpperCase().match(/\b([0-9A-HJ-NPR-Z]{17})\b/g);
- if(cha){for(var ci=0;ci<cha.length;ci++){if(/[0-9]/.test(cha[ci])&&/[A-Z]/.test(cha[ci])){o.chassi=cha[ci];break}}}
+ /* CHASSI: 17 caracteres com letras E números. O pdf.js às vezes parte o chassi em dois
+    ou três pedaços ("93YBSR7R HLJ123456"), então além de buscar inteiro eu tento remontar
+    juntando tokens vizinhos até fechar exatamente 17. */
+ var flat0=raw.replace(/\s+/g,' ').trim().toUpperCase();
+ function _vinOk(s){return s.length===17&&/[0-9]/.test(s)&&/[A-Z]/.test(s)&&/^[0-9A-HJ-NPR-Z]+$/.test(s)}
+ var cha=flat0.match(/\b([0-9A-HJ-NPR-Z]{17})\b/g);
+ if(cha){for(var ci=0;ci<cha.length;ci++){if(_vinOk(cha[ci])){o.chassi=cha[ci];break}}}
+ if(!o.chassi){
+  var WMI=['9B','93','8A','9C','94','LG','LV','LC','LS','LB','WV','WB','WD','WM','JT','JN','KM','KN','ML','MA','3N','1G','2T','5N','VF','ZF','SB','TM','SJ','YV','ZA','ZD','98','99','8X','9F'];
+  var toks=flat0.split(' ').map(function(x){return x.replace(/[^0-9A-HJ-NPR-Z]/g,'')}).filter(Boolean);
+  var cands=[];
+  for(var ti=0;ti<toks.length;ti++){
+   var acc='';
+   for(var tj=ti;tj<Math.min(ti+3,toks.length);tj++){
+    acc+=toks[tj];
+    if(acc.length>17)break;
+    if(_vinOk(acc))cands.push(acc);
+   }
+  }
+  if(cands.length){
+   var pref=cands.filter(function(v){return WMI.indexOf(v.slice(0,2))>=0});
+   o.chassi=(pref.length?pref[0]:cands[0]);
+  }
+ }
  /* RENAVAM: 11 dígitos. Vem rotulado como CÓDIGO RENAVAM, mas os valores ficam soltos
     no fim. Pego uma linha que seja SÓ 11 dígitos e NÃO seja o número do CRV nem CPF.
     O renavam costuma ser o primeiro bloco numérico de 11 dígitos após os rótulos. */
@@ -1533,15 +1554,23 @@ function _cap(s){s=String(s||'').toLowerCase();return s.charAt(0).toUpperCase()+
 /* Versão do LEITOR de documentos (CRLV/GNV). Aumente este número toda vez que a extração
    melhorar: os documentos já anexados são relidos automaticamente com a lógica nova,
    mesmo sem trocar o arquivo. */
-var LEITOR_VER=57;
+var LEITOR_VER=59;
 var _docVarr={rodando:false,visto:{}};
+/* Campos que o CRLV é capaz de preencher. Se algum estiver vazio e o carro TEM CRLV
+   anexado, o documento é relido automaticamente — ignorando a marca de "já lido".
+   É isso que torna a função autossuficiente: não depende de eu subir LEITOR_VER. */
+var CAMPOS_CRLV=['chassi','renavam','ano','cor','combustivel','potencia','proprietario','exercicioCRLV'];
+function faltaDoCrlv(c){
+ if(!c)return [];
+ return CAMPOS_CRLV.filter(function(k){var v=c[k];return !v||String(v).trim()===''||v===0});
+}
 function _filaDocs(pkFiltro){
  var fila=[];
  Object.keys(S.carros||{}).forEach(function(pk){
   if(pkFiltro&&pk!==pkFiltro)return;
   var c=S.carros[pk];if(!c)return;
-  if(c.temCrlv)fila.push({pk:pk,tipo:'crlv',campo:'lidoCrlv'});
-  if(c.temGnvDoc)fila.push({pk:pk,tipo:'gnv',campo:'lidoGnv'});
+  if(c.temCrlv)fila.push({pk:pk,tipo:'crlv',campo:'lidoCrlv',incompleto:faltaDoCrlv(c).length>0});
+  if(c.temGnvDoc)fila.push({pk:pk,tipo:'gnv',campo:'lidoGnv',incompleto:!c.gnvExercicio||!c.gnvRequalif});
  });
  return fila;
 }
@@ -1549,7 +1578,7 @@ function varrerDocsAuto(opt){
  opt=opt||{};
  if(_docVarr.rodando||!window.S||!S.carros)return;
  var fila=_filaDocs(opt.pk).filter(function(x){
-  return opt.force||_docVarr.visto[x.pk+'/'+x.tipo]!==1;
+  return opt.force||x.incompleto||_docVarr.visto[x.pk+'/'+x.tipo]!==1;
  });
  if(!fila.length)return;
  _docVarr.rodando=true;
@@ -1568,11 +1597,20 @@ function varrerDocsAuto(opt){
    _docVarr.visto[it.pk+'/'+it.tipo]=1;
    if(!d||!d.b64)return prox();
    var stamp=String(d.em||'')+'_'+String(d.size||'')+'_L'+LEITOR_VER;
-   if(c[it.campo]===stamp&&!opt.force)return prox();
+   /* se o carro ainda tem campo em branco que o documento poderia preencher, relê de
+      qualquer forma — mesmo que a marca diga "já lido". Autocorreção.
+      Limite de 3 tentativas por documento: se o CRLV realmente não traz aquele campo,
+      para de reprocessar (senão leria 30 PDFs a cada abertura do app). */
+   var kTent=it.campo+'Tent';
+   var tent=Number(c[kTent])||0;
+   var releInc=it.incompleto&&tent<3;
+   if(c[it.campo]===stamp&&!opt.force&&!releInc)return prox();
+   if(it.incompleto&&c[it.campo]===stamp)c[kTent]=tent+1;
+   if(opt.force)c[kTent]=0;
    return impTextoPdf(b64ToU8(d.b64).buffer).then(function(txt){
     c[it.campo]=stamp; /* só marca depois de conseguir ler o arquivo */
     if(txt&&txt.replace(/\s/g,'').length>20){
-     if(aplicaDadosDoTexto(it.pk,it.tipo,txt).length)mud++;
+     if(aplicaDadosDoTexto(it.pk,it.tipo,txt).length){mud++;c[kTent]=0;}
     }
     prox();
    }).catch(function(){prox()}); /* sem internet/pdf.js: não marca, tenta de novo depois */
@@ -2208,7 +2246,24 @@ function diagnosticoFrota(){
    (ultO.linha?'<br><span class="sub">↳ '+esc(String(ultO.linha).slice(0,90))+'</span>':'')):'')+
    (av.length?'<br><span style="color:var(--warn)">⚠ '+av.join(' · ')+'</span>':''));
  });
- if(st)st.innerHTML='<b>Diagnóstico — '+linhas.length+' carro(s), '+probl+' com aviso</b><br><br>'+linhas.join('<br><br>');
+ if(st)st.innerHTML='<b>Diagnóstico — '+linhas.length+' carro(s), '+probl+' com aviso</b><br><br>'+linhas.join('<br><br>')+_diagDocs();
+}
+/* Conferência dos dados que vêm do CRLV: mostra quais carros ainda estão com campo vazio. */
+function _diagDocs(){
+ var campos=[['chassi','chassi'],['renavam','renavam'],['ano','ano'],['cor','cor'],['combustivel','combustível'],['potencia','potência'],['proprietario','proprietário'],['exercicioCRLV','exercício CRLV']];
+ var faltas=[],semDoc=[];
+ Object.keys(S.carros).forEach(function(pk){
+  var c=S.carros[pk],fal=[];
+  campos.forEach(function(par){var v=c[par[0]];if(!v||String(v).trim()==='')fal.push(par[1])});
+  if(!fal.length)return;
+  if(!c.temCrlv)semDoc.push(fmtPlaca(pk));
+  else faltas.push('<b>'+esc(fmtPlaca(pk))+'</b>: '+fal.join(', '));
+ });
+ var h='<div class="sect">Dados do CRLV</div>';
+ if(!faltas.length&&!semDoc.length)return h+'<div class="sub">✅ Todos os carros com os dados do documento completos.</div>';
+ if(faltas.length)h+='<div class="sub">Com CRLV anexado, mas ainda faltando (o app tenta reler sozinho ao abrir):<br>• '+faltas.join('<br>• ')+'</div>';
+ if(semDoc.length)h+='<div class="sub" style="margin-top:6px">Sem CRLV anexado (nada a ler): '+semDoc.join(', ')+'</div>';
+ return h;
 }
 function recalcTodosCarros(){
  var st=document.getElementById('recTudoStat');
