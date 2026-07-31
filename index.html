@@ -164,7 +164,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=59; var APP_DATE='22/07/2026';
+var APP_VER=60; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -854,6 +854,7 @@ function ficha(pk){window._fichaPk=pk;
  h+=c.temCrlv?'<button class="btn mini" onclick="verDoc(\''+pk+'/crlv\',\'CRLV '+esc(fmtPlaca(c.placa))+'\')">👁 Ver PDF</button>':'<div class="sub">Nenhum CRLV anexado.</div>';
  h+='<button class="btn mini sec" onclick="pedirArquivo(\''+pk+'/crlv\',\'application/pdf\',\''+pk+'\')">🔄 '+(c.temCrlv?'Substituir':'Anexar')+' CRLV</button>';
  if(c.temCrlv||c.temGnvDoc)h+='<button class="btn mini sec" onclick="varrerDocsAuto({pk:\''+pk+'\',force:true})">📄 Reler documentos deste carro</button>';
+ if(c.temCrlv){var _fal=faltaDoCrlv(c);if(c.crlvSemTexto)h+='<div class="sub" style="color:var(--warn)">⚠ CRLV sem texto (foto ou digitalizado) — o app não consegue ler. Baixe o CRLV-e digital pelo app do Detran ou preencha em ✏️ Editar dados.</div>';else if(_fal.length)h+='<div class="sub" style="color:var(--warn)">⚠ Não achei no CRLV: '+esc(_fal.join(', '))+'</div>';}
  if(semAcento(c.combustivel||'').indexOf('gnv')>=0||c.temGnvDoc){
   h+='<div class="sect">Vistoria do GNV (anual)</div>';
   h+='<div class="kv"><b>Exercício da vistoria</b><span>'+esc(c.gnvExercicio||'—')+'</span></div>';
@@ -1495,6 +1496,19 @@ function impDadosCRLV(texto){
    var pref=cands.filter(function(v){return WMI.indexOf(v.slice(0,2))>=0});
    o.chassi=(pref.length?pref[0]:cands[0]);
   }
+  /* último recurso: o pdf.js pode GRUDAR o chassi na palavra vizinha
+     ("...1234567PRATA" ou "**8AJ...567PRATA"). Varro dentro de cada token longo
+     procurando uma janela de 17 que comece com um código de fabricante conhecido. */
+  if(!o.chassi){
+   for(var gi=0;gi<toks.length&&!o.chassi;gi++){
+    var tk=toks[gi];
+    if(tk.length<=17)continue;
+    for(var gj=0;gj+17<=tk.length;gj++){
+     var win=tk.substr(gj,17);
+     if(_vinOk(win)&&WMI.indexOf(win.slice(0,2))>=0){o.chassi=win;break}
+    }
+   }
+  }
  }
  /* RENAVAM: 11 dígitos. Vem rotulado como CÓDIGO RENAVAM, mas os valores ficam soltos
     no fim. Pego uma linha que seja SÓ 11 dígitos e NÃO seja o número do CRV nem CPF.
@@ -1554,7 +1568,7 @@ function _cap(s){s=String(s||'').toLowerCase();return s.charAt(0).toUpperCase()+
 /* Versão do LEITOR de documentos (CRLV/GNV). Aumente este número toda vez que a extração
    melhorar: os documentos já anexados são relidos automaticamente com a lógica nova,
    mesmo sem trocar o arquivo. */
-var LEITOR_VER=59;
+var LEITOR_VER=60;
 var _docVarr={rodando:false,visto:{}};
 /* Campos que o CRLV é capaz de preencher. Se algum estiver vazio e o carro TEM CRLV
    anexado, o documento é relido automaticamente — ignorando a marca de "já lido".
@@ -1609,7 +1623,10 @@ function varrerDocsAuto(opt){
    if(opt.force)c[kTent]=0;
    return impTextoPdf(b64ToU8(d.b64).buffer).then(function(txt){
     c[it.campo]=stamp; /* só marca depois de conseguir ler o arquivo */
-    if(txt&&txt.replace(/\s/g,'').length>20){
+    var temTexto=!!(txt&&txt.replace(/\s/g,'').length>20);
+    /* guarda o motivo da falha para a ficha poder explicar em vez de ficar em branco */
+    if(it.tipo==='crlv')c.crlvSemTexto=!temTexto;
+    if(temTexto){
      if(aplicaDadosDoTexto(it.pk,it.tipo,txt).length){mud++;c[kTent]=0;}
     }
     prox();
@@ -1981,7 +1998,9 @@ function buildTermoTexto(t,carro){
  x+='(+) Débitos Pendentes: R$ '+fmtBRL(t.totalDebitos)+'\n';
  if(t.creditos.length)x+='(-) Créditos Abatidos (Caução): R$ '+fmtBRL(t.totalCreditos)+'\n';
  x+='\n'+(t.aDevolver?'*SALDO LÍQUIDO A DEVOLVER: R$ '+fmtBRL(t.saldo)+'*':'*SALDO LÍQUIDO DEVIDO PELO MOTORISTA: R$ '+fmtBRL(t.saldo)+'*')+'\n';
- if(t.motivo==='Fim do Contrato'){
+ /* Cronograma de ressarcimento SÓ faz sentido quando sobra caução a devolver ao
+    motorista. Se ele terminou devendo (ou zerou), esse bloco sai do termo. */
+ if(t.motivo==='Fim do Contrato'&&t.aDevolver&&Number(t.saldo)>0){
   x+='\n*[ CRONOGRAMA DE RESSARCIMENTO ]*\n';
   x+='Conforme política de frota da empresa, o saldo residual da caução é liberado após o ciclo de 30 dias contados da entrega do veículo. Este período é obrigatório para a conferência de multas de trânsito em processamento no Detran e vistorias técnicas de encerramento de contrato.\n\n';
   x+='DATA PROGRAMADA PARA DEPÓSITO: '+dataBR(somaDias(t.dataFim,30))+'\n';
