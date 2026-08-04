@@ -164,7 +164,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=60; var APP_DATE='22/07/2026';
+var APP_VER=64; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -875,7 +875,8 @@ function ficha(pk){window._fichaPk=pk;
    '<div class="sub">'+dataBR(ct.inicio)+' → '+dataBR(ct.fim)+(fimPassado(ct.fim)?' <span class="chip warn">renovação automática</span>':'')+'</div>'+
    docBtns(ct)+
    '<button class="btn mini red" onclick="trocarMotorista(\''+pk+'\')">🔁 Encerrar e trocar motorista</button></div>';
- }else h+='<div class="sub">Sem contrato vigente.</div><button class="btn mini ok" onclick="go(2);setTimeout(function(){var s=document.getElementById(\'ncCarro\');if(s){s.value=\''+pk+'\';ncPuxaCarro()}},60)">📄 Criar contrato para este carro</button>';
+ }else h+='<div class="sub">Sem contrato vigente.</div><button class="btn mini ok" onclick="novoContratoPara(\'' + pk + '\')">📄 Criar contrato para este carro</button>';
+  h+='<button class="btn mini sec" onclick="importarContratoWord(\''+pk+'\')">\ud83d\udcce Importar contrato pronto (Word)</button>';
  if(anteriores.length){
   h+='<div class="sect">Contratos anteriores ('+anteriores.length+')</div>';
   anteriores.forEach(function(x){
@@ -942,6 +943,183 @@ h+='<div class="sect">Devolução do carro</div>';
  openSheet(h);
 }
 function fimPassado(iso){return iso&&iso<hoje()}
+/* ===== LEITURA DE .DOCX (contrato pronto feito por fora) =====
+   O Word grava o .docx como ZIP comprimido (deflate). O app só sabia ESCREVER zip sem
+   compressão, então precisei ensinar a ler: acha word/document.xml dentro do zip,
+   descomprime com DecompressionStream (disponível no Safari do iPhone) e tira as tags. */
+function _u16(a,p){return a[p]|(a[p+1]<<8)}
+function _u32(a,p){return (a[p]|(a[p+1]<<8)|(a[p+2]<<16)|(a[p+3]<<24))>>>0}
+function _zipAcha(buf,nomeAlvo){
+ var a=new Uint8Array(buf);
+ /* End of Central Directory: assinatura 0x06054b50, procurada do fim para o começo */
+ var eocd=-1;
+ for(var i=a.length-22;i>=0&&i>a.length-70000;i--){if(_u32(a,i)===0x06054b50){eocd=i;break}}
+ if(eocd<0)return null;
+ var n=_u16(a,eocd+10),off=_u32(a,eocd+16),p=off;
+ for(var k=0;k<n;k++){
+  if(_u32(a,p)!==0x02014b50)break;
+  var metodo=_u16(a,p+10),tamComp=_u32(a,p+20),lnome=_u16(a,p+28),lextra=_u16(a,p+30),lcom=_u16(a,p+32),lo=_u32(a,p+42);
+  var nome='';for(var j=0;j<lnome;j++)nome+=String.fromCharCode(a[p+46+j]);
+  if(nome===nomeAlvo){
+   if(_u32(a,lo)!==0x04034b50)return null;
+   var lnome2=_u16(a,lo+26),lextra2=_u16(a,lo+28);
+   var ini=lo+30+lnome2+lextra2;
+   return {metodo:metodo,bytes:a.slice(ini,ini+tamComp)};
+  }
+  p+=46+lnome+lextra+lcom;
+ }
+ return null;
+}
+function lerDocxTexto(buf){
+ return new Promise(function(res,rej){
+  var ent=_zipAcha(buf,'word/document.xml');
+  if(!ent)return rej(new Error('não parece um arquivo Word (.docx)'));
+  function daXml(u8){
+   var xml=new TextDecoder('utf-8').decode(u8);
+   /* parágrafos e quebras viram \n; o resto das tags sai fora */
+   var t=xml.replace(/<w:p[ >]/g,'\n<w:p ').replace(/<w:br\/?>/g,'\n').replace(/<\/w:p>/g,'\n')
+            .replace(/<w:tab\/?>/g,' ').replace(/<[^>]+>/g,'');
+   t=t.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'");
+   return t;
+  }
+  if(ent.metodo===0)return res(daXml(ent.bytes));
+  if(ent.metodo!==8)return rej(new Error('compressão do Word não suportada'));
+  if(typeof DecompressionStream==='undefined')return rej(new Error('este aparelho não consegue abrir .docx (navegador antigo)'));
+  try{
+   var ds=new DecompressionStream('deflate-raw');
+   var w=ds.writable.getWriter();w.write(ent.bytes);w.close();
+   new Response(ds.readable).arrayBuffer().then(function(ab){res(daXml(new Uint8Array(ab)))}).catch(rej);
+  }catch(e){rej(e)}
+ });
+}
+
+/* Lê os dados de um contrato de locação já pronto (Word). Trabalha no texto achatado,
+   como o pdf.js/docx entregam. Só devolve o que reconhecer — nada é inventado. */
+function impDadosContrato(texto){
+ var T=String(texto||'').replace(/\u00a0/g,' ').replace(/\s+/g,' ').trim();
+ var o={};
+ function pega(re,i){var m=T.match(re);return m?String(m[i||1]).trim():''}
+ /* --- LOCATÁRIO: tudo depois da palavra LOCATÁRIO (antes vem o LOCADOR) --- */
+ var iLoc=T.search(/LOCAT[ÁA]RIO/);
+ var L=iLoc>=0?T.slice(iLoc):T;
+ o.nome=(L.match(/Nome:\s*([A-ZÀ-Ú][A-ZÀ-Ú\s]{5,60}?)\s*CPF:/)||[])[1]||'';
+ o.cpf=(L.match(/CPF:\s*(\d{3}\.\d{3}\.\d{3}-\d{2})/)||[])[1]||'';
+ o.rg=(L.match(/RG\s*\/?\s*Doc:\s*(?:RG\s*)?([0-9A-Za-z.\-]{5,20}\s*[–\-]\s*[A-Za-z\/]{2,12})/)||[])[1]||'';
+ o.cnh=(L.match(/CNH\s*([0-9]{9,12})/)||[])[1]||'';
+ var val=(L.match(/val\.?\s*(\d{2}\/\d{2}\/\d{4})/)||[])[1]||'';
+ if(val){var p=val.split('/');o.cnhVal=p[2]+'-'+p[1]+'-'+p[0]}
+ o.endereco=(L.match(/Endere[çc]o:\s*(.+?)\s*CEP:/)||[])[1]||'';
+ o.cep=(L.match(/CEP:\s*(\d{2}\.?\d{3}-?\d{3})/)||[])[1]||'';
+ o.tel=(L.match(/Telefone:\s*(\(?\d{2}\)?\s*\d{4,5}-?\d{4})/)||[])[1]||'';
+ /* --- VEÍCULO --- */
+ o.placa=(T.match(/Placa\s*([A-Z]{3}[\s-]?\d[A-Z0-9]\d{2})/)||[])[1]||'';
+ o.chassi=(T.match(/Chassi\s*([0-9A-HJ-NPR-Z]{17})/)||[])[1]||'';
+ o.kmInicial=(T.match(/Quilometragem\s*Inicial\s*([\d.]+)\s*KM/i)||[])[1]||'';
+ o.modelo=(T.match(/Modelo\s*(.+?)\s*Ano\s*Fabrica/i)||[])[1]||'';
+ o.ano=(T.match(/Ano\s*Fabrica[çc][ãa]o\s*\/?\s*Modelo\s*(\d{4}\/\d{4})/i)||[])[1]||'';
+ o.acessorios=(T.match(/Acess[óo]rios\s*(.+?)\s*Combust[íi]ve/i)||[])[1]||'';
+ o.combustiveis=(T.match(/Combust[íi]veis\s*(.+?)\s*1\.2/i)||[])[1]||'';
+ o.valorRef=(T.match(/valor de refer[êe]ncia[\s\S]{0,120}?R\$\s*([\d.]+,\d{2})/i)||[])[1]||'';
+ /* --- PRAZO --- */
+ o.inicioTxt=(T.match(/loca[çc][ãa]o\s*ter[áa]\s*in[íi]cio\s*em\s*(.+?)\s*e\s*t[ée]rmino/i)||[])[1]||'';
+ o.fimTxt=(T.match(/t[ée]rmino\s*previsto\s*para\s*(.+?)\./i)||[])[1]||'';
+ /* --- VALORES --- */
+ o.semanal=(T.match(/aluguel\s*semanal\s*[ée]\s*de\s*R\$\s*([\d.]+,\d{2})/i)||[])[1]||'';
+ o.multaDiaria=(T.match(/multa\s*di[áa]ria\s*de\s*R\$\s*([\d.]+,\d{2})/i)||[])[1]||'';
+ o.caucao=(T.match(/t[íi]tulo\s*de\s*CAU[ÇC][ÃA]O[^R]*R\$\s*([\d.]+,\d{2})/i)||[])[1]||'';
+ o.multaResc=(T.match(/multa\s*contratual\s*no\s*valor\s*de\s*R\$\s*([\d.]+,\d{2})/i)||[])[1]||'';
+ o.pix=(T.match(/Chave\s*PIX\s*\(?CPF\)?:\s*(\d{3}\.\d{3}\.\d{3}-\d{2})/i)||[])[1]||'';
+ o.antecipado=(T.match(/semana\s*final\s*do\s*contrato\s*de\s*forma\s*antecipada\s*\(R\$\s*([\d.]+,\d{2})/i)||[])[1]||'';
+ return o;
+}
+
+/* converte "04 de agosto de 2026" -> "2026-08-04" */
+function _dataExtenso(txt){
+ var M={janeiro:'01',fevereiro:'02','março':'03',marco:'03',abril:'04',maio:'05',junho:'06',
+        julho:'07',agosto:'08',setembro:'09',outubro:'10',novembro:'11',dezembro:'12'};
+ var m=String(txt||'').toLowerCase().match(/(\d{1,2})\s*de\s*([a-zç]+)\s*de\s*(\d{4})/);
+ if(!m)return '';
+ var mes=M[m[2]];if(!mes)return '';
+ return m[3]+'-'+mes+'-'+('0'+m[1]).slice(-2);
+}
+
+
+/* ===== IMPORTAR CONTRATO PRONTO (.docx feito por fora) =====
+   Lê o Word, mostra o que entendeu para você conferir e só grava depois que você
+   confirma. O arquivo original fica anexado ao contrato. */
+var _impCtx = null;
+function importarContratoWord(pk){
+ var inp=document.createElement('input');inp.type='file';inp.accept='.docx';
+ inp.onchange=function(){
+  if(!inp.files||!inp.files[0])return;
+  var f=inp.files[0];
+  toast('📄 Lendo o contrato...');
+  var fr=new FileReader();
+  fr.onload=function(){
+   lerDocxTexto(fr.result).then(function(txt){
+    if(!txt||txt.replace(/\s/g,'').length<200){toast('⚠️ Não consegui ler o texto deste Word');return}
+    var d=impDadosContrato(txt);
+    _impCtx={pk:pk,file:f,dados:d};
+    telaConfereContrato(pk,d);
+   }).catch(function(e){toast('⚠️ '+(e&&e.message?e.message:'falha ao ler o arquivo'))});
+  };
+  fr.readAsArrayBuffer(f);
+ };
+ inp.click();
+}
+function telaConfereContrato(pk,d){
+ var c=S.carros[pk];
+ function lin(rot,val){return '<div class="kv"><b>'+rot+'</b><span>'+(val?esc(val):'—')+'</span></div>'}
+ var ini=_dataExtenso(d.inicioTxt),fim=_dataExtenso(d.fimTxt);
+ var aviso='';
+ if(d.placa&&normPlaca(d.placa)!==pk)aviso='<div class="sub" style="color:var(--warn)">⚠ A placa do contrato ('+esc(d.placa)+') é diferente da placa deste carro ('+esc(fmtPlaca(pk))+'). Confira antes de salvar.</div>';
+ var h='<h3>📄 Contrato lido — conferir</h3>'+
+  '<p class="sub">Isto é o que entendi do arquivo. Confira e salve; nada é gravado antes disso.</p>'+aviso+
+  '<div class="sect">Locatário</div>'+
+  lin('Nome',d.nome)+lin('CPF',showCPF(d.cpf))+lin('RG',d.rg)+lin('CNH',d.cnh)+
+  lin('Validade CNH',d.cnhVal?dataBR(d.cnhVal):'')+lin('Endereço',d.endereco)+
+  lin('CEP',showCEP(d.cep))+lin('Telefone',showTel(d.tel))+
+  '<div class="sect">Valores e prazo</div>'+
+  lin('Semanal','R$ '+(d.semanal||'0,00'))+lin('Caução','R$ '+(d.caucao||'0,00'))+
+  lin('Multa diária','R$ '+(d.multaDiaria||'0,00'))+lin('Multa rescisão','R$ '+(d.multaResc||'0,00'))+
+  lin('Início',ini?dataBR(ini):d.inicioTxt)+lin('Término',fim?dataBR(fim):d.fimTxt)+
+  '<div class="sect">Veículo (do contrato)</div>'+
+  lin('Placa',d.placa)+lin('Chassi',d.chassi)+lin('KM inicial',d.kmInicial)+
+  '<button class="btn ok" onclick="salvarContratoImportado()">💾 Salvar contrato</button>'+
+  '<button class="btn sec" onclick="closeSheet(2)">Cancelar</button>';
+ openSheet(h,2);
+}
+function salvarContratoImportado(){
+ if(!_impCtx){toast('Nada para salvar');return}
+ var pk=_impCtx.pk,d=_impCtx.dados,f=_impCtx.file,c=S.carros[pk];
+ var ct=normContrato({
+  id:idNovo('ct'),carro:pk,origem:'anexado',tipo:'locacao',status:'vigente',
+  locadorNome:(c&&c.proprietario)||'',
+  locatario:{nome:d.nome,cpf:d.cpf,rg:d.rg,cnh:d.cnh,cnhVal:d.cnhVal,endereco:d.endereco,cep:d.cep,tel:d.tel},
+  semanal:parseBRL(d.semanal),caucao:parseBRL(d.caucao),
+  multaDiaria:parseBRL(d.multaDiaria),multaRescisao:parseBRL(d.multaResc),
+  inicio:_dataExtenso(d.inicioTxt),fim:_dataExtenso(d.fimTxt),
+  kmInicial:parseInt(String(d.kmInicial).replace(/\D/g,''),10)||0,
+  pix:d.pix,acessorios:d.acessorios,combustiveis:d.combustiveis,temDocx:false,temPdf:false
+ });
+ S.contratos[ct.id]=ct;
+ if(c){
+  c.contratoVigenteId=ct.id;
+  if(ct.kmInicial&&!Number(c.kmAtual))c.kmAtual=ct.kmInicial; /* KM de quando alugou */
+  if(ct.kmInicial>(Number(c.kmUltima)||0)){c.kmUltima=ct.kmInicial;c.kmUltimaData=ct.inicio}
+  if(d.nome)c.motorista=d.nome;
+  if(ct.semanal)c.semanalPadrao=ct.semanal;
+  if(ct.caucao)c.caucaoPadrao=ct.caucao;
+  if(c.status==='parado')c.status='ativo';
+ }
+ save();
+ /* anexa o Word original ao contrato */
+ enviarArquivo(f,pk+'/ct/'+ct.id+'/docx',function(){
+  ct.temDocx=true;save();closeSheet(2);ficha(pk);toast('✅ Contrato importado');
+ });
+ _impCtx=null;
+}
+
 /* ===== CONTRATO DE COMPRA E VENDA (reserva de domínio) ===== */
 function anexarContratoDoc(pk,ctId,qual){
  var ct=S.contratos[ctId];if(!ct)return;
@@ -1048,6 +1226,18 @@ function semearVendas(){
  var st=document.getElementById('recTudoStat');
  if(st)st.innerHTML='✅ '+criados+' contrato(s) de compra e venda criado(s)'+(pulados?' · '+pulados+' já existia(m) ou carro não encontrado':'')+'.<br>Abra a ficha de cada carro e anexe o Word/PDF assinado.';
  toast(criados?('✅ '+criados+' contrato(s) registrado(s)'):'Nada a criar');
+}
+/* Abre a aba de contrato já com o carro escolhido. Antes o botão só trocava a aba por
+   trás da ficha, que continuava aberta por cima — parecia que nada acontecia. */
+function novoContratoPara(pk){
+ closeSheet(2);closeSheet();
+ go(2);
+ setTimeout(function(){
+  var s=document.getElementById('ncCarro');
+  if(s){s.value=pk;try{ncPuxaCarro()}catch(e){}try{ncResumo()}catch(e){}}
+  var t=document.getElementById('ncNome');
+  if(t)try{t.scrollIntoView({block:'center'})}catch(e){}
+ },120);
 }
 function docBtns(ct){
  var pk=ct.carro,h='';
@@ -2786,6 +2976,81 @@ function hAplica(){
  });
  var z=document.getElementById('hZero');if(z)z.style.display=achou?'none':'';
 }
+/* ===== FECHAMENTO MENSAL POR FORNECEDOR =====
+   Soma sozinho, a partir das manutenções já lançadas: cada peça tem a loja e cada bloco
+   de mão de obra tem o profissional. O ciclo é o mês do calendário (01 a 30/31), igual
+   ao que vocês fecham no WhatsApp. Nada é "zerado": o mês fica gravado nas manutenções,
+   então o histórico de qualquer mês pode ser reaberto a qualquer momento. */
+function _mesDe(m){var d=m.dataFim||m.dataIni||'';return d.slice(0,7)} /* AAAA-MM */
+function _nomeMes(ym){
+ var M=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+ var p=String(ym||'').split('-');return (M[Number(p[1])-1]||'?')+'/'+p[0];
+}
+function mesesComGasto(){
+ var s={};Object.keys(S.manutencoes||{}).forEach(function(k){
+  var ym=_mesDe(S.manutencoes[k]);if(ym)s[ym]=1;
+ });
+ return Object.keys(s).sort().reverse();
+}
+/* Agrupa o mês por fornecedor -> carro -> itens. Separa frota x veículos pessoais. */
+function fechamentoDoMes(ym){
+ var forn={};
+ function add(nome,pk,desc,valor,tipo){
+  nome=(nome||'').trim();if(!nome)nome='(sem fornecedor)';
+  var f=forn[nome]||(forn[nome]={nome:nome,carros:{},total:0,totalFrota:0,totalPessoal:0});
+  var pessoal=!!(S.carros[pk]&&S.carros[pk].status==='pessoal');
+  var c=f.carros[pk]||(f.carros[pk]={pk:pk,pessoal:pessoal,itens:[],sub:0});
+  c.itens.push({desc:desc,valor:valor,tipo:tipo});
+  c.sub+=valor;f.total+=valor;
+  if(pessoal)f.totalPessoal+=valor;else f.totalFrota+=valor;
+ }
+ Object.keys(S.manutencoes||{}).forEach(function(k){
+  var m=S.manutencoes[k];if(_mesDe(m)!==ym)return;
+  (m.pecas||[]).forEach(function(p){
+   var v=Number(p.valor)||0;if(!v)return;
+   add(p.loja,m.carro,p.desc,v,'peca');
+  });
+  (m.blocos||[]).forEach(function(b){
+   var v=Number(b.valor)||0;if(!v)return;
+   add(b.nome||b.titulo,m.carro,(b.titulo||'Mão de obra'),v,'mo');
+  });
+ });
+ var lista=Object.keys(forn).map(function(n){return forn[n]}).sort(function(a,b){return b.total-a.total});
+ var total=lista.reduce(function(s,f){return s+f.total},0);
+ return {ym:ym,fornecedores:lista,total:total};
+}
+/* Texto no mesmo padrão que vocês mandam no grupo do fornecedor. */
+function textoFechamento(ym,nomeForn){
+ var f=fechamentoDoMes(ym).fornecedores.filter(function(x){return x.nome===nomeForn})[0];
+ if(!f)return '';
+ var x='FECHAMENTO DE FATURA — '+nomeForn.toUpperCase()+' '+_nomeMes(ym).toUpperCase().replace('/',' ')+'\n\n';
+ x+='🚗 FROTA GUIMASCAR\n\n';
+ var pks=Object.keys(f.carros);
+ pks.filter(function(pk){return !f.carros[pk].pessoal}).forEach(function(pk){
+  var c=f.carros[pk],car=S.carros[pk];
+  x+=(car?tituloCarro(car):pk)+' ('+fmtPlaca(pk).split('-')[0]+')\n';
+  c.itens.forEach(function(i){x+='• R$ '+fmtBRL(i.valor)+' - '+i.desc+'\n'});
+  x+='Subtotal: R$ '+fmtBRL(c.sub)+'\n\n';
+ });
+ var pess=pks.filter(function(pk){return f.carros[pk].pessoal});
+ x+='👤 VEÍCULOS SEPARADOS\n\n';
+ pess.forEach(function(pk){
+  var c=f.carros[pk],car=S.carros[pk];
+  x+=(car?tituloCarro(car):pk)+' ('+fmtPlaca(pk).split('-')[0]+')\n';
+  c.itens.forEach(function(i){x+='• R$ '+fmtBRL(i.valor)+' - '+i.desc+'\n'});
+  x+='Subtotal: R$ '+fmtBRL(c.sub)+'\n\n';
+ });
+ x+='📊 RESUMO DA FATURA\n';
+ x+='Total Frota: R$ '+fmtBRL(f.totalFrota)+'\n';
+ x+='Total Separados: R$ '+fmtBRL(f.totalPessoal)+'\n';
+ x+='TOTAL GERAL A PAGAR: R$ '+fmtBRL(f.total);
+ return x;
+}
+function copiarFechamento(ym,nome){
+ var t=textoFechamento(ym,nome);
+ if(!t){toast('Nada a copiar');return}
+ copiarTexto(t);
+}
 function vHistorico(){
  var todas=Object.keys(S.manutencoes).map(function(k){return S.manutencoes[k]})
   .sort(function(a,b){return (b.dataIni||'').localeCompare(a.dataIni)||b.criadoEm-a.criadoEm});
@@ -2803,6 +3068,31 @@ function vHistorico(){
   });
   h+='<div class="sub" style="margin-top:6px">Toque num carro para ver só as manutenções dele.</div></details></div>';
  }
+ /* Fechamento mensal por fornecedor */
+ (function(){
+  var meses=mesesComGasto();
+  if(!meses.length)return;
+  var ym=window._fechMes&&meses.indexOf(window._fechMes)>=0?window._fechMes:meses[0];
+  var f=fechamentoDoMes(ym);
+  h+='<div class="card"><div class="tit" style="font-size:14px">\ud83d\udcc5 Fechamento por fornecedor</div>';
+  h+='<label>M\u00eas</label><select onchange="window._fechMes=this.value;render()">';
+  meses.forEach(function(x){h+='<option value="'+x+'"'+(x===ym?' selected':'')+'>'+_nomeMes(x)+'</option>'});
+  h+='</select>';
+  if(!f.fornecedores.length)h+='<div class="sub" style="margin-top:6px">Sem gastos neste m\u00eas.</div>';
+  f.fornecedores.forEach(function(fo){
+   h+='<div class="mvrow"><b class="grow">'+esc(fo.nome)+'</b><div class="mvval">R$ '+fmtBRL(fo.total)+'</div></div>';
+   h+='<div class="sub" style="margin:-2px 0 6px">frota R$ '+fmtBRL(fo.totalFrota)+' \u00b7 separados R$ '+fmtBRL(fo.totalPessoal)+
+     ' <span class="chip tap" onclick="copiarFechamento(\''+ym+'\',\''+esc(fo.nome).replace(/'/g,"\\\\'")+'\')">\ud83d\udccb copiar fatura</span></div>';
+  });
+  h+='<div class="kv" style="margin-top:6px"><b>TOTAL DO M\u00caS</b><span>R$ '+fmtBRL(f.total)+'</span></div>';
+  var ano=ym.slice(0,4),totAno=0,linhasAno='';
+  meses.filter(function(x){return x.slice(0,4)===ano}).sort().reverse().forEach(function(x){
+   var t=fechamentoDoMes(x).total;totAno+=t;
+   linhasAno+='<div class="mvrow"><div class="grow">'+_nomeMes(x)+'</div><div class="mvval">R$ '+fmtBRL(t)+'</div></div>';
+  });
+  h+='<details style="margin-top:6px"><summary class="sub" style="cursor:pointer">Fechamento anual '+ano+': R$ '+fmtBRL(totAno)+'</summary>'+linhasAno+'</details>';
+  h+='</div>';
+ })();
  if(!todas.length)h+='<div class="card"><div class="sub">Nenhuma manutenção registrada ainda.</div></div>';
  else h+='<div class="card" id="hZero" style="display:none"><div class="sub">Nenhuma manutenção encontrada para essa busca.</div></div>';
  todas.forEach(function(m){
@@ -2845,8 +3135,8 @@ function vContrato(){
  '<div class="grid2"><div><label>CEP</label><input id="ncCep" inputmode="numeric"></div>'+
  '<div><label>Telefone</label><input id="ncTel" inputmode="tel" placeholder="(21) 9…"></div></div>'+
  '<div class="sect">③ Valores, prazo e veículo</div>'+
- '<div class="grid2"><div><label>Semanal (R$)</label><input id="ncSemanal" oninput="ncResumo()" inputmode="decimal" oninput="ncCl34Auto()"></div>'+
- '<div><label>Caução (R$)</label><input id="ncCaucao" oninput="ncResumo()" inputmode="decimal" oninput="ncMultaAuto()"></div></div>'+
+ '<div class="grid2"><div><label>Semanal (R$)</label><input id="ncSemanal" inputmode="decimal" oninput="ncCl34Auto();ncResumo()"></div>'+
+ '<div><label>Caução (R$)</label><input id="ncCaucao" inputmode="decimal" oninput="ncMultaAuto();ncResumo()"></div></div>'+
  '<div class="grid2"><div><label>Multa diária de atraso (R$)</label><input id="ncMultaDia" inputmode="decimal" value="115,00"></div>'+
  '<div><label>Multa de rescisão (R$)</label><input id="ncMultaResc" inputmode="decimal"></div></div>'+
  '<div class="grid2"><div><label>Início</label><input type="date" id="ncIni" value="'+hoje()+'" onchange="document.getElementById(\'ncFim\').value=mais3Meses(this.value)"></div>'+
@@ -2972,6 +3262,10 @@ function valorPorExtenso(v){
 
 function dadosContratoDoForm(){
  function g(id){return document.getElementById(id).value.trim()}
+ /* Recalcula a cláusula 3.4 AGORA, com o valor semanal que está no formulário neste
+    momento. Blindagem: se algum gatilho de digitação falhar, o contrato ainda sai com
+    o valor certo em vez de um valor antigo. */
+ try{ncCl34Auto(true)}catch(e){}
  var pk=g('ncCarro');if(!pk){toast('Escolha o carro');return null}
  if(!g('ncNome')){toast('Nome do locatário é obrigatório');return null}
  if(!g('ncIni')||!g('ncFim')){toast('Preencha as datas');return null}
