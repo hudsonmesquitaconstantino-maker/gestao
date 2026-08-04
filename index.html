@@ -164,7 +164,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=64; var APP_DATE='22/07/2026';
+var APP_VER=65; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -308,7 +308,7 @@ function normCarro(c){
  c.proximasTrocas=toArr(c.proximasTrocas);c.contratoVigenteId=c.contratoVigenteId||'';
  c.temCrlv=!!c.temCrlv;
  c.gnvRequalif=c.gnvRequalif||'';c.procLeilao=c.procLeilao||'Não';c.procFinanciado=c.procFinanciado||'Não';c.procObs=c.procObs||'';
- c.lidoCrlv=c.lidoCrlv||'';c.lidoGnv=c.lidoGnv||'';c.emVenda=!!c.emVenda;
+ c.lidoCrlv=c.lidoCrlv||'';c.lidoGnv=c.lidoGnv||'';c.emVenda=!!c.emVenda;c.meuCarro=!!c.meuCarro;
  return c;
 }
 /* ===== MÁSCARAS DE DOCUMENTO (formatam sozinhas, na digitação e na saída) ===== */
@@ -1291,6 +1291,7 @@ function formCarro(pk){
  '<label>Data em que viu essa quilometragem</label><input type="date" id="e_kmUltimaData" value="'+esc(c.kmUltimaData||'')+'">'+
   f('Exercício CRLV','exercicioCRLV',c.exercicioCRLV,'2026')+f('Exercício vistoria GNV (se tiver gás)','gnvExercicio',c.gnvExercicio||'')+
   '<label>Próxima requalificação do cilindro GNV</label><input type="date" id="e_gnvRequalif" value="'+esc(c.gnvRequalif||'')+'">'+
+  '<label>De quem é o carro (para o fechamento por fornecedor)</label><select id="fc_meuCarro">'+opcoesSel(['Frota (pai)','Meu carro'],c.meuCarro?'Meu carro':'Frota (pai)')+'</select>'+
   '<label>Situação do veículo</label><select id="fc_emVenda">'+opcoesSel(['Na frota (normal)','Em processo de venda ao motorista'],c.emVenda?'Em processo de venda ao motorista':'Na frota (normal)')+'</select>'+
   '<p class="sub">Em processo de venda: o carro continua na lista, mas para de gerar avisos de manutenção (óleo, correia, CRLV, GNV) no painel — a manutenção passa a ser do comprador.</p>'+
   '<label>Leilão (procedência)</label><select id="fc_procLeilao">'+opcoesSel(['Não','Recuperado de sinistro (monta não informada)','Leilão pequena monta','Leilão média monta','Leilão grande monta'],c.procLeilao||'Não')+'</select>'+
@@ -1323,6 +1324,7 @@ function salvarCarro(pk){
  c.cor=g('cor');c.potencia=g('potencia');c.combustivel=g('combustivel');
  c.kmAtual=parseInt(g('kmAtual').replace(/\D/g,''),10)||0;c.kmUltima=parseInt(g('kmUltima').replace(/\D/g,''),10)||c.kmAtual;c.kmUltimaData=(document.getElementById('e_kmUltimaData')||{value:''}).value||c.kmUltimaData||'';c.exercicioCRLV=g('exercicioCRLV');c.gnvExercicio=g('gnvExercicio');c.codigoRadio=g('codigoRadio');
  c.emVenda=((document.getElementById('fc_emVenda')||{value:''}).value||'').indexOf('venda')>=0;
+ c.meuCarro=((document.getElementById('fc_meuCarro')||{value:''}).value||'').indexOf('Meu')>=0;
  c.gnvRequalif=(document.getElementById('e_gnvRequalif')||{value:''}).value;c.procLeilao=(document.getElementById('fc_procLeilao')||{value:'Não'}).value;c.procFinanciado=(document.getElementById('fc_procFinanciado')||{value:'Não'}).value;c.procObs=g('procObs');
  c.proprietario=g('proprietario');c.locadorId=document.getElementById('fc_locadorId').value;
  c.valorRef=parseBRL(g('valorRef'));c.semanalPadrao=parseBRL(g('semanalPadrao'));c.caucaoPadrao=parseBRL(g('caucaoPadrao'));
@@ -2997,8 +2999,15 @@ function fechamentoDoMes(ym){
  var forn={};
  function add(nome,pk,desc,valor,tipo){
   nome=(nome||'').trim();if(!nome)nome='(sem fornecedor)';
-  var f=forn[nome]||(forn[nome]={nome:nome,carros:{},total:0,totalFrota:0,totalPessoal:0});
-  var pessoal=!!(S.carros[pk]&&S.carros[pk].status==='pessoal');
+  /* junta grafias diferentes do mesmo fornecedor: "Mega" e "mega" viram um só.
+     A chave é sem acento/maiúscula; o nome exibido é o mais completo que aparecer. */
+  var chave=semAcento(nome).replace(/[^a-z0-9]/g,'');
+  var f=forn[chave];
+  if(!f)f=forn[chave]={nome:nome,carros:{},total:0,totalFrota:0,totalPessoal:0};
+  else if(nome.length>f.nome.length)f.nome=nome;
+  var car=S.carros[pk];
+  /* "meus carros" = os marcados como meus (ou status pessoal, para quem já estava assim) */
+  var pessoal=!!(car&&(car.meuCarro||car.status==='pessoal'));
   var c=f.carros[pk]||(f.carros[pk]={pk:pk,pessoal:pessoal,itens:[],sub:0});
   c.itens.push({desc:desc,valor:valor,tipo:tipo});
   c.sub+=valor;f.total+=valor;
@@ -3041,8 +3050,8 @@ function textoFechamento(ym,nomeForn){
   x+='Subtotal: R$ '+fmtBRL(c.sub)+'\n\n';
  });
  x+='📊 RESUMO DA FATURA\n';
- x+='Total Frota: R$ '+fmtBRL(f.totalFrota)+'\n';
- x+='Total Separados: R$ '+fmtBRL(f.totalPessoal)+'\n';
+ x+='Total frota do pai: R$ '+fmtBRL(f.totalFrota)+'\n';
+ x+='Total meus carros: R$ '+fmtBRL(f.totalPessoal)+'\n';
  x+='TOTAL GERAL A PAGAR: R$ '+fmtBRL(f.total);
  return x;
 }
@@ -3081,7 +3090,7 @@ function vHistorico(){
   if(!f.fornecedores.length)h+='<div class="sub" style="margin-top:6px">Sem gastos neste m\u00eas.</div>';
   f.fornecedores.forEach(function(fo){
    h+='<div class="mvrow"><b class="grow">'+esc(fo.nome)+'</b><div class="mvval">R$ '+fmtBRL(fo.total)+'</div></div>';
-   h+='<div class="sub" style="margin:-2px 0 6px">frota R$ '+fmtBRL(fo.totalFrota)+' \u00b7 separados R$ '+fmtBRL(fo.totalPessoal)+
+   h+='<div class="sub" style="margin:-2px 0 6px">frota do pai R$ '+fmtBRL(fo.totalFrota)+' \u00b7 meus carros R$ '+fmtBRL(fo.totalPessoal)+
      ' <span class="chip tap" onclick="copiarFechamento(\''+ym+'\',\''+esc(fo.nome).replace(/'/g,"\\\\'")+'\')">\ud83d\udccb copiar fatura</span></div>';
   });
   h+='<div class="kv" style="margin-top:6px"><b>TOTAL DO M\u00caS</b><span>R$ '+fmtBRL(f.total)+'</span></div>';
