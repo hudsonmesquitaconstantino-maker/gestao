@@ -164,7 +164,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=65; var APP_DATE='22/07/2026';
+var APP_VER=68; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -1291,7 +1291,7 @@ function formCarro(pk){
  '<label>Data em que viu essa quilometragem</label><input type="date" id="e_kmUltimaData" value="'+esc(c.kmUltimaData||'')+'">'+
   f('Exercício CRLV','exercicioCRLV',c.exercicioCRLV,'2026')+f('Exercício vistoria GNV (se tiver gás)','gnvExercicio',c.gnvExercicio||'')+
   '<label>Próxima requalificação do cilindro GNV</label><input type="date" id="e_gnvRequalif" value="'+esc(c.gnvRequalif||'')+'">'+
-  '<label>De quem é o carro (para o fechamento por fornecedor)</label><select id="fc_meuCarro">'+opcoesSel(['Frota (pai)','Meu carro'],c.meuCarro?'Meu carro':'Frota (pai)')+'</select>'+
+  '<label>Frota do veículo (para o fechamento por fornecedor)</label><select id="fc_meuCarro">'+opcoesSel(['Frota Fábio','Frota Hudson'],c.meuCarro?'Frota Hudson':'Frota Fábio')+'</select>'+
   '<label>Situação do veículo</label><select id="fc_emVenda">'+opcoesSel(['Na frota (normal)','Em processo de venda ao motorista'],c.emVenda?'Em processo de venda ao motorista':'Na frota (normal)')+'</select>'+
   '<p class="sub">Em processo de venda: o carro continua na lista, mas para de gerar avisos de manutenção (óleo, correia, CRLV, GNV) no painel — a manutenção passa a ser do comprador.</p>'+
   '<label>Leilão (procedência)</label><select id="fc_procLeilao">'+opcoesSel(['Não','Recuperado de sinistro (monta não informada)','Leilão pequena monta','Leilão média monta','Leilão grande monta'],c.procLeilao||'Não')+'</select>'+
@@ -1324,7 +1324,7 @@ function salvarCarro(pk){
  c.cor=g('cor');c.potencia=g('potencia');c.combustivel=g('combustivel');
  c.kmAtual=parseInt(g('kmAtual').replace(/\D/g,''),10)||0;c.kmUltima=parseInt(g('kmUltima').replace(/\D/g,''),10)||c.kmAtual;c.kmUltimaData=(document.getElementById('e_kmUltimaData')||{value:''}).value||c.kmUltimaData||'';c.exercicioCRLV=g('exercicioCRLV');c.gnvExercicio=g('gnvExercicio');c.codigoRadio=g('codigoRadio');
  c.emVenda=((document.getElementById('fc_emVenda')||{value:''}).value||'').indexOf('venda')>=0;
- c.meuCarro=((document.getElementById('fc_meuCarro')||{value:''}).value||'').indexOf('Meu')>=0;
+ c.meuCarro=/hudson/i.test(semAcento((document.getElementById('fc_meuCarro')||{value:''}).value||''));
  c.gnvRequalif=(document.getElementById('e_gnvRequalif')||{value:''}).value;c.procLeilao=(document.getElementById('fc_procLeilao')||{value:'Não'}).value;c.procFinanciado=(document.getElementById('fc_procFinanciado')||{value:'Não'}).value;c.procObs=g('procObs');
  c.proprietario=g('proprietario');c.locadorId=document.getElementById('fc_locadorId').value;
  c.valorRef=parseBRL(g('valorRef'));c.semanalPadrao=parseBRL(g('semanalPadrao'));c.caucaoPadrao=parseBRL(g('caucaoPadrao'));
@@ -2997,7 +2997,7 @@ function mesesComGasto(){
 /* Agrupa o mês por fornecedor -> carro -> itens. Separa frota x veículos pessoais. */
 function fechamentoDoMes(ym){
  var forn={};
- function add(nome,pk,desc,valor,tipo){
+ function add(nome,pk,desc,valor,tipo,dt,mid){
   nome=(nome||'').trim();if(!nome)nome='(sem fornecedor)';
   /* junta grafias diferentes do mesmo fornecedor: "Mega" e "mega" viram um só.
      A chave é sem acento/maiúscula; o nome exibido é o mais completo que aparecer. */
@@ -3006,22 +3006,23 @@ function fechamentoDoMes(ym){
   if(!f)f=forn[chave]={nome:nome,carros:{},total:0,totalFrota:0,totalPessoal:0};
   else if(nome.length>f.nome.length)f.nome=nome;
   var car=S.carros[pk];
-  /* "meus carros" = os marcados como meus (ou status pessoal, para quem já estava assim) */
+  /* Frota Hudson = carros marcados como dele (ou status pessoal, de antes) */
   var pessoal=!!(car&&(car.meuCarro||car.status==='pessoal'));
   var c=f.carros[pk]||(f.carros[pk]={pk:pk,pessoal:pessoal,itens:[],sub:0});
-  c.itens.push({desc:desc,valor:valor,tipo:tipo});
+  c.itens.push({desc:desc,valor:valor,tipo:tipo,data:dt||'',mid:mid||''});
   c.sub+=valor;f.total+=valor;
   if(pessoal)f.totalPessoal+=valor;else f.totalFrota+=valor;
  }
  Object.keys(S.manutencoes||{}).forEach(function(k){
   var m=S.manutencoes[k];if(_mesDe(m)!==ym)return;
+  var dt=m.dataFim||m.dataIni||'';
   (m.pecas||[]).forEach(function(p){
    var v=Number(p.valor)||0;if(!v)return;
-   add(p.loja,m.carro,p.desc,v,'peca');
+   add(p.loja,m.carro,p.desc,v,'peca',dt,m.id);
   });
   (m.blocos||[]).forEach(function(b){
    var v=Number(b.valor)||0;if(!v)return;
-   add(b.nome||b.titulo,m.carro,(b.titulo||'Mão de obra'),v,'mo');
+   add(b.nome||b.titulo,m.carro,(b.titulo||'Mão de obra'),v,'mo',dt,m.id);
   });
  });
  var lista=Object.keys(forn).map(function(n){return forn[n]}).sort(function(a,b){return b.total-a.total});
@@ -3050,11 +3051,85 @@ function textoFechamento(ym,nomeForn){
   x+='Subtotal: R$ '+fmtBRL(c.sub)+'\n\n';
  });
  x+='📊 RESUMO DA FATURA\n';
- x+='Total frota do pai: R$ '+fmtBRL(f.totalFrota)+'\n';
- x+='Total meus carros: R$ '+fmtBRL(f.totalPessoal)+'\n';
+ x+='Total Frota Fábio: R$ '+fmtBRL(f.totalFrota)+'\n';
+ x+='Total Frota Hudson: R$ '+fmtBRL(f.totalPessoal)+'\n';
  x+='TOTAL GERAL A PAGAR: R$ '+fmtBRL(f.total);
  return x;
 }
+
+/* ===== CONFERÊNCIA DE CONTAS =====
+   Confere se os números fecham, porque é com eles que ele acerta com os fornecedores.
+   1) soma dos itens de cada manutenção x total gravado da manutenção
+   2) soma dos fornecedores do mês x soma das manutenções do mês
+   3) lista o que está sem fornecedor (fica de fora das faturas) */
+function conferirContas(ym){
+ var r={ym:ym,divergentes:[],semForn:[],somaItens:0,somaManut:0,somaFornecedores:0,manutencoes:0};
+ Object.keys(S.manutencoes||{}).forEach(function(k){
+  var m=S.manutencoes[k];if(_mesDe(m)!==ym)return;
+  r.manutencoes++;
+  var itens=0,semF=0;
+  (m.pecas||[]).forEach(function(p){
+   var v=Number(p.valor)||0;itens+=v;
+   if(v&&!String(p.loja||'').trim())semF+=v;
+  });
+  (m.blocos||[]).forEach(function(b){
+   var v=Number(b.valor)||0;itens+=v;
+   if(v&&!String(b.nome||'').trim())semF+=v;
+  });
+  var grav=Number(m.total)||0;
+  r.somaItens+=itens;r.somaManut+=grav;
+  if(Math.abs(itens-grav)>0.005){
+   r.divergentes.push({id:k,carro:m.carro,data:m.dataFim||m.dataIni||'',itens:itens,gravado:grav,dif:grav-itens});
+  }
+  if(semF>0.005)r.semForn.push({id:k,carro:m.carro,data:m.dataFim||m.dataIni||'',valor:semF});
+ });
+ var f=fechamentoDoMes(ym);
+ r.somaFornecedores=f.total;
+ return r;
+}
+function corrigirTotaisDoMes(ym){
+ ask('Corrigir os totais?','Vou reescrever o total de cada manutenção divergente deste mês para a soma real das peças e da mão de obra. Os itens não são alterados.','Corrigir',function(){
+  var n=0;
+  Object.keys(S.manutencoes||{}).forEach(function(k){
+   var m=S.manutencoes[k];if(_mesDe(m)!==ym)return;
+   var tp=0,tm=0;
+   (m.pecas||[]).forEach(function(p){tp+=Number(p.valor)||0});
+   (m.blocos||[]).forEach(function(b){tm+=Number(b.valor)||0});
+   if(Math.abs((tp+tm)-(Number(m.total)||0))>0.005){m.totalPecas=tp;m.totalMO=tm;m.total=tp+tm;n++}
+  });
+  save();render();toast(n?('✅ '+n+' manutenção(ões) corrigida(s)'):'Nada a corrigir');
+ });
+}
+function htmlConferencia(ym){
+ var r=conferirContas(ym);
+ var ok=(Math.abs(r.somaItens-r.somaManut)<0.005)&&(Math.abs(r.somaItens-r.somaFornecedores)<0.005);
+ var h='<div class="sect">🧮 Conferência das contas</div>';
+ h+='<div class="kv"><b>Manutenções no mês</b><span>'+r.manutencoes+'</span>'+
+    '<b>Soma dos itens</b><span>R$ '+fmtBRL(r.somaItens)+'</span>'+
+    '<b>Soma dos fornecedores</b><span>R$ '+fmtBRL(r.somaFornecedores)+'</span>'+
+    '<b>Soma dos totais gravados</b><span>R$ '+fmtBRL(r.somaManut)+'</span></div>';
+ if(ok)h+='<div class="sub" style="color:var(--ok)">✅ Fecha certo: cada centavo lançado está dentro de algum fornecedor.</div>';
+ else h+='<div class="sub" style="color:var(--warn)">⚠ Os números não fecham — veja abaixo.</div>';
+ if(r.divergentes.length){
+  h+='<div class="sub" style="color:var(--warn);margin-top:6px">'+r.divergentes.length+' manutenção(ões) com total gravado diferente da soma dos itens:</div>';
+  r.divergentes.slice(0,20).forEach(function(d){
+   h+='<div class="sub" style="margin-left:8px">'+(d.data?dataBR(d.data)+' · ':'')+esc(fmtPlaca(d.carro))+
+      ' — itens R$ '+fmtBRL(d.itens)+' · gravado R$ '+fmtBRL(d.gravado)+
+      ' <b style="color:var(--warn)">('+(d.dif>0?'+':'')+fmtBRL(d.dif)+')</b></div>';
+  });
+  h+='<button class="btn mini sec" onclick="corrigirTotaisDoMes(\''+ym+'\')">🔧 Corrigir totais deste mês</button>';
+ }
+ if(r.semForn.length){
+  var t=0;r.semForn.forEach(function(x){t+=x.valor});
+  h+='<div class="sub" style="color:var(--warn);margin-top:6px">R$ '+fmtBRL(t)+' sem fornecedor preenchido — não entra em fatura nenhuma:</div>';
+  r.semForn.slice(0,20).forEach(function(x){
+   h+='<div class="sub tap" style="margin-left:8px" onclick="verManut(\''+x.id+'\')">'+(x.data?dataBR(x.data)+' · ':'')+
+      esc(fmtPlaca(x.carro))+' — R$ '+fmtBRL(x.valor)+' (toque para abrir)</div>';
+  });
+ }
+ return h;
+}
+
 function copiarFechamento(ym,nome){
  var t=textoFechamento(ym,nome);
  if(!t){toast('Nada a copiar');return}
@@ -3089,11 +3164,26 @@ function vHistorico(){
   h+='</select>';
   if(!f.fornecedores.length)h+='<div class="sub" style="margin-top:6px">Sem gastos neste m\u00eas.</div>';
   f.fornecedores.forEach(function(fo){
-   h+='<div class="mvrow"><b class="grow">'+esc(fo.nome)+'</b><div class="mvval">R$ '+fmtBRL(fo.total)+'</div></div>';
-   h+='<div class="sub" style="margin:-2px 0 6px">frota do pai R$ '+fmtBRL(fo.totalFrota)+' \u00b7 meus carros R$ '+fmtBRL(fo.totalPessoal)+
-     ' <span class="chip tap" onclick="copiarFechamento(\''+ym+'\',\''+esc(fo.nome).replace(/'/g,"\\\\'")+'\')">\ud83d\udccb copiar fatura</span></div>';
+   var det='';
+   Object.keys(fo.carros).forEach(function(pk){
+    var cc=fo.carros[pk],car=S.carros[pk];
+    det+='<div class="mvrow" style="opacity:.85"><b class="hplc">'+esc(fmtPlaca(pk))+'</b>'+
+      '<div class="grow">'+esc(car?tituloCarro(car):pk)+(cc.pessoal?' <span class="chip">Hudson</span>':'')+'</div>'+
+      '<div class="mvval">R$ '+fmtBRL(cc.sub)+'</div></div>';
+    cc.itens.forEach(function(it){
+     det+='<div class="sub" style="margin:0 0 2px 8px">'+(it.data?dataBR(it.data)+' \u00b7 ':'')+
+       esc(String(it.desc||'').slice(0,60))+' \u2014 <b>R$ '+fmtBRL(it.valor)+'</b></div>';
+    });
+   });
+   h+='<details><summary style="list-style:none;cursor:pointer">'+
+     '<div class="mvrow"><b class="grow">'+esc(fo.nome)+'</b><div class="mvval">R$ '+fmtBRL(fo.total)+'</div></div>'+
+     '<div class="sub" style="margin:-2px 0 6px">Frota F\u00e1bio R$ '+fmtBRL(fo.totalFrota)+' \u00b7 Frota Hudson R$ '+fmtBRL(fo.totalPessoal)+
+     ' \u00b7 toque para ver os itens</div></summary>'+det+
+     '<div style="margin:4px 0 10px"><span class="chip tap" onclick="copiarFechamento(\''+ym+'\',\''+esc(fo.nome).replace(/'/g,"\\\\'")+'\')">\ud83d\udccb copiar fatura</span></div>'+
+     '</details>';
   });
   h+='<div class="kv" style="margin-top:6px"><b>TOTAL DO M\u00caS</b><span>R$ '+fmtBRL(f.total)+'</span></div>';
+  h+=htmlConferencia(ym);
   var ano=ym.slice(0,4),totAno=0,linhasAno='';
   meses.filter(function(x){return x.slice(0,4)===ano}).sort().reverse().forEach(function(x){
    var t=fechamentoDoMes(x).total;totAno+=t;
