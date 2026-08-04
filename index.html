@@ -164,7 +164,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=69; var APP_DATE='22/07/2026';
+var APP_VER=70; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -2997,6 +2997,7 @@ function hFiltraPlaca(p){
 function hAplica(){
  var q=((document.getElementById('hBusca')||{value:''}).value||'').trim();
  var t=document.getElementById('hTot');if(t)t.style.display=q?'none':'';
+ var fc=document.getElementById('hFech');if(fc)fc.style.display=q?'none':'';
  var achou=0;
  document.querySelectorAll('[data-hbusca]').forEach(function(el){
   var ok=buscaMatch(el.getAttribute('data-hbusca'),q);
@@ -3184,7 +3185,7 @@ function vHistorico(){
   if(!meses.length)return;
   var ym=window._fechMes&&meses.indexOf(window._fechMes)>=0?window._fechMes:meses[0];
   var f=fechamentoDoMes(ym);
-  h+='<div class="card"><div class="tit" style="font-size:14px">\ud83d\udcc5 Fechamento por fornecedor</div>';
+  h+='<div class="card" id="hFech"><details><summary class="tit" style="font-size:14px;cursor:pointer">\ud83d\udcc5 Fechamento por fornecedor \u2014 toque para abrir</summary>';
   h+='<label>M\u00eas</label><select onchange="window._fechMes=this.value;render()">';
   meses.forEach(function(x){h+='<option value="'+x+'"'+(x===ym?' selected':'')+'>'+_nomeMes(x)+'</option>'});
   h+='</select>';
@@ -3216,7 +3217,7 @@ function vHistorico(){
    linhasAno+='<div class="mvrow"><div class="grow">'+_nomeMes(x)+'</div><div class="mvval">R$ '+fmtBRL(t)+'</div></div>';
   });
   h+='<details style="margin-top:6px"><summary class="sub" style="cursor:pointer">Fechamento anual '+ano+': R$ '+fmtBRL(totAno)+'</summary>'+linhasAno+'</details>';
-  h+='</div>';
+  h+='</details></div>';
  })();
  if(!todas.length)h+='<div class="card"><div class="sub">Nenhuma manutenção registrada ainda.</div></div>';
  else h+='<div class="card" id="hZero" style="display:none"><div class="sub">Nenhuma manutenção encontrada para essa busca.</div></div>';
