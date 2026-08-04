@@ -164,7 +164,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=68; var APP_DATE='22/07/2026';
+var APP_VER=69; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -829,7 +829,8 @@ function ficha(pk){window._fichaPk=pk;
   '<b>Licenciamento (CRLV)</b><span>exercício '+esc(c.exercicioCRLV||'—')+'</span>'+
   '<b>Total gasto em manutenção</b><span style="color:var(--warn);font-weight:700">R$ '+fmtBRL(totalGasto(pk))+'</span></div>';
  h+='<button class="btn mini sec" onclick="formCarro(\''+pk+'\')">✏️ Editar dados</button>';
- h+='<button class="btn mini sec" onclick="editarMotorista(\''+pk+'\')">👤 Motorista</button>';
+ h+='<button class="btn mini sec" onclick="editarMotorista(\''+pk+'\')">👤 Motorista</button>'+
+  '<button class="btn mini sec" onclick="alternarFrota(\''+pk+'\')">\ud83d\ude97 '+(c.meuCarro?'Frota Hudson':'Frota F\u00e1bio')+' \u00b7 trocar</button>';
  h+='<button class="btn mini sec" onclick="fipeFluxo(\''+pk+'\')">💰 '+(c.fipeM?'FIPE vinculada':'Vincular FIPE')+'</button>';
  /* CRLV */
  (function(){
@@ -1229,6 +1230,31 @@ function semearVendas(){
 }
 /* Abre a aba de contrato já com o carro escolhido. Antes o botão só trocava a aba por
    trás da ficha, que continuava aberta por cima — parecia que nada acontecia. */
+
+/* ===== FROTA DO VEÍCULO (Fábio x Hudson) =====
+   Alterna direto na ficha, sem entrar em Editar dados. */
+function alternarFrota(pk){
+ var c=S.carros[pk];if(!c)return;
+ c.meuCarro=!c.meuCarro;
+ save();ficha(pk);render();
+ toast(c.meuCarro?'✅ Agora é Frota Hudson':'✅ Agora é Frota Fábio');
+}
+/* Marca de uma vez os carros do Hudson (Fiesta, Cobalt 1.4, Mobi e Onix). */
+function marcarFrotaHudson(){
+ var placas=['LQZ6C72','OYZ9079','RJZ1B66','QUB5B64'];
+ var ok=[],nao=[];
+ placas.forEach(function(pk){
+  if(S.carros[pk]){S.carros[pk].meuCarro=true;ok.push(fmtPlaca(pk))}
+  else nao.push(pk);
+ });
+ save();render();
+ var st=document.getElementById('recTudoStat');
+ if(st)st.innerHTML='✅ Marcados como Frota Hudson: '+(ok.join(', ')||'nenhum')+
+  (nao.length?'<br>⚠ Não encontrei na frota: '+nao.join(', '):'')+
+  '<br><span class="sub">Para ajustar qualquer carro, use o botão de frota na ficha dele.</span>';
+ toast('✅ '+ok.length+' carro(s) marcado(s)');
+}
+
 function novoContratoPara(pk){
  closeSheet(2);closeSheet();
  go(2);
@@ -3607,6 +3633,9 @@ function openCfg(){
  '<p class="sub">Revarre o histórico de TODOS os carros e reescreve as últimas trocas de componentes e as próximas trocas de óleo/correia sempre pela troca mais recente de verdade. Use uma vez agora para corrigir a frota inteira.</p>'+
  '<button class="btn" onclick="recalcTodosCarros()">🔄 Recalcular todos os carros</button>'+
  '<button class="btn sec" onclick="diagnosticoFrota()">🔍 Diagnóstico de todos os carros</button>'+
+ '<div class="sect">Frota Hudson</div>'+
+ '<p class="sub">Marca o Fiesta (LQZ), o Cobalt 1.4 (OYZ), o Mobi (RJZ) e o Onix (QUB) como Frota Hudson no fechamento por fornecedor. Depois dá para ajustar carro a carro na ficha.</p>'+
+ '<button class="btn sec" onclick="marcarFrotaHudson()">\ud83d\ude97 Marcar meus 4 carros como Frota Hudson</button>'+
  '<div class="sect">Compra e venda</div>'+
  '<p class="sub">Cria os registros de compra e venda do Logan PWL-8H97 (Eduardo) e do Versa FHP-4B47 (André) com os dados dos contratos assinados. Depois é só abrir a ficha de cada carro e anexar o Word/PDF.</p>'+
  '<button class="btn sec" onclick="semearVendas()">📄 Registrar os 2 contratos de compra e venda</button>'+
