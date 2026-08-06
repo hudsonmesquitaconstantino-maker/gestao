@@ -164,7 +164,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=71; var APP_DATE='22/07/2026';
+var APP_VER=72; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -687,6 +687,37 @@ function safeToReload(){
  }catch(e){}
  return true;
 }
+
+/* Atualização forçada: para quando o app teima em ficar numa versão antiga.
+   Compara com o que está publicado, limpa o cache do atalho, desliga o service
+   worker e recarrega. Sempre responde na tela, dizendo o que encontrou. */
+function forcarAtualizacao(){
+ toast('🔄 Buscando a versão publicada...');
+ fetch('index.html?forca='+Date.now(),{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){
+  var m=t.match(/APP_VER=(\d+)/);
+  var nv=m?parseInt(m[1],10):0;
+  if(!nv){toast('⚠️ Não consegui ler a versão publicada');return}
+  if(nv<APP_VER){toast('⚠️ O servidor está na v'+nv+' e você na v'+APP_VER+' — o arquivo novo não subiu');return}
+  if(nv===APP_VER){toast('✅ v'+APP_VER+' já é a versão publicada');return}
+  toast('⬇️ Trazendo a v'+nv+'...');
+  var limpar=[];
+  try{if(window.caches&&caches.keys)limpar.push(caches.keys().then(function(ks){
+   return Promise.all(ks.map(function(k){return caches.delete(k)}));
+  }));}catch(e){}
+  try{if(navigator.serviceWorker&&navigator.serviceWorker.getRegistrations){
+   limpar.push(navigator.serviceWorker.getRegistrations().then(function(rs){
+    return Promise.all(rs.map(function(r){return r.unregister()}));
+   }));
+  }}catch(e){}
+  Promise.all(limpar).catch(function(){}).then(function(){
+   setTimeout(function(){
+    try{document.open();document.write(t);document.close()}
+    catch(e){location.replace(location.pathname+'?v='+nv)}
+   },300);
+  });
+ }).catch(function(){toast('⚠️ Sem internet para buscar a atualização')});
+}
+
 var _updFound=false;
 function checkUpdate(manual){
  try{
@@ -3677,7 +3708,8 @@ function openCfg(){
  '<div class="filestat" id="syncDiag">Verificando…</div>'+
  '<button class="btn sec" onclick="syncDiagRodar()">🔍 Diagnóstico da sincronização</button>'+
  '<button class="btn sec" onclick="closeSheet();pedirChave()">🔑 Trocar chave da família</button>'+
- '<button class="btn sec" onclick="checkUpdate();toast(\'🔎 Verificando atualização…\')">⬆️ Verificar atualização</button>'+
+ '<button class="btn sec" onclick="checkUpdate(true);toast(\'🔎 Verificando atualização…\')">⬆️ Verificar atualização</button>'+
+ '<button class="btn sec" onclick="forcarAtualizacao()">\ud83d\udd04 Forçar atualização (limpa o cache)</button>'+
  '<button class="btn sec" onclick="closeSheet()">Fechar</button>');
 }
 function bkpQuando(){var t=parseInt(localStorage.getItem('gestao_bkp')||'0',10);return t>0?t:0}
