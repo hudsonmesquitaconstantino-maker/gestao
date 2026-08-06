@@ -164,7 +164,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=70; var APP_DATE='22/07/2026';
+var APP_VER=71; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -1665,8 +1665,12 @@ function aplicaDadosDoTexto(pk,tipo,txt){
   var ano=impExercGnv(txt);if(ano&&ano!==c.gnvExercicio){c.gnvExercicio=ano;achou.push('exercício '+ano)}
   var rq=impRequalif(txt);if(rq&&rq!==c.gnvRequalif){c.gnvRequalif=rq;achou.push('requalificação '+dataBR(rq))}
  }else{
-  var a2=impAnoExerc(txt);if(a2&&a2!==c.exercicioCRLV){c.exercicioCRLV=a2;achou.push('exercício '+a2)}
   var dc=impDadosCRLV(txt);
+  /* exercício: prioriza o lido pela posição (CRLV-e) e só depois o pelo rótulo.
+     Sempre sobrescreve, porque documento novo tem exercício mais recente. */
+  var a2=dc.exercicio||impAnoExerc(txt);
+  if(a2&&a2!==c.exercicioCRLV){c.exercicioCRLV=a2;achou.push('exercício '+a2)}
+  delete dc.exercicio; /* já aplicado acima; não é campo do carro */
   Object.keys(dc).forEach(function(campo){
    var v=dc[campo];if(!v)return;
    var atual=c[campo];
@@ -1691,6 +1695,14 @@ function impDadosCRLV(texto){
     "TUW5A58 2026". Pego a placa e, na mesma linha, o exercício. */
  var mPlaca=raw.match(/\b([A-Z]{3}[\s-]?\d[A-Z0-9]\d{2})\b/);
  if(mPlaca)o.placa=mPlaca[1].replace(/[\s-]/g,'').toUpperCase();
+ /* EXERCÍCIO: no CRLV-e os rótulos vêm todos primeiro e os valores em bloco no fim,
+    então a palavra EXERCICIO fica longe do ano. O exercício é o ano logo DEPOIS da
+    placa no bloco de valores: "QQF8J26 2026". */
+ if(o.placa){
+  var reEx=new RegExp(o.placa+'\\s+(20\\d\\d)\\b');
+  var mEx=raw.replace(/\s+/g,' ').toUpperCase().match(reEx);
+  if(mEx)o.exercicio=mEx[1];
+ }
  /* CHASSI: 17 caracteres com letras E números. O pdf.js às vezes parte o chassi em dois
     ou três pedaços ("93YBSR7R HLJ123456"), então além de buscar inteiro eu tento remontar
     juntando tokens vizinhos até fechar exatamente 17. */
@@ -1786,7 +1798,7 @@ function _cap(s){s=String(s||'').toLowerCase();return s.charAt(0).toUpperCase()+
 /* Versão do LEITOR de documentos (CRLV/GNV). Aumente este número toda vez que a extração
    melhorar: os documentos já anexados são relidos automaticamente com a lógica nova,
    mesmo sem trocar o arquivo. */
-var LEITOR_VER=60;
+var LEITOR_VER=71;
 var _docVarr={rodando:false,visto:{}};
 /* Campos que o CRLV é capaz de preencher. Se algum estiver vazio e o carro TEM CRLV
    anexado, o documento é relido automaticamente — ignorando a marca de "já lido".
@@ -1808,16 +1820,21 @@ function _filaDocs(pkFiltro){
 }
 function varrerDocsAuto(opt){
  opt=opt||{};
- if(_docVarr.rodando||!window.S||!S.carros)return;
+ if(!window.S||!S.carros)return;
+ /* trava de concorrência com escape: se uma varredura anterior travou (promessa que nunca
+    voltou), depois de 45s ela deixa de bloquear — e um pedido manual (force) sempre passa. */
+ if(_docVarr.rodando&&!opt.force&&(Date.now()-(_docVarr.desde||0))<45000)return;
+ _docVarr.desde=Date.now();
  var fila=_filaDocs(opt.pk).filter(function(x){
   return opt.force||x.incompleto||_docVarr.visto[x.pk+'/'+x.tipo]!==1;
  });
- if(!fila.length)return;
+ if(!fila.length){if(opt.force)toast('Nenhum documento anexado neste carro');return}
  _docVarr.rodando=true;
  var mud=0,i=0,st=opt.stat?document.getElementById(opt.stat):null;
  function fim(){
   _docVarr.rodando=false;
-  if(mud){save();if(window._fichaPk)ficha(window._fichaPk);render();toast('📄 '+mud+' documento(s) lido(s) automaticamente')}
+  if(mud){save();if(window._fichaPk)ficha(window._fichaPk);render();toast('📄 '+mud+' documento(s) lido(s)')}
+  else if(opt.force)toast('📄 Documento lido — nenhum dado novo para atualizar');
   if(st)st.textContent=mud?('✅ '+mud+' documento(s) atualizado(s).'):'✅ Nada novo para ler — tudo já estava lido.';
  }
  function prox(){
