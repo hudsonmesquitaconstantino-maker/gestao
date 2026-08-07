@@ -164,7 +164,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=73; var APP_DATE='22/07/2026';
+var APP_VER=74; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -3219,8 +3219,8 @@ function vHistorico(){
   if(!meses.length)return;
   var ym=window._fechMes&&meses.indexOf(window._fechMes)>=0?window._fechMes:meses[0];
   var f=fechamentoDoMes(ym);
-  h+='<div class="card" id="hFech"><details><summary class="tit" style="font-size:14px;cursor:pointer">\ud83d\udcc5 Fechamento por fornecedor \u2014 toque para abrir</summary>';
-  h+='<label>M\u00eas</label><select onchange="window._fechMes=this.value;render()">';
+  h+='<div class="card" id="hFech"><details'+(window._fechAberto?' open':'')+' ontoggle="window._fechAberto=this.open"><summary class="tit" style="font-size:14px;cursor:pointer">\ud83d\udcc5 Fechamento por fornecedor</summary>';
+  h+='<label>M\u00eas</label><select onchange="window._fechAberto=true;window._fechMes=this.value;render()">';
   meses.forEach(function(x){h+='<option value="'+x+'"'+(x===ym?' selected':'')+'>'+_nomeMes(x)+'</option>'});
   h+='</select>';
   if(!f.fornecedores.length)h+='<div class="sub" style="margin-top:6px">Sem gastos neste m\u00eas.</div>';
