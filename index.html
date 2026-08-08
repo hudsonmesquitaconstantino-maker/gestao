@@ -252,7 +252,7 @@ nav .on .ic,.nav .on .ic{filter:none}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=80; var APP_DATE='22/07/2026';
+var APP_VER=82; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -909,13 +909,13 @@ function primNome(n){var p=String(n||'').trim().split(/\s+/);return p[0]?p[0].ch
    O resumo mostra a posição MAIS ANTIGA, que é a que vence primeiro. */
 function grupoRodas(c,pref,titulo){
   var pos=[['DE','Dianteiro esquerdo'],['DD','Dianteiro direito'],
-           ['TE','Traseiro esquerdo'],['TD','Traseiro direito'],['NI','Posição não informada']];
+           ['TE','Traseiro esquerdo'],['TD','Traseiro direito']];
   var u=c.ultTrocas||{},tem=false,antigo=null,antigoNome='';
   pos.forEach(function(p){
     var v=u[pref+p[0]];
     if(v&&(v.km||v.data)){
       tem=true;
-      if(p[0]!=='NI'&&(!antigo||(Number(v.km)||0)<(Number(antigo.km)||0))){antigo=v;antigoNome=p[0]}
+      if(!antigo||(Number(v.km)||0)<(Number(antigo.km)||0)){antigo=v;antigoNome=p[0]}
     }
   });
   var resumo=tem?(antigo?('mais antigo: '+antigoNome+' '+(antigo.km?fmtKm(antigo.km)+' km':'')+
@@ -924,7 +924,6 @@ function grupoRodas(c,pref,titulo){
     '<div class="kv"><b>'+titulo+'</b><span>'+esc(resumo)+'</span></div></summary>';
   pos.forEach(function(p){
     var v=u[pref+p[0]];
-    if(p[0]==='NI'&&!(v&&(v.km||v.data)))return;   /* só mostra "não informada" se existir */
     h+='<div class="kv" style="padding-left:14px;opacity:.9"><b style="font-weight:400">'+p[1]+'</b><span>'+
       (v&&(v.km||v.data)?((v.km?fmtKm(v.km)+' km':'')+(v.km&&v.data?' · ':'')+(v.data?dataBR(v.data):'')):'—')+
       '</span></div>';
@@ -2484,14 +2483,14 @@ function _posRodas(l){
   var lados=[];if(esq)lados.push('E');if(dir)lados.push('D');
   if(eixos.length&&!lados.length){                 /* "par dianteiro" -> os dois da frente */
     if(par)return eixos.map(function(e){return [e+'E',e+'D']}).reduce(function(a,b){return a.concat(b)},[]);
-    return ['NI'];                                  /* "1 amortecedor dianteiro" -> lado incerto */
+    return [];                                      /* sem o lado, não registra */
   }
-  if(!eixos.length&&lados.length)return ['NI'];      /* "lado direito" sem dizer o eixo */
+  if(!eixos.length&&lados.length)return [];          /* sem o eixo, não registra */
   if(eixos.length&&lados.length){
     var out=[];eixos.forEach(function(e){lados.forEach(function(x){out.push(e+x)})});
     return out;
   }
-  return ['NI'];                                     /* nada dito */
+  return [];                                         /* nada dito, não registra */
 }
 function detectarComponentes(m){
  var out={comps:{},proxOleo:0,proxCorreia:0};
@@ -2591,7 +2590,7 @@ function aplicarDeteccao(m,carro){
 }
 
 /* ===================== RECÁLCULO + EDIÇÃO DAS ÚLTIMAS TROCAS ===================== */
-var COMPS_LST=[['vela','🔥 Vela'],['cabos','🔥 Cabos de vela'],['embreagem','⚙️ Embreagem'],['bateria','🔋 Bateria'],['alternador','⚡ Alternador'],['arranque','🔑 Arranque'],['freios','🛑 Freios (pastilha)'],['ventoinha','❄️ Ventoinha'],['radiador','🌡 Radiador'],['bombaAgua','💧 Bomba d\'água'],['motor','🔩 Motor (cabeçote/bloco)'],['pneuDE','🛞 Pneu dianteiro esquerdo'],['pneuDD','🛞 Pneu dianteiro direito'],['pneuTE','🛞 Pneu traseiro esquerdo'],['pneuTD','🛞 Pneu traseiro direito'],['pneuNI','🛞 Pneu (posição não informada)'],['amortDE','🔧 Amortecedor dianteiro esquerdo'],['amortDD','🔧 Amortecedor dianteiro direito'],['amortTE','🔧 Amortecedor traseiro esquerdo'],['amortTD','🔧 Amortecedor traseiro direito'],['amortNI','🔧 Amortecedor (posição não informada)'],['correia','⚙️ Correia dentada']];
+var COMPS_LST=[['vela','🔥 Vela'],['cabos','🔥 Cabos de vela'],['embreagem','⚙️ Embreagem'],['bateria','🔋 Bateria'],['alternador','⚡ Alternador'],['arranque','🔑 Arranque'],['freios','🛑 Freios (pastilha)'],['ventoinha','❄️ Ventoinha'],['radiador','🌡 Radiador'],['bombaAgua','💧 Bomba d\'água'],['motor','🔩 Motor (cabeçote/bloco)'],['pneuDE','🛞 Pneu dianteiro esquerdo'],['pneuDD','🛞 Pneu dianteiro direito'],['pneuTE','🛞 Pneu traseiro esquerdo'],['pneuTD','🛞 Pneu traseiro direito'],['amortDE','🔧 Amortecedor dianteiro esquerdo'],['amortDD','🔧 Amortecedor dianteiro direito'],['amortTE','🔧 Amortecedor traseiro esquerdo'],['amortTD','🔧 Amortecedor traseiro direito'],['correia','⚙️ Correia dentada']];
 function nomeComp(k){for(var i=0;i<COMPS_LST.length;i++)if(COMPS_LST[i][0]===k)return COMPS_LST[i][1];return k}
 function _dtManut(m){return m.dataFim||m.dataIni||''}
 function _odoManut(m){return Number(m.odometro)||0}
