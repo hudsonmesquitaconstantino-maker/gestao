@@ -132,6 +132,94 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
  font-size:17px;font-weight:800;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);touch-action:manipulation}
 .shx:active{background:rgba(255,255,255,.25)}
 .sheet h3{padding-right:44px}
+
+/* ============================================================
+   REFINAMENTO VISUAL — camada aplicada POR CIMA do estilo acima.
+   Só aparência: nenhuma regra remove elemento, muda estrutura
+   ou interfere em comportamento. Para reverter, basta apagar
+   este bloco inteiro.
+   ============================================================ */
+:root{
+  --bg:#0A0B0D;
+  --card:#141619;
+  --card2:#1B1E23;
+  --bord:#262A30;
+  --tx:#ECEEF1;
+  --tx2:#9BA1AA;
+  --ac:#0A84FF;
+  --ok:#30D158;
+  --warn:#E0A33A;
+  --red:#FF453A;
+  --hair:rgba(255,255,255,.055);
+}
+body{-webkit-font-smoothing:antialiased;letter-spacing:-.1px}
+
+/* Cartões: borda de meio pixel e cantos mais suaves */
+.card{border-width:.5px;border-radius:16px;padding:13px 14px}
+
+/* Títulos de seção: cinza discreto no lugar do azul forte.
+   O azul volta a significar "isto é tocável". */
+.sect{color:var(--tx2);font-weight:600;font-size:11.5px;letter-spacing:.07em;
+  opacity:.75;margin:18px 0 7px}
+
+/* Hierarquia de botões:
+   .ok  = ação principal (preenchida)
+   .sec = ação secundária (neutra)
+   .red = ação destrutiva (só texto, sem bloco vermelho) */
+.btn{border-radius:12px;font-weight:600;font-size:14.5px;padding:12px;
+  letter-spacing:-.15px;transition:transform .12s ease,opacity .12s ease}
+.btn:active{transform:scale(.98);opacity:.9}
+.btn.ok{background:var(--ac);color:#fff}
+.btn.sec{background:var(--card2);color:var(--tx);border:.5px solid var(--bord)}
+.btn.red{background:transparent;border:0;color:var(--red);font-weight:600}
+.btn.red:active{background:rgba(255,69,58,.1)}
+.btn.mini{border-radius:11px;padding:8px 14px;font-size:13.5px}
+.btn:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+
+/* Etiquetas: contorno fino com fundo translúcido */
+.chip{border-width:.5px;padding:2.5px 9px;font-size:11.5px;font-weight:600;border-radius:99px}
+.chip.ok{background:rgba(48,209,88,.09);border-color:rgba(48,209,88,.32)}
+.chip.warn{background:rgba(224,163,58,.09);border-color:rgba(224,163,58,.32)}
+.chip.red{background:rgba(255,69,58,.09);border-color:rgba(255,69,58,.32)}
+
+/* Placa: contorno claro em vez de borda preta grossa */
+.plate{border:0;box-shadow:0 0 0 .5px rgba(255,255,255,.18),0 1px 3px rgba(0,0,0,.5)}
+.plate .num{font-weight:700;letter-spacing:.5px}
+
+/* Linhas de item: fio de meio pixel e números alinhados */
+.mvrow{border-bottom:.5px solid var(--hair);padding:7px 0;font-size:14px}
+.mvrow:last-child{border-bottom:0}
+.mvval{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-variant-numeric:tabular-nums;
+  font-size:13.5px;letter-spacing:-.2px}
+.mv-total{font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+
+/* Pares rótulo/valor: rótulo cinza, valor alinhado à direita */
+.kv{gap:0 14px;font-size:13.5px}
+.kv b{font-size:12.5px;font-weight:500;padding:5px 0}
+.kv span{padding:5px 0;font-variant-numeric:tabular-nums;text-align:right}
+
+/* Títulos e apoio */
+.tit{font-size:15.5px;font-weight:650;letter-spacing:-.25px}
+.sub{font-size:12.5px;line-height:1.4}
+
+/* Campos: foco com halo suave, cantos maiores */
+input,select,textarea{border-width:.5px;border-radius:11px;font-size:15.5px;padding:11px 13px}
+input:focus,select:focus,textarea:focus{border-color:rgba(10,132,255,.55);
+  box-shadow:0 0 0 3px rgba(10,132,255,.14)}
+label{font-size:12px;letter-spacing:.02em;opacity:.9}
+
+/* Barra de topo e busca com vidro fosco */
+.search{background:rgba(10,11,13,.78);backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px)}
+
+/* Folha (sheet): topo arredondado maior e fio fino */
+.sheet{border-width:.5px;border-radius:20px 20px 0 0}
+
+/* Rodapé: ícone inativo dessaturado, ativo em cor */
+nav .ic,.nav .ic{filter:grayscale(1) opacity(.5);transition:filter .15s ease}
+nav .on .ic,.nav .on .ic{filter:none}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
@@ -164,7 +252,7 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=75; var APP_DATE='22/07/2026';
+var APP_VER=76; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
