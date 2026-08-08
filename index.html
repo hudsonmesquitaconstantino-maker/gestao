@@ -252,7 +252,7 @@ nav .on .ic,.nav .on .ic{filter:none}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=76; var APP_DATE='22/07/2026';
+var APP_VER=77; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -947,7 +947,7 @@ function ficha(pk){window._fichaPk=pk;
    var fc=c.proxCorreiaKm?(c.proxCorreiaKm-km):null;
    h+='<div class="kv"><b>⚙️ Correia dentada</b><span>'+(c.proxCorreiaKm?('próxima: '+fmtKm(c.proxCorreiaKm)+' km'+(km?(fc<=0?' · <span style="color:var(--warn)">VENCIDA</span>':' · faltam '+fmtKm(fc)+' km'):'')):'—')+'</span></div>';
   }else h+='<div class="kv"><b>⚙️ Comando</b><span>corrente (sem correia dentada)</span></div>';
-  var COMPS=[['vela','🔥 Vela'],['cabos','🔥 Cabos de vela'],['embreagem','⚙️ Embreagem'],['bateria','🔋 Bateria'],['alternador','⚡ Alternador'],['arranque','🔑 Arranque'],['freios','🛑 Freios (pastilha)'],['ventoinha','❄️ Ventoinha'],['radiador','🌡 Radiador'],['correia','⚙️ Correia dentada (última)']];
+  var COMPS=[['vela','🔥 Vela'],['cabos','🔥 Cabos de vela'],['embreagem','⚙️ Embreagem'],['bateria','🔋 Bateria'],['alternador','⚡ Alternador'],['arranque','🔑 Arranque'],['freios','🛑 Freios (pastilha)'],['ventoinha','❄️ Ventoinha'],['radiador','🌡 Radiador'],['bombaAgua','💧 Bomba d\'água'],['motor','🔩 Motor (cabeçote/bloco)'],['correia','⚙️ Correia dentada (última)']];
   h+='<div class="sect">Últimas trocas (componentes) <span class="x" style="display:inline;padding:0 6px" onclick="editarTrocas(\''+pk+'\')">✎</span></div>';
   COMPS.forEach(function(par){
    if(par[0]==='correia'&&!c.temCorreia)return;
@@ -2473,6 +2473,15 @@ function detectarComponentes(m){
   if(troca&&/ventoinha|eletroventilador/.test(l)&&!/rele|resistencia|sensor|chicote/.test(l))out.comps.ventoinha=true;
   /* RADIADOR: o radiador em si — exclui mangueira/tampa/aditivo/válvula/sensor/reservatório. */
   if(troca&&/radiador/.test(l)&&!/mangueira|tampa|aditivo|valvula|sensor|reservatorio|limpez|ventoinha|eletroventilador/.test(l))out.comps.radiador=true;
+  /* BOMBA D'ÁGUA: a bomba do sistema de arrefecimento. Não confundir com bomba de
+     combustível, bomba de óleo, bomba de direção, nem com reservatório de água. */
+  if(troca&&/bomba/.test(l)&&/(d\s*'?\s*agua|de\s+agua|dagua)/.test(l)&&!/combustivel|oleo|direcao|reservatorio/.test(l))out.comps.bombaAgua=true;
+  /* MOTOR: serviço no cabeçote ou no bloco — retífica, junta do cabeçote, motor novo.
+     NÃO conta "motor de partida", "óleo do motor", "coxim/calço do motor",
+     "filtro de ar do motor" nem "bomba d'água do motor". */
+  if(troca&&(/cabecote/.test(l)||/retific/.test(l)||/bloco\s+do\s+motor/.test(l)||
+     (/motor/.test(l)&&/(troca|substitu)/.test(l)&&/(novo|completo|parcial|retificad)/.test(l)))
+     &&!/motor de partida|arranque|coxim|calco|oleo do motor|filtro/.test(l))out.comps.motor=true;
   if(/correia\s+dentada/.test(l)){if(troca)out.comps.correia=true;if(prox)out.proxCorreia=prox;}
   /* ÓLEO DO MOTOR — exige PROVA POSITIVA de que o óleo em si foi trocado.
      Lista de peças proibidas nunca fecha (sempre aparece uma nova: cebolinha, tomada,
@@ -2508,7 +2517,7 @@ function aplicarDeteccao(m,carro){
 }
 
 /* ===================== RECÁLCULO + EDIÇÃO DAS ÚLTIMAS TROCAS ===================== */
-var COMPS_LST=[['vela','🔥 Vela'],['cabos','🔥 Cabos de vela'],['embreagem','⚙️ Embreagem'],['bateria','🔋 Bateria'],['alternador','⚡ Alternador'],['arranque','🔑 Arranque'],['freios','🛑 Freios (pastilha)'],['ventoinha','❄️ Ventoinha'],['radiador','🌡 Radiador'],['correia','⚙️ Correia dentada']];
+var COMPS_LST=[['vela','🔥 Vela'],['cabos','🔥 Cabos de vela'],['embreagem','⚙️ Embreagem'],['bateria','🔋 Bateria'],['alternador','⚡ Alternador'],['arranque','🔑 Arranque'],['freios','🛑 Freios (pastilha)'],['ventoinha','❄️ Ventoinha'],['radiador','🌡 Radiador'],['bombaAgua','💧 Bomba d\'água'],['motor','🔩 Motor (cabeçote/bloco)'],['correia','⚙️ Correia dentada']];
 function nomeComp(k){for(var i=0;i<COMPS_LST.length;i++)if(COMPS_LST[i][0]===k)return COMPS_LST[i][1];return k}
 function _dtManut(m){return m.dataFim||m.dataIni||''}
 function _odoManut(m){return Number(m.odometro)||0}
