@@ -252,7 +252,7 @@ nav .on .ic,.nav .on .ic{filter:none}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=78; var APP_DATE='22/07/2026';
+var APP_VER=80; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -904,6 +904,33 @@ function vFrota(){
 function primNome(n){var p=String(n||'').trim().split(/\s+/);return p[0]?p[0].charAt(0)+p[0].slice(1).toLowerCase():''}
 
 /* ---------- FICHA ---------- */
+
+/* Grupo recolhível de 4 posições + posição não informada.
+   O resumo mostra a posição MAIS ANTIGA, que é a que vence primeiro. */
+function grupoRodas(c,pref,titulo){
+  var pos=[['DE','Dianteiro esquerdo'],['DD','Dianteiro direito'],
+           ['TE','Traseiro esquerdo'],['TD','Traseiro direito'],['NI','Posição não informada']];
+  var u=c.ultTrocas||{},tem=false,antigo=null,antigoNome='';
+  pos.forEach(function(p){
+    var v=u[pref+p[0]];
+    if(v&&(v.km||v.data)){
+      tem=true;
+      if(p[0]!=='NI'&&(!antigo||(Number(v.km)||0)<(Number(antigo.km)||0))){antigo=v;antigoNome=p[0]}
+    }
+  });
+  var resumo=tem?(antigo?('mais antigo: '+antigoNome+' '+(antigo.km?fmtKm(antigo.km)+' km':'')+
+      (antigo.km&&antigo.data?' · ':'')+(antigo.data?dataBR(antigo.data):'')):'sem posição definida'):'—';
+  var h='<details><summary style="cursor:pointer;list-style:none">'+
+    '<div class="kv"><b>'+titulo+'</b><span>'+esc(resumo)+'</span></div></summary>';
+  pos.forEach(function(p){
+    var v=u[pref+p[0]];
+    if(p[0]==='NI'&&!(v&&(v.km||v.data)))return;   /* só mostra "não informada" se existir */
+    h+='<div class="kv" style="padding-left:14px;opacity:.9"><b style="font-weight:400">'+p[1]+'</b><span>'+
+      (v&&(v.km||v.data)?((v.km?fmtKm(v.km)+' km':'')+(v.km&&v.data?' · ':'')+(v.data?dataBR(v.data):'')):'—')+
+      '</span></div>';
+  });
+  return h+'</details>';
+}
 function ficha(pk){window._fichaPk=pk;
  setTimeout(function(){try{varrerDocsAuto({pk:pk})}catch(e){}},300);
  var c=S.carros[pk];if(!c)return;
@@ -954,6 +981,8 @@ function ficha(pk){window._fichaPk=pk;
    var u=(c.ultTrocas||{})[par[0]];
    h+='<div class="kv"><b>'+par[1]+'</b><span>'+(u&&(u.km||u.data)?((u.km?fmtKm(u.km)+' km':'')+(u.km&&u.data?' · ':'')+(u.data?dataBR(u.data):'')):'—')+'</span></div>';
   });
+  h+=grupoRodas(c,'pneu','🛞 Pneus');
+  h+=grupoRodas(c,'amort','🔧 Amortecedores');
   h+='<button class="btn mini sec" onclick="recalcTrocasUI(\''+pk+'\')">🔄 Recalcular do histórico</button>';
  })();
  h+='<div class="sect">Documento CRLV</div>';
@@ -2437,6 +2466,33 @@ function _ehTroca(l){
  if(/completou|completo|complement|verific|limpez|limpou|regulag|reapert|alinham|balancead|balanceam|sangri|inspec/.test(l))return false;
  return true; /* peça comprada, sem verbo: conta como troca */
 }
+
+/* ===== PNEUS E AMORTECEDORES POR POSIÇÃO =====
+   Quatro posições cada: DE (dianteiro esquerdo), DD, TE, TD.
+   Quando o texto não diz a posição ("2 pneus Remold"), grava em "NI" —
+   posição não informada — em vez de chutar. */
+var RODAS=['DE','DD','TE','TD'];
+function _posRodas(l){
+  var fr=/(dianteir|frontal|\bfrente\b|\bdiant\b|\bdt\b)/.test(l);
+  var tr=/(traseir|\btras\b|\batras\b|\btz\b)/.test(l);
+  var esq=/(esquerd|\besq\b|\ble\b|\bte\b(?!\w))/.test(l);
+  var dir=/(direit|\bdir\b|\bld\b|\bld\b)/.test(l);
+  var quatro=/(\bquatro\b|\b4\b|jogo\s+de\s+4|todos\s+os\s+pneus|4\s*pneus)/.test(l);
+  var par=/(\bpar\b|\bdois\b|\b2\b|ambos|dianteiros|traseiros)/.test(l);
+  if(quatro)return RODAS.slice();
+  var eixos=[];if(fr)eixos.push('D');if(tr)eixos.push('T');
+  var lados=[];if(esq)lados.push('E');if(dir)lados.push('D');
+  if(eixos.length&&!lados.length){                 /* "par dianteiro" -> os dois da frente */
+    if(par)return eixos.map(function(e){return [e+'E',e+'D']}).reduce(function(a,b){return a.concat(b)},[]);
+    return ['NI'];                                  /* "1 amortecedor dianteiro" -> lado incerto */
+  }
+  if(!eixos.length&&lados.length)return ['NI'];      /* "lado direito" sem dizer o eixo */
+  if(eixos.length&&lados.length){
+    var out=[];eixos.forEach(function(e){lados.forEach(function(x){out.push(e+x)})});
+    return out;
+  }
+  return ['NI'];                                     /* nada dito */
+}
 function detectarComponentes(m){
  var out={comps:{},proxOleo:0,proxCorreia:0};
  var linhas=[];
@@ -2490,6 +2546,16 @@ function detectarComponentes(m){
   if(troca&&(/cabecote/.test(l)||/retific/.test(l)||/bloco\s+do\s+motor/.test(l)||
      (/motor/.test(l)&&/(troca|substitu)/.test(l)&&/(novo|completo|parcial|retificad)/.test(l)))
      &&!/motor de partida|arranque|coxim|calco|oleo do motor|filtro/.test(l))out.comps.motor=true;
+  /* PNEUS: exclui estepe, calibragem, alinhamento/balanceamento e conserto/remendo. */
+  if(troca&&/\bpneu/.test(l)&&!/estepe|calibr|alinham|balancea|conserto|remendo|reparo|furo/.test(l)){
+   _posRodas(l).forEach(function(p){out.comps['pneu'+p]=true});
+  }
+  /* AMORTECEDORES: só o amortecedor em si — a peça grande.
+     Pela convenção dele, quando é o kit (batente/coxim de cima, que troca toda hora)
+     a linha SEMPRE traz a palavra "kit". Então "kit amortecedor" NÃO entra aqui. */
+  if(troca&&/amortecedor/.test(l)&&!/\bkit\b|batente|coifa|coxim|torre|reparo/.test(l)){
+   _posRodas(l).forEach(function(p){out.comps['amort'+p]=true});
+  }
   if(/correia\s+dentada/.test(l)){if(troca)out.comps.correia=true;if(prox)out.proxCorreia=prox;}
   /* ÓLEO DO MOTOR — exige PROVA POSITIVA de que o óleo em si foi trocado.
      Lista de peças proibidas nunca fecha (sempre aparece uma nova: cebolinha, tomada,
@@ -2525,7 +2591,7 @@ function aplicarDeteccao(m,carro){
 }
 
 /* ===================== RECÁLCULO + EDIÇÃO DAS ÚLTIMAS TROCAS ===================== */
-var COMPS_LST=[['vela','🔥 Vela'],['cabos','🔥 Cabos de vela'],['embreagem','⚙️ Embreagem'],['bateria','🔋 Bateria'],['alternador','⚡ Alternador'],['arranque','🔑 Arranque'],['freios','🛑 Freios (pastilha)'],['ventoinha','❄️ Ventoinha'],['radiador','🌡 Radiador'],['bombaAgua','💧 Bomba d\'água'],['motor','🔩 Motor (cabeçote/bloco)'],['correia','⚙️ Correia dentada']];
+var COMPS_LST=[['vela','🔥 Vela'],['cabos','🔥 Cabos de vela'],['embreagem','⚙️ Embreagem'],['bateria','🔋 Bateria'],['alternador','⚡ Alternador'],['arranque','🔑 Arranque'],['freios','🛑 Freios (pastilha)'],['ventoinha','❄️ Ventoinha'],['radiador','🌡 Radiador'],['bombaAgua','💧 Bomba d\'água'],['motor','🔩 Motor (cabeçote/bloco)'],['pneuDE','🛞 Pneu dianteiro esquerdo'],['pneuDD','🛞 Pneu dianteiro direito'],['pneuTE','🛞 Pneu traseiro esquerdo'],['pneuTD','🛞 Pneu traseiro direito'],['pneuNI','🛞 Pneu (posição não informada)'],['amortDE','🔧 Amortecedor dianteiro esquerdo'],['amortDD','🔧 Amortecedor dianteiro direito'],['amortTE','🔧 Amortecedor traseiro esquerdo'],['amortTD','🔧 Amortecedor traseiro direito'],['amortNI','🔧 Amortecedor (posição não informada)'],['correia','⚙️ Correia dentada']];
 function nomeComp(k){for(var i=0;i<COMPS_LST.length;i++)if(COMPS_LST[i][0]===k)return COMPS_LST[i][1];return k}
 function _dtManut(m){return m.dataFim||m.dataIni||''}
 function _odoManut(m){return Number(m.odometro)||0}
