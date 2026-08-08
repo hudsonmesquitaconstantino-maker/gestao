@@ -154,6 +154,8 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 }
 body{-webkit-font-smoothing:antialiased;letter-spacing:-.1px}
 
+.kv.tap{cursor:pointer;border-radius:8px;transition:background .12s ease}
+.kv.tap:active{background:rgba(255,255,255,.05)}
 /* Cartões: borda de meio pixel e cantos mais suaves */
 .card{border-width:.5px;border-radius:16px;padding:13px 14px}
 
@@ -252,7 +254,7 @@ nav .on .ic,.nav .on .ic{filter:none}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=82; var APP_DATE='22/07/2026';
+var APP_VER=84; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -924,11 +926,176 @@ function grupoRodas(c,pref,titulo){
     '<div class="kv"><b>'+titulo+'</b><span>'+esc(resumo)+'</span></div></summary>';
   pos.forEach(function(p){
     var v=u[pref+p[0]];
-    h+='<div class="kv" style="padding-left:14px;opacity:.9"><b style="font-weight:400">'+p[1]+'</b><span>'+
+    var abre=(v&&v.mid&&S.manutencoes&&S.manutencoes[v.mid]);
+    h+='<div class="kv'+(abre?' tap':'')+'" style="padding-left:14px;opacity:.9"'+
+      (abre?' onclick="verManut(\''+v.mid+'\')"':'')+'><b style="font-weight:400">'+p[1]+'</b><span>'+
       (v&&(v.km||v.data)?((v.km?fmtKm(v.km)+' km':'')+(v.km&&v.data?' · ':'')+(v.data?dataBR(v.data):'')):'—')+
-      '</span></div>';
+      (abre?' <span style="opacity:.45">›</span>':'')+'</span></div>';
   });
   return h+'</details>';
+}
+
+/* ===== CATÁLOGO DO CARRO — tudo que já foi trocado/feito =====
+   Varre TODAS as manutenções do carro e agrupa por peça/serviço, guardando a última
+   vez de cada um. Diferente do resumo de cima, que é a lista curta de vigilância. */
+var FAMILIAS=[
+ /* [nome, o que reconhece, o que apagar antes de testar, o que impede] */
+ ['Óleo do motor',/\boleo\b/,/filtro\s+de\s+oleo/g,/cambio|caixa\s+de\s+marcha|direcao|freio|diferencial|gl\s*-?\s*4|hidraulic|90\b/],
+ ['Óleo do câmbio',/oleo.*(cambio|caixa\s+de\s+marcha)|(cambio|caixa\s+de\s+marcha).*oleo/,null,null],
+ ['Filtro de óleo',/filtro\s+de\s+oleo/,null,null],
+ ['Filtro de ar',/filtro\s+de\s+ar\b/,null,/condicionado|cabine/],
+ ['Filtro de cabine',/filtro\s+de\s+cabine|filtro\s+do?\s*ar\s*condicionado/,null,null],
+ ['Filtro de combustível',/filtro\s+de\s+combustivel/,null,null],
+ ['Cabo de vela',/cabos?\s+de\s+vela/,null,null],
+ ['Vela',/\bvela/,/cabos?\s+de\s+vela/g,null],
+ ['Correia dentada',/correia\s+dentada/,null,null],
+ ['Correia do alternador',/correia\s+(do\s+)?(alternador|acessorio|poli)/,null,null],
+ ['Tensor da correia',/tensor|esticador/,null,null],
+ ["Bomba d'água",/bomba\s*d\s*'?\s*agua|bomba\s+de\s+agua/,null,null],
+ ['Bomba de combustível',/bomba\s+de\s+combustivel|refil\s+da\s+bomba|boia\s+de\s+combustivel/,null,null],
+ ['Bomba de óleo',/bomba\s+de\s+oleo/,null,null],
+ ['Válvula termostática',/valvula\s+termostatica|termostato/,null,null],
+ ['Radiador',/radiador/,null,/ventoinha|mangueira|tampa/],
+ ['Ventoinha',/ventoinha|eletroventilador/,null,null],
+ ["Reservatório d'água",/reservatorio\s*d\s*'?\s*agua|reservatorio\s+de\s+agua/,null,null],
+ ['Líquido de arrefecimento',/paraflu|liquido\s+de\s+arrefecimento|agua\s+desmineralizada/,null,null],
+ ['Mangueira',/mangueira/,null,null],
+ ['Cabo de embreagem',/cabo\s+de\s+embreagem/,null,null],
+ ['Embreagem',/embreagem|disco\s+e\s+plato/,/cabo\s+de\s+embreagem/g,null],
+ ['Bateria',/bateria/,null,/terminal|polo|suporte/],
+ ['Alternador',/alternador/,null,/correia|polia/],
+ ['Motor de partida',/motor\s+de\s+partida|arranque/,null,null],
+ ['Pastilha de freio',/pastilha/,null,null],
+ ['Disco de freio',/disco\s+de\s+freio/,null,null],
+ ['Sapata de freio',/sapata|lona\s+de\s+freio/,null,null],
+ ['Cilindro de freio',/cilindro\s+de\s+roda|cilindro\s+mestre/,null,null],
+ ['Fluido de freio',/fluido\s+de\s+freio/,null,null],
+ ['Freio de mão',/freio\s+de\s+mao/,null,null],
+ ['Kit do amortecedor',/kit\s+amortecedor|kit\s+do\s+amortecedor|batente|torre/,null,null],
+ ['Amortecedor',/amortecedor/,/kit\s+(do\s+)?amortecedor/g,/batente|coifa|coxim|torre/],
+ ['Mola',/\bmola\b/,null,null],
+ ['Bieleta',/bieleta/,null,null],
+ ['Bucha da barra estabilizadora',/bucha\s+da\s+barra|barra\s+estabilizadora/,null,null],
+ ['Balança',/balanca|bandeja/,null,null],
+ ['Pivô',/\bpivo/,null,null],
+ ['Ponteira de direção',/ponteira\s+de\s+direcao|terminal\s+de\s+direcao/,null,null],
+ ['Braço axial',/braco\s+axial|barra\s+axial/,null,null],
+ ['Caixa de direção',/caixa\s+de\s+direcao|setor\s+de\s+direcao/,null,null],
+ ['Coxim/calço do motor',/coxim|calco\s+do\s+motor|calco\s+raquete/,null,/amortecedor/],
+ ['Cubo de roda / rolamento',/cubo\s+de\s+roda|rolamento/,null,null],
+ ['Homocinética / trizeta',/homocinetica|trizeta|semi\s*-?\s*eixo/,null,null],
+ ['Coifa',/coifa/,null,null],
+ ['Pneu',/\bpneu/,null,/estepe|calibr/],
+ ['Alinhamento',/alinhament/,null,null],
+ ['Balanceamento',/balancea/,null,null],
+ ['Cambagem',/cambagem/,null,null],
+ ['Junta do cabeçote',/junta\s+do\s+cabecote/,null,null],
+ ['Cabeçote / motor',/cabecote|retific|bloco\s+do\s+motor/,/junta\s+do\s+cabecote/g,null],
+ ['Bicos injetores',/\bbico|injetor/,null,null],
+ ['Sonda lambda',/sonda\s+lambda/,null,null],
+ ['Sensor de óleo (cebolinha)',/cebolinha|interruptor\s+de\s+oleo/,null,null],
+ ['Lanternagem',/lanternagem|funilaria/,null,null],
+ ['Pintura',/pintura|pintar/,null,null],
+ ['Lavagem / estética',/lavagem|higieniza|polimento|estetica/,null,null],
+ ['Máquina de vidro',/maquina\s+de\s+vidro|vidro\s+eletrico/,null,null],
+ ['Fechadura / miolo',/miolo|fechadura|chave\s+codificada/,null,null],
+ ['Maçaneta / puxador',/macaneta|puxador/,null,null],
+ ['Retrovisor',/retrovisor/,null,null],
+ ['Farol / lanterna',/farol|lanterna|lampada/,null,null],
+ ['Para-choque',/para\s*-?\s*choque/,null,null],
+ ['Para-lama',/para\s*-?\s*lama/,null,null],
+ ['Tampa de mala',/tampa\s+de\s+mala/,null,null],
+ ['Escapamento',/escapamento|silencioso|catalisador/,null,null],
+ ['Painel / velocímetro',/velocimetro|painel/,null,null],
+ ['Ar-condicionado',/ar\s*-?\s*condicionado|compressor/,null,null],
+ ['GNV',/\bgnv\b|cilindro\s+de\s+gas|redutor/,null,null],
+ ['Aditivos e químicos',/silicone|descarbonizante|desengripante/,null,null],
+ ['Bujão / cárter',/bujao|carter/,null,null],
+ ['Graxa',/graxa/,null,null]
+];
+/* Uma linha pode trazer mais de uma peça ("balança com pivô", "óleo e filtro de óleo"),
+   então devolvo TODAS as famílias reconhecidas, não só a primeira. */
+function _familiasPeca(raw){
+ var base=semAcento(String(raw||''))
+   .replace(/[\u2018\u2019\u02bc\u00b4\u0060]/g,"'").replace(/[\u2013\u2014]/g,'-');
+ var achadas=[];
+ for(var i=0;i<FAMILIAS.length;i++){
+  var f=FAMILIAS[i],alvo=base;
+  if(f[2])alvo=alvo.replace(f[2],' ');          /* apaga o termo composto antes de testar */
+  if(!f[1].test(alvo))continue;
+  if(f[3]&&f[3].test(base))continue;            /* impedimento */
+  achadas.push(f[0]);
+ }
+ if(achadas.length)return achadas;
+ /* não reconhecida: guarda o texto limpo, para nada se perder */
+ var t=String(raw||'').trim()
+   .replace(/^\s*[\u2022\-\u2013]\s*/,'')
+   .replace(/^troca(r|do|da|dos|das)?\s+(d[eoa]s?\s+)?/i,'')
+   .replace(/^\d+\s*(un\.?|x)?\s*/,'')
+   .replace(/\s*\([^)]*\)\s*$/,'')
+   .trim();
+ if(!t)return [];
+ t=t.charAt(0).toUpperCase()+t.slice(1);
+ return [t.length>46?t.slice(0,46)+'…':t];
+}
+
+/* Lê a posição em texto, para mostrar no catálogo: "traseiro direito", "dianteiro" etc.
+   Só devolve o que estiver escrito na linha — não inventa. */
+function _ladoTexto(raw){
+ var l=semAcento(String(raw||''));
+ var fr=/(dianteir|frontal|\bfrente\b|\bdiant\b)/.test(l);
+ var tr=/(traseir|\btras\b|\batras\b)/.test(l);
+ var esq=/(esquerd|\besq\b)/.test(l);
+ var dir=/(direit|\bdir\b)/.test(l);
+ var quatro=/(\bquatro\b|\b4\b|todos)/.test(l);
+ var eixo=fr&&tr?'':(fr?'dianteiro':(tr?'traseiro':''));
+ var lado=esq&&dir?'ambos os lados':(esq?'esquerdo':(dir?'direito':''));
+ if(quatro&&(fr||tr||esq||dir))return 'os quatro';
+ if(!eixo&&!lado)return '';
+ return (eixo+' '+lado).trim();
+}
+/* Monta o catálogo do carro: cada peça UMA vez, com a última troca e o lado. */
+function catalogoCarro(pk){
+ var mapa={};
+ manutsDoCarro(pk).forEach(function(m){
+  var dt=_dtManut(m)||'',odo=_odoManut(m);
+  var linhas=[];
+  (m.blocos||[]).forEach(function(b){
+   var sv=b&&b.servicos;var arr=Array.isArray(sv)?sv:String(sv||'').split('\n');
+   arr.forEach(function(x){x=String(x||'').trim();if(x)linhas.push(x)});
+  });
+  (m.pecas||[]).forEach(function(p){if(p&&p.desc)linhas.push(String(p.desc).trim())});
+  var vistasAqui={};
+  linhas.forEach(function(l){
+   _familiasPeca(l).forEach(function(f){
+    if(!f||vistasAqui[f])return;      /* mesma peça repetida na manutenção conta 1 vez */
+    vistasAqui[f]=1;
+    var atual=mapa[f];
+    var lado=_ladoTexto(l);
+    if(!atual){mapa[f]={nome:f,km:odo,data:dt,mid:m.id,lado:lado};return}
+    /* manutsDoCarro vem em ordem cronológica: a última que passa é a mais recente */
+    atual.km=odo;atual.data=dt;atual.mid=m.id;atual.lado=lado;
+   });
+  });
+ });
+ return Object.keys(mapa).map(function(k){return mapa[k]})
+  .sort(function(a,b){return (b.data||'').localeCompare(a.data||'')});
+}
+/* Aba recolhível na ficha */
+function grupoCatalogo(pk){
+ var lista=catalogoCarro(pk);
+ if(!lista.length)return '';
+ var h='<details><summary style="cursor:pointer;list-style:none">'+
+   '<div class="kv"><b>🧰 Tudo que já foi trocado</b><span>'+lista.length+' itens · toque para abrir</span></div></summary>';
+ lista.forEach(function(it){
+  var abre=(it.mid&&S.manutencoes&&S.manutencoes[it.mid]);
+  h+='<div class="kv'+(abre?' tap':'')+'" style="padding-left:14px"'+
+     (abre?' onclick="verManut(\''+it.mid+'\')"':'')+'><b style="font-weight:400">'+esc(it.nome)+
+     (it.lado?' <span class="sub" style="opacity:.65">'+esc(it.lado)+'</span>':'')+'</b><span>'+
+     (it.km?fmtKm(it.km)+' km':'')+(it.km&&it.data?' · ':'')+(it.data?dataBR(it.data):'')+
+     (abre?' <span style="opacity:.45">›</span>':'')+'</span></div>';
+ });
+ return h+'</details>';
 }
 function ficha(pk){window._fichaPk=pk;
  setTimeout(function(){try{varrerDocsAuto({pk:pk})}catch(e){}},300);
@@ -978,10 +1145,15 @@ function ficha(pk){window._fichaPk=pk;
   COMPS.forEach(function(par){
    if(par[0]==='correia'&&!c.temCorreia)return;
    var u=(c.ultTrocas||{})[par[0]];
-   h+='<div class="kv"><b>'+par[1]+'</b><span>'+(u&&(u.km||u.data)?((u.km?fmtKm(u.km)+' km':'')+(u.km&&u.data?' · ':'')+(u.data?dataBR(u.data):'')):'—')+'</span></div>';
+   var val=(u&&(u.km||u.data)?((u.km?fmtKm(u.km)+' km':'')+(u.km&&u.data?' · ':'')+(u.data?dataBR(u.data):'')):'—');
+   /* Se sabemos qual manutenção gerou esta troca, a linha abre direto nela. */
+   var abre=(u&&u.mid&&S.manutencoes&&S.manutencoes[u.mid]);
+   h+='<div class="kv'+(abre?' tap':'')+'"'+(abre?' onclick="verManut(\''+u.mid+'\')"':'')+'>'+
+      '<b>'+par[1]+'</b><span>'+val+(abre?' <span style="opacity:.45">›</span>':'')+'</span></div>';
   });
   h+=grupoRodas(c,'pneu','🛞 Pneus');
   h+=grupoRodas(c,'amort','🔧 Amortecedores');
+  h+=grupoRodas(c,'mola','🌀 Molas');
   h+='<button class="btn mini sec" onclick="recalcTrocasUI(\''+pk+'\')">🔄 Recalcular do histórico</button>';
  })();
  h+='<div class="sect">Documento CRLV</div>';
@@ -1065,6 +1237,7 @@ h+='<div class="sect">Devolução do carro</div>';
  var _oc=obsDoCarro(pk,true);
  if(_oc.length)h+='<details style="margin:8px 0"><summary class="sub">✅ Observações concluídas ('+_oc.length+')</summary>'+obsListaHtml(_oc,true)+'</details>';
  /* MANUTENÇÕES */
+ h+=grupoCatalogo(pk);
  h+='<div class="sect">Histórico de manutenções ('+mans.length+')</div>';
  if(!mans.length)h+='<div class="sub">Nenhuma manutenção registrada.</div>';
  mans.forEach(function(m){
@@ -2549,6 +2722,10 @@ function detectarComponentes(m){
   if(troca&&/\bpneu/.test(l)&&!/estepe|calibr|alinham|balancea|conserto|remendo|reparo|furo/.test(l)){
    _posRodas(l).forEach(function(p){out.comps['pneu'+p]=true});
   }
+  /* MOLAS: mesma lógica das outras peças de suspensão, por posição. */
+  if(troca&&/\bmola/.test(l)&&!/bucha|batente|coxim|calco/.test(l)){
+   _posRodas(l).forEach(function(p){out.comps['mola'+p]=true});
+  }
   /* AMORTECEDORES: só o amortecedor em si — a peça grande.
      Pela convenção dele, quando é o kit (batente/coxim de cima, que troca toda hora)
      a linha SEMPRE traz a palavra "kit". Então "kit amortecedor" NÃO entra aqui. */
@@ -2590,7 +2767,7 @@ function aplicarDeteccao(m,carro){
 }
 
 /* ===================== RECÁLCULO + EDIÇÃO DAS ÚLTIMAS TROCAS ===================== */
-var COMPS_LST=[['vela','🔥 Vela'],['cabos','🔥 Cabos de vela'],['embreagem','⚙️ Embreagem'],['bateria','🔋 Bateria'],['alternador','⚡ Alternador'],['arranque','🔑 Arranque'],['freios','🛑 Freios (pastilha)'],['ventoinha','❄️ Ventoinha'],['radiador','🌡 Radiador'],['bombaAgua','💧 Bomba d\'água'],['motor','🔩 Motor (cabeçote/bloco)'],['pneuDE','🛞 Pneu dianteiro esquerdo'],['pneuDD','🛞 Pneu dianteiro direito'],['pneuTE','🛞 Pneu traseiro esquerdo'],['pneuTD','🛞 Pneu traseiro direito'],['amortDE','🔧 Amortecedor dianteiro esquerdo'],['amortDD','🔧 Amortecedor dianteiro direito'],['amortTE','🔧 Amortecedor traseiro esquerdo'],['amortTD','🔧 Amortecedor traseiro direito'],['correia','⚙️ Correia dentada']];
+var COMPS_LST=[['vela','🔥 Vela'],['cabos','🔥 Cabos de vela'],['embreagem','⚙️ Embreagem'],['bateria','🔋 Bateria'],['alternador','⚡ Alternador'],['arranque','🔑 Arranque'],['freios','🛑 Freios (pastilha)'],['ventoinha','❄️ Ventoinha'],['radiador','🌡 Radiador'],['bombaAgua','💧 Bomba d\'água'],['motor','🔩 Motor (cabeçote/bloco)'],['pneuDE','🛞 Pneu dianteiro esquerdo'],['pneuDD','🛞 Pneu dianteiro direito'],['pneuTE','🛞 Pneu traseiro esquerdo'],['pneuTD','🛞 Pneu traseiro direito'],['molaDE','🌀 Mola dianteira esquerda'],['molaDD','🌀 Mola dianteira direita'],['molaTE','🌀 Mola traseira esquerda'],['molaTD','🌀 Mola traseira direita'],['amortDE','🔧 Amortecedor dianteiro esquerdo'],['amortDD','🔧 Amortecedor dianteiro direito'],['amortTE','🔧 Amortecedor traseiro esquerdo'],['amortTD','🔧 Amortecedor traseiro direito'],['correia','⚙️ Correia dentada']];
 function nomeComp(k){for(var i=0;i<COMPS_LST.length;i++)if(COMPS_LST[i][0]===k)return COMPS_LST[i][1];return k}
 function _dtManut(m){return m.dataFim||m.dataIni||''}
 function _odoManut(m){return Number(m.odometro)||0}
@@ -2634,7 +2811,7 @@ function recalcTrocasCarro(pk){
  var novo={};
  mans.forEach(function(m){
   var d=detectarComponentes(m),odo=_odoManut(m),dt=_dtManut(m)||hoje();
-  Object.keys(d.comps).forEach(function(comp){novo[comp]={km:odo,data:dt,src:'auto'}});
+  Object.keys(d.comps).forEach(function(comp){novo[comp]={km:odo,data:dt,src:'auto',mid:m.id}});
  });
  var antes=c.ultTrocas||{};
  var manuais={};Object.keys(antes).forEach(function(k){if(antes[k]&&antes[k].src==='manual')manuais[k]=antes[k]});
