@@ -252,7 +252,7 @@ nav .on .ic,.nav .on .ic{filter:none}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=77; var APP_DATE='22/07/2026';
+var APP_VER=78; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -2451,6 +2451,10 @@ function detectarComponentes(m){
  (m.pecas||[]).forEach(function(p){if(p&&p.desc)String(p.desc).split('\n').forEach(function(s){s=s.trim();if(s)linhas.push(s)})});
  linhas.forEach(function(raw){
   var l=semAcento(raw);
+  /* Normaliza a pontuação que o teclado do iPhone usa: apóstrofo curvo (’ ‘ ´ `),
+     aspas e travessões. Sem isso, "bomba d’água" não casa com o padrão d'agua. */
+  l=l.replace(/[\u2018\u2019\u02bc\u00b4\u0060]/g,"'").replace(/[\u201c\u201d]/g,'"')
+     .replace(/[\u2013\u2014]/g,'-').replace(/\u00a0/g,' ');
   var odoM=Number(m.odometro)||0;
   var prox=lerProxKm(l);
   /* guarda de sanidade: a próxima troca tem que ser DEPOIS do km da própria manutenção */
@@ -2460,7 +2464,11 @@ function detectarComponentes(m){
      NUNCA marca em "cabo do freio de mão", "cabo de embreagem", "cabo do acelerador". */
   if(troca&&/cabo/.test(l)&&/vela/.test(l))out.comps.cabos=true;
   /* VELA (ignição): tem "vela" mas NÃO é linha de cabo. */
-  if(troca&&/\bvela/.test(l)&&!/cabo/.test(l))out.comps.vela=true;
+  /* VELA: a mesma linha pode trazer os dois ("jogo de cabo de vela E jogo de vela").
+     Removo a expressão "cabo de vela" e vejo se ainda sobra "vela" — se sobrar,
+     houve troca de vela também. */
+  var _semCabo=l.replace(/cabos?\s+de\s+vela/g,' ');
+  if(troca&&/\bvela/.test(_semCabo))out.comps.vela=true;
   /* EMBREAGEM: kit/disco/platô — exclui cabo, atuador, cilindro e pedal. */
   if(troca&&/embreagem/.test(l)&&(/kit|disco|plato|jogo|rolamento/.test(l)||!/cabo|atuador|cilindro|pedal|fluido/.test(l)))out.comps.embreagem=true;
   /* BATERIA: a bateria em si — não terminal, polo ou cabo de bateria. */
