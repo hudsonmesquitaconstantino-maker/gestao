@@ -254,7 +254,7 @@ nav .on .ic,.nav .on .ic{filter:none}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=86; var APP_DATE='22/07/2026';
+var APP_VER=87; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -1463,6 +1463,8 @@ function formVenda(pk,ctId){
   '<label>Comprador (nome completo)</label><input id="vd_nome" value="'+esc(l.nome||'')+'">'+
   '<div class="grid2"><div><label>CPF</label><input id="vd_cpf" value="'+esc(l.cpf||'')+'"></div>'+
   '<div><label>RG</label><input id="vd_rg" value="'+esc(l.rg||'')+'"></div></div>'+
+  '<div class="grid2"><div><label>Nacionalidade</label><input id="vd_nac" value="'+esc(l.nacionalidade||'Brasileiro')+'"></div>'+
+  '<div><label>Estado civil</label><input id="vd_ec" placeholder="solteiro, casado..." value="'+esc(l.estadoCivil||'')+'"></div></div>'+
   '<label>Endereço do comprador</label>'+
   '<div class="grid2"><div style="flex:2"><label class="sub">Rua/Av.</label><input id="vdRua"></div>'+
   '<div><label class="sub">Número</label><input id="vdNum"></div></div>'+
@@ -1470,6 +1472,7 @@ function formVenda(pk,ctId){
   '<div><label class="sub">Bairro</label><input id="vdBairro"></div></div>'+
   '<div class="grid2"><div><label class="sub">Cidade</label><input id="vdCidade"></div>'+
   '<div><label class="sub">UF</label><input id="vdUf" maxlength="2"></div></div>'+
+  '<label class="sub">CEP</label><input id="vd_cep" value="'+esc(l.cep||'')+'">'+
   '<label>Vendedor (proprietário no documento)</label><input id="vd_vend" value="'+esc((v&&v.locadorNome)||c.proprietario||'')+'">'+
   '<div class="sect">Valores</div>'+
   '<div class="grid2"><div><label>Valor total (R$)</label><input id="vd_total" inputmode="decimal" value="'+(d.valorTotal?fmtBRL(d.valorTotal):'')+'"></div>'+
@@ -1500,7 +1503,8 @@ function salvarVenda(pk,ctId){
  var ct=ctId?S.contratos[ctId]:normContrato({id:idNovo('ct'),carro:pk,origem:'anexado'});
  ct.tipo='venda';ct.status='vigente';
  ct.locatario=ct.locatario||{};
- ct.locatario.nome=g('vd_nome');ct.locatario.cpf=g('vd_cpf');ct.locatario.rg=g('vd_rg');ct.locatario.endereco=montaEndereco('vd');
+ ct.locatario.nome=g('vd_nome');ct.locatario.cpf=g('vd_cpf');ct.locatario.rg=g('vd_rg');
+ ct.locatario.nacionalidade=g('vd_nac');ct.locatario.estadoCivil=g('vd_ec');ct.locatario.cep=g('vd_cep');ct.locatario.endereco=montaEndereco('vd');
  ct.locadorNome=g('vd_vend');
  ct.inicio=g('vd_ini');ct.fim=g('vd_fim');
  ct.venda={valorTotal:parseBRL(g('vd_total')),entrada:parseBRL(g('vd_entrada')),abatimento:parseBRL(g('vd_abat')),
@@ -2206,111 +2210,156 @@ function enviarArquivo(file,path,cb){
 
 /* ---------- LEITOR INTERNO DO CONTRATO (visual do modelo GuimasCar) ---------- */
 
-/* ===== CONTRATO DE COMPRA E VENDA — mesmo padrão visual da locação =====
-   Reaproveita as mesmas peças do contrato de locação (logo, título, barras azuis,
-   tabela das partes), para o resultado final sair igual em beleza e formato. */
+/* ===== CONTRATO DE COMPRA E VENDA =====
+   Reproduz PALAVRA POR PALAVRA o contrato modelo da GuimasCar; só a apresentação
+   segue o padrão visual do contrato de locação (logo, título, barras, blocos).
+   Nada do texto é reescrito — o que muda são apenas os dados preenchidos. */
+function _semanasPorMes(ini,fim){
+ /* Monta "DIAS DO MÊS DE DEZEMBRO 2025 – 3/10/17/24/31" semana a semana. */
+ if(!ini)return [];
+ var M=['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+ var d=new Date(ini+'T12:00:00'), fimD=fim?new Date(fim+'T12:00:00'):null;
+ if(isNaN(d))return [];
+ if(!fimD||isNaN(fimD)){fimD=new Date(d);fimD.setDate(fimD.getDate()+7*52)}
+ var out=[],atual=null,guarda=0;
+ while(d<=fimD&&guarda++<400){
+  var ch=M[d.getMonth()]+' '+d.getFullYear();
+  if(!atual||atual.ch!==ch){atual={ch:ch,dias:[]};out.push(atual)}
+  atual.dias.push(d.getDate());
+  d.setDate(d.getDate()+7);
+ }
+ return out.map(function(x){return 'DIAS DO MÊS DE '+x.ch+' – '+x.dias.join('/')});
+}
 function verVendaHtml(id){
  var ct=S.contratos[id];if(!ct){toast('Contrato não encontrado');return}
  var c=S.carros[ct.carro]||{};
  var lt=ct.locatario||{},d=ct.venda||{};
- var vendNome=ct.locadorNome||c.proprietario||'';
  var loc=LOCADORES[ct.locadorId]||null;
  var logo='';try{logo='data:image/png;base64,'+TPL_BIN['word/media/image1.png']}catch(e){}
- function P(n,t){return '<p class="cp"><b class="cn">'+n+'</b> '+t+'</p>'}
  function BAR(t){return '<div class="cbar">'+t+'</div>'}
- function LI(t){return '<li>'+t+'</li>'}
- var mod=veModeloContrato(c);
- var total=Number(d.valorTotal)||0, entrada=Number(d.entrada)||0,
-     abat=Number(d.abatimento)||0, saldo=Number(d.saldo)||0,
-     nP=Number(d.nParcelas)||0, parc=Number(d.parcela)||0, ult=Number(d.ultima)||0,
-     seg=Number(d.seguroMensal)||0, segd=d.seguroDia||'';
- function RS(v){return 'R$ '+fmtBRL(v)}
- /* moedaExtenso já devolve "R$ 42.000,00 (quarenta e dois mil reais)" */
- function RSx(v){try{return '<b>'+moedaExtenso(v)+'</b>'}catch(e){return '<b>'+RS(v)+'</b>'}}
+ function CL(n,t){return '<p class="cp"><b class="cn">Cláusula '+n+'ª</b>. '+t+'</p>'}
+ function P(t){return '<p class="cp">'+t+'</p>'}
+ function RS(v){try{return moedaExtenso(v)}catch(e){return 'R$ '+fmtBRL(v)}}
+ var total=Number(d.valorTotal)||0, entrada=Number(d.entrada)||0, abat=Number(d.abatimento)||0,
+     saldo=Number(d.saldo)||0, nP=Number(d.nParcelas)||0, parc=Number(d.parcela)||0,
+     ult=Number(d.ultima)||0, seg=Number(d.seguroMensal)||0, segd=d.seguroDia||'10';
+
+ /* dados do vendedor: do cadastro de locadores quando houver */
+ var vNome=(loc&&loc.nome)||ct.locadorNome||c.proprietario||'';
+ var vRg=(loc&&loc.rg)||'', vCpf=(loc&&loc.cpf)||'', vEnd=(loc&&loc.endereco)||'', vCep=(loc&&loc.cep)||'';
+ var vNac=(loc&&loc.nacionalidade)||'Brasileiro', vEc=(loc&&loc.estadoCivil)||'';
+
+ function parte(rot,nome,nac,ec,rg,cpf,end,cep){
+  var t='<b>'+rot+': </b><b>'+esc(nome)+'</b>';
+  var p=[];
+  if(nac)p.push(esc(nac));
+  if(ec)p.push(esc(ec));
+  if(rg)p.push('Carteira de Identidade n° '+esc(rg));
+  if(cpf)p.push('C.P.F. n° '+esc(showCPF(cpf)));
+  if(end)p.push('residente e domiciliado na '+esc(end));
+  if(cep)p.push('CEP '+esc(showCEP(cep)));
+  return P(t+(p.length?' '+p.join(', ')+'.':''));
+ }
+
+ /* período em meses, usado no OBS do seguro */
+ var meses='';
+ if(ct.inicio&&ct.fim){
+  var a=new Date(ct.inicio+'T12:00:00'),b=new Date(ct.fim+'T12:00:00');
+  if(!isNaN(a)&&!isNaN(b)){
+   var m=(b.getFullYear()-a.getFullYear())*12+(b.getMonth()-a.getMonth());
+   if(m>0)meses=m+' meses';
+  }
+ }
+ var mesIni=ct.inicio?(MESES[Number(ct.inicio.slice(5,7))-1]+' de '+ct.inicio.slice(0,4)):'';
+ var mesFim=ct.fim?(MESES[Number(ct.fim.slice(5,7))-1]+' de '+ct.fim.slice(0,4)):'';
 
  var h='<div class="cdoc">'+
   (logo?'<div class="clogo"><img src="'+logo+'" alt="GuimasCar"></div>':'')+
-  '<div class="ctit">CONTRATO PARTICULAR DE COMPRA E VENDA DE VEÍCULO AUTOMOTOR<br>COM RESERVA DE DOMÍNIO</div>'+
+  '<div class="ctit">CONTRATO DE COMPRA E VENDA DE AUTOMÓVEL COM RESERVA DE DOMÍNIO</div>'+
+
   BAR('IDENTIFICAÇÃO DAS PARTES CONTRATANTES')+
-  '<table class="cid"><tr><td><div class="chd">VENDEDOR</div>'+
-   '<p><b>Nome:</b> '+esc(vendNome)+'</p>'+
-   (loc?'<p><b>CPF:</b> '+esc(showCPF(loc.cpf))+'</p><p><b>RG / Doc:</b> '+esc(loc.rg)+'</p>'+
-        '<p><b>Endereço:</b> '+esc(loc.endereco||'')+'</p><p><b>CEP:</b> '+esc(showCEP(loc.cep)||'')+'</p>':'')+
-   '</td>'+
-  '<td><div class="chd">COMPRADOR</div>'+
-   '<p><b>Nome:</b> '+esc(lt.nome||'')+'</p><p><b>CPF:</b> '+esc(showCPF(lt.cpf||''))+'</p>'+
-   '<p><b>RG / Doc:</b> '+esc(lt.rg||'')+'</p>'+
-   '<p><b>Endereço:</b> '+esc(lt.endereco||'')+'</p>'+
-   (lt.cep?'<p><b>CEP:</b> '+esc(showCEP(lt.cep))+'</p>':'')+
-   (lt.tel?'<p><b>Telefone:</b> '+esc(showTel(lt.tel))+'</p>':'')+
-   '</td></tr></table>'+
-
-  BAR('CLÁUSULA PRIMEIRA – DO OBJETO')+
   '<div class="cblk">'+
-   P('1.1.','O presente contrato tem como objeto a venda, com RESERVA DE DOMÍNIO, do veículo de propriedade do VENDEDOR, com as seguintes características:')+
-   '<table class="cveh">'+
-    '<tr><td><b>Modelo</b></td><td>'+esc(mod||tituloCarro(c))+'</td></tr>'+
-    '<tr><td><b>Ano Fabricação/Modelo</b></td><td>'+esc(c.ano||'')+'</td></tr>'+
-    '<tr><td><b>Placa</b></td><td>'+esc(fmtPlaca(ct.carro))+'</td></tr>'+
-    '<tr><td><b>Chassi</b></td><td>'+esc(c.chassi||'')+'</td></tr>'+
-    '<tr><td><b>Renavam</b></td><td>'+esc(c.renavam||'')+'</td></tr>'+
-    '<tr><td><b>Cor</b></td><td>'+esc(c.cor||'')+'</td></tr>'+
-    '<tr><td><b>Combustíveis</b></td><td>'+esc(c.combustivel||'')+'</td></tr>'+
-   '</table>'+
-   P('1.2.','<b>Da Reserva de Domínio:</b> A propriedade do veículo permanece integralmente com o VENDEDOR até a quitação total do preço ajustado neste instrumento, transferindo-se ao COMPRADOR somente após o pagamento da última parcela.')+
+   parte('VENDEDOR',vNome,vNac,vEc,vRg,vCpf,vEnd,vCep)+
+   parte('COMPRADOR',lt.nome||'',lt.nacionalidade||'Brasileiro',lt.estadoCivil||'',lt.rg||'',lt.cpf||'',lt.endereco||'',lt.cep||'')+
+   P('<b>As partes acima identificadas têm, entre si, justo e acertado o presente Contrato de Compra e Venda de Automóvel com Reserva de Domínio, que se regerá pelas cláusulas seguintes e pelas condições descritas no presente.</b>')+
   '</div>'+
 
-  BAR('CLÁUSULA SEGUNDA – DO PREÇO E DA FORMA DE PAGAMENTO')+
+  BAR('DO OBJETO DO CONTRATO')+
   '<div class="cblk">'+
-   P('2.1.','O preço total ajustado para a venda do veículo é de '+RSx(total)+'.')+
-   (entrada?P('2.2.','O COMPRADOR pagou, a título de ENTRADA, a quantia de '+RSx(entrada)+', dando o VENDEDOR plena quitação deste valor.'):'')+
-   (abat?P('2.3.','Foi concedido abatimento de '+RSx(abat)+' sobre o saldo, referente a acertos entre as partes.'):'')+
-   P((abat?'2.4.':'2.3.'),'O saldo devedor é de '+RSx(saldo)+', a ser pago em '+(nP||0)+' (parcelas) semanais de '+RSx(parc)+
-     (ult?', acrescida de uma última parcela de '+RSx(ult):'')+'.')+
-   ((ct.inicio||ct.fim)?P((abat?'2.5.':'2.4.'),'Os pagamentos terão início em '+(ct.inicio?dataBR(ct.inicio):'—')+
-     (ct.fim?' e término previsto para '+dataBR(ct.fim):'')+'.'):'')+
-   P((abat?'2.6.':'2.5.'),'<b>Do Atraso:</b> O atraso no pagamento de qualquer parcela autoriza o VENDEDOR a exigir a devolução imediata do veículo, permanecendo a reserva de domínio até a quitação integral.')+
+   CL(1,'O presente contrato tem como OBJETO a venda de automóvel pelo <b>VENDEDOR</b> ao <b>COMPRADOR</b>, com instituição de cláusula de reserva de domínio.')+
+   CL(2,'O automóvel, objeto da compra e venda, possui as seguintes especificações: '+
+     esc(veModeloContrato(c)||tituloCarro(c))+
+     (c.ano?', ano '+esc(String(c.ano).split('/')[0]):'')+
+     (/gnv/i.test(c.combustivel||'')?', com GNV'+(c.gnvM3?' de '+esc(c.gnvM3)+'m':''):'')+
+     (c.cor?', cor '+esc(String(c.cor).toLowerCase()):'')+
+     ', placa '+esc(fmtPlaca(ct.carro))+
+     (c.chassi?' Chassi – '+esc(c.chassi):'')+'.')+
   '</div>'+
 
-  BAR('CLÁUSULA TERCEIRA – DAS OBRIGAÇÕES DO COMPRADOR')+
+  BAR('DA RESERVA DE DOMÍNIO')+
   '<div class="cblk">'+
-   P('3.1.','A partir da assinatura deste contrato, correm por conta exclusiva do COMPRADOR todas as despesas do veículo, a saber:')+
-   '<ul class="cul">'+
-    LI('Manutenção integral, preventiva e corretiva, sem qualquer divisão de custos;')+
-    LI('IPVA, licenciamento, GRT e taxas do DETRAN;')+
-    LI('Vistoria anual do GNV e requalificação do cilindro;')+
-    LI('Multas de trânsito, com indicação do real infrator;')+
-    LI('Combustível, lavagem e demais despesas de uso.')+
-   '</ul>'+
-   (seg?P('3.2.','<b>Do Seguro:</b> O COMPRADOR obriga-se a manter o seguro do veículo, no valor mensal de '+RSx(seg)+
-     (segd?', com vencimento todo dia '+esc(segd):'')+', enquanto vigorar a reserva de domínio.'):'')+
-   P(seg?'3.3.':'3.2.','O COMPRADOR não poderá vender, alienar, empenhar ou transferir o veículo a terceiros antes da quitação integral, sob pena de configuração de apropriação indébita.')+
+   CL(3,'Em virtude da Reserva de Domínio, estabelecida neste instrumento, fica reservado ao <b>VENDEDOR</b> o direito de propriedade do automóvel, objeto do contrato, até a total quitação das parcelas estabelecidas pelas partes para o pagamento.')+
+   CL(4,'Não poderá o <b>COMPRADOR</b> ceder o automóvel, objeto do contrato, a terceiro, sem a devida anuência do <b>VENDEDOR</b>, nem constituir, direta ou indiretamente, ônus, penhor, caução ou qualquer outro gravame sobre mesmo, até que sejam quitadas todas as parcelas previstas neste contrato.')+
   '</div>'+
 
-  BAR('CLÁUSULA QUARTA – DA TRANSFERÊNCIA E DA RESCISÃO')+
+  BAR('DA CONSERVAÇÃO E USO DO AUTOMÓVEL')+
   '<div class="cblk">'+
-   P('4.1.','Quitado integralmente o preço, o VENDEDOR entregará o documento de transferência (ATPV-e) devidamente assinado, correndo as despesas de transferência por conta do COMPRADOR.')+
-   P('4.2.','O descumprimento de qualquer cláusula, em especial o atraso no pagamento, autoriza a rescisão de pleno direito, com a retomada imediata do veículo, sem prejuízo das parcelas já pagas, que ficarão retidas a título de indenização pelo uso do bem.')+
+   CL(5,'Enquanto não forem pagas todas as parcelas, o <b>COMPRADOR</b> obrigar-se-á por zelar pela conservação do automóvel, providenciando todos os recursos necessários à manutenção do mesmo, correndo todos os custos por sua conta (Manutenção, Avarias Multas e Seguro), para os casos de multa será feita a troca de real infrator de imediato e o pagamento da Multa, passando os pontos do prontuário do <b>VENDEDOR</b> para o <b>COMPRADOR</b>, devendo cuidar também da aparência e do bom funcionamento do mesmo, sendo-lhe impedido alterar a estrutura do automóvel, de modo que não desvirtue seu uso e altere suas características. Em caso de roubo ou furto do objeto, a seguradora tem até 120 dias para pagamento do veículo, e será descontado do valor a quitação do débito do veículo, caso o veículo seja recuperado, todos os custos de reparo serão a cargo do <b>COMPRADOR</b>, tais como, lanternagem, mecânica etc.')+
   '</div>'+
 
-  BAR('CLÁUSULA QUINTA – DO FORO')+
+  BAR('DO PREÇO')+
   '<div class="cblk">'+
-   '<p class="cp">As partes elegem o Foro da Comarca de <b>São Gonçalo/RJ</b> para dirimir quaisquer dúvidas ou litígios oriundos deste contrato, renunciando a qualquer outro.</p>'+
+   CL(6,'Por força deste instrumento, o <b>COMPRADOR</b> pagará ao <b>VENDEDOR</b> o valor total de '+RS(total)+' do carro, que será pago da seguinte forma:')+
+   P('O <b>COMPRADOR</b> pagará ao <b>VENDEDOR</b> uma entrada de '+RS(entrada)+'.')+
+   (abat?P('O <b>VENDEDOR</b> se compromete a pagar '+(d.qtdMultas||2)+' multas no valor de R$ '+fmtBRL(abat)+' até a última semana do contrato.'):'')+
+   P('Sendo assim o saldo devedor será de '+RS(saldo)+', que serão pagos em '+nP+' semanas de '+RS(parc)+
+     (ult?' e a última semana em '+RS(ult):'')+'. Segue abaixo as datas dos pagamentos, com início dia '+
+     (ct.inicio?dataBR(ct.inicio):'__/__/____')+' e término dia '+(ct.fim?dataBR(ct.fim):'__/__/____')+
+     (meses?' ('+meses+')':'')+'.')+
+   '<div class="cdias">'+_semanasPorMes(ct.inicio,ct.fim).map(function(l){return '<p class="cp">'+esc(l)+'</p>'}).join('')+'</div>'+
+   P('OBS: O <b>COMPRADOR</b> ficará responsável por pagar o seguro do mesmo, no período de '+
+     (mesIni?mesIni:'________')+' a '+(mesFim?mesFim:'________')+(meses?' ('+meses+')':'')+
+     ' no valor de '+RS(seg)+' todo dia '+esc(segd)+
+     ' se houver acréscimo na mensalidade do seguro irá complementar a sua totalidade, em caso de sinistro o <b>COMPRADOR</b> irá pagar integralmente o valor da franquia do seguro, pagamento do IPVA '+
+     (ct.inicio?ct.inicio.slice(0,4):'____')+' e '+(ct.fim?ct.fim.slice(0,4):'____')+
+     ' E GRT, juntamente com a vistoria do Inmetro (GNV) e reteste do cilindro se necessário.')+
+   P('Em caso de utilização do seguro para colisões ou acidentes em que o veículo vá para oficina designada da seguradora para reparo em até 90 dias, as parcelas acordadas semanalmente serão pagas de forma integral.')+
   '</div>'+
-  (d.obs?'<div class="cblk"><p class="cp"><b class="cn">Observações:</b> '+esc(d.obs)+'</p></div>':'')+
 
-  '<p class="cfim"><i>E, por estarem assim justos e contratados, assinam o presente em 02 (duas) vias de igual teor e forma.</i></p>'+
-  '<p class="cdata"><b>São Gonçalo, '+(d.assinadoEm?dataLonga(d.assinadoEm):'____ de __________ de ______')+'.</b></p>'+
+  BAR('DA RESCISÃO')+
+  '<div class="cblk">'+
+   CL(7,'Em não ocorrendo o pagamento das prestações, por parte do <b>COMPRADOR</b>, nos prazos estipulados, haverá o vencimento imediato das demais parcelas, podendo o <b>VENDEDOR</b> promover, independentemente de interpelação judicial ou extrajudicial, aviso ou notificação, a rescisão deste instrumento, perdendo o <b>COMPRADOR</b> tudo que foi pago até a presente data, em favor do <b>VENDEDOR</b>, não tendo o direito de pleitear indenização, reposição ou compensação, e nem a retenção do objeto do contrato.')+
+   CL(8,'O <b>VENDEDOR</b> poderá rescindir este contrato, de pleno direito, independentemente de qualquer notificação, interpelação judicial ou extrajudicial, se o <b>COMPRADOR</b> entrar em estado de insolvência, falecimento ou se lhe for decretada a falência por qualquer dívida que tenha contraido fora deste instrumento.')+
+   CL(9,'Confirmada a rescisão deste contrato, o <b>COMPRADOR</b> fica obrigado a restituir o automóvel, objeto deste contrato, ao <b>VENDEDOR</b>, em bom estado de conservação, salvo o desgaste natural pelo uso.')+
+  '</div>'+
+
+  BAR('CONDIÇÕES GERAIS')+
+  '<div class="cblk">'+
+   CL(10,'O <b>VENDEDOR</b>, nos dias e horários acertados com o <b>COMPRADOR</b>, tem o direito de inspecionar o automóvel, objeto do contrato, a fim de verificar seu perfeito funcionamento.')+
+   CL(11,'O <b>COMPRADOR</b> irá responder por todos os danos causados direta ou indiretamente pelo automóvel, a si ou a terceiros e por todos os riscos a que o automóvel estiver sujeito, bem como pelas consequências daí resultantes.')+
+   CL(12,'O <b>VENDEDOR</b> possui o direito de pleitear qualquer medida protetora do domínio do objeto deste instrumento, bem como se proteger contra qualquer ato que o impeça de exercer tal direito.')+
+   CL(13,'Logo que estiver integralizado o valor ajustado, ficará o <b>VENDEDOR</b> obrigado a dar a transferência definitiva do objeto ao <b>COMPRADOR</b> ou a quem o mesmo designar, correndo, então, as despesas que se fizerem necessárias à realização do negócio por conta do <b>COMPRADOR</b>.')+
+  '</div>'+
+
+  BAR('DO FORO')+
+  '<div class="cblk">'+
+   CL(14,'Para dirimir quaisquer controvérsias oriundas do CONTRATO, as partes elegem o foro da comarca de São Gonçalo;')+
+  '</div>'+
+
+  '<p class="cfim">Por estarem assim justos e contratados, firmam o presente instrumento, em duas vias de igual teor.</p>'+
+  '<p class="cdata"><b>São Gonçalo '+(d.assinadoEm?dataLonga(d.assinadoEm):'____ de __________ de ______')+'</b></p>'+
   '<table class="csig"><tr>'+
-   '<td><b>VENDEDOR</b><br>'+esc(vendNome)+'</td>'+
-   '<td><b>COMPRADOR</b><br>'+esc(lt.nome||'')+(lt.cpf?'<br>CPF: '+esc(showCPF(lt.cpf)):'')+'</td>'+
+   '<td><b>Vendedor</b><br><br>'+esc(vNome)+'</td>'+
+   '<td><b>Comprador</b><br><br>'+esc(lt.nome||'')+'</td>'+
   '</tr></table>'+
+  '<div class="cnota"><b>Nota</b><p class="cp"><b>1.</b> Os contratos de compra e venda regem-se pelo previsto nos arts. 1.122 a 1.139 do Código Civil, e a reserva de domínio está presente nos arts. 1.070 a 1.071 do Código de Processo Civil.</p></div>'+
  '</div>';
 
  openSheet('<h3>📄 Contrato de compra e venda</h3>'+h+
   '<button class="btn sec" onclick="copiarTexto(document.querySelector(\'.cdoc\').innerText)">📋 Copiar texto</button>'+
   '<button class="btn sec" onclick="closeSheet(2)">Fechar</button>',2);
 }
+
 function verContratoHtml(id){
  var ct=S.contratos[id];if(!ct){toast('Contrato não encontrado');return}
  var c=S.carros[ct.carro]||{};
