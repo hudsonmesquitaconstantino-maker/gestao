@@ -254,7 +254,7 @@ nav .on .ic,.nav .on .ic{filter:none}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=87; var APP_DATE='22/07/2026';
+var APP_VER=88; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -1591,7 +1591,9 @@ function novoContratoPara(pk){
 function docBtns(ct){
  var pk=ct.carro,h='';
  if(ct.temPdf)h+='<button class="btn mini" onclick="verDoc(\''+pk+'/ct/'+ct.id+'/pdf\',\'Contrato '+esc(primNome(ct.locatario.nome))+'\',\''+pk+'\',\'pdf\')">👁 Ler contrato</button>';
- else if(ct.origem==='gerado')h+='<button class="btn mini" onclick="verContratoHtml(\''+ct.id+'\')">👁 Ler contrato</button>';
+ /* Ler contrato vale para QUALQUER contrato com dados, não só os gerados aqui:
+    os importados e os semeados também têm locatário, valores e datas. */
+ else if(ct.locatario&&ct.locatario.nome)h+='<button class="btn mini" onclick="verContratoHtml(\''+ct.id+'\')">👁 Ler contrato</button>';
  if(ct.temDocx)h+='<button class="btn mini sec" onclick="baixarDoc(\''+pk+'/ct/'+ct.id+'/docx\',\'Contrato '+esc(fmtPlaca(pk))+' '+esc(primNome(ct.locatario.nome))+'.docx\',\''+pk+'\',\'docx\')">⬇️ Word</button>';
  if(ct.temPdf)h+='<button class="btn mini sec" onclick="baixarDoc(\''+pk+'/ct/'+ct.id+'/pdf\',\'Contrato '+esc(fmtPlaca(pk))+' '+esc(primNome(ct.locatario.nome))+'.pdf\',\''+pk+'\',\'pdf\')">⬇️ PDF</button>';
  if(ct.origem==='gerado')h+='<button class="btn mini sec" onclick="regerarContrato(\''+ct.id+'\')">📝 Regerar Word</button>';
