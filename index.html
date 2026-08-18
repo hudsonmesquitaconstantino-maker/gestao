@@ -133,96 +133,92 @@ a.dl{color:var(--ac);text-decoration:none;font-weight:700}
 .shx:active{background:rgba(255,255,255,.25)}
 .sheet h3{padding-right:44px}
 
+
+
 /* ============================================================
-   REFINAMENTO VISUAL — camada aplicada POR CIMA do estilo acima.
-   Só aparência: nenhuma regra remove elemento, muda estrutura
-   ou interfere em comportamento. Para reverter, basta apagar
-   este bloco inteiro.
+   IDENTIDADE VISUAL — linguagem do app TETO trazida para o Gestão.
+   Só aparência: nenhuma regra altera estrutura ou comportamento.
+   Para reverter, apague este bloco inteiro.
    ============================================================ */
 :root{
-  --bg:#0A0B0D;
-  --card:#141619;
-  --card2:#1B1E23;
-  --bord:#262A30;
-  --tx:#ECEEF1;
-  --tx2:#9BA1AA;
-  --ac:#0A84FF;
-  --ok:#30D158;
-  --warn:#E0A33A;
-  --red:#FF453A;
-  --hair:rgba(255,255,255,.055);
+  --bg:#0E0F10;
+  --card:#17191B;
+  --card2:#1F2224;
+  --bord:#2B2F32;
+  --tx:#EDEEEF;
+  --tx2:#9AA0A4;
+  --ac:#D98A1F;          /* âmbar de sinalização, do TETO */
+  --ok:#2E7D5B;          /* verde GNV */
+  --warn:#D98A1F;
+  --red:#B8352A;
+  --disp:'Barlow Condensed',Impact,sans-serif;
+  --body:'Inter',-apple-system,system-ui,sans-serif;
 }
-body{-webkit-font-smoothing:antialiased;letter-spacing:-.1px}
+body{font-family:var(--body);letter-spacing:-.05px;-webkit-font-smoothing:antialiased}
 
-.kv.tap{cursor:pointer;border-radius:8px;transition:background .12s ease}
-.kv.tap:active{background:rgba(255,255,255,.05)}
-/* Cartões: borda de meio pixel e cantos mais suaves */
-.card{border-width:.5px;border-radius:16px;padding:13px 14px}
+/* Títulos em condensada — é o que dá o ar de cartaz/industrial */
+h1,h2,h3,.tit,.mtitle{font-family:var(--disp);letter-spacing:.2px;text-transform:uppercase}
+h3{font-size:20px;font-weight:700}
+.tit{font-size:17px;font-weight:700}
 
-/* Títulos de seção: cinza discreto no lugar do azul forte.
-   O azul volta a significar "isto é tocável". */
-.sect{color:var(--tx2);font-weight:600;font-size:11.5px;letter-spacing:.07em;
-  opacity:.75;margin:18px 0 7px}
+/* Rótulo de seção: condensada, com filete embaixo */
+.sect{font-family:var(--disp);font-size:14px;font-weight:600;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--tx2);border-bottom:1px solid var(--bord);
+  padding-bottom:5px;margin:20px 0 8px;opacity:1}
 
-/* Hierarquia de botões:
-   .ok  = ação principal (preenchida)
-   .sec = ação secundária (neutra)
-   .red = ação destrutiva (só texto, sem bloco vermelho) */
-.btn{border-radius:12px;font-weight:600;font-size:14.5px;padding:12px;
-  letter-spacing:-.15px;transition:transform .12s ease,opacity .12s ease}
-.btn:active{transform:scale(.98);opacity:.9}
-.btn.ok{background:var(--ac);color:#fff}
-.btn.sec{background:var(--card2);color:var(--tx);border:.5px solid var(--bord)}
-.btn.red{background:transparent;border:0;color:var(--red);font-weight:600}
-.btn.red:active{background:rgba(255,69,58,.1)}
-.btn.mini{border-radius:11px;padding:8px 14px;font-size:13.5px}
-.btn:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+/* Cartão: canto discreto e borda seca */
+.card{border:1px solid var(--bord);border-radius:10px;padding:14px}
 
-/* Etiquetas: contorno fino com fundo translúcido */
-.chip{border-width:.5px;padding:2.5px 9px;font-size:11.5px;font-weight:600;border-radius:99px}
-.chip.ok{background:rgba(48,209,88,.09);border-color:rgba(48,209,88,.32)}
-.chip.warn{background:rgba(224,163,58,.09);border-color:rgba(224,163,58,.32)}
-.chip.red{background:rgba(255,69,58,.09);border-color:rgba(255,69,58,.32)}
+/* Linha de dado: divisória tracejada, como no TETO */
+.kv{gap:0 14px;font-size:14px}
+.kv b{font-weight:500;font-size:13.5px;padding:7px 0;color:var(--tx2)}
+.kv span{padding:7px 0;font-variant-numeric:tabular-nums;text-align:right;
+  border-bottom:1px dashed var(--bord)}
+.kv b{border-bottom:1px dashed var(--bord)}
+.kv.tap{cursor:pointer}
+.kv.tap:active{background:rgba(255,255,255,.04)}
 
-/* Placa: contorno claro em vez de borda preta grossa */
-.plate{border:0;box-shadow:0 0 0 .5px rgba(255,255,255,.18),0 1px 3px rgba(0,0,0,.5)}
-.plate .num{font-weight:700;letter-spacing:.5px}
+/* Números com peso de placar */
+.mvval,.mv-total,.money{font-family:var(--disp);font-size:16px;font-weight:600;
+  font-variant-numeric:tabular-nums;letter-spacing:.02em}
 
-/* Linhas de item: fio de meio pixel e números alinhados */
-.mvrow{border-bottom:.5px solid var(--hair);padding:7px 0;font-size:14px}
-.mvrow:last-child{border-bottom:0}
-.mvval{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-variant-numeric:tabular-nums;
-  font-size:13.5px;letter-spacing:-.2px}
-.mv-total{font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+/* Botões: retos, sem gradiente */
+.btn{border-radius:8px;font-family:var(--body);font-weight:600;font-size:14px;
+  padding:12px;border:1px solid var(--bord);transition:transform .1s ease}
+.btn:active{transform:scale(.985)}
+.btn.ok{background:var(--ac);border-color:var(--ac);color:#141A18}
+.btn.sec{background:var(--card2);color:var(--tx)}
+.btn.red{background:transparent;border-color:transparent;color:var(--red)}
+.btn.mini{padding:8px 13px;font-size:13px;border-radius:7px}
 
-/* Pares rótulo/valor: rótulo cinza, valor alinhado à direita */
-.kv{gap:0 14px;font-size:13.5px}
-.kv b{font-size:12.5px;font-weight:500;padding:5px 0}
-.kv span{padding:5px 0;font-variant-numeric:tabular-nums;text-align:right}
+/* Etiquetas: quadradas, contorno fino */
+.chip{border-radius:5px;border-width:1px;font-family:var(--disp);font-size:12.5px;
+  font-weight:600;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px}
+.chip.ok{color:#4CAF87;border-color:rgba(46,125,91,.5);background:rgba(46,125,91,.12)}
+.chip.warn{color:var(--ac);border-color:rgba(217,138,31,.5);background:rgba(217,138,31,.12)}
+.chip.red{color:#E06B5F;border-color:rgba(184,53,42,.5);background:rgba(184,53,42,.12)}
 
-/* Títulos e apoio */
-.tit{font-size:15.5px;font-weight:650;letter-spacing:-.25px}
-.sub{font-size:12.5px;line-height:1.4}
+/* Placa mantém o desenho oficial */
+.plate{border:0;box-shadow:0 0 0 1px rgba(255,255,255,.2)}
 
-/* Campos: foco com halo suave, cantos maiores */
-input,select,textarea{border-width:.5px;border-radius:11px;font-size:15.5px;padding:11px 13px}
-input:focus,select:focus,textarea:focus{border-color:rgba(10,132,255,.55);
-  box-shadow:0 0 0 3px rgba(10,132,255,.14)}
-label{font-size:12px;letter-spacing:.02em;opacity:.9}
+/* Campos */
+input,select,textarea{border-radius:8px;border-color:var(--bord);font-size:15.5px;
+  padding:11px 12px;background:var(--card2)}
+input:focus,select:focus,textarea:focus{border-color:var(--ac);
+  box-shadow:0 0 0 3px rgba(217,138,31,.16);outline:none}
+label{font-family:var(--disp);font-size:13px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--tx2)}
 
-/* Barra de topo e busca com vidro fosco */
-.search{background:rgba(10,11,13,.78);backdrop-filter:saturate(180%) blur(20px);
-  -webkit-backdrop-filter:saturate(180%) blur(20px)}
-
-/* Folha (sheet): topo arredondado maior e fio fino */
-.sheet{border-width:.5px;border-radius:20px 20px 0 0}
-
-/* Rodapé: ícone inativo dessaturado, ativo em cor */
-nav .ic,.nav .ic{filter:grayscale(1) opacity(.5);transition:filter .15s ease}
+/* Barra de topo e rodapé */
+.search{background:rgba(14,15,16,.85);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.sheet{border-radius:14px 14px 0 0;border-color:var(--bord)}
+nav .ic,.nav .ic{filter:grayscale(1) opacity(.45)}
 nav .on .ic,.nav .on .ic{filter:none}
 
+.sub{font-size:12.5px;color:var(--tx2)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 <header>
@@ -254,7 +250,7 @@ nav .on .ic,.nav .on .ic{filter:none}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=88; var APP_DATE='22/07/2026';
+var APP_VER=89; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -398,7 +394,7 @@ function normCarro(c){
  c.proximasTrocas=toArr(c.proximasTrocas);c.contratoVigenteId=c.contratoVigenteId||'';
  c.temCrlv=!!c.temCrlv;
  c.gnvRequalif=c.gnvRequalif||'';c.procLeilao=c.procLeilao||'Não';c.procFinanciado=c.procFinanciado||'Não';c.procObs=c.procObs||'';
- c.lidoCrlv=c.lidoCrlv||'';c.lidoGnv=c.lidoGnv||'';c.emVenda=!!c.emVenda;c.meuCarro=!!c.meuCarro;
+ c.lidoCrlv=c.lidoCrlv||'';c.lidoGnv=c.lidoGnv||'';c.emVenda=!!c.emVenda;c.meuCarro=!!c.meuCarro;c.proxOleoManual=Number(c.proxOleoManual)||0;c.proxCorreiaManual=Number(c.proxCorreiaManual)||0;
  return c;
 }
 /* ===== MÁSCARAS DE DOCUMENTO (formatam sozinhas, na digitação e na saída) ===== */
@@ -1135,10 +1131,20 @@ function ficha(pk){window._fichaPk=pk;
   var km=c.kmUltima||c.kmAtual||0;
   h+='<div class="sect">Manutenção programada <span class="x" style="display:inline;padding:0 6px" onclick="editarProg(\''+pk+'\')">✎</span></div>';
   var fo=c.proxOleoKm?(c.proxOleoKm-km):null;
+   /* última troca de óleo/correia, para a linha mostrar de onde veio a conta */
+   var _uo=(c.ultTrocas||{}).oleo,_uc=(c.ultTrocas||{}).correia;
+   function _ult(u){
+    if(!u||!(u.km||u.data))return '';
+    return '<div class="sub" style="text-align:right;margin:-2px 0 4px">última: '+
+      (u.km?fmtKm(u.km)+' km':'')+(u.km&&u.data?' · ':'')+(u.data?dataBR(u.data):'')+
+      (u.src==='manual'?' <span style="opacity:.7">(manual)</span>':'')+'</div>';
+   }
   h+='<div class="kv"><b>🛢 Óleo'+(c.oleoTipo?' ('+esc(c.oleoTipo)+')':'')+'</b><span>'+(c.proxOleoKm?('próxima: '+fmtKm(c.proxOleoKm)+' km'+(km?(fo<=0?' · <span style="color:var(--warn)">VENCIDO</span>':' · faltam '+fmtKm(fo)+' km'):'')):'—')+'</span></div>';
+  h+=_ult(_uo);
   if(c.temCorreia){
    var fc=c.proxCorreiaKm?(c.proxCorreiaKm-km):null;
    h+='<div class="kv"><b>⚙️ Correia dentada</b><span>'+(c.proxCorreiaKm?('próxima: '+fmtKm(c.proxCorreiaKm)+' km'+(km?(fc<=0?' · <span style="color:var(--warn)">VENCIDA</span>':' · faltam '+fmtKm(fc)+' km'):'')):'—')+'</span></div>';
+   h+=_ult(_uc);
   }else h+='<div class="kv"><b>⚙️ Comando</b><span>corrente (sem correia dentada)</span></div>';
   var COMPS=[['vela','🔥 Vela'],['cabos','🔥 Cabos de vela'],['embreagem','⚙️ Embreagem'],['bateria','🔋 Bateria'],['alternador','⚡ Alternador'],['arranque','🔑 Arranque'],['freios','🛑 Freios (pastilha)'],['ventoinha','❄️ Ventoinha'],['radiador','🌡 Radiador'],['bombaAgua','💧 Bomba d\'água'],['motor','🔩 Motor (cabeçote/bloco)'],['correia','⚙️ Correia dentada (última)']];
   h+='<div class="sect">Últimas trocas (componentes) <span class="x" style="display:inline;padding:0 6px" onclick="editarTrocas(\''+pk+'\')">✎</span></div>';
@@ -2123,7 +2129,7 @@ function _cap(s){s=String(s||'').toLowerCase();return s.charAt(0).toUpperCase()+
 /* Versão do LEITOR de documentos (CRLV/GNV). Aumente este número toda vez que a extração
    melhorar: os documentos já anexados são relidos automaticamente com a lógica nova,
    mesmo sem trocar o arquivo. */
-var LEITOR_VER=71;
+var LEITOR_VER=89;
 var _docVarr={rodando:false,visto:{}};
 /* Campos que o CRLV é capaz de preencher. Se algum estiver vazio e o carro TEM CRLV
    anexado, o documento é relido automaticamente — ignorando a marca de "já lido".
@@ -2177,9 +2183,16 @@ function varrerDocsAuto(opt){
       para de reprocessar (senão leria 30 PDFs a cada abertura do app). */
    var kTent=it.campo+'Tent';
    var tent=Number(c[kTent])||0;
-   var releInc=it.incompleto&&tent<3;
+   /* O limite de 3 tentativas existia para não reprocessar 30 PDFs a cada abertura.
+      Só que ele fazia o app DESISTIR quando um carro perdia os dados, obrigando a
+      apertar o botão à mão. Agora o limite vale apenas para documento SEM TEXTO
+      (foto/escaneado), onde reler nunca vai resolver. Documento legível é sempre
+      relido enquanto faltar campo — e o cache de sessão garante uma leitura só por
+      abertura do app. */
+   var semTexto=(it.tipo==='crlv'&&c.crlvSemTexto);
+   var releInc=it.incompleto&&(!semTexto||tent<3);
    if(c[it.campo]===stamp&&!opt.force&&!releInc)return prox();
-   if(it.incompleto&&c[it.campo]===stamp)c[kTent]=tent+1;
+   if(it.incompleto&&c[it.campo]===stamp&&semTexto)c[kTent]=tent+1;
    if(opt.force)c[kTent]=0;
    return impTextoPdf(b64ToU8(d.b64).buffer).then(function(txt){
     c[it.campo]=stamp; /* só marca depois de conseguir ler o arquivo */
@@ -2469,9 +2482,18 @@ function editarProg(pk){
 function salvarProg(pk){
  var c=S.carros[pk],g=function(i){return (document.getElementById(i)||{value:''}).value};
  c.oleoTipo=g('pgOleo').trim();
+ var _antO=Number(c.proxOleoKm)||0;
  c.proxOleoKm=parseInt(String(g('pgProxO')).replace(/\D/g,''),10)||0;
+ /* Marca como MANUAL quando você mesmo digita a próxima troca. O recálculo
+    automático passa a respeitar esse número e não o sobrescreve mais.
+    Caso típico: carro alugado sem trocar o óleo, com a próxima ajustada na mão. */
+ if(c.proxOleoKm&&c.proxOleoKm!==_antO)c.proxOleoManual=1;
+ if(!c.proxOleoKm)c.proxOleoManual=0;
  c.temCorreia=g('pgCor')==='sim';
+ var _antC=Number(c.proxCorreiaKm)||0;
  c.proxCorreiaKm=parseInt(String(g('pgProxC')).replace(/\D/g,''),10)||0;
+ if(c.proxCorreiaKm&&c.proxCorreiaKm!==_antC)c.proxCorreiaManual=1;
+ if(!c.proxCorreiaKm)c.proxCorreiaManual=0;
  save();closeSheet(2);ficha(pk);render();
  toast('✎ Manutenção programada atualizada');
 }
@@ -2973,11 +2995,23 @@ function recalcProximasTrocas(pk){
  });
  if(ultO){
   if(ivO)c.oleoIntervalo=ivO;
-  c.proxOleoKm=ultO.prox||(ultO.odo+(Number(c.oleoIntervalo)||10000));
+  /* Um valor digitado à mão só é descartado quando aparece uma troca de óleo
+     MAIS NOVA que o ajuste — aí a conta volta a ser automática. */
+  var manualO=c.proxOleoManual&&Number(c.proxOleoKm)>0;
+  var trocaDepois=manualO&&(ultO.odo>=Number(c.proxOleoKm));
+  if(!manualO||trocaDepois){
+   c.proxOleoKm=ultO.prox||(ultO.odo+(Number(c.oleoIntervalo)||10000));
+   if(trocaDepois)c.proxOleoManual=0;
+  }
  }
  if(ultC&&c.temCorreia){
   if(ivC)c.correiaIntervalo=ivC;
-  c.proxCorreiaKm=ultC.prox||(ultC.odo+(Number(c.correiaIntervalo)||40000));
+  var manualC=c.proxCorreiaManual&&Number(c.proxCorreiaKm)>0;
+  var trocaDepoisC=manualC&&(ultC.odo>=Number(c.proxCorreiaKm));
+  if(!manualC||trocaDepoisC){
+   c.proxCorreiaKm=ultC.prox||(ultC.odo+(Number(c.correiaIntervalo)||40000));
+   if(trocaDepoisC)c.proxCorreiaManual=0;
+  }
  }
 }
 /* Reconstrói ultTrocas do carro varrendo TODO o histórico (cronológico), pegando a última troca
