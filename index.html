@@ -250,7 +250,7 @@ nav .on .ic,.nav .on .ic{filter:none}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=89; var APP_DATE='22/07/2026';
+var APP_VER=90; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -1145,8 +1145,13 @@ function ficha(pk){window._fichaPk=pk;
    var fc=c.proxCorreiaKm?(c.proxCorreiaKm-km):null;
    h+='<div class="kv"><b>⚙️ Correia dentada</b><span>'+(c.proxCorreiaKm?('próxima: '+fmtKm(c.proxCorreiaKm)+' km'+(km?(fc<=0?' · <span style="color:var(--warn)">VENCIDA</span>':' · faltam '+fmtKm(fc)+' km'):'')):'—')+'</span></div>';
    h+=_ult(_uc);
-  }else h+='<div class="kv"><b>⚙️ Comando</b><span>corrente (sem correia dentada)</span></div>';
-  var COMPS=[['vela','🔥 Vela'],['cabos','🔥 Cabos de vela'],['embreagem','⚙️ Embreagem'],['bateria','🔋 Bateria'],['alternador','⚡ Alternador'],['arranque','🔑 Arranque'],['freios','🛑 Freios (pastilha)'],['ventoinha','❄️ Ventoinha'],['radiador','🌡 Radiador'],['bombaAgua','💧 Bomba d\'água'],['motor','🔩 Motor (cabeçote/bloco)'],['correia','⚙️ Correia dentada (última)']];
+  }else {
+   h+='<div class="kv"><b>⚙️ Comando</b><span>corrente (sem correia dentada)</span></div>';
+   var _ucmd=(c.ultTrocas||{}).comando;
+   h+='<div class="kv"><b>⛓ Corrente de comando</b><span>'+
+     (_ucmd&&(_ucmd.km||_ucmd.data)?((_ucmd.km?fmtKm(_ucmd.km)+' km':'')+(_ucmd.km&&_ucmd.data?' · ':'')+(_ucmd.data?dataBR(_ucmd.data):'')):'—')+'</span></div>';
+  }
+  var COMPS=[['vela','🔥 Vela'],['cabos','🔥 Cabos de vela'],['embreagem','⚙️ Embreagem'],['bateria','🔋 Bateria'],['alternador','⚡ Alternador'],['arranque','🔑 Arranque'],['freios','🛑 Freios (pastilha)'],['ventoinha','❄️ Ventoinha'],['radiador','🌡 Radiador'],['caixaDir','🎯 Caixa de direção'],['bombaAgua','💧 Bomba d\'água'],['motor','🔩 Motor (cabeçote/bloco)'],['correia','⚙️ Correia dentada (última)']];
   h+='<div class="sect">Últimas trocas (componentes) <span class="x" style="display:inline;padding:0 6px" onclick="editarTrocas(\''+pk+'\')">✎</span></div>';
   COMPS.forEach(function(par){
    if(par[0]==='correia'&&!c.temCorreia)return;
@@ -2129,7 +2134,7 @@ function _cap(s){s=String(s||'').toLowerCase();return s.charAt(0).toUpperCase()+
 /* Versão do LEITOR de documentos (CRLV/GNV). Aumente este número toda vez que a extração
    melhorar: os documentos já anexados são relidos automaticamente com a lógica nova,
    mesmo sem trocar o arquivo. */
-var LEITOR_VER=89;
+var LEITOR_VER=90;
 var _docVarr={rodando:false,visto:{}};
 /* Campos que o CRLV é capaz de preencher. Se algum estiver vazio e o carro TEM CRLV
    anexado, o documento é relido automaticamente — ignorando a marca de "já lido".
@@ -2931,6 +2936,12 @@ function detectarComponentes(m){
   if(troca&&/amortecedor/.test(l)&&!/\bkit\b|batente|coifa|coxim|torre|reparo/.test(l)){
    _posRodas(l).forEach(function(p){out.comps['amort'+p]=true});
   }
+  /* CORRENTE DE COMANDO: nos motores que usam corrente no lugar de correia.
+     Conta kit de corrente, corrente de comando, tensor/guia da corrente. */
+  if(troca&&/corrente\s+(de\s+)?comando|kit.*corrente|corrente.*comando/.test(l)&&!/correia/.test(l))out.comps.comando=true;
+  /* CAIXA DE DIREÇÃO: a caixa/setor em si (troca ou remanufaturada), NÃO o óleo
+     da caixa, nem ponteira, braço axial ou terminal, que são peças vizinhas. */
+  if(troca&&/caixa\s+de\s+direcao|setor\s+de\s+direcao/.test(l)&&!/oleo|fluido|ponteira|terminal|braco|coifa/.test(l))out.comps.caixaDir=true;
   if(/correia\s+dentada/.test(l)){if(troca)out.comps.correia=true;if(prox)out.proxCorreia=prox;}
   /* ÓLEO DO MOTOR — exige PROVA POSITIVA de que o óleo em si foi trocado.
      Lista de peças proibidas nunca fecha (sempre aparece uma nova: cebolinha, tomada,
@@ -2966,7 +2977,7 @@ function aplicarDeteccao(m,carro){
 }
 
 /* ===================== RECÁLCULO + EDIÇÃO DAS ÚLTIMAS TROCAS ===================== */
-var COMPS_LST=[['vela','🔥 Vela'],['cabos','🔥 Cabos de vela'],['embreagem','⚙️ Embreagem'],['bateria','🔋 Bateria'],['alternador','⚡ Alternador'],['arranque','🔑 Arranque'],['freios','🛑 Freios (pastilha)'],['ventoinha','❄️ Ventoinha'],['radiador','🌡 Radiador'],['bombaAgua','💧 Bomba d\'água'],['motor','🔩 Motor (cabeçote/bloco)'],['pneuDE','🛞 Pneu dianteiro esquerdo'],['pneuDD','🛞 Pneu dianteiro direito'],['pneuTE','🛞 Pneu traseiro esquerdo'],['pneuTD','🛞 Pneu traseiro direito'],['molaDE','🌀 Mola dianteira esquerda'],['molaDD','🌀 Mola dianteira direita'],['molaTE','🌀 Mola traseira esquerda'],['molaTD','🌀 Mola traseira direita'],['amortDE','🔧 Amortecedor dianteiro esquerdo'],['amortDD','🔧 Amortecedor dianteiro direito'],['amortTE','🔧 Amortecedor traseiro esquerdo'],['amortTD','🔧 Amortecedor traseiro direito'],['correia','⚙️ Correia dentada']];
+var COMPS_LST=[['vela','🔥 Vela'],['cabos','🔥 Cabos de vela'],['embreagem','⚙️ Embreagem'],['bateria','🔋 Bateria'],['alternador','⚡ Alternador'],['arranque','🔑 Arranque'],['freios','🛑 Freios (pastilha)'],['ventoinha','❄️ Ventoinha'],['radiador','🌡 Radiador'],['caixaDir','🎯 Caixa de direção'],['comando','⛓ Corrente de comando'],['bombaAgua','💧 Bomba d\'água'],['motor','🔩 Motor (cabeçote/bloco)'],['pneuDE','🛞 Pneu dianteiro esquerdo'],['pneuDD','🛞 Pneu dianteiro direito'],['pneuTE','🛞 Pneu traseiro esquerdo'],['pneuTD','🛞 Pneu traseiro direito'],['molaDE','🌀 Mola dianteira esquerda'],['molaDD','🌀 Mola dianteira direita'],['molaTE','🌀 Mola traseira esquerda'],['molaTD','🌀 Mola traseira direita'],['amortDE','🔧 Amortecedor dianteiro esquerdo'],['amortDD','🔧 Amortecedor dianteiro direito'],['amortTE','🔧 Amortecedor traseiro esquerdo'],['amortTD','🔧 Amortecedor traseiro direito'],['correia','⚙️ Correia dentada']];
 function nomeComp(k){for(var i=0;i<COMPS_LST.length;i++)if(COMPS_LST[i][0]===k)return COMPS_LST[i][1];return k}
 function _dtManut(m){return m.dataFim||m.dataIni||''}
 function _odoManut(m){return Number(m.odometro)||0}
