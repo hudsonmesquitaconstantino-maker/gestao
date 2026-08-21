@@ -217,6 +217,61 @@ nav .on .ic,.nav .on .ic{filter:none}
 
 .sub{font-size:12.5px;color:var(--tx2)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ============================================================
+   MOVIMENTO E ACABAMENTO — princípios de interface da Apple
+   (curvas suaves, resposta ao toque, entradas discretas).
+   Só aparência: nada de estrutura ou comportamento muda.
+   Para reverter, apague este bloco inteiro.
+   ============================================================ */
+
+/* Curva padrão da Apple: começa rápido e desacelera no fim (ease-out).
+   É o que dá a sensação de "peso" natural, sem parecer animação de site. */
+:root{
+  --mola:cubic-bezier(0.32, 0.72, 0, 1);
+  --suave:cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Toque nos cartões e linhas: afunda de leve e volta, como no iOS.
+   O :active é instantâneo ao apertar e a volta é amortecida. */
+.card.tap,.kv.tap,.obs,.hbtn,.chip{transition:transform .18s var(--mola),
+  background .18s var(--suave),opacity .18s var(--suave)}
+.card.tap:active,.kv.tap:active{transform:scale(.985)}
+
+/* Botões: resposta imediata ao dedo, com leve recuo e brilho. */
+.btn{transition:transform .16s var(--mola),filter .16s var(--suave),
+  background .16s var(--suave)}
+.btn:active{transform:scale(.96)}
+.btn.ok:active{filter:brightness(.94)}
+
+/* A folha (ficha do carro, manutenção) entra deslizando de baixo,
+   como as sheets do iOS — desacelerando ao chegar. */
+@keyframes sobe{from{transform:translateY(28px);opacity:.4}to{transform:none;opacity:1}}
+.overlay.open .sheet,.overlay.open .sheetwrap{animation:sobe .34s var(--mola)}
+
+/* O fundo escuro por trás da folha surge suave, não pisca. */
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.overlay.open{animation:fade .22s var(--suave)}
+
+/* Cada seção da ficha aparece com um véu leve ao abrir. */
+@keyframes surge{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.sheet .sect,.sheet .card{animation:surge .3s var(--suave) both}
+
+/* Etiquetas e chips entram com um respiro, sem estalar. */
+.chip{transition:transform .16s var(--mola)}
+.chip:active{transform:scale(.94)}
+
+/* Rolagem com o embalo do iOS e sem estourar as bordas. */
+.sheet,.search~*{-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+
+/* Foco de campo: o halo cresce suave em vez de aparecer seco. */
+input,select,textarea{transition:border-color .18s var(--suave),
+  box-shadow .18s var(--suave)}
+
+/* Respeita quem desliga animações no sistema (acessibilidade). */
+@media (prefers-reduced-motion:reduce){
+  *,.overlay.open .sheet,.sheet .sect,.sheet .card{animation:none!important;transition:none!important}
+}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -250,7 +305,7 @@ nav .on .ic,.nav .on .ic{filter:none}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=90; var APP_DATE='22/07/2026';
+var APP_VER=91; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
