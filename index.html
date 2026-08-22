@@ -305,7 +305,7 @@ input,select,textarea{transition:border-color .18s var(--suave),
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=92; var APP_DATE='22/07/2026';
+var APP_VER=93; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -702,6 +702,45 @@ function alertasCarro(c){
  }catch(e){}
  return a;
 }
+
+/* Une dois registros do MESMO carro, preferindo o dado mais recente/completo.
+   Não decide por aparelho: decide campo a campo, então nenhum aparelho consegue
+   rebaixar um dado bom do outro. */
+function mergeCarro(a,b){
+ if(!b)return false;var mud=false;
+ /* exercícios: fica com o MAIOR ano (2026 vence 2025) */
+ ['exercicioCRLV','gnvExercicio'].forEach(function(k){
+  var va=parseInt(a[k],10)||0,vb=parseInt(b[k],10)||0;
+  if(vb>va){a[k]=b[k];mud=true}
+ });
+ /* datas de requalificação/validade: fica com a MAIS NOVA */
+ ['gnvRequalif','gnvValidade'].forEach(function(k){
+  if(b[k]&&(!a[k]||String(b[k])>String(a[k]))){a[k]=b[k];mud=true}
+ });
+ /* documentos e campos do CRLV: preenche o que estiver vazio no outro */
+ ['chassi','renavam','ano','cor','combustivel','potencia','proprietario','modeloCRLV',
+  'temCrlv','temGnvDoc','codigoRadio'].forEach(function(k){
+  if((a[k]===undefined||a[k]===''||a[k]===0||a[k]===false)&&b[k])(a[k]=b[k],mud=true);
+ });
+ /* últimas trocas por componente: para cada peça, fica com a de maior km/data */
+ if(b.ultTrocas){
+  a.ultTrocas=a.ultTrocas||{};
+  Object.keys(b.ultTrocas).forEach(function(comp){
+   var tb=b.ultTrocas[comp],ta=a.ultTrocas[comp];
+   if(!tb)return;
+   if(!ta){a.ultTrocas[comp]=tb;mud=true;return}
+   var kmA=Number(ta.km)||0,kmB=Number(tb.km)||0;
+   var dA=String(ta.data||''),dB=String(tb.data||'');
+   if(kmB>kmA||(kmB===kmA&&dB>dA)){a.ultTrocas[comp]=tb;mud=true}
+  });
+ }
+ /* quilometragem: a mais recente por data (regra oficial do app) */
+ if(b.kmUltimaData&&(!a.kmUltimaData||String(b.kmUltimaData)>String(a.kmUltimaData))){
+  a.kmUltima=b.kmUltima;a.kmUltimaData=b.kmUltimaData;mud=true;
+ }
+ return mud;
+}
+
 function mergeColecoes(base,extra){ /* une item a item; respeita exclusões (túmulos) */
  var add=0;base.apagados=base.apagados||{};var ea=(extra&&extra.apagados)||{};
  Object.keys(ea).forEach(function(k){base.apagados[k]=ea[k]});
@@ -710,6 +749,17 @@ function mergeColecoes(base,extra){ /* une item a item; respeita exclusões (tú
   Object.keys(e).forEach(function(k){if(!base[c][k]&&!base.apagados[k]){base[c][k]=e[k];add++}});
   Object.keys(base.apagados).forEach(function(k){if(base[c][k])delete base[c][k]});
  });
+ /* CARROS: antes vinham inteiros do aparelho "vencedor" pelo carimbo de tempo,
+    então o aparelho do pai (com exercício/documento antigos) sobrescrevia o
+    dado novo do outro. Agora cada carro é unido CAMPO A CAMPO, mantendo sempre
+    o MELHOR dado entre os dois aparelhos. É a causa do "CRLV vencido" que voltava. */
+ base.carros=base.carros||{};var ec=(extra&&extra.carros)||{};
+ Object.keys(ec).forEach(function(pk){
+  if(base.apagados[pk]){return}
+  if(!base.carros[pk]){base.carros[pk]=ec[pk];add++;return}
+  if(mergeCarro(base.carros[pk],ec[pk]))add++;
+ });
+ Object.keys(base.apagados).forEach(function(k){if(base.carros[k])delete base.carros[k]});
  return add;
 }
 function famHash(key){
