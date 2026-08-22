@@ -305,7 +305,7 @@ input,select,textarea{transition:border-color .18s var(--suave),
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=91; var APP_DATE='22/07/2026';
+var APP_VER=92; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -2189,7 +2189,7 @@ function _cap(s){s=String(s||'').toLowerCase();return s.charAt(0).toUpperCase()+
 /* Versão do LEITOR de documentos (CRLV/GNV). Aumente este número toda vez que a extração
    melhorar: os documentos já anexados são relidos automaticamente com a lógica nova,
    mesmo sem trocar o arquivo. */
-var LEITOR_VER=90;
+var LEITOR_VER=92;
 var _docVarr={rodando:false,visto:{}};
 /* Campos que o CRLV é capaz de preencher. Se algum estiver vazio e o carro TEM CRLV
    anexado, o documento é relido automaticamente — ignorando a marca de "já lido".
@@ -2199,12 +2199,21 @@ function faltaDoCrlv(c){
  if(!c)return [];
  return CAMPOS_CRLV.filter(function(k){var v=c[k];return !v||String(v).trim()===''||v===0});
 }
+function _anoAtual(){return new Date().getFullYear();}
 function _filaDocs(pkFiltro){
  var fila=[];
  Object.keys(S.carros||{}).forEach(function(pk){
   if(pkFiltro&&pk!==pkFiltro)return;
   var c=S.carros[pk];if(!c)return;
-  if(c.temCrlv)fila.push({pk:pk,tipo:'crlv',campo:'lidoCrlv',incompleto:faltaDoCrlv(c).length>0});
+  if(c.temCrlv){
+   /* Documento é "incompleto" se falta campo OU se o exercício gravado está atrás
+      do documento que já foi anexado. Sem isto, um CRLV novo (2026) anexado num
+      carro que ficou com exercicioCRLV=2025 nunca era relido e o painel insistia
+      em "CRLV atrasado". Esta é a causa da reclamação recorrente. */
+   var falta=faltaDoCrlv(c).length>0;
+   var exercAtras=c.exercicioCRLV&&_anoAtual()&&parseInt(c.exercicioCRLV,10)<_anoAtual()&&!c.crlvSemTexto;
+   fila.push({pk:pk,tipo:'crlv',campo:'lidoCrlv',incompleto:falta||exercAtras});
+  }
   if(c.temGnvDoc)fila.push({pk:pk,tipo:'gnv',campo:'lidoGnv',incompleto:!c.gnvExercicio||!c.gnvRequalif});
  });
  return fila;
@@ -2251,6 +2260,11 @@ function varrerDocsAuto(opt){
       abertura do app. */
    var semTexto=(it.tipo==='crlv'&&c.crlvSemTexto);
    var releInc=it.incompleto&&(!semTexto||tent<3);
+   /* Nunca desistir de um documento legível cujo exercício está atrasado:
+      é barato reler um PDF com texto e é isto que corrige o alarme falso. */
+   var cCarro=S.carros[it.pk];
+   if(it.tipo==='crlv'&&cCarro&&!cCarro.crlvSemTexto&&cCarro.exercicioCRLV&&
+      parseInt(cCarro.exercicioCRLV,10)<_anoAtual())releInc=true;
    if(c[it.campo]===stamp&&!opt.force&&!releInc)return prox();
    if(it.incompleto&&c[it.campo]===stamp&&semTexto)c[kTent]=tent+1;
    if(opt.force)c[kTent]=0;
@@ -4513,8 +4527,10 @@ function impInteligente(f,subir,stat,pular){
    }
    var pk=placas[0],tipo=impTipo(txt),c=S.carros[pk];
    if(tipo==='crlv'){
-    var ano=impAnoExerc(txt);
-    return subir(pk+'/crlv',function(){c.temCrlv=true;if(ano)c.exercicioCRLV=ano;},f,fmtPlaca(pk)+' \u00b7 CRLV'+(ano?' '+ano:''));
+    /* Lê o exercício pela POSIÇÃO (CRLV-e) e só cai no rótulo se não achar —
+       impAnoExerc sozinho falha no CRLV-e e deixava o exercício velho. */
+    var _dc=impDadosCRLV(txt);var ano=_dc.exercicio||impAnoExerc(txt);
+    return subir(pk+'/crlv',function(){c.temCrlv=true;if(ano)c.exercicioCRLV=ano;aplicaDadosDoTexto(pk,'crlv',txt);},f,fmtPlaca(pk)+' \u00b7 CRLV'+(ano?' '+ano:''));
    }
    if(tipo==='gnv'){
     var anoG=impAnoExerc(txt),rqG=impRequalif(txt);
