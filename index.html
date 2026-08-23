@@ -272,6 +272,88 @@ input,select,textarea{transition:border-color .18s var(--suave),
 @media (prefers-reduced-motion:reduce){
   *,.overlay.open .sheet,.sheet .sect,.sheet .card{animation:none!important;transition:none!important}
 }
+
+/* ============================================================
+   MODO CLARO + FONTE APPLE NO CABEÇALHO (v94)
+   Fixo claro, como o app Despesas. Título e textos na fonte do
+   sistema (San Francisco); Barlow Condensed fica só nos números.
+   Só aparência: nada de dado/código muda. Reversível apagando
+   este bloco. A placa é preservada no tamanho atual (não encolhe).
+   ============================================================ */
+:root{
+  --sf:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Segoe UI',Roboto,sans-serif;
+  /* paleta clara */
+  --bg:#F2F3F5;
+  --card:#FFFFFF;
+  --card2:#F5F6F8;
+  --bord:#E3E5E9;
+  --tx:#12141A;
+  --tx2:#6A7078;
+  --ac:#C77A16;
+  --ok:#1E7D52;
+  --warn:#B7791A;
+  --red:#C0392B;
+}
+html,body{background:var(--bg)!important}
+body{color:var(--tx);font-family:var(--sf);letter-spacing:-.02em;-webkit-font-smoothing:antialiased}
+
+/* CABEÇALHO e TÍTULOS: fonte da Apple, com maiúscula/minúscula (sem caixa-alta esticada) */
+h1,h2,h3,.tit,.mtitle,.sect,label{font-family:var(--sf)!important;text-transform:none!important;
+  letter-spacing:-.02em!important}
+h3,.mtitle{font-weight:700}
+.tit{font-weight:650}
+.sect{color:var(--tx2);font-size:13px;font-weight:600;border-bottom:0;opacity:1;
+  padding-bottom:2px}
+label{color:var(--tx2);font-size:12.5px;font-weight:600;letter-spacing:-.01em!important}
+
+/* o nome do topo (marca) — herda a fonte Apple; só o "GuimasCar" em âmbar */
+[class*="mark"],.appname,.logo,.brand{font-family:var(--sf)!important;text-transform:none!important;
+  letter-spacing:-.03em!important}
+
+/* NÚMEROS continuam na condensada, onde ela fica bonita */
+.mvval,.mv-total,.money{font-family:'Barlow Condensed',var(--sf)!important}
+
+/* Superfícies claras */
+.card{background:var(--card);border:.5px solid var(--bord);box-shadow:0 1px 2px rgba(20,26,40,.04)}
+.card2,.sheet,.overlay .sheet{background:var(--card)}
+.search{background:var(--card);border:.5px solid var(--bord);color:var(--tx)}
+.search::placeholder{color:var(--tx2)}
+input,select,textarea{background:var(--card2);border-color:var(--bord);color:var(--tx)}
+input::placeholder,textarea::placeholder{color:#A6ABB2}
+.kv b{color:var(--tx2)}
+.kv span,.kv{border-color:var(--bord)!important}
+.sub{color:var(--tx2)}
+
+/* Botões no claro */
+.btn{background:var(--card2);border:.5px solid var(--bord);color:var(--tx)}
+.btn.ok{background:var(--ac);border-color:var(--ac);color:#fff}
+.btn.sec{background:var(--card2);color:var(--tx)}
+.btn.red{background:transparent;border-color:transparent;color:var(--red)}
+
+/* Chips no claro */
+.chip{font-family:var(--sf)!important;text-transform:none!important;letter-spacing:-.01em!important}
+.chip.ok{color:var(--ok);border-color:rgba(30,125,82,.35);background:rgba(30,125,82,.09)}
+.chip.warn{color:var(--warn);border-color:rgba(183,121,26,.35);background:rgba(183,121,26,.10)}
+.chip.red{color:var(--red);border-color:rgba(192,57,43,.35);background:rgba(192,57,43,.09)}
+
+/* PLACA: mantém o tamanho atual (92px / 15.5px), só ajusta a borda para o claro.
+   NÃO encolher — pedido expresso do Hudson. */
+.plate{background:#fff!important;border:1.5px solid #C4C8CE!important;
+  box-shadow:0 1px 2px rgba(20,26,40,.12)!important;width:92px!important}
+.plate .num{color:#0C0F13!important;font-size:15.5px!important;font-weight:800!important;
+  letter-spacing:1px!important}
+
+/* Barra de topo e rodapé claros com vidro fosco */
+.appbar,.topbar,.hdr{background:rgba(242,243,245,.8)!important;
+  backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);
+  border-bottom:.5px solid var(--bord)}
+nav,.nav,.tabbar{background:rgba(255,255,255,.85)!important;border-top:.5px solid var(--bord);
+  backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px)}
+
+/* alertas e divisórias */
+.alert .what b{color:var(--warn)}
+.alert.red .what b{color:var(--red)}
+hr,.divider{border-color:var(--bord)}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -305,7 +387,7 @@ input,select,textarea{transition:border-color .18s var(--suave),
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=93; var APP_DATE='22/07/2026';
+var APP_VER=94; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
