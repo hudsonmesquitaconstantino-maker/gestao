@@ -410,7 +410,7 @@ hr,.divider{border-color:var(--bord)}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=97; var APP_DATE='22/08/2026';
+var APP_VER=98; var APP_DATE='23/08/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -4032,14 +4032,54 @@ function copiarFechamento(ym,nome){
  if(!t){toast('Nada a copiar');return}
  copiarTexto(t);
 }
+/* Soma por carro para a visão mensal, anual ou histórica do ranking.
+   Usa _mesDe(), exatamente a mesma regra de competência do fechamento por fornecedor. */
+function totaisGastoPorCarro(modo,periodo){
+ var tot={};
+ Object.keys((S&&S.manutencoes)||{}).forEach(function(k){
+  var m=S.manutencoes[k];if(!m||!m.carro)return;
+  var ym=_mesDe(m),ok=true;
+  if(modo==='mes')ok=(ym===periodo);
+  else if(modo==='ano')ok=(ym&&ym.slice(0,4)===periodo);
+  if(!ok)return;
+  tot[m.carro]=(tot[m.carro]||0)+(Number(m.total)||0);
+ });
+ return tot;
+}
 function vHistorico(){
  var todas=Object.keys(S.manutencoes).map(function(k){return S.manutencoes[k]})
   .sort(function(a,b){return (b.dataIni||'').localeCompare(a.dataIni)||b.criadoEm-a.criadoEm});
  var h='<div class="search"><input id="hBusca" placeholder="🔎 Buscar: alternador, bateria, motorista, placa…" oninput="hAplica()"></div>';
- var tot={};Object.keys(S.manutencoes).forEach(function(k){var m=S.manutencoes[k];tot[m.carro]=(tot[m.carro]||0)+m.total});
- var chips=Object.keys(tot).sort(function(a,b){return tot[b]-tot[a]});
- if(chips.length){
-  h+='<div class="card" id="hTot"><details><summary class="tit" style="font-size:14px;cursor:pointer">💰 Total gasto por carro ('+chips.length+') — toque para abrir</summary>';
+ /* Ranking por período: só lê S.manutencoes; não grava nem altera o histórico. */
+ var _mesesRank=mesesComGasto(),_anoHoje=hoje().slice(0,4),_mesHoje=hoje().slice(0,7);
+ var _anosRank={};_mesesRank.forEach(function(x){if(/^\d{4}-\d{2}$/.test(x))_anosRank[x.slice(0,4)]=1});
+ _anosRank[_anoHoje]=1;var _anosRankLst=Object.keys(_anosRank).sort().reverse();
+ var _modoRank=window._hTotModo||'historico';
+ var _mesRank=window._hTotMes||(_mesesRank.indexOf(_mesHoje)>=0?_mesHoje:(_mesesRank[0]||_mesHoje));
+ var _anoRank=window._hTotAno||_anoHoje;
+ if(_mesesRank.indexOf(_mesRank)<0&&_mesRank!==_mesHoje)_mesRank=_mesesRank[0]||_mesHoje;
+ if(_anosRankLst.indexOf(_anoRank)<0)_anoRank=_anosRankLst[0]||_anoHoje;
+ var _periodoRank=_modoRank==='mes'?_mesRank:(_modoRank==='ano'?_anoRank:'');
+ var tot=totaisGastoPorCarro(_modoRank,_periodoRank);
+ var chips=Object.keys(tot).filter(function(pk){return Math.abs(Number(tot[pk])||0)>0.00001})
+  .sort(function(a,b){return tot[b]-tot[a]});
+ var _rotRank=_modoRank==='mes'?_nomeMes(_mesRank):(_modoRank==='ano'?_anoRank:'Histórico');
+ if(chips.length||Object.keys(S.manutencoes||{}).length){
+  h+='<div class="card" id="hTot"><details'+(window._hTotAberto?' open':'')+' ontoggle="window._hTotAberto=this.open">'+
+     '<summary class="tit" style="font-size:14px;cursor:pointer">💰 Gastos por carro — '+esc(_rotRank)+' ('+chips.length+') — toque para abrir</summary>'+
+     '<div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 6px">'+
+     '<span class="chip tap'+(_modoRank==='mes'?' warn':'')+'" onclick="window._hTotModo=\'mes\';window._hTotAberto=true;render()">Mês</span>'+
+     '<span class="chip tap'+(_modoRank==='ano'?' warn':'')+'" onclick="window._hTotModo=\'ano\';window._hTotAberto=true;render()">Ano</span>'+
+     '<span class="chip tap'+(_modoRank==='historico'?' warn':'')+'" onclick="window._hTotModo=\'historico\';window._hTotAberto=true;render()">Histórico</span></div>';
+  if(_modoRank==='mes'){
+   h+='<select onchange="window._hTotMes=this.value;window._hTotAberto=true;render()" style="margin:2px 0 8px">';
+   var _optsMes=_mesesRank.slice();if(_optsMes.indexOf(_mesHoje)<0)_optsMes.unshift(_mesHoje);
+   _optsMes.forEach(function(x){h+='<option value="'+esc(x)+'"'+(x===_mesRank?' selected':'')+'>'+esc(_nomeMes(x))+'</option>'});h+='</select>';
+  }else if(_modoRank==='ano'){
+   h+='<select onchange="window._hTotAno=this.value;window._hTotAberto=true;render()" style="margin:2px 0 8px">';
+   _anosRankLst.forEach(function(x){h+='<option value="'+esc(x)+'"'+(x===_anoRank?' selected':'')+'>'+esc(x)+'</option>'});h+='</select>';
+  }
+  if(!chips.length)h+='<div class="sub" style="margin:8px 0">Nenhum gasto registrado neste período.</div>';
   chips.forEach(function(pk){
    var c=S.carros[pk];
    h+='<div class="mvrow tap" onclick="hFiltraPlaca(\''+fmtPlaca(pk)+'\')">'+
