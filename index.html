@@ -558,6 +558,201 @@ input,select,textarea{border-radius:11px}
  .v100panel{padding:12px}.v100formHero{padding:14px 12px 12px}
 }
 
+
+/* ============================================================
+   GUIMASCAR GESTÃO — SISTEMA VISUAL GLOBAL (v102)
+   Acabamento sistêmico, microinterações e componentes.
+   Não altera dados, Firebase, cálculo ou documentos gerados.
+   ============================================================ */
+:root{
+  --v102-surface:#FFFFFF;
+  --v102-soft:#F7F8FA;
+  --v102-line:#E7E9ED;
+  --v102-shadow:0 1px 2px rgba(17,24,39,.035),0 10px 32px rgba(17,24,39,.045);
+  --v102-deep:0 14px 42px rgba(17,24,39,.10);
+}
+body{background:linear-gradient(180deg,#F4F5F7 0,#F0F2F4 100%)!important}
+main{padding-top:14px}
+main.v102enter{animation:v102PageIn .28s var(--mola)}
+@keyframes v102PageIn{from{opacity:.35;transform:translateY(7px)}to{opacity:1;transform:none}}
+
+header{box-shadow:0 1px 0 rgba(17,24,39,.02)}
+header h1{font-size:18px;letter-spacing:-.035em!important}
+.hbtn{width:42px;height:42px;padding:0;border-radius:14px;background:rgba(255,255,255,.72)!important;
+  display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(17,24,39,.04);
+  transition:transform .18s var(--mola),background .18s}
+.hbtn:active{transform:scale(.92);background:#fff!important}
+
+/* navegação: ativo vira uma pequena cápsula visual, sem aumentar a altura */
+nav{padding-top:3px;box-shadow:0 -8px 30px rgba(17,24,39,.035)}
+nav button{position:relative;transition:color .2s var(--suave),transform .18s var(--mola);padding-top:6px}
+nav button::before{content:"";position:absolute;left:50%;top:3px;width:40px;height:30px;border-radius:13px;
+  transform:translateX(-50%) scale(.78);opacity:0;background:rgba(199,122,22,.10);
+  transition:transform .24s var(--mola),opacity .18s}
+nav button.on::before{opacity:1;transform:translateX(-50%) scale(1)}
+nav button .ic{position:relative;z-index:1;transition:transform .22s var(--mola)}
+nav button.on .ic{transform:translateY(-1px) scale(1.04)}
+nav button:active{transform:scale(.95)}
+
+/* inputs */
+input,select,textarea{min-height:44px;box-shadow:inset 0 0 0 .5px rgba(255,255,255,.5);
+  transition:border-color .18s,box-shadow .18s,background .18s,transform .15s}
+input:focus,select:focus,textarea:focus{border-color:rgba(199,122,22,.55)!important;
+  box-shadow:0 0 0 3px rgba(199,122,22,.10)!important;background:#fff!important}
+input[type="file"]{padding:9px 10px;font-size:12.5px}
+
+/* buttons */
+.btn{min-height:44px;border-radius:12px!important;letter-spacing:-.01em}
+.btn.ok{box-shadow:0 5px 16px rgba(199,122,22,.13)}
+.btn:active{transform:scale(.975)!important}
+.v102primary{font-weight:750!important;min-height:48px!important}
+
+/* sheet / modal */
+.overlay{background:rgba(17,24,39,.38)!important;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
+.sheetwrap{background:transparent}
+.sheetwrap::before{content:"";position:absolute;z-index:5;top:9px;left:50%;width:38px;height:5px;border-radius:999px;
+  background:rgba(105,112,120,.25);transform:translateX(-50%);pointer-events:none}
+.sheet{border:0!important;border-radius:24px 24px 0 0!important;box-shadow:0 -10px 42px rgba(17,24,39,.12);
+  padding-left:15px!important;padding-right:15px!important}
+.shx{top:20px!important;right:13px!important;width:36px!important;height:36px!important;border-radius:50%!important;
+  display:flex!important;align-items:center;justify-content:center;font-size:14px!important;z-index:8}
+@keyframes sobeV102{0%{transform:translateY(42px) scale(.992);opacity:.2}100%{transform:none;opacity:1}}
+.overlay.open .sheetwrap{animation:sobeV102 .38s var(--mola)!important}
+
+/* confirmation sheet */
+#ovAsk .sheet{height:auto;max-height:72dvh;padding-bottom:calc(18px + env(safe-area-inset-bottom))!important}
+#ovAsk .sheet h3{font-size:20px!important;margin-bottom:7px}
+#ovAsk .sheet .btn{margin-top:8px}
+
+/* toast */
+#toast{background:rgba(31,34,40,.92)!important;color:#fff!important;border:0!important;border-radius:999px!important;
+  padding:10px 15px!important;box-shadow:0 10px 30px rgba(17,24,39,.22)!important;
+  -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);font-weight:600}
+
+/* Page hierarchy */
+.v102pageHead{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:4px 3px 11px}
+.v102eyebrow{font-size:9.5px;font-weight:750;letter-spacing:.11em;color:var(--warn);text-transform:uppercase}
+.v102pageTitle{font-size:24px;font-weight:760;letter-spacing:-.04em;line-height:1.05;margin-top:2px}
+.v102roundAction{width:40px;height:40px;border-radius:50%;border:.5px solid var(--bord);background:#fff;color:var(--tx);
+  font-size:22px;line-height:1;box-shadow:0 4px 14px rgba(17,24,39,.06)}
+.v102roundAction:active{transform:scale(.92)}
+
+.v102sheetHero{display:flex;align-items:center;gap:11px;padding:3px 42px 12px 1px;border-bottom:.5px solid var(--v102-line);margin-bottom:12px}
+.v102sheetHero h3{padding:0!important;margin:1px 0 1px!important;font-size:20px!important;letter-spacing:-.035em!important}
+.v102sheetIcon{width:40px;height:40px;flex:0 0 auto;border-radius:13px;background:linear-gradient(180deg,#FFF9EF,#FFF3DF);
+  border:.5px solid rgba(199,122,22,.16);display:flex;align-items:center;justify-content:center;font-size:19px}
+.v102optional{font-weight:500;color:#9AA0A8;font-size:11px}
+
+.v102panel{background:#fff;border:.5px solid var(--v102-line);border-radius:17px;padding:13px;margin-bottom:10px;
+  box-shadow:0 1px 2px rgba(17,24,39,.02)}
+.v102panelHead{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+.v102panelHead>span{width:31px;height:31px;border-radius:10px;background:var(--v102-soft);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.v102panelHead b{font-size:14px;display:block}
+.v102panelHead small{font-size:11.5px;color:var(--tx2);display:block;margin-top:1px}
+.v102panel label:first-of-type{margin-top:5px}
+.v102panel input,.v102panel select,.v102panel textarea{background:#F8F9FA}
+.v102info{font-size:11.5px;line-height:1.42;color:var(--tx2);background:#F8F9FA;border-radius:10px;padding:9px 10px;margin-top:9px}
+.v102actionbar{padding-top:2px}
+.v102empty{text-align:center;color:var(--tx2);font-size:12.5px;padding:18px 10px;background:#F8F9FA;border-radius:12px}
+.v102bigtext{min-height:120px!important;font-size:16px!important;line-height:1.42}
+
+.v102sectionCard{overflow:hidden}
+.v102sectionTitle{display:flex;align-items:center;justify-content:space-between;padding:1px 2px 10px;border-bottom:.5px solid var(--v102-line);margin-bottom:2px}
+.v102sectionTitle span{font-size:15px;font-weight:720}
+.v102sectionTitle b{font-size:11px;color:var(--tx2);font-weight:650;background:#F3F4F6;border-radius:999px;padding:4px 8px}
+.v102details{margin-top:6px;border-top:.5px solid var(--v102-line)}
+.v102details>summary{list-style:none;display:flex;justify-content:space-between;padding:11px 2px 5px;color:var(--tx2);font-size:12.5px;font-weight:650}
+.v102details>summary::-webkit-details-marker{display:none}
+.v102carTask{display:flex;align-items:center;gap:10px;padding:11px 2px;border-bottom:.5px solid var(--v102-line)}
+.v102carTask:last-child{border-bottom:0}
+.v102carTask strong{font-size:13.5px}
+.v102carTask>span{min-width:27px;height:27px;border-radius:999px;background:#FFF4E5;color:var(--warn);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:750}
+.v102carTask>i{font-style:normal;color:#B0B5BC;font-size:19px}
+
+/* settings */
+.v102sysStats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:11px}
+.v102sysStats>div{background:#F7F8FA;border:.5px solid var(--v102-line);border-radius:12px;padding:9px;text-align:center}
+.v102sysStats small{display:block;font-size:10px;color:var(--tx2)}
+.v102sysStats strong{display:block;margin-top:2px;font-size:17px}
+.v102settings{display:grid;gap:8px}
+.v102settings>details{background:#fff;border:.5px solid var(--v102-line);border-radius:16px;overflow:hidden}
+.v102settings>details>summary{list-style:none;display:flex;align-items:center;gap:10px;padding:12px;cursor:pointer}
+.v102settings>details>summary::-webkit-details-marker{display:none}
+.v102settings>details>summary>div{flex:1}
+.v102settings>details>summary b{display:block;font-size:13.5px}
+.v102settings>details>summary small{display:block;color:var(--tx2);font-size:11px;margin-top:2px}
+.v102settings>details>summary>i{font-style:normal;color:#A3A8AE;transition:transform .22s var(--mola)}
+.v102settings>details[open]>summary>i{transform:rotate(180deg)}
+.v102setIcon{width:32px;height:32px;border-radius:10px;background:#F4F5F7;display:flex;align-items:center;justify-content:center}
+.v102settingsBody{border-top:.5px solid var(--v102-line);padding:4px 12px 12px}
+.v102setBlock{padding:10px 0;border-bottom:.5px solid var(--v102-line)}
+.v102setBlock:last-child{border-bottom:0}
+.v102setBlock>b{font-size:12.5px}
+.v102setBlock p{font-size:11.5px;line-height:1.42;color:var(--tx2);margin:4px 0 8px}
+.v102setBlock .btn{margin-top:7px}
+.v102status{background:#F7F8FA;border-radius:10px;padding:8px 9px;margin:7px 0}
+.v102keyrow{display:flex;justify-content:space-between;gap:12px;font-size:12px;padding-bottom:6px}
+.v102keyrow span{color:var(--tx2)}
+
+/* maintenance display */
+.v102maintTop{display:flex;align-items:center;gap:11px;background:#F8F9FA;border:.5px solid var(--v102-line);border-radius:14px;padding:10px;margin-bottom:10px}
+.v102maintTop .grow{display:grid;grid-template-columns:auto 1fr;gap:2px 9px;align-items:baseline}
+.v102maintTop small{font-size:10.5px;color:var(--tx2)}
+.v102maintTop strong{font-size:12.5px}
+.v102line{display:flex;align-items:flex-start;gap:12px;padding:9px 1px;border-bottom:.5px solid var(--v102-line)}
+.v102line:last-child{border-bottom:0}
+.v102line strong{display:block;font-size:12.8px}
+.v102line small{display:block;font-size:10.8px;color:var(--tx2);margin-top:2px}
+.v102line>b{font-family:'Barlow Condensed',var(--sf);font-size:16px;white-space:nowrap}
+.v102service{font-size:12.5px;line-height:1.45;padding:5px 2px;border-bottom:.5px solid #F0F1F3}
+.v102service:last-child{border-bottom:0}
+.v102grandTotal{display:flex;justify-content:space-between;align-items:flex-end;background:linear-gradient(180deg,#FFF9EF,#FFFDF9);
+  border:.5px solid rgba(199,122,22,.18);border-radius:15px;padding:12px;margin:10px 0}
+.v102grandTotal span{font-size:12px;color:var(--tx2)}
+.v102grandTotal strong{font-family:'Barlow Condensed',var(--sf);font-size:24px;color:var(--warn)}
+
+/* old subflows receive the same visual language without touching logic */
+#tvPecas .prow,#tvInteg .prow2,#tvDeb .prow2,#tvCred .prow2{background:#F8F9FA;border:.5px solid var(--v102-line);border-radius:12px;padding:8px;margin:7px 0}
+#tvBlocos>.card{border-radius:14px!important;background:#F8F9FA!important;box-shadow:none!important}
+.prow{border-radius:12px}
+.prow2{gap:7px}
+.mv-head{background:#F8F9FA;border:.5px solid var(--v102-line);border-radius:14px;padding:9px}
+.mvrow{border-bottom:.5px solid var(--v102-line)!important}
+.mv-total{border-radius:14px!important}
+
+/* history */
+.search{position:sticky!important;top:calc(54px + env(safe-area-inset-top));padding:4px 0 9px!important}
+.search input{box-shadow:0 1px 2px rgba(17,24,39,.03)}
+.v99seg{position:relative;border-radius:12px;padding:3px}
+.v99segbtn{transition:background .2s var(--suave),box-shadow .2s,transform .15s}
+.v99segbtn:active{transform:scale(.96)}
+.v99histcard,.v99obswrap{box-shadow:var(--v102-shadow)}
+details.v99details>summary,.v102settings>details>summary,.v102details>summary{transition:background .18s}
+details.v99details>summary:active,.v102settings>details>summary:active{background:#F7F8FA}
+
+/* creation panels get a tiny stagger only on first paint */
+.v100formHero,.v100panel{animation:v102PanelIn .32s var(--mola) both}
+.v100panel:nth-of-type(2){animation-delay:.025s}.v100panel:nth-of-type(3){animation-delay:.05s}.v100panel:nth-of-type(4){animation-delay:.075s}
+@keyframes v102PanelIn{from{opacity:.25;transform:translateY(7px)}to{opacity:1;transform:none}}
+.v100step{transition:background .2s,border-color .2s,transform .18s var(--mola)}
+.v100step.on{transform:translateY(-1px)}
+.v100item{transition:border-color .18s,box-shadow .18s}
+.v100item:focus-within{border-color:rgba(199,122,22,.26);box-shadow:0 0 0 3px rgba(199,122,22,.055)}
+
+/* contract reader */
+.cdoc{border-radius:16px!important;box-shadow:0 8px 26px rgba(17,24,39,.08)}
+.cdoc .cbar{border-radius:6px!important}
+
+/* responsive */
+@media(max-width:390px){
+ .v102pageTitle{font-size:22px}.v102panel{padding:12px}
+ .v102sheetHero{padding-right:36px}.v102sheetIcon{width:37px;height:37px}
+ .v102sysStats>div{padding:8px 5px}.v102sysStats strong{font-size:16px}
+}
+@media(prefers-reduced-motion:reduce){
+ main.v102enter,.v100formHero,.v100panel,.overlay.open .sheetwrap{animation:none!important}
+}
+
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -591,7 +786,7 @@ input,select,textarea{border-radius:11px}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=101; var APP_DATE='23/08/2026';
+var APP_VER=102; var APP_DATE='23/08/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -1227,7 +1422,12 @@ setInterval(checkUpdate,15*60*1000);
 <script>
 /* ===================== TELAS ===================== */
 var TAB=0,BUSCA_H='';
-function go(t){TAB=t;for(var i=0;i<5;i++)document.getElementById('nb'+i).classList.toggle('on',i===t);window.scrollTo(0,0);render()}
+function go(t){
+ var mudou=TAB!==t;TAB=t;
+ for(var i=0;i<5;i++)document.getElementById('nb'+i).classList.toggle('on',i===t);
+ window.scrollTo(0,0);render();
+ if(mudou){var m=document.getElementById('main');if(m){m.classList.remove('v102enter');void m.offsetWidth;m.classList.add('v102enter')}}
+}
 function render(){
  var _sy=0;try{_sy=window.scrollY||0}catch(e){}
  var m=document.getElementById('main');
@@ -2094,32 +2294,35 @@ function formCarro(pk){
  var c=pk?S.carros[pk]:normCarro({status:'parado'});
  var novo=!pk;
  function f(l,id,v,ph){return '<label>'+l+'</label><input id="fc_'+id+'" value="'+esc(v)+'"'+(ph?' placeholder="'+ph+'"':'')+'>'}
- var h='<h3>'+(novo?'Adicionar carro novo':'Editar '+esc(c.nome))+'</h3>';
- h+=f('Placa','placa',c.placa,'ABC-1D23')+f('Nome curto (como você chama)','nome',c.nome,'Cobalt 2019')+
-  f('Motor (simples)','motor',c.motor,'1.8 8v')+f('Ano fab/modelo','ano',c.ano,'2018/2019')+
-  f('Modelo do CRLV','modeloCRLV',c.modeloCRLV)+f('Código do motor (CRLV)','motorCodigo',c.motorCodigo)+
-  f('Chassi','chassi',c.chassi)+f('Renavam','renavam',c.renavam)+
-  f('Código do rádio','codigoRadio',c.codigoRadio||'')+
-  '<div class="grid2">'+f('Cor','cor',c.cor)+f('Potência','potencia',c.potencia,'102CV/1400')+'</div>'+
-  f('Combustível','combustivel',c.combustivel,'Flex / GNV 16m³')+
-  '<div class="grid2">'+f('KM de quando alugou','kmAtual',c.kmAtual||'')+f('Última quilometragem','kmUltima',c.kmUltima||'')+'</div>'+
+ var h='<div class="v102sheetHero"><div class="v102sheetIcon">'+(novo?'＋':'✎')+'</div><div><div class="v102eyebrow">FROTA</div><h3>'+(novo?'Adicionar carro':'Editar veículo')+'</h3><div class="sub">'+(novo?'Cadastre o veículo e deixe a ficha pronta para documentos, manutenção e contratos.':esc(tituloCarro(c))+' · '+esc(fmtPlaca(c.placa)))+'</div></div></div>'+
+ '<div class="v102panel"><div class="v102panelHead"><span>🚗</span><div><b>Identificação</b><small>Dados principais do veículo</small></div></div>'+
+ f('Placa','placa',c.placa,'ABC-1D23')+f('Nome curto','nome',c.nome,'Cobalt 2019')+
+ '<div class="grid2">'+f('Motor','motor',c.motor,'1.8 8v')+f('Ano fab/modelo','ano',c.ano,'2018/2019')+'</div>'+
+ f('Modelo do CRLV','modeloCRLV',c.modeloCRLV)+
+ '<div class="grid2">'+f('Cor','cor',c.cor)+f('Potência','potencia',c.potencia,'102CV/1400')+'</div>'+
+ f('Combustível','combustivel',c.combustivel,'Flex / GNV 16m³')+'</div>'+
+ '<div class="v102panel"><div class="v102panelHead"><span>🪪</span><div><b>Documento</b><small>CRLV e identificação técnica</small></div></div>'+
+ f('Código do motor (CRLV)','motorCodigo',c.motorCodigo)+f('Chassi','chassi',c.chassi)+f('Renavam','renavam',c.renavam)+f('Código do rádio','codigoRadio',c.codigoRadio||'')+
+ '<div class="grid2">'+f('Exercício CRLV','exercicioCRLV',c.exercicioCRLV,'2026')+f('Exercício vistoria GNV','gnvExercicio',c.gnvExercicio||'')+'</div>'+
+ '<label>Próxima requalificação do cilindro GNV</label><input type="date" id="e_gnvRequalif" value="'+esc(c.gnvRequalif||'')+'">'+
+ (novo?'<label>CRLV em PDF <span class="v102optional">opcional agora</span></label><input type="file" id="fc_crlv" accept="application/pdf">':'')+'</div>'+
+ '<div class="v102panel"><div class="v102panelHead"><span>🧭</span><div><b>Uso e quilometragem</b><small>Situação operacional da frota</small></div></div>'+
+ '<div class="grid2">'+f('KM de quando alugou','kmAtual',c.kmAtual||'')+f('Última quilometragem','kmUltima',c.kmUltima||'')+'</div>'+
  '<label>Data em que viu essa quilometragem</label><input type="date" id="e_kmUltimaData" value="'+esc(c.kmUltimaData||'')+'">'+
-  f('Exercício CRLV','exercicioCRLV',c.exercicioCRLV,'2026')+f('Exercício vistoria GNV (se tiver gás)','gnvExercicio',c.gnvExercicio||'')+
-  '<label>Próxima requalificação do cilindro GNV</label><input type="date" id="e_gnvRequalif" value="'+esc(c.gnvRequalif||'')+'">'+
-  '<label>Frota do veículo (para o fechamento por fornecedor)</label><select id="fc_meuCarro">'+opcoesSel(['Frota Fábio','Frota Hudson'],c.meuCarro?'Frota Hudson':'Frota Fábio')+'</select>'+
-  '<label>Situação do veículo</label><select id="fc_emVenda">'+opcoesSel(['Na frota (normal)','Em processo de venda ao motorista'],c.emVenda?'Em processo de venda ao motorista':'Na frota (normal)')+'</select>'+
-  '<p class="sub">Em processo de venda: o carro continua na lista, mas para de gerar avisos de manutenção (óleo, correia, CRLV, GNV) no painel — a manutenção passa a ser do comprador.</p>'+
-  '<label>Leilão (procedência)</label><select id="fc_procLeilao">'+opcoesSel(['Não','Recuperado de sinistro (monta não informada)','Leilão pequena monta','Leilão média monta','Leilão grande monta'],c.procLeilao||'Não')+'</select>'+
-  '<label>Financiado</label><select id="fc_procFinanciado">'+opcoesSel(['Não','Sim'],c.procFinanciado||'Não')+'</select>'+
-  f('Observações de procedência','procObs',c.procObs||'')+
-  f('Proprietário (no documento)','proprietario',c.proprietario)+
-  '<label>Locador padrão dos contratos</label><select id="fc_locadorId">'+selLocadores(c.locadorId)+'</select>'+
-  '<div class="grid2">'+f('Valor de referência (R$)','valorRef',c.valorRef?fmtBRL(c.valorRef):'')+f('Semanal padrão (R$)','semanalPadrao',c.semanalPadrao?fmtBRL(c.semanalPadrao):'')+'</div>'+
-  f('Caução padrão (R$)','caucaoPadrao',c.caucaoPadrao?fmtBRL(c.caucaoPadrao):'');
- if(novo)h+='<label>CRLV em PDF (opcional agora)</label><input type="file" id="fc_crlv" accept="application/pdf">';
- h+='<button class="btn" onclick="salvarCarro(\''+(pk||'')+'\')">'+(novo?'Criar carro':'Salvar alterações')+'</button>'+
-  (novo?'':'<button class="btn red" onclick="excluirCarro(\''+pk+'\')">🗑 Excluir carro</button>')+
-  '<button class="btn sec" onclick="'+(novo?'closeSheet()':'closeSheet(2)')+'">Cancelar</button>';
+ '<label>Frota do veículo</label><select id="fc_meuCarro">'+opcoesSel(['Frota Fábio','Frota Hudson'],c.meuCarro?'Frota Hudson':'Frota Fábio')+'</select>'+
+ '<label>Situação do veículo</label><select id="fc_emVenda">'+opcoesSel(['Na frota (normal)','Em processo de venda ao motorista'],c.emVenda?'Em processo de venda ao motorista':'Na frota (normal)')+'</select>'+
+ '<div class="v102info">Em processo de venda, o carro continua cadastrado, mas deixa de gerar os alertas operacionais previstos para a frota normal.</div></div>'+
+ '<div class="v102panel"><div class="v102panelHead"><span>🔎</span><div><b>Procedência e propriedade</b><small>Informações administrativas</small></div></div>'+
+ '<label>Leilão / sinistro</label><select id="fc_procLeilao">'+opcoesSel(['Não','Recuperado de sinistro (monta não informada)','Leilão pequena monta','Leilão média monta','Leilão grande monta'],c.procLeilao||'Não')+'</select>'+
+ '<label>Financiado</label><select id="fc_procFinanciado">'+opcoesSel(['Não','Sim'],c.procFinanciado||'Não')+'</select>'+
+ f('Observações de procedência','procObs',c.procObs||'')+f('Proprietário (no documento)','proprietario',c.proprietario)+
+ '<label>Locador padrão dos contratos</label><select id="fc_locadorId">'+selLocadores(c.locadorId)+'</select></div>'+
+ '<div class="v102panel"><div class="v102panelHead"><span>💰</span><div><b>Valores padrão</b><small>Referência para contrato e gestão</small></div></div>'+
+ '<div class="grid2">'+f('Valor de referência (R$)','valorRef',c.valorRef?fmtBRL(c.valorRef):'')+f('Semanal padrão (R$)','semanalPadrao',c.semanalPadrao?fmtBRL(c.semanalPadrao):'')+'</div>'+
+ f('Caução padrão (R$)','caucaoPadrao',c.caucaoPadrao?fmtBRL(c.caucaoPadrao):'')+'</div>'+
+ '<div class="v102actionbar"><button class="btn ok v102primary" onclick="salvarCarro(\''+(pk||'')+'\')">'+(novo?'Criar carro':'Salvar alterações')+'</button>'+
+ (novo?'':'<button class="btn red" onclick="excluirCarro(\''+pk+'\')">🗑 Excluir carro</button>')+
+ '<button class="btn sec" onclick="'+(novo?'closeSheet()':'closeSheet(2)')+'">Cancelar</button></div>';
  openSheet(h,pk?2:undefined);
 }
 function opcoesSel(arr,sel){return arr.map(function(v){return '<option value="'+v+'"'+(v===sel?' selected':'')+'>'+v+'</option>'}).join('')}
@@ -3726,13 +3929,13 @@ function obsEditarSalvar(id){
  toast('✎ Observação atualizada');
 }
 function obsNova(pk){
- var t=pk?'Nova observação — '+esc(S.carros[pk]?tituloCarro(S.carros[pk]):pk):'Nova observação geral (empresa)';
- openSheet('<h3>'+t+'</h3>'+
-  (pk?'':'<p class="sub">Use para acertos com lojas/pessoas e pendências que não são de um carro específico.</p>')+
-  '<label>Escreva a pendência</label><textarea id="obsTxt" style="min-height:90px"></textarea>'+
-  '<label>Para quando (opcional — organiza por data, estilo Lembretes)</label><input type="date" id="obsQuando">'+
-  '<button class="btn ok" onclick="obsSalvar(\''+(pk||'')+'\')">Salvar</button>'+
-  '<button class="btn sec" onclick="closeSheet(2)">Voltar</button>',2);
+ var t=pk?'Nova observação':'Nova observação geral';
+ var c=pk&&S.carros[pk]?S.carros[pk]:null;
+ openSheet('<div class="v102sheetHero"><div class="v102sheetIcon">📝</div><div><div class="v102eyebrow">LEMBRETE</div><h3>'+t+'</h3><div class="sub">'+(c?esc(tituloCarro(c))+' · '+esc(fmtPlaca(c.placa)):'Pendência da empresa, sem vínculo com um carro específico.')+'</div></div></div>'+
+  '<div class="v102panel"><label>O que precisa ser feito?</label><textarea id="obsTxt" class="v102bigtext" placeholder="Escreva a pendência…"></textarea>'+
+  '<label>Para quando <span class="v102optional">opcional</span></label><input type="date" id="obsQuando">'+
+  '<button class="btn ok v102primary" onclick="obsSalvar(\''+(pk||'')+'\')">Salvar observação</button></div>'+
+  '<button class="btn sec" onclick="closeSheet(2)">Cancelar</button>',2);
  setTimeout(function(){var e=document.getElementById('obsTxt');if(e)e.focus()},250);
 }
 function obsSalvar(pk){
@@ -3747,29 +3950,24 @@ function obsSalvar(pk){
 }
 function vObs(){
  var pend=obsGerais(false),conc=obsGerais(true);
- var h='<div class="card v99obswrap"><div class="tit">📝 Observações gerais (empresa)</div>'+
-  '<p class="sub">Acertos com lojas e pendências que não são de um carro. As pendências de cada carro ficam na ficha do carro.</p>'+
-  '<button class="btn" onclick="obsNova(\'\')">➕ Nova observação geral</button>'+
-  '<div class="sect">Pendentes ('+pend.length+')</div>'+obsListaHtml(pend,false)+
-  (conc.length?'<details style="margin:8px 0"><summary class="sub">✅ Concluídas ('+conc.length+')</summary>'+obsListaHtml(conc,false)+'</details>':'')+
+ var h='<div class="v102pageHead"><div><div class="v102eyebrow">ORGANIZAÇÃO</div><div class="v102pageTitle">Observações</div><div class="sub">Pendências gerais e tarefas vinculadas aos carros.</div></div><button class="v102roundAction" onclick="obsNova(\'\')" aria-label="Nova observação">＋</button></div>'+
+ '<div class="card v99obswrap v102sectionCard"><div class="v102sectionTitle"><span>Empresa</span><b>'+pend.length+' pendente'+(pend.length===1?'':'s')+'</b></div>'+
+  (pend.length?obsListaHtml(pend,false):'<div class="v102empty">✓ Nenhuma pendência geral aberta.</div>')+
+  (conc.length?'<details class="v102details"><summary>Concluídas <span>'+conc.length+' ›</span></summary>'+obsListaHtml(conc,false)+'</details>':'')+
  '</div>';
- /* pendências por carro (visão geral que substitui o Notas) */
  var carros={};
  Object.keys(S.observacoes||{}).forEach(function(k){var o=S.observacoes[k];if(o.carro&&!o.feito)carros[o.carro]=(carros[o.carro]||0)+1});
  var pks=Object.keys(carros);
- h+='<div class="card v99obswrap"><div class="tit">🚗 Pendências por carro</div>';
- if(!pks.length)h+='<div class="sub">Nenhum carro com pendência aberta.</div>';
- else pks.sort().forEach(function(pk){
+ h+='<div class="card v99obswrap v102sectionCard"><div class="v102sectionTitle"><span>Por carro</span><b>'+pks.length+' veículo'+(pks.length===1?'':'s')+'</b></div>';
+ if(!pks.length)h+='<div class="v102empty">✓ Nenhum carro com pendência aberta.</div>';
+ else pks.sort(function(a,b){return carros[b]-carros[a]}).forEach(function(pk){
   var c=S.carros[pk];if(!c)return;
-  h+='<div class="card tap" style="margin:0 0 6px" onclick="ficha(\''+pk+'\')"><div class="row"><div class="grow">'+
-   '<div class="tit" style="font-size:14px">'+esc(tituloCarro(c))+' — '+esc(fmtPlaca(c.placa))+'</div>'+
-   '<div class="sub">'+esc(primNome(c.motorista||''))+'</div></div>'+
-   '<div style="color:var(--warn);font-weight:800">'+carros[pk]+' pendente'+(carros[pk]>1?'s':'')+'</div></div></div>';
+  h+='<div class="v102carTask tap" onclick="ficha(\''+pk+'\')"><div class="grow"><strong>'+esc(tituloCarro(c))+'</strong><div class="sub">'+esc(fmtPlaca(c.placa))+(c.motorista?' · '+esc(primNome(c.motorista)):'')+'</div></div>'+
+   '<span>'+carros[pk]+'</span><i>›</i></div>';
  });
  h+='</div>';
  return h;
 }
-
 function vManut(){
  var rasc=null;try{rasc=JSON.parse(localStorage.getItem(RASC_K)||'null')}catch(e){}
  if(rasc&&(rasc.MP||[]).concat(rasc.MB||[]).some(function(x){return (x.valor||x.desc||x.servicos||'').toString().trim()})){
@@ -3931,20 +4129,19 @@ function editarManut(id){
  if(!EP.length)EP=[{valor:'',desc:'',loja:''}];
  if(!EB.length)EB=[{titulo:'Mecânico',nome:'',valor:'',servicos:''}];
  var c=S.carros[m.carro]||{nome:m.carro,placa:m.carro,motor:''};
- var h='<h3>✏️ Editar manutenção</h3>'+
-  '<p class="sub">'+esc(tituloCarro(c))+' · '+esc(fmtPlaca(c.placa))+'. Corrija peças, valores e serviços — ex.: incluir a tampa do reservatório que o mecânico esqueceu. Ao salvar, o total e os componentes são reprocessados.</p>'+
+ var h='<div class="v102sheetHero"><div class="v102sheetIcon">✎</div><div><div class="v102eyebrow">MANUTENÇÃO</div><h3>Editar lançamento</h3><div class="sub">'+esc(tituloCarro(c))+' · '+esc(fmtPlaca(c.placa))+'</div></div></div>'+
+  '<div class="v102panel"><div class="v102panelHead"><span>🚗</span><div><b>Serviço registrado</b><small>Corrija os dados sem alterar o histórico fora deste lançamento.</small></div></div>'+
   '<label>Motorista</label><input id="edMot" value="'+esc(m.motorista||'')+'">'+
-  '<div class="grid2"><div><label>Data (início)</label><input type="date" id="edIni" value="'+esc(m.dataIni||'')+'"></div>'+
-  '<div><label>Data fim</label><input type="date" id="edFim" value="'+esc(m.dataFim||'')+'"></div></div>'+
-  '<label>Odômetro (km)</label><input id="edOdo" inputmode="numeric" value="'+esc(m.odometro?String(m.odometro):'')+'">'+
-  '<div class="sect">🔩 Peças</div><div id="edPecas"></div>'+
-  '<button class="btn mini sec" onclick="EP.push({valor:\'\',desc:\'\',loja:\'\'});edDesenha()">➕ Peça</button>'+
-  '<div class="sect">🛠 Mão de obra</div><div id="edBlocos"></div>'+
-  '<button class="btn mini sec" onclick="EB.push({titulo:\'Mecânico\',nome:\'\',valor:\'\',servicos:\'\'});edDesenha()">➕ Bloco</button>'+
-  '<div class="card" style="margin-top:12px;background:var(--card2)"><div class="kv">'+
-  '<b>Peças</b><span id="edTotP">R$ 0,00</span><b>Mão de obra</b><span id="edTotM">R$ 0,00</span>'+
-  '<b>TOTAL GERAL</b><span id="edTotG" style="color:var(--warn);font-weight:800">R$ 0,00</span></div></div>'+
-  '<button class="btn ok" onclick="salvarEdicaoManut()">💾 Salvar alterações</button>'+
+  '<div class="grid2"><div><label>Data de início</label><input type="date" id="edIni" value="'+esc(m.dataIni||'')+'"></div>'+
+  '<div><label>Data final</label><input type="date" id="edFim" value="'+esc(m.dataFim||'')+'"></div></div>'+
+  '<label>Odômetro (km)</label><input id="edOdo" inputmode="numeric" value="'+esc(m.odometro?String(m.odometro):'')+'"></div>'+
+  '<div class="v102panel"><div class="v102panelHead"><span>🧩</span><div><b>Peças</b><small>Descrição, valor e fornecedor.</small></div></div><div id="edPecas"></div>'+
+  '<button class="btn mini sec v100add" onclick="EP.push({valor:\'\',desc:\'\',loja:\'\'});edDesenha()">＋ Adicionar peça</button></div>'+
+  '<div class="v102panel"><div class="v102panelHead"><span>🛠️</span><div><b>Mão de obra e serviços</b><small>Um bloco para cada profissional.</small></div></div><div id="edBlocos"></div>'+
+  '<button class="btn mini sec v100add" onclick="EB.push({titulo:\'Mecânico\',nome:\'\',valor:\'\',servicos:\'\'});edDesenha()">＋ Outro profissional / serviço</button></div>'+
+  '<div class="v102panel"><div class="v102panelHead"><span>✓</span><div><b>Revisão</b><small>O total e os componentes serão reprocessados ao salvar.</small></div></div>'+
+  '<div class="v100summary"><div class="v100sumRow"><span>Peças</span><strong id="edTotP">R$ 0,00</strong></div><div class="v100sumRow"><span>Mão de obra</span><strong id="edTotM">R$ 0,00</strong></div><div class="v100sumRow v100sumTotal"><span>TOTAL</span><strong id="edTotG">R$ 0,00</strong></div></div>'+
+  '<button class="btn ok v102primary" onclick="salvarEdicaoManut()">Salvar alterações</button></div>'+
   '<button class="btn sec" onclick="closeSheet(2)">Cancelar</button>';
  openSheet(h,2);
  setTimeout(edDesenha,30);
@@ -3952,24 +4149,22 @@ function editarManut(id){
 function edDesenha(){
  var hp='';
  EP.forEach(function(p,i){
-  hp+='<div class="grid3">'+
-   '<input placeholder="R$" inputmode="decimal" value="'+esc(p.valor)+'" oninput="EP['+i+'].valor=this.value;edTotais()">'+
-   '<textarea rows="1" class="taflex" placeholder="descrição da peça" oninput="EP['+i+'].desc=this.value;taGrow(this)">'+esc(p.desc)+'</textarea>'+
-   '<input placeholder="loja" value="'+esc(p.loja)+'" oninput="EP['+i+'].loja=this.value">'+
-   '<button class="xbt" onclick="EP.splice('+i+',1);edDesenha()">✕</button></div>';
+  hp+='<div class="v100item"><div class="v100itemTop"><div class="v100itemTitle">PEÇA '+('0'+(i+1)).slice(-2)+'</div><button class="v100remove" onclick="EP.splice('+i+',1);edDesenha()">Remover</button></div>'+
+   '<div class="v100pieceGrid"><div class="desc"><label>Descrição</label><textarea rows="1" class="taflex" placeholder="Ex.: Pastilha de freio dianteira" oninput="EP['+i+'].desc=this.value;taGrow(this)">'+esc(p.desc)+'</textarea></div>'+
+   '<div><label>Valor (R$)</label><input placeholder="0,00" inputmode="decimal" value="'+esc(p.valor)+'" oninput="EP['+i+'].valor=this.value;edTotais()"></div>'+
+   '<div><label>Loja / fornecedor</label><input value="'+esc(p.loja)+'" oninput="EP['+i+'].loja=this.value"></div></div></div>';
  });
- document.getElementById('edPecas').innerHTML=hp||'<div class="sub">Sem peças.</div>';
+ document.getElementById('edPecas').innerHTML=hp||'<div class="v102empty">Sem peças.</div>';
  setTimeout(function(){document.querySelectorAll('#edPecas .taflex').forEach(function(t){taGrow(t)})},30);
  var hb='';
  EB.forEach(function(b,i){
-  hb+='<div class="card" style="margin:6px 0;background:var(--bg)"><div class="grid2">'+
-   '<div><label>Título</label><input value="'+esc(b.titulo)+'" oninput="EB['+i+'].titulo=this.value"></div>'+
-   '<div><label>Profissional</label><input value="'+esc(b.nome)+'" oninput="EB['+i+'].nome=this.value"></div></div>'+
-   '<label>Valor (R$)</label><input inputmode="decimal" value="'+esc(b.valor)+'" oninput="EB['+i+'].valor=this.value;edTotais()">'+
-   '<label>Serviços (um por linha)</label><textarea oninput="EB['+i+'].servicos=this.value">'+esc(b.servicos)+'</textarea>'+
-   '<button class="btn mini red" onclick="EB.splice('+i+',1);edDesenha()">Remover bloco</button></div>';
+  hb+='<div class="v100item"><div class="v100itemTop"><div class="v100itemTitle">MÃO DE OBRA '+('0'+(i+1)).slice(-2)+'</div><button class="v100remove" onclick="EB.splice('+i+',1);edDesenha()">Remover</button></div>'+
+   '<div class="v100laborGrid"><div><label>Tipo</label><input value="'+esc(b.titulo)+'" oninput="EB['+i+'].titulo=this.value"></div>'+
+   '<div><label>Profissional</label><input value="'+esc(b.nome)+'" oninput="EB['+i+'].nome=this.value"></div>'+
+   '<div class="wide"><label>Valor (R$)</label><input inputmode="decimal" value="'+esc(b.valor)+'" oninput="EB['+i+'].valor=this.value;edTotais()"></div>'+
+   '<div class="wide"><label>Serviços realizados</label><textarea class="taflex" oninput="EB['+i+'].servicos=this.value;taGrow(this)">'+esc(b.servicos)+'</textarea></div></div></div>';
  });
- document.getElementById('edBlocos').innerHTML=hb||'<div class="sub">Sem mão de obra.</div>';
+ document.getElementById('edBlocos').innerHTML=hb||'<div class="v102empty">Sem mão de obra.</div>';
  edTotais();
 }
 function edTotais(){
@@ -4010,31 +4205,29 @@ function salvarEdicaoManut(){
 function verManut(id){
  var m=S.manutencoes[id];if(!m)return;
  var c=S.carros[m.carro]||{nome:m.carro,placa:m.carro,motor:''};
- var h='<h3>🔧 '+esc(tituloCarro(c))+'</h3>'+
-  '<div class="mv-head">'+plateHtml(c.placa)+
-   '<div><div class="mv-dt">'+esc(periodoTexto(m.dataIni,m.dataFim))+'</div>'+
-   '<div class="sub">'+(m.motorista?'👤 '+esc(m.motorista)+' · ':'')+(m.odometro?fmtKm(m.odometro)+' km':'')+
-   (m.origem==='whatsapp'?' · <span class="chip warn">histórico WhatsApp</span>':'')+'</div></div></div>';
+ var h='<div class="v102sheetHero"><div class="v102sheetIcon">🔧</div><div><div class="v102eyebrow">HISTÓRICO</div><h3>'+esc(tituloCarro(c))+'</h3><div class="sub">'+esc(fmtPlaca(c.placa))+' · '+esc(periodoTexto(m.dataIni,m.dataFim))+'</div></div></div>'+
+  '<div class="v102maintTop"><div>'+plateHtml(c.placa)+'</div><div class="grow"><small>Motorista</small><strong>'+(m.motorista?esc(m.motorista):'—')+'</strong><small>Odômetro</small><strong>'+(m.odometro?fmtKm(m.odometro)+' km':'—')+'</strong></div></div>';
+ if(m.origem==='whatsapp')h+='<div class="v102info">Este lançamento veio do histórico importado do WhatsApp.</div>';
  if((m.pecas||[]).length){
-  h+='<div class="sect">🔩 Peças'+(m.totalPecas>0?' — R$ '+fmtBRL(m.totalPecas):'')+'</div>';
+  h+='<div class="v102panel"><div class="v102panelHead"><span>🧩</span><div><b>Peças</b><small>'+(m.totalPecas>0?'R$ '+fmtBRL(m.totalPecas):'Itens registrados')+'</small></div></div>';
   m.pecas.forEach(function(p){
-   h+='<div class="mvrow"><div class="grow">'+esc(p.desc)+(p.loja?' <span class="sub">('+esc(p.loja)+')</span>':'')+'</div>'+
-    (p.valor>0?'<div class="mvval">R$ '+fmtBRL(p.valor)+'</div>':'')+'</div>';
+   h+='<div class="v102line"><div class="grow"><strong>'+esc(p.desc||'Peça')+'</strong>'+(p.loja?'<small>'+esc(p.loja)+'</small>':'')+'</div>'+
+    (p.valor>0?'<b>R$ '+fmtBRL(p.valor)+'</b>':'')+'</div>';
   });
+  h+='</div>';
  }
  (m.blocos||[]).forEach(function(b){
-  h+='<div class="sect">🛠 '+esc(b.titulo||'Mão de obra')+(b.nome?' — '+esc(b.nome):'')+(tNum(b.valor)>0?' · R$ '+fmtBRL(tNum(b.valor)):'')+'</div>';
+  h+='<div class="v102panel"><div class="v102panelHead"><span>🛠️</span><div><b>'+esc(b.titulo||'Mão de obra')+'</b><small>'+(b.nome?esc(b.nome):'')+(tNum(b.valor)>0?' · R$ '+fmtBRL(tNum(b.valor)):'')+'</small></div></div>';
   var svs=Array.isArray(b.servicos)?b.servicos:String(b.servicos||'').split('\n');
-  svs.filter(function(s){return String(s).trim()}).forEach(function(s){
-   h+='<div class="mvrow"><div class="grow">• '+esc(s)+'</div></div>';
-  });
+  svs.filter(function(x){return String(x).trim()}).forEach(function(x){h+='<div class="v102service">• '+esc(x)+'</div>'});
+  h+='</div>';
  });
- if(m.total>0)h+='<div class="mv-total">TOTAL: R$ '+fmtBRL(m.total)+'</div>';
+ if(m.total>0)h+='<div class="v102grandTotal"><span>Total da manutenção</span><strong>R$ '+fmtBRL(m.total)+'</strong></div>';
  openSheet(h+
-  '<button class="btn ok" onclick="editarManut(\''+id+'\')">✏️ Editar manutenção</button>'+
-  '<button class="btn" onclick="copiarManut(\''+id+'\')">📋 Copiar (padrão WhatsApp)</button>'+
+  '<div class="v102actionbar"><button class="btn ok v102primary" onclick="editarManut(\''+id+'\')">✏️ Editar manutenção</button>'+
+  '<button class="btn sec" onclick="copiarManut(\''+id+'\')">📋 Copiar para WhatsApp</button>'+
   '<button class="btn red" onclick="excluirManut(\''+id+'\')">🗑 Excluir manutenção</button>'+
-  '<button class="btn sec" onclick="closeSheet(2)">Fechar</button>',2);
+  '<button class="btn sec" onclick="closeSheet(2)">Fechar</button></div>',2);
 }
 function excluirManut(id){
  var m=S.manutencoes[id];
@@ -4267,7 +4460,7 @@ function totaisGastoPorCarro(modo,periodo){
 function vHistorico(){
  var todas=Object.keys(S.manutencoes).map(function(k){return S.manutencoes[k]})
   .sort(function(a,b){return (b.dataIni||'').localeCompare(a.dataIni)||b.criadoEm-a.criadoEm});
- var h='<div class="search"><input id="hBusca" placeholder="🔎 Buscar: alternador, bateria, motorista, placa…" oninput="hAplica()"></div>';
+ var h='<div class="v102pageHead"><div><div class="v102eyebrow">ANÁLISE</div><div class="v102pageTitle">Histórico</div><div class="sub">Manutenções, gastos e fechamento por fornecedor.</div></div></div><div class="search"><input id="hBusca" placeholder="🔎 Buscar: alternador, bateria, motorista, placa…" oninput="hAplica()"></div>';
  /* Ranking por período: só lê S.manutencoes; não grava nem altera o histórico. */
  var _mesesRank=mesesComGasto(),_anoHoje=hoje().slice(0,4),_mesHoje=hoje().slice(0,7);
  var _anosRank={};_mesesRank.forEach(function(x){if(/^\d{4}-\d{2}$/.test(x))_anosRank[x.slice(0,4)]=1});
@@ -4742,52 +4935,29 @@ function montarDocx(ct,carro){
 }
 /* ===================== CONFIG + IMPORTAÇÃO INICIAL ===================== */
 function openCfg(){
- openSheet('<h3>⚙️ Configurações</h3>'+
- '<p class="sub">Versão: qual index.html está rodando neste iPhone (atualiza sozinho ao abrir o app). Chave: a senha que faz os dois iPhones enxergarem a mesma nuvem — igual à do Semanal. Carros/Contratos: o que já está sincronizado.</p>'+
- '<div class="kv"><b>Versão</b><span>v'+APP_VER+' · '+APP_DATE+'</span>'+
- '<b>Chave</b><span>'+esc(localStorage.getItem('gestao_famkey')||'—')+'</span>'+
- '<b>Carros</b><span>'+Object.keys(S?S.carros:{}).length+'</span>'+
- '<b>Contratos</b><span>'+Object.keys(S?S.contratos:{}).length+'</span></div>'+
- '<div class="sect">Importação inicial de documentos</div>'+
- '<p class="sub">Pode jogar aqui o CRLV ou a vistoria de gás <b>direto do apps do Detran</b>, sem renomear: o app lê a placa de dentro do PDF e encaixa no carro certo, atualizando o exercício. O pacote inicial com nomes (CRLV-PLACA.pdf, CONTRATO-PLACA.docx, CONTRATOPDF-PLACA.pdf, VISTORIA-PLACA.pdf) também funciona.</p>'+
- '<input type="file" id="impIn" multiple accept=".pdf,.docx">'+
- '<button class="btn" onclick="importar()">☁️ Enviar para a nuvem</button>'+
- '<div class="filestat" id="impStat"></div>'+
- '<div class="sect">Histórico do WhatsApp (uma vez só)</div>'+
- '<p class="sub">Selecione o arquivo historico_whatsapp.json. Ele adiciona as manutenções antigas dos grupos como histórico, sem duplicar as já existentes.</p>'+
- '<input type="file" id="waHist" accept=".json">'+
- '<button class="btn" onclick="importarHistoricoWA()">📚 Importar histórico</button>'+
- '<div class="filestat" id="waHistStat"></div>'+
- '<div class="sect">Manutenção — recálculo geral</div>'+
- '<p class="sub">Revarre o histórico de TODOS os carros e reescreve as últimas trocas de componentes e as próximas trocas de óleo/correia sempre pela troca mais recente de verdade. Use uma vez agora para corrigir a frota inteira.</p>'+
- '<button class="btn" onclick="recalcTodosCarros()">🔄 Recalcular todos os carros</button>'+
- '<button class="btn sec" onclick="diagnosticoFrota()">🔍 Diagnóstico de todos os carros</button>'+
- '<div class="sect">Frota Hudson</div>'+
- '<p class="sub">Marca o Fiesta (LQZ), o Cobalt 1.4 (OYZ), o Mobi (RJZ) e o Onix (QUB) como Frota Hudson no fechamento por fornecedor. Depois dá para ajustar carro a carro na ficha.</p>'+
- '<button class="btn sec" onclick="marcarFrotaHudson()">\ud83d\ude97 Marcar meus 4 carros como Frota Hudson</button>'+
- '<div class="sect">Compra e venda</div>'+
- '<p class="sub">Cria os registros de compra e venda do Logan PWL-8H97 (Eduardo) e do Versa FHP-4B47 (André) com os dados dos contratos assinados. Depois é só abrir a ficha de cada carro e anexar o Word/PDF.</p>'+
- '<button class="btn sec" onclick="semearVendas()">📄 Registrar os 2 contratos de compra e venda</button>'+
- '<div class="filestat" id="recTudoStat"></div>'+
- '<div class="sect">Leitura dos documentos</div>'+
- '<p class="sub">O app lê sozinho o CRLV e o laudo de GNV anexados (exercício e próxima requalificação do cilindro) — ao abrir o app, ao abrir a ficha do carro e assim que você anexa um documento novo. Este botão é só um reforço: relê TUDO do zero, mesmo o que já foi lido.</p>'+
- '<button class="btn sec" onclick="varrerDocsAuto({force:true,stat:\'gnvLoteStat\'})">🔁 Reler todos os documentos agora</button>'+
- '<div class="filestat" id="gnvLoteStat"></div>'+
- '<div class="sect">Documentos neste aparelho</div>'+
- '<p class="sub">Baixa novamente da nuvem e SUBSTITUI qualquer CRLV, GNV, PDF ou Word antigo que tenha ficado salvo neste iPhone. Use também ao configurar o Gestão em outro aparelho.</p>'+
- '<button class="btn" onclick="baixarTudoOffline()">🔄 Atualizar todos os documentos deste aparelho</button>'+
- '<div class="filestat" id="offStat"></div>'+
- '<div class="sect">Backup dos dados</div>'+
- '<p class="sub">Gera um arquivo com TODOS os dados (carros, manutenções, contratos, observações e termos) para você salvar em Arquivos/iCloud. É a sua cópia fora do sistema: se algo for apagado por engano, dá para restaurar. Documentos (PDF/Word) não entram — eles ficam na nuvem e no botão de download offline acima.</p>'+
- '<div class="filestat" id="bkpStat">'+bkpAviso()+'</div>'+
- '<button class="btn" onclick="fazerBackup()">💾 Salvar backup agora</button>'+
- '<p class="sub">Para restaurar: escolha um arquivo de backup abaixo. A restauração SOMA o que falta, nunca apaga o que já existe.</p>'+
- '<input type="file" id="bkpIn" accept=".json">'+
- '<button class="btn sec" onclick="restaurarBackup()">♻️ Restaurar de um backup</button>'+
-'<div class="sect">Conexão / sincronização</div>'+
- '<div class="filestat" id="syncDiag">Verificando…</div>'+
- '<button class="btn sec" onclick="syncDiagRodar()">🔍 Diagnóstico da sincronização</button>'+
- '<button class="btn sec" onclick="closeSheet();pedirChave()">🔑 Trocar chave da família</button>'+
+ var key=localStorage.getItem('gestao_famkey')||'—';
+ openSheet('<div class="v102sheetHero"><div class="v102sheetIcon">⚙️</div><div><div class="v102eyebrow">SISTEMA</div><h3>Configurações</h3><div class="sub">Ferramentas do Gestão, organizadas por finalidade.</div></div></div>'+
+ '<div class="v102sysStats"><div><small>Versão</small><strong>v'+APP_VER+'</strong></div><div><small>Carros</small><strong>'+Object.keys(S?S.carros:{}).length+'</strong></div><div><small>Contratos</small><strong>'+Object.keys(S?S.contratos:{}).length+'</strong></div></div>'+
+ '<div class="v102settings"><details open><summary><span class="v102setIcon">☁️</span><div><b>Documentos e nuvem</b><small>Importação, leitura e cópia offline</small></div><i>⌄</i></summary><div class="v102settingsBody">'+
+  '<div class="v102setBlock"><b>Importação de documentos</b><p>Envie CRLV, vistoria GNV, PDF ou Word. O Gestão identifica e organiza os arquivos compatíveis.</p><input type="file" id="impIn" multiple accept=".pdf,.docx"><button class="btn" onclick="importar()">☁️ Enviar para a nuvem</button><div class="filestat" id="impStat"></div></div>'+
+  '<div class="v102setBlock"><b>Leitura inteligente</b><p>Relê CRLV e GNV e reaplica os dados reconhecidos.</p><button class="btn sec" onclick="varrerDocsAuto({force:true,stat:\'gnvLoteStat\'})">🔁 Reler todos os documentos</button><div class="filestat" id="gnvLoteStat"></div></div>'+
+  '<div class="v102setBlock"><b>Documentos neste aparelho</b><p>Substitui cópias locais antigas pelas versões atuais da nuvem.</p><button class="btn" onclick="baixarTudoOffline()">🔄 Atualizar documentos deste aparelho</button><div class="filestat" id="offStat"></div></div>'+
+ '</div></details>'+
+ '<details><summary><span class="v102setIcon">🔧</span><div><b>Manutenção e histórico</b><small>Recálculo, diagnóstico e importação</small></div><i>⌄</i></summary><div class="v102settingsBody">'+
+  '<div class="v102setBlock"><b>Recálculo geral</b><p>Revarre o histórico de todos os carros e reconstrói últimas trocas e próximas trocas conforme as regras atuais.</p><button class="btn" onclick="recalcTodosCarros()">🔄 Recalcular todos os carros</button><button class="btn sec" onclick="diagnosticoFrota()">🔍 Diagnóstico da frota</button><div class="filestat" id="recTudoStat"></div></div>'+
+  '<div class="v102setBlock"><b>Histórico antigo do WhatsApp</b><p>Importação única, sem duplicar lançamentos já existentes.</p><input type="file" id="waHist" accept=".json"><button class="btn sec" onclick="importarHistoricoWA()">📚 Importar histórico</button><div class="filestat" id="waHistStat"></div></div>'+
+ '</div></details>'+
+ '<details><summary><span class="v102setIcon">🚗</span><div><b>Ferramentas da frota</b><small>Ajustes administrativos especiais</small></div><i>⌄</i></summary><div class="v102settingsBody">'+
+  '<div class="v102setBlock"><b>Frota Hudson</b><p>Marca os quatro veículos configurados como Frota Hudson no fechamento por fornecedor.</p><button class="btn sec" onclick="marcarFrotaHudson()">🚗 Marcar Frota Hudson</button></div>'+
+  '<div class="v102setBlock"><b>Compra e venda</b><p>Ferramenta histórica para semear os registros específicos já previstos no sistema.</p><button class="btn sec" onclick="semearVendas()">📄 Registrar contratos previstos</button></div>'+
+ '</div></details>'+
+ '<details><summary><span class="v102setIcon">💾</span><div><b>Backup e recuperação</b><small>Cópia externa dos dados estruturados</small></div><i>⌄</i></summary><div class="v102settingsBody">'+
+  '<div class="v102setBlock"><b>Backup dos dados</b><p>Inclui carros, manutenções, contratos, observações e termos. PDFs/Word permanecem na nuvem.</p><div class="filestat v102status" id="bkpStat">'+bkpAviso()+'</div><button class="btn" onclick="fazerBackup()">💾 Salvar backup agora</button></div>'+
+  '<div class="v102setBlock"><b>Restaurar backup</b><p>A restauração soma o que estiver faltando e não apaga os dados existentes.</p><input type="file" id="bkpIn" accept=".json"><button class="btn sec" onclick="restaurarBackup()">♻️ Restaurar de um backup</button></div>'+
+ '</div></details>'+
+ '<details><summary><span class="v102setIcon">🔗</span><div><b>Conexão e sincronização</b><small>Estado deste iPhone e chave da família</small></div><i>⌄</i></summary><div class="v102settingsBody">'+
+  '<div class="v102setBlock"><div class="v102keyrow"><span>Chave atual</span><b>'+esc(key)+'</b></div><div class="filestat v102status" id="syncDiag">Verificando…</div><button class="btn sec" onclick="syncDiagRodar()">🔍 Diagnóstico da sincronização</button><button class="btn sec" onclick="closeSheet();pedirChave()">🔑 Trocar chave da família</button></div>'+
+ '</div></details></div>'+
  '<button class="btn sec" onclick="closeSheet()">Fechar</button>');
 }
 function bkpQuando(){var t=parseInt(localStorage.getItem('gestao_bkp')||'0',10);return t>0?t:0}
