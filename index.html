@@ -591,7 +591,7 @@ input,select,textarea{border-radius:11px}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=100; var APP_DATE='23/08/2026';
+var APP_VER=101; var APP_DATE='23/08/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -2182,9 +2182,24 @@ function idb(){return new Promise(function(res,rej){var r=indexedDB.open('gestao
 function idbGet(k){return idb().then(function(db){return new Promise(function(res){var t=db.transaction('d').objectStore('d').get(k);t.onsuccess=function(){res(t.result||null)};t.onerror=function(){res(null)}})}).catch(function(){return null})}
 function idbSet(k,v){return idb().then(function(db){return new Promise(function(res){var t=db.transaction('d','readwrite');t.objectStore('d').put(v,k);t.oncomplete=function(){res(true)};t.onerror=function(){res(false)}})}).catch(function(){return false})}
 function idbDel(k){return idb().then(function(db){return new Promise(function(res){var t=db.transaction('d','readwrite');t.objectStore('d').delete(k);t.oncomplete=function(){res(true)};t.onerror=function(){res(false)}})}).catch(function(){return false})}
-function pegarDoc(path,pk,tipo){ /* aparelho → nuvem → autocorreção do caminho */
+function pegarDoc(path,pk,tipo){ /* cache local, mas a nuvem vence quando tem versão mais nova */
  return idbGet(path).then(function(d){
-  if(d&&d.b64)return d;
+  /* Se já existe no iPhone, não confia cegamente nele: compara o carimbo pequeno `em`
+     com a nuvem. Assim um CRLV 2025 preso no IndexedDB não continua vencendo um 2026. */
+  if(d&&d.b64){
+   if(!DOCSREF)return d;
+   return DOCSREF.child(path+'/em').once('value').then(function(se){
+    var remoto=Number(se.val())||0,local=Number(d.em)||0;
+    if(remoto&&remoto>local){
+     return DOCSREF.child(path).once('value').then(function(s){
+      var v=s.val();
+      if(v&&v.b64){return idbSet(path,v).then(function(){return v})}
+      return d;
+     }).catch(function(){return d});
+    }
+    return d;
+   }).catch(function(){return d}); /* offline: usa a cópia local normalmente */
+  }
   return DOCSREF.child(path).once('value').then(function(s){
    var v=s.val();
    if(v&&v.b64){idbSet(path,v);return v}
@@ -2451,14 +2466,17 @@ function aplicaDadosDoTexto(pk,tipo,txt){
  var c=S.carros[pk];if(!c)return [];
  var achou=[];
  if(tipo==='gnv'){
-  var ano=impExercGnv(txt);if(ano&&ano!==c.gnvExercicio){c.gnvExercicio=ano;achou.push('exercício '+ano)}
-  var rq=impRequalif(txt);if(rq&&rq!==c.gnvRequalif){c.gnvRequalif=rq;achou.push('requalificação '+dataBR(rq))}
+  var ano=impExercGnv(txt),anoAtual=parseInt(c.gnvExercicio,10)||0,anoLido=parseInt(ano,10)||0;
+  /* Documento lido automaticamente só pode AVANÇAR o exercício. Um PDF velho no cache
+     nunca mais rebaixa 2026 para 2025. Correções para trás continuam possíveis na edição manual. */
+  if(anoLido&&(!anoAtual||anoLido>anoAtual)){c.gnvExercicio=String(anoLido);achou.push('exercício '+anoLido)}
+  var rq=impRequalif(txt);if(rq&&(!c.gnvRequalif||String(rq)>String(c.gnvRequalif))){c.gnvRequalif=rq;achou.push('requalificação '+dataBR(rq))}
  }else{
   var dc=impDadosCRLV(txt);
-  /* exercício: prioriza o lido pela posição (CRLV-e) e só depois o pelo rótulo.
-     Sempre sobrescreve, porque documento novo tem exercício mais recente. */
-  var a2=dc.exercicio||impAnoExerc(txt);
-  if(a2&&a2!==c.exercicioCRLV){c.exercicioCRLV=a2;achou.push('exercício '+a2)}
+  /* CRLV automático também é monotônico: exercício maior vence o menor. Isso fecha a
+     segunda porta do bug dos dois iPhones mesmo que exista um PDF local antigo. */
+  var a2=dc.exercicio||impAnoExerc(txt),atualCRLV=parseInt(c.exercicioCRLV,10)||0,lidoCRLV=parseInt(a2,10)||0;
+  if(lidoCRLV&&(!atualCRLV||lidoCRLV>atualCRLV)){c.exercicioCRLV=String(lidoCRLV);achou.push('exercício '+lidoCRLV)}
   delete dc.exercicio; /* já aplicado acima; não é campo do carro */
   Object.keys(dc).forEach(function(campo){
    var v=dc[campo];if(!v)return;
@@ -4755,9 +4773,9 @@ function openCfg(){
  '<p class="sub">O app lê sozinho o CRLV e o laudo de GNV anexados (exercício e próxima requalificação do cilindro) — ao abrir o app, ao abrir a ficha do carro e assim que você anexa um documento novo. Este botão é só um reforço: relê TUDO do zero, mesmo o que já foi lido.</p>'+
  '<button class="btn sec" onclick="varrerDocsAuto({force:true,stat:\'gnvLoteStat\'})">🔁 Reler todos os documentos agora</button>'+
  '<div class="filestat" id="gnvLoteStat"></div>'+
- '<div class="sect">Documentos offline</div>'+
- '<p class="sub">Guarda TODOS os CRLVs e contratos na memória deste iPhone. Depois disso, ver/baixar/compartilhar funciona sem internet.</p>'+
- '<button class="btn" onclick="baixarTudoOffline()">📥 Baixar todos para este aparelho</button>'+
+ '<div class="sect">Documentos neste aparelho</div>'+
+ '<p class="sub">Baixa novamente da nuvem e SUBSTITUI qualquer CRLV, GNV, PDF ou Word antigo que tenha ficado salvo neste iPhone. Use também ao configurar o Gestão em outro aparelho.</p>'+
+ '<button class="btn" onclick="baixarTudoOffline()">🔄 Atualizar todos os documentos deste aparelho</button>'+
  '<div class="filestat" id="offStat"></div>'+
  '<div class="sect">Backup dos dados</div>'+
  '<p class="sub">Gera um arquivo com TODOS os dados (carros, manutenções, contratos, observações e termos) para você salvar em Arquivos/iCloud. É a sua cópia fora do sistema: se algo for apagado por engano, dá para restaurar. Documentos (PDF/Word) não entram — eles ficam na nuvem e no botão de download offline acima.</p>'+
@@ -5000,7 +5018,14 @@ function baixarTudoOffline(){
   if(!fila.length){st.textContent='Nada na nuvem ainda — rode a Importação inicial primeiro.';return}
   var i=0;
   (function prox(){
-   if(i>=fila.length){st.innerHTML='<b>✅ '+fila.length+' documentos guardados neste aparelho — disponíveis offline.</b>';toast('📥 Tudo salvo para uso offline');return}
+   if(i>=fila.length){
+    st.innerHTML='<b>✅ '+fila.length+' documentos atualizados neste aparelho.</b><br>Conferindo exercícios de CRLV/GNV…';
+    toast('🔄 Documentos atualizados da nuvem');
+    /* Agora que o cache local foi substituído, relê os CRLV/GNV para alinhar também os
+       exercícios e datas do cadastro. O restante do banco não é alterado. */
+    setTimeout(function(){try{varrerDocsAuto({force:true,stat:'offStat'})}catch(e){}},100);
+    return;
+   }
    var f=fila[i++];
    idbSet(f.path,f.doc).then(function(){st.textContent='📥 '+i+'/'+fila.length+' — '+(f.doc.name||f.path);prox()});
   })();
