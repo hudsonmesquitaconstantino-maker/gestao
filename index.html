@@ -614,8 +614,11 @@ input[type="file"]{padding:9px 10px;font-size:12.5px}
   background:rgba(105,112,120,.25);transform:translateX(-50%);pointer-events:none}
 .sheet{border:0!important;border-radius:24px 24px 0 0!important;box-shadow:0 -10px 42px rgba(17,24,39,.12);
   padding-left:15px!important;padding-right:15px!important}
-.shx{top:20px!important;right:13px!important;width:36px!important;height:36px!important;border-radius:50%!important;
-  display:flex!important;align-items:center;justify-content:center;font-size:14px!important;z-index:8}
+.shx{top:calc(env(safe-area-inset-top,0px) + 10px)!important;right:14px!important;width:44px!important;height:44px!important;border-radius:50%!important;
+  display:flex!important;align-items:center;justify-content:center;font-size:15px!important;z-index:80!important;
+  pointer-events:auto!important;touch-action:manipulation!important;-webkit-tap-highlight-color:transparent}
+/* v103: nunca deixar o fechar sob a Dynamic Island/status bar */
+@supports not (top:env(safe-area-inset-top)){.shx{top:18px!important}}
 @keyframes sobeV102{0%{transform:translateY(42px) scale(.992);opacity:.2}100%{transform:none;opacity:1}}
 .overlay.open .sheetwrap{animation:sobeV102 .38s var(--mola)!important}
 
@@ -786,7 +789,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=102; var APP_DATE='23/08/2026';
+var APP_VER=103; var APP_DATE='23/08/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -1222,27 +1225,85 @@ function mergeCarro(a,b){
  return mud;
 }
 
+function _carroApagado(apagados,pk){
+ apagados=apagados||{};pk=normPlaca(pk);
+ /* O túmulo oficial de carro é car_PLACA. Aceita também o formato antigo por compatibilidade. */
+ return !!(apagados['car_'+pk]||apagados[pk]);
+}
 function mergeColecoes(base,extra){ /* une item a item; respeita exclusões (túmulos) */
  var add=0;base.apagados=base.apagados||{};var ea=(extra&&extra.apagados)||{};
- Object.keys(ea).forEach(function(k){base.apagados[k]=ea[k]});
+ Object.keys(ea).forEach(function(k){
+  /* se os dois lados têm o mesmo túmulo, preserva o carimbo mais novo */
+  if(!base.apagados[k]||Number(ea[k])>Number(base.apagados[k]))base.apagados[k]=ea[k];
+ });
  ['manutencoes','contratos','observacoes','termos'].forEach(function(c){
   base[c]=base[c]||{};var e=(extra&&extra[c])||{};
   Object.keys(e).forEach(function(k){if(!base[c][k]&&!base.apagados[k]){base[c][k]=e[k];add++}});
   Object.keys(base.apagados).forEach(function(k){if(base[c][k])delete base[c][k]});
  });
- /* CARROS: antes vinham inteiros do aparelho "vencedor" pelo carimbo de tempo,
-    então o aparelho do pai (com exercício/documento antigos) sobrescrevia o
-    dado novo do outro. Agora cada carro é unido CAMPO A CAMPO, mantendo sempre
-    o MELHOR dado entre os dois aparelhos. É a causa do "CRLV vencido" que voltava. */
+ /* CARROS: merge campo a campo + túmulo car_PLACA. Um carro excluído em qualquer
+    iPhone não pode renascer só porque o outro aparelho ainda tinha uma cópia antiga. */
  base.carros=base.carros||{};var ec=(extra&&extra.carros)||{};
  Object.keys(ec).forEach(function(pk){
-  if(base.apagados[pk]){return}
+  if(_carroApagado(base.apagados,pk))return;
   if(!base.carros[pk]){base.carros[pk]=ec[pk];add++;return}
   if(mergeCarro(base.carros[pk],ec[pk]))add++;
  });
- Object.keys(base.apagados).forEach(function(k){if(base.carros[k])delete base.carros[k]});
+ Object.keys(base.apagados).forEach(function(k){
+  var pk=k.indexOf('car_')===0?k.slice(4):k;
+  if(_carroApagado(base.apagados,pk)&&base.carros[pk])delete base.carros[pk];
+ });
  return add;
 }
+/* ===== ROBUSTEZ DE SINCRONIZAÇÃO v103 ===== */
+var _cloudGuard={carros:0,manutencoes:0,contratos:0,rev:0};
+function _estadoEstruturalValido(x){
+ if(!x||typeof x!=='object')return false;
+ var ks=['carros','manutencoes','contratos','observacoes','termos','apagados'];
+ for(var i=0;i<ks.length;i++){var v=x[ks[i]];if(!v||typeof v!=='object'||Array.isArray(v))return false}
+ return true;
+}
+function _contaEstado(x){
+ x=x||{};return {carros:Object.keys(x.carros||{}).length,manutencoes:Object.keys(x.manutencoes||{}).length,contratos:Object.keys(x.contratos||{}).length,rev:Number(x.rev)||0};
+}
+function _guardarPontoSeguroCloud(x){
+ if(!_estadoEstruturalValido(x))return;
+ var c=_contaEstado(x);_cloudGuard=c;
+ /* Guarda só o carimbo/contagens do último estado confirmado. O estado completo já existe
+    em gestao_cache; duplicá-lo aqui gastaria localStorage sem benefício proporcional. */
+ try{localStorage.setItem('gestao_cloud_guard',JSON.stringify({em:Date.now(),ver:APP_VER,rev:c.rev,carros:c.carros,manutencoes:c.manutencoes,contratos:c.contratos}))}catch(e){}
+}
+function _refSetSeguro(obj,motivo){
+ if(!REF)return Promise.resolve(false);
+ if(!_estadoEstruturalValido(obj)){toast('⛔ Sincronização bloqueada: estado inválido');return Promise.resolve(false)}
+ var c=_contaEstado(obj);
+ /* trava anti-apagão: uma falha de código não pode zerar de uma vez uma coleção grande
+    que a nuvem acabou de confirmar. Exclusões normais de um item continuam funcionando. */
+ var crit=['carros','manutencoes','contratos'];
+ for(var i=0;i<crit.length;i++){var k=crit[i];if((_cloudGuard[k]||0)>=5&&c[k]===0){
+   toast('⛔ Proteção v103: gravação destrutiva bloqueada ('+k+')');return Promise.resolve(false);
+  }}
+ return REF.set(obj).then(function(){return true}).catch(function(e){toast('⚠️ Falha ao sincronizar: '+e.message);return false});
+}
+function _integridadeLocal(){
+ var r={ok:true,problemas:[]};if(!_estadoEstruturalValido(S)){r.ok=false;r.problemas.push('estrutura do estado inválida');return r}
+ var carros=S.carros||{},orM=0,orC=0,orO=0,orT=0,cv=0;
+ Object.keys(S.manutencoes||{}).forEach(function(k){var x=S.manutencoes[k]||{};if(x.carro&&!carros[x.carro])orM++});
+ Object.keys(S.contratos||{}).forEach(function(k){var x=S.contratos[k]||{};if(x.carro&&!carros[x.carro])orC++});
+ Object.keys(S.observacoes||{}).forEach(function(k){var x=S.observacoes[k]||{},p=x.carro;if(p&&!carros[p])orO++});
+ Object.keys(S.termos||{}).forEach(function(k){var x=S.termos[k]||{};if(x.carro&&!carros[x.carro])orT++});
+ Object.keys(carros).forEach(function(pk){var id=carros[pk].contratoVigenteId;if(id&&!S.contratos[id])cv++});
+ if(orM)r.problemas.push(orM+' manutenção(ões) sem carro');if(orC)r.problemas.push(orC+' contrato(s) sem carro');
+ if(orO)r.problemas.push(orO+' observação(ões) sem carro');if(orT)r.problemas.push(orT+' termo(s) sem carro');
+ if(cv)r.problemas.push(cv+' referência(s) de contrato vigente quebrada(s)');
+ r.ok=!r.problemas.length;return r;
+}
+function _registrarErroRuntime(tipo,msg){
+ try{localStorage.setItem('gestao_last_error',JSON.stringify({em:Date.now(),tipo:tipo,msg:String(msg||'').slice(0,500),ver:APP_VER}))}catch(e){}
+}
+window.addEventListener('error',function(e){_registrarErroRuntime('erro',e&&e.message)});
+window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_registrarErroRuntime('promise',r&&r.message?r.message:r)});
+
 function famHash(key){
  return crypto.subtle.digest('SHA-256',new TextEncoder().encode('guimas:'+key))
   .then(function(buf){return Array.prototype.map.call(new Uint8Array(buf),function(b){return('0'+b.toString(16)).slice(-2)}).join('')});
@@ -1256,10 +1317,12 @@ function save(){
  _pushT=setTimeout(function(){
   if(!REF)return;
   if(!_gotCloud){_saveQueued=true;return} /* NUNCA sobrescrever a nuvem sem tê-la lido primeiro */
-  REF.set(S).catch(function(e){toast('⚠️ Falha ao sincronizar: '+e.message)});
+  _refSetSeguro(S,'save');
  },1200);
 }
 function conectar(chave){
+ /* nova família/chave = novo contexto de proteção; não reutiliza contagens da conexão anterior */
+ _cloudGuard={carros:0,manutencoes:0,contratos:0,rev:0};
  famHash(chave).then(function(h){
   FAMHASH=h;
   REF=DB.ref('familias/'+h+'/gestao');
@@ -1273,11 +1336,12 @@ function aplicarSnapshot(v){
    document.getElementById('syncDot').classList.add('on');
    if(!v){ /* nuvem vazia p/ esta chave */
     _gotCloud=true;_ready=true;
-    if(!S){S=normState(JSON.parse(JSON.stringify(SEED)));S.rev=Date.now();S.dev=DEV;REF.set(S);toast('🌱 Frota inicial carregada na nuvem');render();setTimeout(function(){atualizarFipe()},2500)}
-    else{S.rev=Date.now();S.dev=DEV;REF.set(S)}
+    if(!S){S=normState(JSON.parse(JSON.stringify(SEED)));S.rev=Date.now();S.dev=DEV;_refSetSeguro(S,'seed');toast('🌱 Frota inicial carregada na nuvem');render();setTimeout(function(){atualizarFipe()},2500)}
+    else{S.rev=Date.now();S.dev=DEV;_refSetSeguro(S,'nuvem-vazia')}
     return;
    }
    v=normState(v);
+   _guardarPontoSeguroCloud(v);
    var primeira=!_gotCloud;_gotCloud=true;_ready=true;
    if(!S){S=v;render();setTimeout(function(){atualizarFipe()},2500);return}
    if(primeira){
@@ -1287,7 +1351,7 @@ function aplicarSnapshot(v){
     var outro=(base===v)?local:v;
     var add=mergeColecoes(base,outro);
     S=normState(base);
-    if(add>0||base===local||_saveQueued){_saveQueued=false;S.rev=Date.now();S.dev=DEV;REF.set(S)}
+    if(add>0||base===local||_saveQueued){_saveQueued=false;S.rev=Date.now();S.dev=DEV;_refSetSeguro(S,'primeiro-merge')}
     if(TAB===0||TAB===3||TAB===4)keepScreenStill(render);
     setTimeout(function(){atualizarFipe()},2500);
     return;
@@ -1295,7 +1359,7 @@ function aplicarSnapshot(v){
    if(v.dev===DEV||v.rev<=(S.rev||0))return;
    var adota=function(){
     var local=S;var add=mergeColecoes(v,local);S=v;
-    if(add>0){S.rev=Date.now();S.dev=DEV;REF.set(S)}
+    if(add>0){S.rev=Date.now();S.dev=DEV;_refSetSeguro(S,'merge-remoto')}
     if(TAB===0||TAB===3||TAB===4)render();
     try{if(window._fichaPk&&document.getElementById('ovSheet').classList.contains('open')&&!document.getElementById('ovSheet2').classList.contains('open'))ficha(window._fichaPk)}catch(e){}};
    if(digitando()){var iv=setInterval(function(){if(!digitando()){clearInterval(iv);keepScreenStill(adota)}},2000)}
@@ -4956,7 +5020,7 @@ function openCfg(){
   '<div class="v102setBlock"><b>Restaurar backup</b><p>A restauração soma o que estiver faltando e não apaga os dados existentes.</p><input type="file" id="bkpIn" accept=".json"><button class="btn sec" onclick="restaurarBackup()">♻️ Restaurar de um backup</button></div>'+
  '</div></details>'+
  '<details><summary><span class="v102setIcon">🔗</span><div><b>Conexão e sincronização</b><small>Estado deste iPhone e chave da família</small></div><i>⌄</i></summary><div class="v102settingsBody">'+
-  '<div class="v102setBlock"><div class="v102keyrow"><span>Chave atual</span><b>'+esc(key)+'</b></div><div class="filestat v102status" id="syncDiag">Verificando…</div><button class="btn sec" onclick="syncDiagRodar()">🔍 Diagnóstico da sincronização</button><button class="btn sec" onclick="closeSheet();pedirChave()">🔑 Trocar chave da família</button></div>'+
+  '<div class="v102setBlock"><div class="v102keyrow"><span>Chave atual</span><b>'+esc(key)+'</b></div><p>Proteções v103: merge com túmulos de carros, trava anti-apagão, documentos monotônicos e diagnóstico sem sobrescrever a nuvem.</p><div class="filestat v102status" id="syncDiag">Verificando…</div><button class="btn sec" onclick="syncDiagRodar()">🛡️ Verificar integridade e sincronização</button><button class="btn sec" onclick="closeSheet();pedirChave()">🔑 Trocar chave da família</button></div>'+
  '</div></details></div>'+
  '<button class="btn sec" onclick="closeSheet()">Fechar</button>');
 }
@@ -5206,20 +5270,26 @@ function syncDiagRodar(){
  var el=document.getElementById('syncDiag');
  var chave=localStorage.getItem('gestao_famkey')||'(sem chave)';
  var idc=(FAMHASH||'').slice(0,8)||'—';
- el.innerHTML='🔑 Chave neste aparelho: <b>'+chave+'</b><br>🆔 Código de sincronização: <b>'+idc+'</b><br>☁️ Consultando a nuvem…';
+ var integ=_integridadeLocal();
+ el.innerHTML='🔑 Chave neste aparelho: <b>'+chave+'</b><br>🆔 Código de sincronização: <b>'+idc+'</b>'+
+  '<br>🛡️ Integridade local: '+(integ.ok?'<b style="color:var(--ok)">OK</b>':'<b style="color:var(--red)">ATENÇÃO</b> — '+esc(integ.problemas.join(' · ')))+
+  '<br>☁️ Consultando a nuvem…';
  if(!REF){el.innerHTML+='<br>⚠️ Sem conexão com o banco.';return}
  REF.once('value').then(function(s){
-  var v=s.val();
-  if(!v){el.innerHTML+='<br>☁️ Nuvem: vazia para esta chave!';return}
-  var nm=Object.keys(v.manutencoes||{}).length,nc=Object.keys(v.contratos||{}).length,no=Object.keys(v.observacoes||{}).length;
-  var lm=Object.keys((S&&S.manutencoes)||{}).length;
+  var raw=s.val();
+  if(!raw){el.innerHTML+='<br>☁️ Nuvem: vazia para esta chave!';return}
+  var v=normState(raw);_guardarPontoSeguroCloud(v);
+  var nm=Object.keys(v.manutencoes||{}).length,nc=Object.keys(v.contratos||{}).length,no=Object.keys(v.observacoes||{}).length,ncar=Object.keys(v.carros||{}).length;
+  var lm=Object.keys((S&&S.manutencoes)||{}).length,lcar=Object.keys((S&&S.carros)||{}).length;
+  var rel=(v.rev>(S&&S.rev||0))?'⬇️ A nuvem tem revisão mais nova.':((S&&S.rev||0)>v.rev?'⏳ Este aparelho tem revisão local mais nova; o sincronizador normal fará a conciliação.':'✅ Revisões alinhadas.');
   el.innerHTML='🔑 Chave neste aparelho: <b>'+chave+'</b><br>🆔 Código de sincronização: <b>'+idc+'</b>'+
-   '<br>☁️ Nuvem: '+nm+' manutenções · '+nc+' contratos · '+no+' observações'+
-   '<br>📱 Este aparelho: '+lm+' manutenções'+
-   '<br><span class="sub">Os DOIS iPhones precisam mostrar a MESMA chave e o MESMO código. Se diferente, a chave foi digitada errada num deles.</span>';
-  if(v.rev>(S&&S.rev||0)){S=normState(v);render();el.innerHTML+='<br>⬇️ Dados mais novos da nuvem foram puxados agora.'}
-  else if(S&&S.rev>(v.rev||0)){el.innerHTML+='<br>⬆️ Este aparelho tem dados mais novos — enviando para a nuvem…';S.rev=Date.now();S.dev=DEV;REF.set(S)}
-  else el.innerHTML+='<br>✅ Aparelho e nuvem estão iguais.';
+   '<br>🛡️ Integridade local: '+(integ.ok?'<b style="color:var(--ok)">OK</b>':'<b style="color:var(--red)">ATENÇÃO</b> — '+esc(integ.problemas.join(' · ')))+
+   '<br>☁️ Nuvem: '+ncar+' carros · '+nm+' manutenções · '+nc+' contratos · '+no+' observações'+
+   '<br>📱 Este aparelho: '+lcar+' carros · '+lm+' manutenções'+
+   '<br>'+rel+
+   '<br><span class="sub">Diagnóstico v103 é somente leitura: ele não força mais uma gravação completa na nuvem.</span>';
+  /* Se a nuvem é mais nova, usa o mesmo caminho normal de sincronização/merge, nunca um overwrite do diagnóstico. */
+  if(v.rev>(S&&S.rev||0))aplicarSnapshot(raw);
  }).catch(function(e){el.innerHTML+='<br>⚠️ '+e.message});
 }
 </script><script>
