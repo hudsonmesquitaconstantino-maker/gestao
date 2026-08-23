@@ -410,7 +410,7 @@ hr,.divider{border-color:var(--bord)}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=96; var APP_DATE='22/07/2026';
+var APP_VER=97; var APP_DATE='22/08/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -1067,6 +1067,48 @@ function carrosOrdenados(){
 function totalGasto(pk){
  var t=0;Object.keys(S.manutencoes).forEach(function(k){if(S.manutencoes[k].carro===pk)t+=S.manutencoes[k].total});return t;
 }
+/* Resumo financeiro individual do carro. Não grava nada: calcula sempre a partir do
+   histórico real de S.manutencoes. Usa a mesma regra do fechamento mensal (dataFim ou,
+   quando não houver, dataIni), para a ficha e o Histórico nunca divergirem. */
+function gastosCarroResumo(pk){
+ var hj=hoje(),ymAtual=hj.slice(0,7),anoAtual=hj.slice(0,4);
+ var r={total:0,mesAtual:0,anoAtual:0,ano:anoAtual,ym:ymAtual,anos:{},semData:0};
+ Object.keys(S.manutencoes||{}).forEach(function(k){
+  var m=S.manutencoes[k];if(!m||m.carro!==pk)return;
+  var v=Number(m.total)||0;r.total+=v;
+  var ym=_mesDe(m);
+  if(!/^\d{4}-\d{2}$/.test(ym)){r.semData+=v;return}
+  var a=ym.slice(0,4);
+  if(!r.anos[a])r.anos[a]={total:0,meses:{}};
+  r.anos[a].total+=v;r.anos[a].meses[ym]=(r.anos[a].meses[ym]||0)+v;
+  if(a===anoAtual)r.anoAtual+=v;
+  if(ym===ymAtual)r.mesAtual+=v;
+ });
+ return r;
+}
+function gastosCarroHtml(pk){
+ var r=gastosCarroResumo(pk),anos=Object.keys(r.anos).sort().reverse();
+ var h='<div class="card" style="margin:0 0 10px"><div class="kv">'+
+  '<b>Este mês</b><span style="font-weight:700">R$ '+fmtBRL(r.mesAtual)+'</span>'+
+  '<b>Este ano ('+esc(r.ano)+')</b><span style="font-weight:700">R$ '+fmtBRL(r.anoAtual)+'</span>'+
+  '<b>Total histórico</b><span style="color:var(--warn);font-weight:800">R$ '+fmtBRL(r.total)+'</span></div>';
+ if(anos.length||r.semData){
+  h+='<details style="margin-top:8px"><summary class="sub" style="cursor:pointer;list-style:none;font-weight:700;padding:6px 0">Ver gastos por período ›</summary>';
+  anos.forEach(function(a){
+   var x=r.anos[a],meses=Object.keys(x.meses).sort().reverse();
+   h+='<details style="border-top:.5px solid var(--bord)"><summary style="cursor:pointer;list-style:none">'+
+      '<div class="kv tap"><b>'+esc(a)+'</b><span style="font-weight:800">R$ '+fmtBRL(x.total)+' ›</span></div></summary>';
+   meses.forEach(function(ym){
+    var nm=_nomeMes(ym).split('/')[0];
+    h+='<div class="kv" style="padding-left:14px"><b style="font-weight:400">'+esc(nm)+'</b><span>R$ '+fmtBRL(x.meses[ym])+'</span></div>';
+   });
+   h+='</details>';
+  });
+  if(r.semData)h+='<div class="kv"><b>Sem data</b><span>R$ '+fmtBRL(r.semData)+'</span></div>';
+  h+='</details>';
+ }
+ return h+'</div>';
+}
 function plateHtml(p){return '<div class="plate"><div class="top">BRASIL</div><div class="num">'+esc(fmtPlaca(p))+'</div></div>'}
 
 /* ---------- FROTA ---------- */
@@ -1331,8 +1373,8 @@ function ficha(pk){window._fichaPk=pk;
   '<b>Última quilometragem</b><span>'+fmtKm(c.kmUltima||c.kmAtual)+' km'+(c.kmUltimaData?' <span style="color:var(--tx2)">· em '+dataBR(c.kmUltimaData)+'</span>':' <span style="color:var(--tx2)">(último registro)</span>')+'</span>'+
   '<b>Proprietário</b><span>'+esc(c.proprietario)+'</span>'+
   '<b>Valor de referência</b><span>'+(c.valorRef?'R$ '+fmtBRL(c.valorRef):'—')+(c.fipeMes?' <span style="color:var(--ok);font-size:11px">FIPE '+esc(c.fipeMes)+'</span>':'')+'</span>'+
-  '<b>Licenciamento (CRLV)</b><span>exercício '+esc(c.exercicioCRLV||'—')+'</span>'+
-  '<b>Total gasto em manutenção</b><span style="color:var(--warn);font-weight:700">R$ '+fmtBRL(totalGasto(pk))+'</span></div>';
+  '<b>Licenciamento (CRLV)</b><span>exercício '+esc(c.exercicioCRLV||'—')+'</span></div>';
+ h+='<div class="sect">Gastos de manutenção</div>'+gastosCarroHtml(pk);
  h+='<button class="btn mini sec" onclick="formCarro(\''+pk+'\')">✏️ Editar dados</button>';
  h+='<button class="btn mini sec" onclick="editarMotorista(\''+pk+'\')">👤 Motorista</button>'+
   '<button class="btn mini sec" onclick="alternarFrota(\''+pk+'\')">\ud83d\ude97 '+(c.meuCarro?'Frota Hudson':'Frota F\u00e1bio')+' \u00b7 trocar</button>';
