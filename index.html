@@ -477,6 +477,87 @@ input,select,textarea{border-radius:11px}
  .v99metric{padding:8px 6px}.v99metric strong{font-size:15.5px}.v99metric small{font-size:10px}
 }
 
+
+
+/* ============================================================
+   GUIMASCAR GESTÃO — CRIAÇÃO 2.0 (v100)
+   Camada visual para formulários de Manutenção e Contrato.
+   Preserva ids, dados, cálculos, Firebase e geração final.
+   ============================================================ */
+.v100form{margin-bottom:2px}
+.v100formHero{background:linear-gradient(180deg,#fff 0%,#fafbfc 100%);border:.5px solid var(--bord);border-radius:18px;padding:15px 14px 13px;margin-bottom:10px;box-shadow:var(--v99-shadow)}
+.v100kicker{font-size:10.5px;font-weight:700;color:var(--tx2);letter-spacing:.02em;margin-bottom:3px}
+.v100formHero .tit{font-size:20px;letter-spacing:-.02em!important;margin:0}
+.v100formHero .sub{margin-top:4px;max-width:520px}
+.v100steps{display:grid;gap:4px;margin-top:13px}
+.v100steps.s4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.v100steps.s5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.v100step{min-width:0;background:#F2F3F5;border:.5px solid #E2E4E8;border-radius:9px;padding:6px 4px;text-align:center}
+.v100step strong{display:block;font-size:10.5px;color:var(--tx);line-height:1.1}
+.v100step small{display:block;margin-top:2px;font-size:8.5px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v100step.on{background:#FFF8EE;border-color:rgba(199,122,22,.25)}
+.v100step.on strong{color:var(--warn)}
+
+.v100panel{background:#fff;border:.5px solid var(--bord);border-radius:16px;padding:13px;margin:0 0 10px;box-shadow:0 1px 2px rgba(17,24,39,.025)}
+.v100panelHead{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+.v100panelIcon{width:31px;height:31px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:#F2F3F5;font-size:16px;flex:0 0 auto}
+.v100panelHead .grow{min-width:0}
+.v100panelTitle{font-size:14px;font-weight:750;line-height:1.15;color:var(--tx)}
+.v100panelSub{font-size:11.5px;line-height:1.25;color:var(--tx2);margin-top:2px}
+.v100field label{margin-top:8px}
+.v100panel input,.v100panel select,.v100panel textarea{background:#F8F9FA;border-color:#E2E4E8}
+.v100panel input:focus,.v100panel select:focus,.v100panel textarea:focus{background:#fff}
+
+.v100vehicle{display:none;margin-top:8px;background:#F7F8FA;border:.5px solid #E1E4E8;border-radius:12px;padding:10px 11px}
+.v100vehicle.show{display:block}
+.v100vehicleTop{display:flex;align-items:center;gap:9px}
+.v100carBadge{width:34px;height:34px;border-radius:10px;background:#fff;border:.5px solid var(--bord);display:flex;align-items:center;justify-content:center;font-size:17px;flex:0 0 auto}
+.v100vehicle strong{font-size:13.5px;display:block;line-height:1.15}
+.v100vehicle .sub{font-size:11.5px}
+.v100vehicleMeta{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.v100miniChip{font-size:10.5px;font-weight:650;color:var(--tx2);background:#fff;border:.5px solid var(--bord);border-radius:999px;padding:4px 7px}
+
+.v100item{background:#F8F9FA;border:.5px solid #E1E4E8;border-radius:13px;padding:10px;margin:7px 0}
+.v100itemTop{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px}
+.v100itemTitle{font-size:11px;font-weight:750;color:var(--tx2);letter-spacing:.02em}
+.v100remove{background:transparent;border:0;color:var(--red);font-size:11.5px;font-weight:650;padding:5px 2px}
+.v100pieceGrid{display:grid;grid-template-columns:minmax(92px,.75fr) minmax(0,1.25fr);gap:7px}
+.v100pieceGrid .desc{grid-column:1/-1}
+.v100pieceGrid label,.v100laborGrid label{font-size:10.5px;margin:3px 0 3px}
+.v100pieceGrid input,.v100pieceGrid textarea,.v100laborGrid input,.v100laborGrid textarea{background:#fff}
+.v100laborGrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.v100laborGrid .wide{grid-column:1/-1}
+.v100add{border:1px dashed #D5D8DD!important;background:#FAFAFB!important;color:var(--tx)!important;font-weight:650!important}
+
+.v100summary{background:#F8F9FA;border:.5px solid #E1E4E8;border-radius:13px;padding:11px 12px}
+.v100sumRow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 0;font-size:12.5px;color:var(--tx2)}
+.v100sumRow strong{color:var(--tx);font-variant-numeric:tabular-nums}
+.v100sumTotal{border-top:.5px solid var(--bord);margin-top:5px;padding-top:9px;font-size:13.5px;font-weight:750;color:var(--tx)}
+.v100sumTotal strong{font-family:'Barlow Condensed',var(--sf)!important;font-size:22px;color:var(--warn);letter-spacing:.01em}
+.v100primary{padding:13px 15px!important;border-radius:13px!important;font-size:14.5px!important;box-shadow:0 5px 14px rgba(38,128,72,.12)}
+
+.v100choice{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;background:#ECEEF1;border-radius:11px;padding:3px;margin-top:6px}
+.v100payopt{border:0;background:transparent;color:var(--tx2);font-family:var(--sf);font-size:11.5px;font-weight:650;padding:9px 5px;border-radius:8px;line-height:1.15}
+.v100payopt.on{background:#fff;color:var(--tx);box-shadow:0 1px 3px rgba(17,24,39,.11)}
+.v100nativeSelect{display:none!important}
+#ncParcBox{margin-top:9px;background:#F8F9FA;border:.5px solid #E1E4E8;border-radius:12px;padding:10px}
+#ncParcLista>.grid2{background:#fff;border:.5px solid #E4E6E9;border-radius:10px;padding:7px;margin-top:6px}
+
+.v100review{background:linear-gradient(180deg,#FFF9F0,#FFFDF9);border:.5px solid rgba(199,122,22,.22);border-radius:14px;padding:12px}
+.v100reviewTitle{font-size:12px;font-weight:750;color:var(--warn);margin-bottom:6px}
+.v100review #ncResumo{font-size:12.5px;line-height:1.5;color:var(--tx);margin:0!important}
+.v100review #ncResumo .rline{display:flex;justify-content:space-between;gap:12px;padding:4px 0;border-bottom:.5px solid rgba(199,122,22,.10)}
+.v100review #ncResumo .rline:last-child{border-bottom:0}
+.v100review #ncResumo .rlab{color:var(--tx2)}
+.v100review #ncResumo .rval{text-align:right;font-weight:700;color:var(--tx)}
+.v100hint{font-size:11px;color:var(--tx2);line-height:1.35;margin-top:7px}
+
+@media(max-width:390px){
+ .v100step small{display:none}.v100step{padding:7px 2px}.v100step strong{font-size:10px}
+ .v100pieceGrid,.v100laborGrid{grid-template-columns:1fr 1fr}
+ .v100panel{padding:12px}.v100formHero{padding:14px 12px 12px}
+}
+
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -510,7 +591,7 @@ input,select,textarea{border-radius:11px}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=99; var APP_DATE='23/08/2026';
+var APP_VER=100; var APP_DATE='23/08/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -3684,22 +3765,23 @@ function vManut(){
  }
  if(!MP.length)MP=[{valor:'',desc:'',loja:''}];
  if(!MB.length)MB=[{titulo:'Mecânico',nome:'Vinícius',valor:'',servicos:''}];
- var h='<div class="card v99form"><div class="tit">🔧 Nova manutenção</div>'+
- '<label>Carro</label><select id="mCarro" onchange="mPuxaCarro();mRasc()"><option value="">— selecione —</option>'+opcoesCarros()+'</select>'+
- '<div id="mCarroInfo" class="sub"></div>'+
- '<label>Motorista</label><input id="mMotorista" oninput="mRasc()" placeholder="sugere o atual ao escolher o carro">'+
- '<div class="grid2"><div><label>Data (início)</label><input type="date" id="mIni" onchange="mRasc()" value="'+hoje()+'"></div>'+
- '<div><label>Data fim (se for período)</label><input type="date" id="mFim" onchange="mRasc()"></div></div>'+
- '<label>Odômetro (km)</label><input id="mOdo" oninput="mRasc()" inputmode="numeric" placeholder="101117">'+
- '<div class="sect">Peças</div><div id="mPecas"></div>'+
- '<button class="btn mini sec" onclick="MP.push({valor:\'\',desc:\'\',loja:\'\'});mDesenha()">➕ Peça</button>'+
- '<div class="sect">Mão de obra</div><div id="mBlocos"></div>'+
- '<button class="btn mini sec" onclick="MB.push({titulo:\'\',nome:\'\',valor:\'\',servicos:\'\'});mDesenha()">➕ Bloco (Borracheiro, Retífica…)</button>'+
- '<div class="card" style="margin-top:12px;background:var(--card2)"><div class="kv">'+
- '<b>Peças</b><span id="mTotP">R$ 0,00</span><b>Mão de obra</b><span id="mTotM">R$ 0,00</span>'+
- '<b>TOTAL GERAL</b><span id="mTotG" style="color:var(--warn);font-weight:800">R$ 0,00</span></div></div>'+
- '<button class="btn ok" onclick="gerarManut()">✅ Salvar manutenção</button>'+
- '<div id="mSaida"></div></div>';
+ var h='<div class="v100form">'+
+  '<div class="v100formHero"><div class="v100kicker">GUIMASCAR GESTÃO</div><div class="tit">🔧 Nova manutenção</div><div class="sub">Registre o serviço com as mesmas regras do histórico, em uma sequência mais clara.</div>'+
+   '<div class="v100steps s4"><div class="v100step on"><strong>1</strong><small>Veículo</small></div><div class="v100step"><strong>2</strong><small>Peças</small></div><div class="v100step"><strong>3</strong><small>Serviços</small></div><div class="v100step"><strong>4</strong><small>Revisão</small></div></div></div>'+
+  '<div class="v100panel"><div class="v100panelHead"><div class="v100panelIcon">🚗</div><div class="grow"><div class="v100panelTitle">Veículo e serviço</div><div class="v100panelSub">Carro, motorista, período e quilometragem.</div></div></div>'+
+   '<label>Carro</label><select id="mCarro" onchange="mPuxaCarro();mRasc()"><option value="">— selecione —</option>'+opcoesCarros()+'</select>'+
+   '<div id="mCarroInfo" class="v100vehicle"></div>'+
+   '<label>Motorista</label><input id="mMotorista" oninput="mRasc()" placeholder="sugere o atual ao escolher o carro">'+
+   '<div class="grid2"><div><label>Data de início</label><input type="date" id="mIni" onchange="mRasc()" value="'+hoje()+'"></div>'+
+   '<div><label>Data final <span style="font-weight:400">(opcional)</span></label><input type="date" id="mFim" onchange="mRasc()"></div></div>'+
+   '<label>Odômetro (km)</label><input id="mOdo" oninput="mRasc()" inputmode="numeric" placeholder="101117"></div>'+
+  '<div class="v100panel"><div class="v100panelHead"><div class="v100panelIcon">🧩</div><div class="grow"><div class="v100panelTitle">Peças</div><div class="v100panelSub">Valor, descrição e loja de cada item.</div></div></div><div id="mPecas"></div>'+
+   '<button class="btn mini sec v100add" onclick="MP.push({valor:\'\',desc:\'\',loja:\'\'});mDesenha()">＋ Adicionar peça</button></div>'+
+  '<div class="v100panel"><div class="v100panelHead"><div class="v100panelIcon">🛠️</div><div class="grow"><div class="v100panelTitle">Mão de obra e serviços</div><div class="v100panelSub">Separe mecânico, borracheiro, retífica ou outro profissional.</div></div></div><div id="mBlocos"></div>'+
+   '<button class="btn mini sec v100add" onclick="MB.push({titulo:\'\',nome:\'\',valor:\'\',servicos:\'\'});mDesenha()">＋ Outro profissional / serviço</button></div>'+
+  '<div class="v100panel"><div class="v100panelHead"><div class="v100panelIcon">✓</div><div class="grow"><div class="v100panelTitle">Revisão</div><div class="v100panelSub">Confira os valores antes de registrar.</div></div></div>'+
+   '<div class="v100summary"><div class="v100sumRow"><span>Peças</span><strong id="mTotP">R$ 0,00</strong></div><div class="v100sumRow"><span>Mão de obra</span><strong id="mTotM">R$ 0,00</strong></div><div class="v100sumRow v100sumTotal"><span>TOTAL</span><strong id="mTotG">R$ 0,00</strong></div></div>'+
+   '<button class="btn ok v100primary" onclick="gerarManut()">✓ Salvar manutenção</button><div class="v100hint">O histórico e o texto final continuam sendo gerados exatamente pelas regras atuais do Gestão.</div><div id="mSaida"></div></div></div>';
  setTimeout(mDesenha,30);
  return h;
 }
@@ -3709,32 +3791,31 @@ function opcoesCarros(sel){
 }
 function mPuxaCarro(){
  var pk=document.getElementById('mCarro').value,c=S.carros[pk];
- if(!c){document.getElementById('mCarroInfo').textContent='';return}
- document.getElementById('mCarroInfo').innerHTML='🚗 '+esc(tituloCarro(c))+' · '+esc(fmtPlaca(c.placa));
+ var info=document.getElementById('mCarroInfo');
+ if(!c){if(info){info.className='v100vehicle';info.innerHTML=''}return}
+ var kk=c.kmUltima||c.kmAtual||0;
+ if(info){info.className='v100vehicle show';info.innerHTML='<div class="v100vehicleTop"><div class="v100carBadge">🚗</div><div class="grow"><strong>'+esc(tituloCarro(c))+' · '+esc(fmtPlaca(c.placa))+'</strong><div class="sub">'+(c.motorista?'Motorista atual: '+esc(primNome(c.motorista)):'Sem motorista informado')+'</div></div></div><div class="v100vehicleMeta"><span class="v100miniChip">Último KM: '+fmtKm(kk)+' km</span><span class="v100miniChip">'+esc(c.status||'—')+'</span></div>'}
  if(c.motorista)document.getElementById('mMotorista').value=primNome(c.motorista);
- var kk=c.kmUltima||c.kmAtual;if(kk)document.getElementById('mOdo').placeholder=String(kk);
+ if(kk)document.getElementById('mOdo').placeholder=String(kk);
 }
 function taGrow(el){if(!el)return;el.style.height='auto';el.style.height=(el.scrollHeight+2)+'px'}
 function mDesenha(){
  var hp='';
  MP.forEach(function(p,i){
-  hp+='<div class="grid3">'+
-   '<input placeholder="R$" inputmode="decimal" value="'+esc(p.valor)+'" oninput="MP['+i+'].valor=this.value;mTotais()">'+
-   '<textarea rows="1" class="taflex" placeholder="descrição da peça" oninput="MP['+i+'].desc=this.value;taGrow(this)">'+esc(p.desc)+'</textarea>'+
-   '<input placeholder="loja" value="'+esc(p.loja)+'" oninput="MP['+i+'].loja=this.value">'+
-   '<button class="xbt" onclick="MP.splice('+i+',1);mDesenha()">✕</button></div>';
+  hp+='<div class="v100item"><div class="v100itemTop"><div class="v100itemTitle">PEÇA '+('0'+(i+1)).slice(-2)+'</div><button class="v100remove" onclick="MP.splice('+i+',1);mDesenha()">Remover</button></div>'+
+   '<div class="v100pieceGrid"><div class="desc"><label>Descrição</label><textarea rows="1" class="taflex" placeholder="Ex.: Pastilha de freio dianteira" oninput="MP['+i+'].desc=this.value;taGrow(this)">'+esc(p.desc)+'</textarea></div>'+
+   '<div><label>Valor (R$)</label><input placeholder="0,00" inputmode="decimal" value="'+esc(p.valor)+'" oninput="MP['+i+'].valor=this.value;mTotais()"></div>'+
+   '<div><label>Loja / fornecedor</label><input placeholder="Ex.: Auto Peças" value="'+esc(p.loja)+'" oninput="MP['+i+'].loja=this.value"></div></div></div>';
  });
  document.getElementById('mPecas').innerHTML=hp||'<div class="sub">Sem peças.</div>';
  setTimeout(function(){document.querySelectorAll('#mPecas .taflex').forEach(function(t){taGrow(t)})},30);
  var hb='';
  MB.forEach(function(b,i){
-  hb+='<div class="card" style="margin:6px 0;background:var(--card2)"><div class="grid2">'+
-   '<div><label>Título</label><input placeholder="Mecânico / Borracheiro / Retífica" value="'+esc(b.titulo)+'" oninput="MB['+i+'].titulo=this.value"></div>'+
-   '<div><label>Profissional</label><input placeholder="Vinícius" value="'+esc(b.nome)+'" oninput="MB['+i+'].nome=this.value"></div></div>'+
-   '<label>Valor da mão de obra (R$)</label><input placeholder="1.700,00" inputmode="decimal" value="'+esc(b.valor)+'" oninput="MB['+i+'].valor=this.value;mTotais()">'+
-   '<label>Serviços (um por linha; anote "Próxima troca com X km" e "GARANTIA ATÉ data" quando houver)</label>'+
-   '<textarea oninput="MB['+i+'].servicos=this.value">'+esc(b.servicos)+'</textarea>'+
-   '<button class="btn mini red" onclick="MB.splice('+i+',1);mDesenha()">Remover bloco</button></div>';
+  hb+='<div class="v100item"><div class="v100itemTop"><div class="v100itemTitle">MÃO DE OBRA '+('0'+(i+1)).slice(-2)+'</div><button class="v100remove" onclick="MB.splice('+i+',1);mDesenha()">Remover</button></div>'+
+   '<div class="v100laborGrid"><div><label>Tipo</label><input placeholder="Mecânico / Borracheiro / Retífica" value="'+esc(b.titulo)+'" oninput="MB['+i+'].titulo=this.value"></div>'+
+   '<div><label>Profissional</label><input placeholder="Vinícius" value="'+esc(b.nome)+'" oninput="MB['+i+'].nome=this.value"></div>'+
+   '<div class="wide"><label>Valor da mão de obra (R$)</label><input placeholder="1.700,00" inputmode="decimal" value="'+esc(b.valor)+'" oninput="MB['+i+'].valor=this.value;mTotais()"></div>'+
+   '<div class="wide"><label>Serviços realizados <span style="font-weight:400">(um por linha)</span></label><textarea placeholder="Ex.: Troca da pastilha dianteira\nPróxima troca com X km\nGARANTIA ATÉ data" oninput="MB['+i+'].servicos=this.value">'+esc(b.servicos)+'</textarea></div></div></div>';
  });
  document.getElementById('mBlocos').innerHTML=hb;
  mTotais();
@@ -4275,60 +4356,51 @@ function aplicarMascarasContrato(){
  mascaraInput(document.getElementById('ncPixChave'),fmtCPF);
 }
 function vContrato(){
- var h='<div class="card"><div class="tit">📄 Novo contrato de locação</div><p class="sub">4 passos. O app preenche o que já sabe; você confere e gera. O Word sai no padrão GuimasCar (5 folhas).</p>'+
- '<div class="sect">① Carro e locador</div><label>Carro</label><select id="ncCarro" onchange="ncPuxaCarro();ncResumo()"><option value="">— selecione —</option>'+opcoesCarros()+'</select>'+
- '<div id="ncCarroInfo" class="sub"></div>'+
- '<label>Locador</label><select id="ncLocador">'+selLocadores('hudson')+'</select>'+
- '<div class="sect">② Locatário (motorista novo)</div>'+
- '<label>Nome completo</label><input id="ncNome" oninput="ncResumo()">'+
- '<label>CPF</label><input id="ncCpf" inputmode="numeric" placeholder="000.000.000-00">'+
- '<div class="grid2"><div><label>RG (número)</label><input id="ncRgNum" inputmode="numeric"></div>'+
- '<div><label>Órgão expedidor</label><input id="ncRgOrg" placeholder="DETRAN/RJ"></div></div>'+
- '<div class="grid2"><div><label>CNH</label><input id="ncCnh" inputmode="numeric"></div>'+
- '<div><label>Validade CNH</label><input type="date" id="ncCnhVal"></div></div>'+
- '<label>Endereço</label>'+'<div class="grid2"><div style="flex:2"><label class="sub">Rua/Av.</label><input id="ncRua" placeholder="Rua Humberto de Campos"></div>'+'<div><label class="sub">Número</label><input id="ncNum" placeholder="39"></div></div>'+'<div class="grid2"><div><label class="sub">Complemento</label><input id="ncCompl" placeholder="Sobrado / Ap 301 (opcional)"></div>'+'<div><label class="sub">Bairro</label><input id="ncBairro" placeholder="Lindo Parque"></div></div>'+'<div class="grid2"><div><label class="sub">Cidade</label><input id="ncCidade" value="São Gonçalo"></div>'+'<div><label class="sub">UF</label><input id="ncUf" maxlength="2" value="RJ"></div></div>'+
- '<div class="grid2"><div><label>CEP</label><input id="ncCep" inputmode="numeric"></div>'+
- '<div><label>Telefone</label><input id="ncTel" inputmode="tel" placeholder="(21) 9…"></div></div>'+
- '<div class="sect">③ Valores, prazo e veículo</div>'+
- '<div class="grid2"><div><label>Semanal (R$)</label><input id="ncSemanal" inputmode="decimal" oninput="ncCl34Auto();ncResumo()"></div>'+
- '<div><label>Caução (R$)</label><input id="ncCaucao" inputmode="decimal" oninput="ncMultaAuto();ncResumo()"></div></div>'+
- '<div class="grid2"><div><label>Multa diária de atraso (R$)</label><input id="ncMultaDia" inputmode="decimal" value="115,00"></div>'+
- '<div><label>Multa de rescisão (R$)</label><input id="ncMultaResc" inputmode="decimal"></div></div>'+
- '<div class="grid2"><div><label>Início</label><input type="date" id="ncIni" value="'+hoje()+'" onchange="document.getElementById(\'ncFim\').value=mais3Meses(this.value)"></div>'+
- '<div><label>Fim (padrão 3 meses)</label><input type="date" id="ncFim" onchange="ncResumo()" value="'+mais3Meses(hoje())+'"></div></div>'+
- '<label>Quilometragem inicial</label><input id="ncKm" inputmode="numeric">'+
- '<label>Acessórios</label><input id="ncAcess" value="Estepe, triângulo, chave de roda, macaco">'+
- '<label>Combustíveis</label><input id="ncComb" placeholder="Etanol / GNV 16m³">'+
- '<div class="sect">④ PIX de recebimento</div>'+
- '<div class="grid2"><div><label>Banco</label><input id="ncPixBanco" value="Inter"></div>'+
- '<div><label>Favorecido</label><input id="ncPixFav" value="Fabio"></div></div>'+
- '<label>Chave PIX (CPF)</label><input id="ncPixChave" value="075.351.417-65">'+
- '<div class="sect">⑤ Cláusula 3.4 — semana antecipada</div>'+
- '<label>Como é a semana antecipada deste contrato?</label>'+
- '<select id="ncTem34" onchange="ncModo34();ncCl34Auto(true);ncResumo()">'+
- '<option value="avista">Paga à vista no ato (padrão)</option>'+
- '<option value="parcelado">Parcelada (200 no ato + domingos)</option>'+
- '<option value="nao">Sem semana antecipada</option></select>'+
- '<div id="ncParcBox" style="display:none">'+
-  '<p class="sub">Uma linha por parcela: valor e quando. A soma tem que fechar o valor da semana.</p>'+
-  '<div id="ncParcLista"></div>'+
-  '<button class="btn mini sec" onclick="ncParcAdd()">➕ Parcela</button>'+
-  '<div class="sub" id="ncParcSoma" style="margin-top:4px"></div>'+
- '</div>'+
- '<textarea id="ncCl34" style="display:none"></textarea>'+
- '<div class="sect">✅ Conferir e gerar</div><div id="ncResumo" class="sub" style="margin-bottom:8px">Preencha acima — o resumo aparece aqui.</div>'+'<button class="btn ok" onclick="gerarContrato()">📝 GERAR CONTRATO WORD + REGISTRAR</button>'+
- '<div class="sub" style="margin-top:8px">O contrato entra como vigente na ficha do carro. Se já houver um vigente, ele vai para os anteriores automaticamente.</div></div>';
+ var h='<div class="v100form">'+
+  '<div class="v100formHero"><div class="v100kicker">GUIMASCAR GESTÃO</div><div class="tit">📄 Novo contrato de locação</div><div class="sub">Preencha em blocos, revise e gere o mesmo Word padrão GuimasCar.</div>'+
+   '<div class="v100steps s5"><div class="v100step on"><strong>1</strong><small>Veículo</small></div><div class="v100step"><strong>2</strong><small>Motorista</small></div><div class="v100step"><strong>3</strong><small>Condições</small></div><div class="v100step"><strong>4</strong><small>Pagamento</small></div><div class="v100step"><strong>5</strong><small>Revisão</small></div></div></div>'+
+  '<div class="v100panel"><div class="v100panelHead"><div class="v100panelIcon">🚗</div><div class="grow"><div class="v100panelTitle">Veículo e locador</div><div class="v100panelSub">Selecione o carro; o Gestão puxa o que já conhece.</div></div></div>'+
+   '<label>Carro</label><select id="ncCarro" onchange="ncPuxaCarro();ncResumo()"><option value="">— selecione —</option>'+opcoesCarros()+'</select><div id="ncCarroInfo" class="v100vehicle"></div>'+
+   '<label>Locador</label><select id="ncLocador">'+selLocadores('hudson')+'</select></div>'+
+  '<div class="v100panel"><div class="v100panelHead"><div class="v100panelIcon">👤</div><div class="grow"><div class="v100panelTitle">Locatário</div><div class="v100panelSub">Dados pessoais, CNH, endereço e contato.</div></div></div>'+
+   '<label>Nome completo</label><input id="ncNome" oninput="ncResumo()">'+
+   '<label>CPF</label><input id="ncCpf" inputmode="numeric" placeholder="000.000.000-00">'+
+   '<div class="grid2"><div><label>RG (número)</label><input id="ncRgNum" inputmode="numeric"></div><div><label>Órgão expedidor</label><input id="ncRgOrg" placeholder="DETRAN/RJ"></div></div>'+
+   '<div class="grid2"><div><label>CNH</label><input id="ncCnh" inputmode="numeric"></div><div><label>Validade CNH</label><input type="date" id="ncCnhVal"></div></div>'+
+   '<div class="sect" style="margin-top:15px">Endereço</div>'+
+   '<div class="grid2"><div style="flex:2"><label>Rua / Avenida</label><input id="ncRua" placeholder="Rua Humberto de Campos"></div><div><label>Número</label><input id="ncNum" placeholder="39"></div></div>'+
+   '<div class="grid2"><div><label>Complemento</label><input id="ncCompl" placeholder="Opcional"></div><div><label>Bairro</label><input id="ncBairro" placeholder="Lindo Parque"></div></div>'+
+   '<div class="grid2"><div><label>Cidade</label><input id="ncCidade" value="São Gonçalo"></div><div><label>UF</label><input id="ncUf" maxlength="2" value="RJ"></div></div>'+
+   '<div class="grid2"><div><label>CEP</label><input id="ncCep" inputmode="numeric"></div><div><label>Telefone</label><input id="ncTel" inputmode="tel" placeholder="(21) 9…"></div></div></div>'+
+  '<div class="v100panel"><div class="v100panelHead"><div class="v100panelIcon">💰</div><div class="grow"><div class="v100panelTitle">Condições da locação</div><div class="v100panelSub">Valores, prazo, quilometragem e itens do veículo.</div></div></div>'+
+   '<div class="grid2"><div><label>Semanal (R$)</label><input id="ncSemanal" inputmode="decimal" oninput="ncCl34Auto();ncResumo()"></div><div><label>Caução (R$)</label><input id="ncCaucao" inputmode="decimal" oninput="ncMultaAuto();ncResumo()"></div></div>'+
+   '<div class="grid2"><div><label>Multa diária de atraso (R$)</label><input id="ncMultaDia" inputmode="decimal" value="115,00"></div><div><label>Multa de rescisão (R$)</label><input id="ncMultaResc" inputmode="decimal"></div></div>'+
+   '<div class="grid2"><div><label>Início</label><input type="date" id="ncIni" value="'+hoje()+'" onchange="document.getElementById(\'ncFim\').value=mais3Meses(this.value);ncResumo()"></div><div><label>Fim (padrão 3 meses)</label><input type="date" id="ncFim" onchange="ncResumo()" value="'+mais3Meses(hoje())+'"></div></div>'+
+   '<label>Quilometragem inicial</label><input id="ncKm" inputmode="numeric">'+
+   '<label>Acessórios</label><input id="ncAcess" value="Estepe, triângulo, chave de roda, macaco">'+
+   '<label>Combustíveis</label><input id="ncComb" placeholder="Etanol / GNV 16m³"></div>'+
+  '<div class="v100panel"><div class="v100panelHead"><div class="v100panelIcon">🏦</div><div class="grow"><div class="v100panelTitle">Pagamento</div><div class="v100panelSub">PIX de recebimento e forma da semana antecipada.</div></div></div>'+
+   '<div class="grid2"><div><label>Banco</label><input id="ncPixBanco" value="Inter"></div><div><label>Favorecido</label><input id="ncPixFav" value="Fabio"></div></div>'+
+   '<label>Chave PIX (CPF)</label><input id="ncPixChave" value="075.351.417-65">'+
+   '<div class="sect" style="margin-top:16px">Semana antecipada</div><div class="sub">Como será paga a semana final do contrato?</div>'+
+   '<select id="ncTem34" class="v100nativeSelect" onchange="ncModo34();ncCl34Auto(true);ncResumo()"><option value="avista">Paga à vista no ato (padrão)</option><option value="parcelado">Parcelada (200 no ato + domingos)</option><option value="nao">Sem semana antecipada</option></select>'+
+   '<div class="v100choice"><button type="button" class="v100payopt on" data-v="avista" onclick="ncUI34(\'avista\')">À vista</button><button type="button" class="v100payopt" data-v="parcelado" onclick="ncUI34(\'parcelado\')">Parcelada</button><button type="button" class="v100payopt" data-v="nao" onclick="ncUI34(\'nao\')">Não terá</button></div>'+
+   '<div id="ncParcBox" style="display:none"><div class="sub">Uma linha por parcela. A soma precisa fechar o valor da semana.</div><div id="ncParcLista"></div><button class="btn mini sec v100add" onclick="ncParcAdd()">＋ Adicionar parcela</button><div class="sub" id="ncParcSoma" style="margin-top:6px"></div></div><textarea id="ncCl34" style="display:none"></textarea></div>'+
+  '<div class="v100panel"><div class="v100panelHead"><div class="v100panelIcon">✓</div><div class="grow"><div class="v100panelTitle">Revisão final</div><div class="v100panelSub">Confira as informações principais antes de gerar.</div></div></div>'+
+   '<div class="v100review"><div class="v100reviewTitle">RESUMO DO CONTRATO</div><div id="ncResumo">Preencha o veículo e o nome do motorista para visualizar o resumo.</div></div>'+
+   '<button class="btn ok v100primary" onclick="gerarContrato()">📝 Gerar contrato Word + registrar</button><div class="v100hint">O conteúdo jurídico, o Word gerado e o registro do contrato continuam usando as regras atuais do sistema.</div></div></div>';
  return h;
 }
 function ncPuxaCarro(){
  var pk=document.getElementById('ncCarro').value,c=S.carros[pk];
  var info=document.getElementById('ncCarroInfo');
- if(!c){info.textContent='';return}
- info.innerHTML='🚗 '+esc(tituloCarro(c))+' · '+esc(fmtPlaca(c.placa))+' · '+fmtKm(c.kmUltima||c.kmAtual)+' km · ref. '+(c.valorRef?'R$ '+fmtBRL(c.valorRef):'—');
+ if(!c){if(info){info.className='v100vehicle';info.innerHTML=''}return}
+ var km=c.kmUltima||c.kmAtual||0;
+ if(info){info.className='v100vehicle show';info.innerHTML='<div class="v100vehicleTop"><div class="v100carBadge">🚗</div><div class="grow"><strong>'+esc(tituloCarro(c))+' · '+esc(fmtPlaca(c.placa))+'</strong><div class="sub">'+fmtKm(km)+' km · referência '+(c.valorRef?'R$ '+fmtBRL(c.valorRef):'—')+'</div></div></div><div class="v100vehicleMeta"><span class="v100miniChip">'+esc(c.status||'—')+'</span>'+(c.motorista?'<span class="v100miniChip">Atual: '+esc(primNome(c.motorista))+'</span>':'')+'</div>'}
  document.getElementById('ncLocador').value=c.locadorId;
  if(c.semanalPadrao)document.getElementById('ncSemanal').value=fmtBRL(c.semanalPadrao);
  if(c.caucaoPadrao){document.getElementById('ncCaucao').value=fmtBRL(c.caucaoPadrao);ncMultaAuto()}
- document.getElementById('ncKm').value=c.kmUltima||c.kmAtual||'';
+ document.getElementById('ncKm').value=km||'';
  document.getElementById('ncComb').value=c.combustivel||'';
  ncCl34Auto();
  ncModo34();
@@ -4339,11 +4411,19 @@ function ncResumo(){
   var g=function(i){var e=document.getElementById(i);return e?e.value:''};
   var pk=g('ncCarro'),c=S.carros[pk];
   var el=document.getElementById('ncResumo');if(!el)return;
-  if(!pk||!g('ncNome')){el.textContent='Preencha acima — o resumo aparece aqui.';return}
-  el.innerHTML='🚗 <b>'+esc(c?tituloCarro(c):pk)+'</b> ('+esc(fmtPlaca(pk))+') → 👤 <b>'+esc(g('ncNome'))+'</b><br>'+
-   '💰 R$ '+esc(g('ncSemanal')||'?')+'/sem · caução R$ '+esc(g('ncCaucao')||'?')+' · '+dataBR(g('ncIni'))+' → '+dataBR(g('ncFim'))+
-   ' · 3.4: '+(g('ncTem34')==='sim'?'sim':'não');
+  if(!pk||!g('ncNome')){el.innerHTML='<span class="sub">Preencha o veículo e o nome do motorista para visualizar o resumo.</span>';return}
+  var m34=g('ncTem34'),r34=m34==='parcelado'?'Parcelada':(m34==='nao'?'Sem antecipação':'À vista no ato');
+  el.innerHTML='<div class="rline"><span class="rlab">Veículo</span><span class="rval">'+esc(c?tituloCarro(c):pk)+' · '+esc(fmtPlaca(pk))+'</span></div>'+
+   '<div class="rline"><span class="rlab">Motorista</span><span class="rval">'+esc(g('ncNome'))+'</span></div>'+
+   '<div class="rline"><span class="rlab">Período</span><span class="rval">'+dataBR(g('ncIni'))+' → '+dataBR(g('ncFim'))+'</span></div>'+
+   '<div class="rline"><span class="rlab">Semanal</span><span class="rval">R$ '+esc(g('ncSemanal')||'?')+'</span></div>'+
+   '<div class="rline"><span class="rlab">Caução</span><span class="rval">R$ '+esc(g('ncCaucao')||'?')+'</span></div>'+
+   '<div class="rline"><span class="rlab">Semana antecipada</span><span class="rval">'+esc(r34)+'</span></div>';
  }catch(e){}
+}
+function ncUI34(v){
+ var sel=document.getElementById('ncTem34');if(!sel)return;
+ sel.value=v;ncModo34();ncCl34Auto(true);ncResumo();
 }
 var NCPARC=[];
 function _domingosApos(dataIni,qtd){
@@ -4385,6 +4465,7 @@ function ncParcSoma(){
 }
 function ncModo34(){
  var sel=document.getElementById('ncTem34');if(!sel)return;
+ try{document.querySelectorAll('.v100payopt').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-v')===sel.value)})}catch(e){}
  var box=document.getElementById('ncParcBox');
  if(sel.value==='parcelado'){
   if(box)box.style.display='';
