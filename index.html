@@ -371,6 +371,12 @@ nav,.nav,.tabbar{background:rgba(255,255,255,.85)!important;border-top:.5px soli
 .alert .what b{color:var(--warn)}
 .alert.red .what b{color:var(--red)}
 hr,.divider{border-color:var(--bord)}
+
+/* RESPIRO NO TOPO DA FICHA (v96): o padding-top da folha descontava 34px da
+   safe-area, o que fazia o título colar/esmagar na ilha dinâmica. Aqui dou um
+   respiro maior e proporcional ao aparelho, sem jogar exageradamente pra baixo. */
+.sheet{padding-top:calc(28px + env(safe-area-inset-top))!important}
+.sheet h3{margin-top:2px}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -404,7 +410,7 @@ hr,.divider{border-color:var(--bord)}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=95; var APP_DATE='22/07/2026';
+var APP_VER=96; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
