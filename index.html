@@ -377,6 +377,106 @@ hr,.divider{border-color:var(--bord)}
    respiro maior e proporcional ao aparelho, sem jogar exageradamente pra baixo. */
 .sheet{padding-top:calc(28px + env(safe-area-inset-top))!important}
 .sheet h3{margin-top:2px}
+
+
+/* ============================================================
+   GUIMASCAR GESTÃO 2.0 — ACABAMENTO VISUAL / UX (v99)
+   Camada reversível: hierarquia, espaçamento e componentes.
+   Não altera Firebase, schema, sincronização ou regras de negócio.
+   ============================================================ */
+:root{
+  --v99-radius:16px;
+  --v99-radius-sm:12px;
+  --v99-shadow:0 1px 2px rgba(17,24,39,.035),0 8px 24px rgba(17,24,39,.035);
+}
+main{padding:10px 12px 12px}
+.card{border-radius:var(--v99-radius);padding:14px;box-shadow:var(--v99-shadow)}
+.tit{font-size:15px;line-height:1.25}
+.sub{line-height:1.35}
+.sect{font-size:12px;font-weight:650;margin:22px 0 8px;letter-spacing:-.005em!important}
+
+.v99hero{background:linear-gradient(180deg,#fff 0%,#fafbfc 100%);border:.5px solid var(--bord);
+  border-radius:18px;padding:14px;margin:0 0 10px;box-shadow:var(--v99-shadow)}
+.v99heroTop{align-items:flex-start}
+.v99hero h3{font-size:19px!important;line-height:1.15;margin:1px 0 3px!important;padding-right:38px}
+.v99heroMeta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px}
+.v99driver{font-size:12.5px;color:var(--tx2)}
+.v99metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:12px}
+.v99metric{min-width:0;background:var(--card2);border:.5px solid var(--bord);border-radius:12px;padding:9px 8px}
+.v99metric small{display:block;color:var(--tx2);font-size:10.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v99metric strong{display:block;margin-top:3px;color:var(--tx);font-family:'Barlow Condensed',var(--sf)!important;
+  font-size:17px;line-height:1.05;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v99metric.warn strong{color:var(--warn)}
+.v99metric.red strong{color:var(--red)}
+.v99metric.ok strong{color:var(--ok)}
+
+details.v99details{background:var(--card);border:.5px solid var(--bord);border-radius:14px;margin:9px 0;overflow:hidden;
+  box-shadow:0 1px 2px rgba(17,24,39,.025)}
+details.v99details>summary{list-style:none;-webkit-user-select:none;user-select:none}
+details.v99details>summary::-webkit-details-marker{display:none}
+.v99summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 13px;cursor:pointer;
+  font-size:13.5px;font-weight:700;color:var(--tx)}
+.v99summary>span:last-child{color:var(--tx2);font-size:12px;font-weight:600;text-align:right;white-space:nowrap}
+details.v99details[open]>.v99summary{border-bottom:.5px solid var(--bord);background:#fbfbfc}
+.v99detailbody{padding:4px 12px 12px}
+.v99detailbody>.sect:first-child{margin-top:12px}
+.v99data .kv{margin-top:0}
+
+.v99finance{padding:11px 12px!important}
+.v99finance .v99metrics{margin-top:0}
+.v99finance details{margin-top:7px}
+.v99finance details>summary{border-top:.5px solid var(--bord);padding:10px 2px 4px!important}
+.v99finance details details{margin:0;border-radius:0;border:0;border-top:.5px solid var(--bord);box-shadow:none}
+.v99finance details details summary{border:0;padding:2px 0!important}
+
+.v99actions{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 2px}
+.v99actions .btn.mini{margin:0;width:auto;background:#fff}
+.btn.mini.sec{box-shadow:none}
+.btn.red,.btn.mini.red{background:transparent!important;border-color:transparent!important;color:var(--red)!important}
+
+#fAten{padding:12px 13px}
+#fAten>.tit{margin-bottom:7px}
+#fAten .card.tap{background:transparent!important;border:0!important;border-top:.5px solid var(--bord)!important;
+  border-radius:0!important;box-shadow:none!important;margin:0!important;padding:10px 4px 10px 12px!important}
+#fAten .card.tap:first-of-type{border-top:0!important}
+#fAten .card.tap::before{top:12px!important;bottom:12px!important;width:3px!important}
+.v99fleetcard{padding:12px 13px}
+.v99fleetcard .chip{margin-top:5px}
+.v99chev{color:#B0B4BA;font-size:20px;font-weight:400;padding-left:2px}
+
+.v99seg{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:#ECEEF1;border-radius:10px;padding:2px;margin:10px 0 8px}
+.v99segbtn{display:block;text-align:center;border-radius:8px;padding:7px 5px;font-size:12px;font-weight:650;color:var(--tx2);cursor:pointer}
+.v99segbtn.on{background:#fff;color:var(--tx);box-shadow:0 1px 3px rgba(17,24,39,.12)}
+.v99histcard>details>.v99summary{padding:1px 0 10px}
+.v99histcard>details[open]>.v99summary{background:transparent;border-bottom:0}
+.v99histcard select{margin-top:2px}
+
+.v99form>.tit{font-size:18px;margin-bottom:8px}
+.v99form .sect{margin-top:20px;padding-top:2px}
+.v99form #mPecas .grid3{background:var(--card2);border:.5px solid var(--bord);border-radius:12px;padding:7px;gap:5px}
+.v99form #mPecas .grid3 input,.v99form #mPecas .grid3 textarea{background:#fff}
+.v99form #mBlocos>.card{border-radius:13px;box-shadow:none}
+.v99form #mTotG{font-size:18px}
+
+.v99obswrap{padding:13px}
+.obs{background:transparent;border-bottom:.5px solid var(--bord);border-radius:0;padding:10px 2px;margin:0}
+.obs:last-child{border-bottom:0}
+.obs .ck{min-width:23px;width:23px;height:23px;border-width:1.5px}
+.obs .tx{font-size:14px}
+.obs .x{opacity:.58}
+.obsdate{margin:13px 2px 5px;font-size:11.5px}
+
+nav button{padding-top:7px;font-weight:600}
+nav button .ic{font-size:19px}
+input,select,textarea{border-radius:11px}
+#fBusca{background:#fff!important;border:.5px solid var(--bord);box-shadow:0 1px 2px rgba(17,24,39,.025)}
+.shx{background:rgba(245,246,248,.9)!important;border-color:rgba(0,0,0,.06)!important;color:var(--tx)!important;
+  box-shadow:0 2px 8px rgba(17,24,39,.10)}
+
+@media(max-width:390px){
+ .v99metric{padding:8px 6px}.v99metric strong{font-size:15.5px}.v99metric small{font-size:10px}
+}
+
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -410,7 +510,7 @@ hr,.divider{border-color:var(--bord)}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=98; var APP_DATE='23/08/2026';
+var APP_VER=99; var APP_DATE='23/08/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -1086,17 +1186,26 @@ function gastosCarroResumo(pk){
  });
  return r;
 }
+function resumoProximoServico(c){
+ var km=Number(c.kmUltima||c.kmAtual)||0,it=[];
+ if(c.proxOleoKm)it.push({nome:'óleo',falta:Number(c.proxOleoKm)-km});
+ if(c.temCorreia&&c.proxCorreiaKm)it.push({nome:'correia',falta:Number(c.proxCorreiaKm)-km});
+ if(!it.length)return{rotulo:'Próx. serviço',valor:'Sem previsão',nivel:''};
+ it.sort(function(a,b){return a.falta-b.falta});
+ var x=it[0];
+ return{rotulo:'Próx. '+x.nome,valor:x.falta<=0?'Vencido':fmtKm(x.falta)+' km',nivel:x.falta<=0?'red':(x.falta<=(x.nome==='óleo'?1500:2000)?'warn':'ok')};
+}
 function gastosCarroHtml(pk){
  var r=gastosCarroResumo(pk),anos=Object.keys(r.anos).sort().reverse();
- var h='<div class="card" style="margin:0 0 10px"><div class="kv">'+
-  '<b>Este mês</b><span style="font-weight:700">R$ '+fmtBRL(r.mesAtual)+'</span>'+
-  '<b>Este ano ('+esc(r.ano)+')</b><span style="font-weight:700">R$ '+fmtBRL(r.anoAtual)+'</span>'+
-  '<b>Total histórico</b><span style="color:var(--warn);font-weight:800">R$ '+fmtBRL(r.total)+'</span></div>';
+ var h='<div class="card v99finance"><div class="v99metrics">'+
+  '<div class="v99metric"><small>Este mês</small><strong>R$ '+fmtBRL(r.mesAtual)+'</strong></div>'+
+  '<div class="v99metric"><small>'+esc(r.ano)+'</small><strong>R$ '+fmtBRL(r.anoAtual)+'</strong></div>'+
+  '<div class="v99metric warn"><small>Histórico</small><strong>R$ '+fmtBRL(r.total)+'</strong></div></div>';
  if(anos.length||r.semData){
-  h+='<details style="margin-top:8px"><summary class="sub" style="cursor:pointer;list-style:none;font-weight:700;padding:6px 0">Ver gastos por período ›</summary>';
+  h+='<details><summary class="sub" style="cursor:pointer;list-style:none;font-weight:700">Ver gastos por período <span style="float:right;opacity:.55">›</span></summary>';
   anos.forEach(function(a){
    var x=r.anos[a],meses=Object.keys(x.meses).sort().reverse();
-   h+='<details style="border-top:.5px solid var(--bord)"><summary style="cursor:pointer;list-style:none">'+
+   h+='<details><summary style="cursor:pointer;list-style:none">'+
       '<div class="kv tap"><b>'+esc(a)+'</b><span style="font-weight:800">R$ '+fmtBRL(x.total)+' ›</span></div></summary>';
    meses.forEach(function(ym){
     var nm=_nomeMes(ym).split('/')[0];
@@ -1145,10 +1254,10 @@ function vFrota(){
   var al=alertasCarro(c);
   var chips=al.map(function(a){return '<span class="chip '+(a.n==='red'?'red':'warn')+'">'+a.t.split('—')[0].split(':')[0].trim()+'</span>'}).join('');
   var db=semAcento(fmtPlaca(c.placa)+' '+c.placa+' '+tituloCarro(c)+' '+c.nome+' '+(c.motorista||''));
-  h+='<div class="card tap" data-busca="'+esc(db)+'" onclick="ficha(\''+pk+'\')"><div class="row">'+plateHtml(c.placa)+
+  h+='<div class="card tap v99fleetcard" data-busca="'+esc(db)+'" onclick="ficha(\''+pk+'\')"><div class="row">'+plateHtml(c.placa)+
    '<div class="grow"><div class="tit">'+esc(tituloCarro(c))+'</div>'+
    '<div class="sub">'+(c.motorista?'👤 '+esc(primNome(c.motorista)):'sem motorista')+'</div>'+st+chips+
-   '</div><div style="color:var(--tx2)">›</div></div></div>';
+   '</div><div class="v99chev">›</div></div></div>';
  });
  return h;
 }
@@ -1334,8 +1443,7 @@ function catalogoCarro(pk){
 function grupoCatalogo(pk){
  var lista=catalogoCarro(pk);
  if(!lista.length)return '';
- var h='<details><summary style="cursor:pointer;list-style:none">'+
-   '<div class="kv"><b>🧰 Tudo que já foi trocado</b><span>'+lista.length+' itens · toque para abrir</span></div></summary>';
+ var h='<details class="v99details"><summary class="v99summary"><span>🧰 Tudo que já foi trocado</span><span>'+lista.length+' itens ›</span></summary><div class="v99detailbody">';
  lista.forEach(function(it){
   var abre=(it.mid&&S.manutencoes&&S.manutencoes[it.mid]);
   h+='<div class="kv'+(abre?' tap':'')+'" style="padding-left:14px"'+
@@ -1344,7 +1452,7 @@ function grupoCatalogo(pk){
      (it.km?fmtKm(it.km)+' km':'')+(it.km&&it.data?' · ':'')+(it.data?dataBR(it.data):'')+
      (abre?' <span style="opacity:.45">›</span>':'')+'</span></div>';
  });
- return h+'</details>';
+ return h+'</div></details>';
 }
 function ficha(pk){window._fichaPk=pk;
  setTimeout(function(){try{varrerDocsAuto({pk:pk})}catch(e){}},300);
@@ -1358,27 +1466,34 @@ function ficha(pk){window._fichaPk=pk;
   .sort(function(a,b){return (b.encerradoEm||'').localeCompare(a.encerradoEm||'')});
  var mans=Object.keys(S.manutencoes).map(function(k){return S.manutencoes[k]})
   .filter(function(m){return m.carro===pk}).sort(function(a,b){return (b.dataIni||'').localeCompare(a.dataIni)||b.criadoEm-a.criadoEm});
- var h='<div class="row" style="margin-bottom:8px">'+plateHtml(c.placa)+'<div class="grow"><h3 style="margin:0">'+esc(tituloCarro(c))+'</h3><div class="sub">'+esc(c.modeloCRLV)+'</div></div></div>';
- h+='<div class="kv">'+
-  '<b>Motorista atual</b><span>'+(c.motorista?esc(c.motorista):'—')+'</span>'+
-  '<b>Status</b><span>'+esc(c.status)+'</span>'+
-  '<b>Ano fab/mod</b><span>'+esc(c.ano)+'</span>'+
-  '<b>Potência</b><span>'+esc(c.potencia)+'</span>'+
-  '<b>Cor</b><span>'+esc(c.cor)+'</span>'+
-  '<b>Combustível</b><span>'+esc(c.combustivel)+'</span>'+
-  '<b>Chassi</b><span style="font-family:Menlo,monospace;font-size:12px">'+esc(c.chassi)+'</span>'+
-  '<b>Renavam</b><span>'+esc(c.renavam)+'</span>'+
-  '<b>Código do rádio</b><span>'+esc(c.codigoRadio||'—')+'</span>'+
-  '<b>KM de quando alugou</b><span>'+fmtKm(c.kmAtual)+' km <span style="color:var(--tx2)">(início do contrato)</span></span>'+
-  '<b>Última quilometragem</b><span>'+fmtKm(c.kmUltima||c.kmAtual)+' km'+(c.kmUltimaData?' <span style="color:var(--tx2)">· em '+dataBR(c.kmUltimaData)+'</span>':' <span style="color:var(--tx2)">(último registro)</span>')+'</span>'+
-  '<b>Proprietário</b><span>'+esc(c.proprietario)+'</span>'+
-  '<b>Valor de referência</b><span>'+(c.valorRef?'R$ '+fmtBRL(c.valorRef):'—')+(c.fipeMes?' <span style="color:var(--ok);font-size:11px">FIPE '+esc(c.fipeMes)+'</span>':'')+'</span>'+
-  '<b>Licenciamento (CRLV)</b><span>exercício '+esc(c.exercicioCRLV||'—')+'</span></div>';
- h+='<div class="sect">Gastos de manutenção</div>'+gastosCarroHtml(pk);
- h+='<button class="btn mini sec" onclick="formCarro(\''+pk+'\')">✏️ Editar dados</button>';
- h+='<button class="btn mini sec" onclick="editarMotorista(\''+pk+'\')">👤 Motorista</button>'+
-  '<button class="btn mini sec" onclick="alternarFrota(\''+pk+'\')">\ud83d\ude97 '+(c.meuCarro?'Frota Hudson':'Frota F\u00e1bio')+' \u00b7 trocar</button>';
- h+='<button class="btn mini sec" onclick="fipeFluxo(\''+pk+'\')">💰 '+(c.fipeM?'FIPE vinculada':'Vincular FIPE')+'</button>';
+ var _kmq=c.kmUltima||c.kmAtual||0,_pendq=alertasCarro(c).length,_proxq=resumoProximoServico(c);
+ var _stq=c.status==='ativo'?'<span class="chip ok">alugado</span>':(c.status==='pessoal'?'<span class="chip warn">pessoal</span>':'<span class="chip red">parado</span>');
+ var h='<div class="v99hero"><div class="row v99heroTop">'+plateHtml(c.placa)+'<div class="grow"><h3>'+esc(tituloCarro(c))+'</h3>'+
+  '<div class="sub">'+esc(c.modeloCRLV||'')+'</div><div class="v99heroMeta">'+_stq+'<span class="v99driver">'+(c.motorista?'👤 '+esc(primNome(c.motorista)):'sem motorista')+'</span></div></div></div>'+
+  '<div class="v99metrics">'+
+   '<div class="v99metric"><small>KM atual</small><strong>'+fmtKm(_kmq)+'</strong></div>'+
+   '<div class="v99metric '+(_pendq?'warn':'ok')+'"><small>Pendências</small><strong>'+(_pendq?_pendq:'Em dia')+'</strong></div>'+
+   '<div class="v99metric '+_proxq.nivel+'"><small>'+esc(_proxq.rotulo)+'</small><strong>'+esc(_proxq.valor)+'</strong></div>'+
+  '</div></div>';
+ h+='<details class="v99details v99data"><summary class="v99summary"><span>Dados do veículo</span><span>'+esc(c.ano||'ver dados')+' ›</span></summary><div class="v99detailbody"><div class="kv">'+
+  '<b>Motorista atual</b><span>'+(c.motorista?esc(c.motorista):'—')+'</span>'+ 
+  '<b>Status</b><span>'+esc(c.status)+'</span>'+ 
+  '<b>Ano fab/mod</b><span>'+esc(c.ano)+'</span>'+ 
+  '<b>Potência</b><span>'+esc(c.potencia)+'</span>'+ 
+  '<b>Cor</b><span>'+esc(c.cor)+'</span>'+ 
+  '<b>Combustível</b><span>'+esc(c.combustivel)+'</span>'+ 
+  '<b>Chassi</b><span style="font-family:Menlo,monospace;font-size:12px">'+esc(c.chassi)+'</span>'+ 
+  '<b>Renavam</b><span>'+esc(c.renavam)+'</span>'+ 
+  '<b>Código do rádio</b><span>'+esc(c.codigoRadio||'—')+'</span>'+ 
+  '<b>KM de quando alugou</b><span>'+fmtKm(c.kmAtual)+' km <span style="color:var(--tx2)">(início do contrato)</span></span>'+ 
+  '<b>Última quilometragem</b><span>'+fmtKm(c.kmUltima||c.kmAtual)+' km'+(c.kmUltimaData?' <span style="color:var(--tx2)">· em '+dataBR(c.kmUltimaData)+'</span>':' <span style="color:var(--tx2)">(último registro)</span>')+'</span>'+ 
+  '<b>Proprietário</b><span>'+esc(c.proprietario)+'</span>'+ 
+  '<b>Valor de referência</b><span>'+(c.valorRef?'R$ '+fmtBRL(c.valorRef):'—')+(c.fipeMes?' <span style="color:var(--ok);font-size:11px">FIPE '+esc(c.fipeMes)+'</span>':'')+'</span>'+ 
+  '<b>Licenciamento (CRLV)</b><span>exercício '+esc(c.exercicioCRLV||'—')+'</span></div></div></details>';
+ h+='<div class="v99actions"><button class="btn mini sec" onclick="formCarro(\''+pk+'\')">✏️ Editar dados</button>';
+ h+='<button class="btn mini sec" onclick="editarMotorista(\''+pk+'\')">👤 Motorista</button>'+ 
+  '<button class="btn mini sec" onclick="alternarFrota(\''+pk+'\')">🚗 '+(c.meuCarro?'Frota Hudson':'Frota Fábio')+' · trocar</button>'+ 
+  '<button class="btn mini sec" onclick="fipeFluxo(\''+pk+'\')">💰 '+(c.fipeM?'FIPE vinculada':'Vincular FIPE')+'</button></div>';
  /* CRLV */
  (function(){
   var km=c.kmUltima||c.kmAtual||0;
@@ -1405,7 +1520,7 @@ function ficha(pk){window._fichaPk=pk;
      (_ucmd&&(_ucmd.km||_ucmd.data)?((_ucmd.km?fmtKm(_ucmd.km)+' km':'')+(_ucmd.km&&_ucmd.data?' · ':'')+(_ucmd.data?dataBR(_ucmd.data):'')):'—')+'</span></div>';
   }
   var COMPS=[['vela','🔥 Vela'],['cabos','🔥 Cabos de vela'],['embreagem','⚙️ Embreagem'],['bateria','🔋 Bateria'],['alternador','⚡ Alternador'],['arranque','🔑 Arranque'],['freios','🛑 Freios (pastilha)'],['ventoinha','❄️ Ventoinha'],['radiador','🌡 Radiador'],['caixaDir','🎯 Caixa de direção'],['bombaAgua','💧 Bomba d\'água'],['motor','🔩 Motor (cabeçote/bloco)'],['correia','⚙️ Correia dentada (última)']];
-  h+='<div class="sect">Últimas trocas (componentes) <span class="x" style="display:inline;padding:0 6px" onclick="editarTrocas(\''+pk+'\')">✎</span></div>';
+  h+='<details class="v99details"><summary class="v99summary"><span>🧰 Últimas trocas</span><span>componentes ›</span></summary><div class="v99detailbody"><div class="sect">Componentes <span class="x" style="display:inline;padding:0 6px" onclick="editarTrocas(\''+pk+'\')">✎</span></div>';
   COMPS.forEach(function(par){
    if(par[0]==='correia'&&!c.temCorreia)return;
    var u=(c.ultTrocas||{})[par[0]];
@@ -1418,9 +1533,10 @@ function ficha(pk){window._fichaPk=pk;
   h+=grupoRodas(c,'pneu','🛞 Pneus');
   h+=grupoRodas(c,'amort','🔧 Amortecedores');
   h+=grupoRodas(c,'mola','🌀 Molas');
-  h+='<button class="btn mini sec" onclick="recalcTrocasUI(\''+pk+'\')">🔄 Recalcular do histórico</button>';
+  h+='<button class="btn mini sec" onclick="recalcTrocasUI(\''+pk+'\')">🔄 Recalcular do histórico</button></div></details>';
  })();
- h+='<div class="sect">Documento CRLV</div>';
+ h+='<div class="sect">Gastos de manutenção</div>'+gastosCarroHtml(pk);
+ h+='<details class="v99details"><summary class="v99summary"><span>📄 Documentação</span><span>CRLV '+esc(c.exercicioCRLV||'—')+' ›</span></summary><div class="v99detailbody"><div class="sect">Documento CRLV</div>';
  h+=c.temCrlv?'<button class="btn mini" onclick="verDoc(\''+pk+'/crlv\',\'CRLV '+esc(fmtPlaca(c.placa))+'\')">👁 Ver PDF</button>':'<div class="sub">Nenhum CRLV anexado.</div>';
  h+='<button class="btn mini sec" onclick="pedirArquivo(\''+pk+'/crlv\',\'application/pdf\',\''+pk+'\')">🔄 '+(c.temCrlv?'Substituir':'Anexar')+' CRLV</button>';
  if(c.temCrlv||c.temGnvDoc)h+='<button class="btn mini sec" onclick="varrerDocsAuto({pk:\''+pk+'\',force:true})">📄 Reler documentos deste carro</button>';
@@ -1436,6 +1552,7 @@ function ficha(pk){window._fichaPk=pk;
  h+='<div class="kv"><b>Leilão</b><span>'+esc(c.procLeilao||'Não')+'</span></div>';
  h+='<div class="kv"><b>Financiado</b><span>'+esc(c.procFinanciado||'Não')+'</span></div>';
  if(c.procObs)h+='<div class="kv"><b>Observações</b><span>'+esc(c.procObs)+'</span></div>';
+ h+='</div></details>';
  /* CONTRATO */
  h+='<div class="sect">Contrato vigente</div>';
  if(ct){
@@ -1448,12 +1565,13 @@ function ficha(pk){window._fichaPk=pk;
  }else h+='<div class="sub">Sem contrato vigente.</div><button class="btn mini ok" onclick="novoContratoPara(\'' + pk + '\')">📄 Criar contrato para este carro</button>';
   h+='<button class="btn mini sec" onclick="importarContratoWord(\''+pk+'\')">\ud83d\udcce Importar contrato pronto (Word)</button>';
  if(anteriores.length){
-  h+='<div class="sect">Contratos anteriores ('+anteriores.length+')</div>';
+  h+='<details class="v99details"><summary class="v99summary"><span>Contratos anteriores</span><span>'+anteriores.length+' ›</span></summary><div class="v99detailbody">';
   anteriores.forEach(function(x){
    h+='<div class="card" style="margin:0 0 6px"><div class="tit" style="font-size:14px">'+esc(x.locatario.nome)+'</div>'+
     '<div class="sub">'+dataBR(x.inicio)+' → '+dataBR(x.fim)+(x.encerradoEm?' · encerrado em '+dataBR(x.encerradoEm):'')+'</div>'+docBtns(x)+
     '<button class="btn mini red" onclick="excluirContrato(\''+x.id+'\')">🗑 Excluir contrato</button></div>';
   });
+  h+='</div></details>';
  }
  /* COMPRA E VENDA (reserva de domínio) */
  h+='<div class="sect">Compra e venda (reserva de domínio)</div>';
@@ -1503,7 +1621,7 @@ h+='<div class="sect">Devolução do carro</div>';
  if(_oc.length)h+='<details style="margin:8px 0"><summary class="sub">✅ Observações concluídas ('+_oc.length+')</summary>'+obsListaHtml(_oc,true)+'</details>';
  /* MANUTENÇÕES */
  h+=grupoCatalogo(pk);
- h+='<div class="sect">Histórico de manutenções ('+mans.length+')</div>';
+ h+='<details class="v99details"><summary class="v99summary"><span>🔧 Histórico de manutenções</span><span>'+mans.length+' registros ›</span></summary><div class="v99detailbody">';
  if(!mans.length)h+='<div class="sub">Nenhuma manutenção registrada.</div>';
  mans.forEach(function(m){
   h+='<div class="card tap" style="margin:0 0 6px" onclick="verManut(\''+m.id+'\')"><div class="row"><div class="grow">'+
@@ -1511,6 +1629,7 @@ h+='<div class="sect">Devolução do carro</div>';
    '<div class="sub">'+esc(primNome(m.motorista))+' · '+fmtKm(m.odometro)+' km</div></div>'+
    '<div style="color:var(--warn);font-weight:800">R$ '+fmtBRL(m.total)+'</div></div></div>';
  });
+ h+='</div></details>';
  h+='<button class="btn sec" onclick="closeSheet()">Fechar</button>';
  openSheet(h);
 }
@@ -3529,7 +3648,7 @@ function obsSalvar(pk){
 }
 function vObs(){
  var pend=obsGerais(false),conc=obsGerais(true);
- var h='<div class="card"><div class="tit">📝 Observações gerais (empresa)</div>'+
+ var h='<div class="card v99obswrap"><div class="tit">📝 Observações gerais (empresa)</div>'+
   '<p class="sub">Acertos com lojas e pendências que não são de um carro. As pendências de cada carro ficam na ficha do carro.</p>'+
   '<button class="btn" onclick="obsNova(\'\')">➕ Nova observação geral</button>'+
   '<div class="sect">Pendentes ('+pend.length+')</div>'+obsListaHtml(pend,false)+
@@ -3539,7 +3658,7 @@ function vObs(){
  var carros={};
  Object.keys(S.observacoes||{}).forEach(function(k){var o=S.observacoes[k];if(o.carro&&!o.feito)carros[o.carro]=(carros[o.carro]||0)+1});
  var pks=Object.keys(carros);
- h+='<div class="card"><div class="tit">🚗 Pendências por carro</div>';
+ h+='<div class="card v99obswrap"><div class="tit">🚗 Pendências por carro</div>';
  if(!pks.length)h+='<div class="sub">Nenhum carro com pendência aberta.</div>';
  else pks.sort().forEach(function(pk){
   var c=S.carros[pk];if(!c)return;
@@ -3565,7 +3684,7 @@ function vManut(){
  }
  if(!MP.length)MP=[{valor:'',desc:'',loja:''}];
  if(!MB.length)MB=[{titulo:'Mecânico',nome:'Vinícius',valor:'',servicos:''}];
- var h='<div class="card"><div class="tit">🔧 Nova manutenção</div>'+
+ var h='<div class="card v99form"><div class="tit">🔧 Nova manutenção</div>'+
  '<label>Carro</label><select id="mCarro" onchange="mPuxaCarro();mRasc()"><option value="">— selecione —</option>'+opcoesCarros()+'</select>'+
  '<div id="mCarroInfo" class="sub"></div>'+
  '<label>Motorista</label><input id="mMotorista" oninput="mRasc()" placeholder="sugere o atual ao escolher o carro">'+
@@ -3579,7 +3698,7 @@ function vManut(){
  '<div class="card" style="margin-top:12px;background:var(--card2)"><div class="kv">'+
  '<b>Peças</b><span id="mTotP">R$ 0,00</span><b>Mão de obra</b><span id="mTotM">R$ 0,00</span>'+
  '<b>TOTAL GERAL</b><span id="mTotG" style="color:var(--warn);font-weight:800">R$ 0,00</span></div></div>'+
- '<button class="btn ok" onclick="gerarManut()">✅ GERAR TEXTO + SALVAR NO HISTÓRICO</button>'+
+ '<button class="btn ok" onclick="gerarManut()">✅ Salvar manutenção</button>'+
  '<div id="mSaida"></div></div>';
  setTimeout(mDesenha,30);
  return h;
@@ -4065,12 +4184,12 @@ function vHistorico(){
   .sort(function(a,b){return tot[b]-tot[a]});
  var _rotRank=_modoRank==='mes'?_nomeMes(_mesRank):(_modoRank==='ano'?_anoRank:'Histórico');
  if(chips.length||Object.keys(S.manutencoes||{}).length){
-  h+='<div class="card" id="hTot"><details'+(window._hTotAberto?' open':'')+' ontoggle="window._hTotAberto=this.open">'+
-     '<summary class="tit" style="font-size:14px;cursor:pointer">💰 Gastos por carro — '+esc(_rotRank)+' ('+chips.length+') — toque para abrir</summary>'+
-     '<div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 6px">'+
-     '<span class="chip tap'+(_modoRank==='mes'?' warn':'')+'" onclick="window._hTotModo=\'mes\';window._hTotAberto=true;render()">Mês</span>'+
-     '<span class="chip tap'+(_modoRank==='ano'?' warn':'')+'" onclick="window._hTotModo=\'ano\';window._hTotAberto=true;render()">Ano</span>'+
-     '<span class="chip tap'+(_modoRank==='historico'?' warn':'')+'" onclick="window._hTotModo=\'historico\';window._hTotAberto=true;render()">Histórico</span></div>';
+  h+='<div class="card v99histcard" id="hTot"><details'+(window._hTotAberto?' open':'')+' ontoggle="window._hTotAberto=this.open">'+
+     '<summary class="v99summary"><span>💰 Gastos por carro</span><span>'+esc(_rotRank)+' · '+chips.length+' ›</span></summary>'+ 
+     '<div class="v99seg">'+
+     '<span class="v99segbtn'+(_modoRank==='mes'?' on':'')+'" onclick="window._hTotModo=\'mes\';window._hTotAberto=true;render()">Mês</span>'+ 
+     '<span class="v99segbtn'+(_modoRank==='ano'?' on':'')+'" onclick="window._hTotModo=\'ano\';window._hTotAberto=true;render()">Ano</span>'+ 
+     '<span class="v99segbtn'+(_modoRank==='historico'?' on':'')+'" onclick="window._hTotModo=\'historico\';window._hTotAberto=true;render()">Histórico</span></div>';
   if(_modoRank==='mes'){
    h+='<select onchange="window._hTotMes=this.value;window._hTotAberto=true;render()" style="margin:2px 0 8px">';
    var _optsMes=_mesesRank.slice();if(_optsMes.indexOf(_mesHoje)<0)_optsMes.unshift(_mesHoje);
@@ -4095,7 +4214,7 @@ function vHistorico(){
   if(!meses.length)return;
   var ym=window._fechMes&&meses.indexOf(window._fechMes)>=0?window._fechMes:meses[0];
   var f=fechamentoDoMes(ym);
-  h+='<div class="card" id="hFech"><details'+(window._fechAberto?' open':'')+' ontoggle="window._fechAberto=this.open"><summary class="tit" style="font-size:14px;cursor:pointer">\ud83d\udcc5 Fechamento por fornecedor</summary>';
+  h+='<div class="card v99histcard" id="hFech"><details'+(window._fechAberto?' open':'')+' ontoggle="window._fechAberto=this.open"><summary class="v99summary"><span>📅 Fechamento por fornecedor</span><span>'+_nomeMes(ym)+' ›</span></summary>';
   h+='<label>M\u00eas</label><select onchange="window._fechAberto=true;window._fechMes=this.value;render()">';
   meses.forEach(function(x){h+='<option value="'+x+'"'+(x===ym?' selected':'')+'>'+_nomeMes(x)+'</option>'});
   h+='</select>';
