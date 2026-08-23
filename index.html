@@ -343,6 +343,23 @@ input::placeholder,textarea::placeholder{color:#A6ABB2}
 .plate .num{color:#0C0F13!important;font-size:15.5px!important;font-weight:800!important;
   letter-spacing:1px!important}
 
+/* Barra de topo REAL do app é <header> (fundo escuro cravado) e o rodapé é <nav>.
+   Miro neles diretamente para o topo não ficar preto no modo claro. */
+header{background:rgba(242,243,245,.82)!important;border-bottom:.5px solid var(--bord)!important;
+  -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px)}
+header *{color:var(--tx)!important}
+header .live,header [style*="background"]{color:inherit}
+nav{background:rgba(255,255,255,.9)!important;border-top:.5px solid var(--bord)!important}
+.search{background:var(--bg)!important}
+.search input{background:var(--card)!important}
+
+/* Cartões de ATENÇÃO: no app real cada aviso é um .card separado. Dou o traço
+   lateral colorido (âmbar; vermelho quando o texto indica vencido/VENCIDA). */
+#fAten .card.tap{position:relative;padding-left:16px;border:.5px solid var(--bord)}
+#fAten .card.tap::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;
+  border-radius:3px;background:var(--warn)}
+#fAten .card.atenRed::before{background:var(--red)}
+
 /* Barra de topo e rodapé claros com vidro fosco */
 .appbar,.topbar,.hdr{background:rgba(242,243,245,.8)!important;
   backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);
@@ -387,7 +404,7 @@ hr,.divider{border-color:var(--bord)}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=94; var APP_DATE='22/07/2026';
+var APP_VER=95; var APP_DATE='22/07/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -1067,7 +1084,8 @@ function vFrota(){
   h+='<div class="card" id="fAten"><div class="tit">⚠️ Atenção ('+atengeral.length+' carro'+(atengeral.length>1?'s':'')+')</div>';
   atengeral.forEach(function(x){
    var pk=normPlaca(x.c.placa);
-   h+='<div class="card tap" style="margin:0 0 6px" onclick="ficha(\''+pk+'\')"><div class="tit" style="font-size:14px">'+esc(tituloCarro(x.c))+' — '+esc(fmtPlaca(x.c.placa))+'</div>'+
+   var _temRed=x.al.some(function(a){return a.n==='red'});
+   h+='<div class="card tap'+(_temRed?' atenRed':'')+'" style="margin:0 0 6px" onclick="ficha(\''+pk+'\')"><div class="tit" style="font-size:14px">'+esc(tituloCarro(x.c))+' — '+esc(fmtPlaca(x.c.placa))+'</div>'+
     x.al.map(function(a){return '<div class="sub" style="color:var(--'+(a.n==='red'?'warn':'tx')+')">'+a.t+'</div>'}).join('')+'</div>';
   });
   h+='</div>';
