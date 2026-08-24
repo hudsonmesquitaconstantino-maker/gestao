@@ -758,8 +758,8 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 
 
 /* ============================================================
-   v105 — acabamento dos fluxos de Manutenção + Contrato
-   Correção de contraste, toasts claros e progresso de formulário.
+   v105/v106 — acabamento dos fluxos de Manutenção + Contrato
+   v106 remove os indicadores artificiais de etapas; mantém os blocos reais.
    ============================================================ */
 :root{--v105-ink:#15171C;--v105-muted:#737982;--v105-line:#E6E8EB;--v105-soft:#F7F8FA;--v105-amber:#C77A16;--v105-green:#1E7D52}
 /* Nunca mais texto escuro sobre painel preto no modo claro. */
@@ -872,7 +872,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=105; var APP_DATE='24/08/2026';
+var APP_VER=106; var APP_DATE='24/08/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -4138,7 +4138,7 @@ function vManut(){
  if(!MB.length)MB=[{titulo:'Mecânico',nome:'Vinícius',valor:'',servicos:''}];
  var h='<div class="v100form">'+
   '<div class="v100formHero v105formHero"><div class="v100kicker">MANUTENÇÃO · LANÇAMENTO</div><div class="tit">Nova manutenção</div><div class="sub">Selecione o carro, lance peças e serviços e confira o total antes de salvar.</div>'+
-   '<div class="v100steps s4"><div class="v100step on"><strong>1</strong><small>Veículo</small></div><div class="v100step"><strong>2</strong><small>Peças</small></div><div class="v100step"><strong>3</strong><small>Serviços</small></div><div class="v100step"><strong>4</strong><small>Revisão</small></div></div></div>'+
+   '</div>'+
   '<div class="v100panel"><div class="v100panelHead"><div class="v100panelIcon">🚗</div><div class="grow"><div class="v100panelTitle">Veículo e serviço</div><div class="v100panelSub">Carro, motorista, período e quilometragem.</div></div></div>'+
    '<label>Carro</label><select id="mCarro" onchange="mPuxaCarro();mRasc();mAtualizaSteps()"><option value="">— selecione —</option>'+opcoesCarros()+'</select>'+
    '<div id="mCarroInfo" class="v100vehicle"></div>'+
@@ -4751,7 +4751,7 @@ function aplicarMascarasContrato(){
 function vContrato(){
  var h='<div class="v100form">'+
   '<div class="v100formHero v105formHero"><div class="v100kicker">CONTRATO · LOCAÇÃO</div><div class="tit">Novo contrato</div><div class="sub">O Gestão puxa os dados do carro; você completa o motorista, condições e pagamento e revisa antes de gerar.</div>'+
-   '<div class="v100steps s5"><div class="v100step on"><strong>1</strong><small>Veículo</small></div><div class="v100step"><strong>2</strong><small>Motorista</small></div><div class="v100step"><strong>3</strong><small>Condições</small></div><div class="v100step"><strong>4</strong><small>Pagamento</small></div><div class="v100step"><strong>5</strong><small>Revisão</small></div></div></div>'+
+   '</div>'+
   '<div class="v100panel"><div class="v100panelHead"><div class="v100panelIcon">🚗</div><div class="grow"><div class="v100panelTitle">Veículo e locador</div><div class="v100panelSub">Selecione o carro; o Gestão puxa o que já conhece.</div></div></div>'+
    '<label>Carro</label><select id="ncCarro" onchange="ncPuxaCarro();ncResumo()"><option value="">— selecione —</option>'+opcoesCarros()+'</select><div id="ncCarroInfo" class="v100vehicle"></div>'+
    '<label>Locador</label><select id="ncLocador">'+selLocadores('hudson')+'</select></div>'+
