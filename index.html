@@ -756,6 +756,89 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
  main.v102enter,.v100formHero,.v100panel,.overlay.open .sheetwrap{animation:none!important}
 }
 
+
+/* ============================================================
+   v105 — acabamento dos fluxos de Manutenção + Contrato
+   Correção de contraste, toasts claros e progresso de formulário.
+   ============================================================ */
+:root{--v105-ink:#15171C;--v105-muted:#737982;--v105-line:#E6E8EB;--v105-soft:#F7F8FA;--v105-amber:#C77A16;--v105-green:#1E7D52}
+/* Nunca mais texto escuro sobre painel preto no modo claro. */
+.mono{background:#F7F8FA!important;color:#202329!important;border:.5px solid #E2E5E9!important;box-shadow:none!important}
+.mono::selection{background:rgba(199,122,22,.18)}
+/* Toast iOS claro, legível em qualquer tela. */
+#toast{display:none;opacity:0;transform:translate(-50%,12px) scale(.97)!important;background:rgba(255,255,255,.96)!important;color:#17191E!important;
+ border:.5px solid rgba(17,24,39,.10)!important;border-radius:16px!important;padding:11px 14px!important;min-width:180px;max-width:min(88%,420px)!important;
+ box-shadow:0 14px 38px rgba(17,24,39,.16),0 2px 8px rgba(17,24,39,.06)!important;-webkit-backdrop-filter:saturate(180%) blur(18px);backdrop-filter:saturate(180%) blur(18px);
+ font-size:13.5px!important;font-weight:650!important;line-height:1.3!important;transition:opacity .2s ease,transform .28s var(--mola)!important}
+#toast.show{opacity:1;transform:translate(-50%,0) scale(1)!important}
+#toast.good{box-shadow:inset 3px 0 0 rgba(30,125,82,.8),0 14px 38px rgba(17,24,39,.15)!important}
+#toast.warn{box-shadow:inset 3px 0 0 rgba(183,121,26,.9),0 14px 38px rgba(17,24,39,.15)!important}
+#toast.bad{box-shadow:inset 3px 0 0 rgba(192,57,43,.85),0 14px 38px rgba(17,24,39,.15)!important}
+
+/* Form hero mais compacto e claro. */
+.v100form{padding-bottom:6px}
+.v100formHero.v105formHero{background:linear-gradient(145deg,#FFFFFF 0%,#FFF9F0 100%)!important;border:.5px solid rgba(199,122,22,.17)!important;border-radius:20px!important;padding:16px 15px 14px!important;margin-bottom:11px!important;box-shadow:0 5px 18px rgba(17,24,39,.04)!important}
+.v105formHero .v100kicker{font-size:9.5px!important;letter-spacing:.13em!important;color:var(--v105-amber)!important;font-weight:800!important}
+.v105formHero>.tit{font-size:25px!important;line-height:1.05!important;letter-spacing:-.045em!important;margin:3px 0 5px!important;color:var(--v105-ink)!important}
+.v105formHero>.sub{font-size:13px!important;line-height:1.42!important;max-width:520px}
+.v100steps{margin-top:14px!important;gap:5px!important}
+.v100step{background:rgba(255,255,255,.64)!important;border:.5px solid #E5E6E9!important;border-radius:12px!important;min-height:47px!important;padding:7px 4px!important}
+.v100step strong{width:22px!important;height:22px!important;border-radius:999px!important;background:#F0F1F3!important;color:#737982!important;display:inline-flex!important;align-items:center;justify-content:center;font-size:11px!important;transition:all .25s var(--mola)}
+.v100step small{font-size:9.5px!important;color:#7B8088!important;margin-top:3px!important}
+.v100step.on{background:#FFF8EC!important;border-color:rgba(199,122,22,.28)!important;box-shadow:0 4px 12px rgba(199,122,22,.06)!important}
+.v100step.on strong{background:var(--v105-amber)!important;color:#fff!important;transform:scale(1.04)}
+.v100step.done{background:#F1F8F4!important;border-color:rgba(30,125,82,.16)!important}
+.v100step.done strong{font-size:0!important;background:var(--v105-green)!important;color:#fff!important}
+.v100step.done strong:after{content:'✓';font-size:12px!important;font-weight:800}
+
+/* Painéis e campos com hierarquia mais limpa. */
+.v100panel{border-radius:18px!important;border:.5px solid var(--v105-line)!important;padding:14px!important;margin-bottom:10px!important;background:#fff!important;box-shadow:0 2px 8px rgba(17,24,39,.025)!important}
+.v100panelHead{margin-bottom:10px!important}
+.v100panelIcon{width:35px!important;height:35px!important;border-radius:11px!important;background:#F4F5F7!important;font-size:17px!important}
+.v100panelTitle{font-size:15px!important;font-weight:740!important;color:var(--v105-ink)!important}
+.v100panelSub{font-size:11.5px!important;line-height:1.35!important}
+.v100panel input,.v100panel select,.v100panel textarea,.v102panel input,.v102panel select,.v102panel textarea{min-height:46px!important;border-radius:12px!important;background:#F8F9FA!important;border:.5px solid #E1E4E8!important;box-shadow:none!important}
+.v100panel textarea,.v102panel textarea{line-height:1.38!important;padding-top:11px!important}
+.v100panel input:focus,.v100panel select:focus,.v100panel textarea:focus,.v102panel input:focus,.v102panel select:focus,.v102panel textarea:focus{background:#fff!important;border-color:rgba(199,122,22,.5)!important;box-shadow:0 0 0 3px rgba(199,122,22,.075)!important}
+.v100item{background:#FBFBFC!important;border:.5px solid #E4E6E9!important;border-radius:15px!important;padding:11px!important;margin:8px 0!important;animation:v105ItemIn .28s var(--mola) both}
+.v100itemTitle{font-size:10px!important;letter-spacing:.09em!important;color:#8A8F96!important;font-weight:800!important}
+.v100remove{border:0!important;background:#F5F0F0!important;color:#B64B43!important;border-radius:999px!important;padding:5px 9px!important;font-size:10.5px!important}
+.v100add{border-style:dashed!important;background:#FCFCFD!important;color:#5F646C!important;border-color:#D8DBDF!important}
+.v100summary{background:#F8F9FA!important;border:.5px solid #E2E4E8!important;border-radius:15px!important;padding:11px!important}
+.v100sumRow{padding:5px 1px!important}.v100sumTotal{margin-top:7px!important;padding-top:10px!important;border-top:.5px solid #DDDFe3!important}
+.v100sumTotal strong{color:var(--v105-amber)!important;font-size:22px!important}
+.v105saveMain{min-height:52px!important;border-radius:15px!important;font-size:16px!important;box-shadow:0 7px 18px rgba(199,122,22,.16)!important;transition:transform .18s var(--mola),box-shadow .18s ease!important}
+.v105saveMain:active{transform:scale(.985)!important;box-shadow:0 3px 8px rgba(199,122,22,.12)!important}
+.v100hint{font-size:11.5px!important;line-height:1.4!important;text-align:center!important;color:#858A91!important;padding:2px 8px!important}
+@keyframes v105ItemIn{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:none}}
+
+/* Resultado da manutenção: claro, curto e copiável. */
+.v105saved{margin-top:13px;border:.5px solid rgba(30,125,82,.20);background:linear-gradient(180deg,#F8FCF9,#FFFFFF);border-radius:18px;padding:13px;animation:v105SavedIn .36s var(--mola) both}
+@keyframes v105SavedIn{from{opacity:0;transform:translateY(12px) scale(.985)}to{opacity:1;transform:none}}
+.v105savedHead{display:flex;align-items:center;gap:10px;padding-bottom:11px;border-bottom:.5px solid #E5EAE7}
+.v105savedCheck{width:34px;height:34px;border-radius:50%;background:#E8F5ED;color:var(--v105-green);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;flex:0 0 auto}
+.v105savedHead>div{flex:1;min-width:0}.v105savedHead strong{display:block;font-size:14px}.v105savedHead small{display:block;color:var(--v105-muted);font-size:10.8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.v105savedHead>b{font-family:'Barlow Condensed',var(--sf);font-size:18px;color:var(--v105-green);white-space:nowrap}
+.v105previewLabel{font-size:10px;font-weight:800;letter-spacing:.08em;color:#8A9097;text-transform:uppercase;margin:12px 2px 6px}
+.v105manutText{max-height:290px;overflow:auto;font-size:12.2px!important;line-height:1.52!important;white-space:pre-wrap!important;-webkit-overflow-scrolling:touch}
+.v105savedActions{display:grid;grid-template-columns:1.25fr .85fr;gap:7px;margin-top:8px}.v105savedActions .btn{margin:0!important;min-height:46px}
+
+/* Edição da manutenção segue a mesma linguagem e mostra menos “blocos soltos”. */
+.v105editFlow .v102panel{border-radius:17px!important;margin-bottom:9px!important}
+.v105editFlow .v100item{background:#F9FAFB!important}
+
+/* Contrato: revisão viva mais legível. */
+.v105review{background:linear-gradient(180deg,#F8F9FA,#FFFFFF)!important;border:.5px solid #E1E4E8!important;border-radius:15px!important;padding:11px!important}
+.v105review .v100reviewTitle{display:flex!important;justify-content:space-between!important;align-items:center!important;gap:8px!important;margin-bottom:6px!important}
+.v105review .v100reviewTitle span{font-size:10px!important;letter-spacing:.08em!important;color:#7C828A!important}
+.v105review .v100reviewTitle small{font-size:9.5px!important;color:#A0A5AB!important;font-weight:500!important;text-transform:none!important;letter-spacing:0!important}
+.v100choice{gap:6px!important}.v100payopt{border-radius:11px!important;min-height:42px!important}.v100payopt.on{box-shadow:0 0 0 2px rgba(199,122,22,.08)!important}
+
+/* Sheets de edição mais suaves. */
+.overlay.open .sheetwrap{animation:v105SheetIn .36s var(--mola)!important}
+@keyframes v105SheetIn{from{opacity:.25;transform:translateY(34px) scale(.99)}to{opacity:1;transform:none}}
+@media(max-width:390px){.v105savedActions{grid-template-columns:1fr}.v100step small{font-size:8.8px!important}.v100panel{padding:12px!important}}
+@media(prefers-reduced-motion:reduce){#toast,.v100item,.v105saved,.overlay.open .sheetwrap{transition:none!important;animation:none!important}}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -789,7 +872,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=103; var APP_DATE='23/08/2026';
+var APP_VER=105; var APP_DATE='24/08/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -884,7 +967,15 @@ function garantirJspdf(){
 function blobB64(blob){return new Promise(function(res,rej){var r=new FileReader();r.onload=function(){res(String(r.result).split(',')[1])};r.onerror=rej;r.readAsDataURL(blob)})}
 /* ---------- toast / ask ---------- */
 var _toastT=null;
-function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';clearTimeout(_toastT);_toastT=setTimeout(function(){t.style.display='none'},2600)}
+function toast(m){
+ var t=document.getElementById('toast');if(!t)return;
+ t.textContent=m;t.className='';
+ if(/^\s*[✅✓📋📄💰📝🔗⬆️🤖]/.test(m))t.classList.add('good');
+ else if(/^\s*[⚠️⛔]/.test(m))t.classList.add('warn');
+ else if(/^\s*[🗑]/.test(m))t.classList.add('bad');
+ t.style.display='block';requestAnimationFrame(function(){t.classList.add('show')});
+ clearTimeout(_toastT);_toastT=setTimeout(function(){t.classList.remove('show');setTimeout(function(){if(!t.classList.contains('show'))t.style.display='none'},220)},3100)
+}
 var askCb=null;
 function ask(title,msg,okLabel,cb){
  document.getElementById('askTitle').textContent=title;
@@ -4046,13 +4137,13 @@ function vManut(){
  if(!MP.length)MP=[{valor:'',desc:'',loja:''}];
  if(!MB.length)MB=[{titulo:'Mecânico',nome:'Vinícius',valor:'',servicos:''}];
  var h='<div class="v100form">'+
-  '<div class="v100formHero"><div class="v100kicker">GUIMASCAR GESTÃO</div><div class="tit">🔧 Nova manutenção</div><div class="sub">Registre o serviço com as mesmas regras do histórico, em uma sequência mais clara.</div>'+
+  '<div class="v100formHero v105formHero"><div class="v100kicker">MANUTENÇÃO · LANÇAMENTO</div><div class="tit">Nova manutenção</div><div class="sub">Selecione o carro, lance peças e serviços e confira o total antes de salvar.</div>'+
    '<div class="v100steps s4"><div class="v100step on"><strong>1</strong><small>Veículo</small></div><div class="v100step"><strong>2</strong><small>Peças</small></div><div class="v100step"><strong>3</strong><small>Serviços</small></div><div class="v100step"><strong>4</strong><small>Revisão</small></div></div></div>'+
   '<div class="v100panel"><div class="v100panelHead"><div class="v100panelIcon">🚗</div><div class="grow"><div class="v100panelTitle">Veículo e serviço</div><div class="v100panelSub">Carro, motorista, período e quilometragem.</div></div></div>'+
-   '<label>Carro</label><select id="mCarro" onchange="mPuxaCarro();mRasc()"><option value="">— selecione —</option>'+opcoesCarros()+'</select>'+
+   '<label>Carro</label><select id="mCarro" onchange="mPuxaCarro();mRasc();mAtualizaSteps()"><option value="">— selecione —</option>'+opcoesCarros()+'</select>'+
    '<div id="mCarroInfo" class="v100vehicle"></div>'+
-   '<label>Motorista</label><input id="mMotorista" oninput="mRasc()" placeholder="sugere o atual ao escolher o carro">'+
-   '<div class="grid2"><div><label>Data de início</label><input type="date" id="mIni" onchange="mRasc()" value="'+hoje()+'"></div>'+
+   '<label>Motorista</label><input id="mMotorista" oninput="mRasc();mAtualizaSteps()" placeholder="sugere o atual ao escolher o carro">'+
+   '<div class="grid2"><div><label>Data de início</label><input type="date" id="mIni" onchange="mRasc();mAtualizaSteps()" value="'+hoje()+'"></div>'+
    '<div><label>Data final <span style="font-weight:400">(opcional)</span></label><input type="date" id="mFim" onchange="mRasc()"></div></div>'+
    '<label>Odômetro (km)</label><input id="mOdo" oninput="mRasc()" inputmode="numeric" placeholder="101117"></div>'+
   '<div class="v100panel"><div class="v100panelHead"><div class="v100panelIcon">🧩</div><div class="grow"><div class="v100panelTitle">Peças</div><div class="v100panelSub">Valor, descrição e loja de cada item.</div></div></div><div id="mPecas"></div>'+
@@ -4061,7 +4152,7 @@ function vManut(){
    '<button class="btn mini sec v100add" onclick="MB.push({titulo:\'\',nome:\'\',valor:\'\',servicos:\'\'});mDesenha()">＋ Outro profissional / serviço</button></div>'+
   '<div class="v100panel"><div class="v100panelHead"><div class="v100panelIcon">✓</div><div class="grow"><div class="v100panelTitle">Revisão</div><div class="v100panelSub">Confira os valores antes de registrar.</div></div></div>'+
    '<div class="v100summary"><div class="v100sumRow"><span>Peças</span><strong id="mTotP">R$ 0,00</strong></div><div class="v100sumRow"><span>Mão de obra</span><strong id="mTotM">R$ 0,00</strong></div><div class="v100sumRow v100sumTotal"><span>TOTAL</span><strong id="mTotG">R$ 0,00</strong></div></div>'+
-   '<button class="btn ok v100primary" onclick="gerarManut()">✓ Salvar manutenção</button><div class="v100hint">O histórico e o texto final continuam sendo gerados exatamente pelas regras atuais do Gestão.</div><div id="mSaida"></div></div></div>';
+   '<button class="btn ok v100primary v105saveMain" onclick="gerarManut()"><span>✓</span> Salvar manutenção</button><div class="v100hint">Ao salvar, o Gestão atualiza o histórico, recalcula os componentes detectados e prepara o texto do WhatsApp.</div><div id="mSaida"></div></div></div>';
  setTimeout(mDesenha,30);
  return h;
 }
@@ -4077,28 +4168,30 @@ function mPuxaCarro(){
  if(info){info.className='v100vehicle show';info.innerHTML='<div class="v100vehicleTop"><div class="v100carBadge">🚗</div><div class="grow"><strong>'+esc(tituloCarro(c))+' · '+esc(fmtPlaca(c.placa))+'</strong><div class="sub">'+(c.motorista?'Motorista atual: '+esc(primNome(c.motorista)):'Sem motorista informado')+'</div></div></div><div class="v100vehicleMeta"><span class="v100miniChip">Último KM: '+fmtKm(kk)+' km</span><span class="v100miniChip">'+esc(c.status||'—')+'</span></div>'}
  if(c.motorista)document.getElementById('mMotorista').value=primNome(c.motorista);
  if(kk)document.getElementById('mOdo').placeholder=String(kk);
+ mAtualizaSteps();
 }
 function taGrow(el){if(!el)return;el.style.height='auto';el.style.height=(el.scrollHeight+2)+'px'}
 function mDesenha(){
  var hp='';
  MP.forEach(function(p,i){
   hp+='<div class="v100item"><div class="v100itemTop"><div class="v100itemTitle">PEÇA '+('0'+(i+1)).slice(-2)+'</div><button class="v100remove" onclick="MP.splice('+i+',1);mDesenha()">Remover</button></div>'+
-   '<div class="v100pieceGrid"><div class="desc"><label>Descrição</label><textarea rows="1" class="taflex" placeholder="Ex.: Pastilha de freio dianteira" oninput="MP['+i+'].desc=this.value;taGrow(this)">'+esc(p.desc)+'</textarea></div>'+
-   '<div><label>Valor (R$)</label><input placeholder="0,00" inputmode="decimal" value="'+esc(p.valor)+'" oninput="MP['+i+'].valor=this.value;mTotais()"></div>'+
-   '<div><label>Loja / fornecedor</label><input placeholder="Ex.: Auto Peças" value="'+esc(p.loja)+'" oninput="MP['+i+'].loja=this.value"></div></div></div>';
+   '<div class="v100pieceGrid"><div class="desc"><label>Descrição</label><textarea rows="1" class="taflex" placeholder="Ex.: Pastilha de freio dianteira" oninput="MP['+i+'].desc=this.value;taGrow(this);mRasc();mAtualizaSteps()">'+esc(p.desc)+'</textarea></div>'+
+   '<div><label>Valor (R$)</label><input placeholder="0,00" inputmode="decimal" value="'+esc(p.valor)+'" oninput="MP['+i+'].valor=this.value;mTotais();mAtualizaSteps()"></div>'+
+   '<div><label>Loja / fornecedor</label><input placeholder="Ex.: Auto Peças" value="'+esc(p.loja)+'" oninput="MP['+i+'].loja=this.value;mRasc()"></div></div></div>';
  });
  document.getElementById('mPecas').innerHTML=hp||'<div class="sub">Sem peças.</div>';
  setTimeout(function(){document.querySelectorAll('#mPecas .taflex').forEach(function(t){taGrow(t)})},30);
  var hb='';
  MB.forEach(function(b,i){
   hb+='<div class="v100item"><div class="v100itemTop"><div class="v100itemTitle">MÃO DE OBRA '+('0'+(i+1)).slice(-2)+'</div><button class="v100remove" onclick="MB.splice('+i+',1);mDesenha()">Remover</button></div>'+
-   '<div class="v100laborGrid"><div><label>Tipo</label><input placeholder="Mecânico / Borracheiro / Retífica" value="'+esc(b.titulo)+'" oninput="MB['+i+'].titulo=this.value"></div>'+
-   '<div><label>Profissional</label><input placeholder="Vinícius" value="'+esc(b.nome)+'" oninput="MB['+i+'].nome=this.value"></div>'+
-   '<div class="wide"><label>Valor da mão de obra (R$)</label><input placeholder="1.700,00" inputmode="decimal" value="'+esc(b.valor)+'" oninput="MB['+i+'].valor=this.value;mTotais()"></div>'+
-   '<div class="wide"><label>Serviços realizados <span style="font-weight:400">(um por linha)</span></label><textarea placeholder="Ex.: Troca da pastilha dianteira\nPróxima troca com X km\nGARANTIA ATÉ data" oninput="MB['+i+'].servicos=this.value">'+esc(b.servicos)+'</textarea></div></div></div>';
+   '<div class="v100laborGrid"><div><label>Tipo</label><input placeholder="Mecânico / Borracheiro / Retífica" value="'+esc(b.titulo)+'" oninput="MB['+i+'].titulo=this.value;mRasc()"></div>'+
+   '<div><label>Profissional</label><input placeholder="Vinícius" value="'+esc(b.nome)+'" oninput="MB['+i+'].nome=this.value;mRasc();mAtualizaSteps()"></div>'+
+   '<div class="wide"><label>Valor da mão de obra (R$)</label><input placeholder="1.700,00" inputmode="decimal" value="'+esc(b.valor)+'" oninput="MB['+i+'].valor=this.value;mTotais();mAtualizaSteps()"></div>'+
+   '<div class="wide"><label>Serviços realizados <span style="font-weight:400">(um por linha)</span></label><textarea placeholder="Ex.: Troca da pastilha dianteira\nPróxima troca com X km\nGARANTIA ATÉ data" oninput="MB['+i+'].servicos=this.value;taGrow(this);mRasc();mAtualizaSteps()">'+esc(b.servicos)+'</textarea></div></div></div>';
  });
  document.getElementById('mBlocos').innerHTML=hb;
- mTotais();
+ setTimeout(function(){document.querySelectorAll('#mPecas .taflex,#mBlocos textarea').forEach(function(t){taGrow(t)})},20);
+ mTotais();mAtualizaSteps();
 }
 function valorDoBloco(nome){var m=String(nome||'').match(/R\$\s*([\d\.\,]+)/);return m?parseBRL(m[1]):0}
 function mTotais(){
@@ -4161,11 +4254,28 @@ function gerarManut(){
  })});
  save();
  mRascLimpa();
- document.getElementById('mSaida').innerHTML='<div class="sect">Texto gerado (padrão WhatsApp)</div>'+
-  '<div class="mono" id="mTexto">'+esc(m.texto)+'</div>'+
-  '<button class="btn" onclick="copiarManut(\''+m.id+'\')">📋 COPIAR</button>';
+ document.getElementById('mSaida').innerHTML='<div class="v105saved" id="mSavedCard">'+
+  '<div class="v105savedHead"><span class="v105savedCheck">✓</span><div><strong>Manutenção salva</strong><small>'+esc(tituloCarro(carro))+' · '+esc(fmtPlaca(carro.placa))+'</small></div><b>R$ '+fmtBRL(m.total)+'</b></div>'+ 
+  '<div class="v105previewLabel">Texto pronto para WhatsApp</div>'+ 
+  '<div class="mono v105manutText" id="mTexto">'+esc(m.texto)+'</div>'+ 
+  '<div class="v105savedActions"><button class="btn ok" onclick="copiarManut(\''+m.id+'\')">📋 Copiar texto</button><button class="btn sec" onclick="mNovaAposSalvar()">＋ Nova manutenção</button></div></div>';
  toast('✅ Gravado no histórico do '+carro.nome);
  MP=[];MB=[];
+ setTimeout(function(){var e=document.getElementById('mSavedCard');if(e)try{e.scrollIntoView({behavior:'smooth',block:'center'})}catch(x){}},120);
+}
+function mNovaAposSalvar(){
+ MP=[{valor:'',desc:'',loja:''}];MB=[{titulo:'Mecânico',nome:'Vinícius',valor:'',servicos:''}];mRascLimpa();
+ go(1);setTimeout(function(){window.scrollTo({top:0,behavior:'smooth'});var c=document.getElementById('mCarro');if(c)c.focus()},80);
+}
+function mAtualizaSteps(){
+ var form=document.querySelector('.v100form');if(!form)return;
+ var st=form.querySelectorAll('.v100steps.s4 .v100step');if(st.length!==4)return;
+ var g=function(id){var e=document.getElementById(id);return e?String(e.value||'').trim():''};
+ var a=!!(g('mCarro')&&g('mMotorista')&&g('mIni'));
+ var b=MP.some(function(p){return String(p.desc||'').trim()||parseBRL(p.valor)>0});
+ var c=MB.some(function(x){return String(x.nome||'').trim()||String(x.servicos||'').trim()||parseBRL(x.valor)>0});
+ var done=[a,b,c,false],cur=!a?0:(!b?1:(!c?2:3));
+ for(var i=0;i<st.length;i++){st[i].classList.toggle('done',!!done[i]);st[i].classList.toggle('on',i===cur)}
 }
 function copiarTexto(t){
  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){toast('📋 Copiado!')},function(){copiarFallback(t)})}
@@ -4193,7 +4303,7 @@ function editarManut(id){
  if(!EP.length)EP=[{valor:'',desc:'',loja:''}];
  if(!EB.length)EB=[{titulo:'Mecânico',nome:'',valor:'',servicos:''}];
  var c=S.carros[m.carro]||{nome:m.carro,placa:m.carro,motor:''};
- var h='<div class="v102sheetHero"><div class="v102sheetIcon">✎</div><div><div class="v102eyebrow">MANUTENÇÃO</div><h3>Editar lançamento</h3><div class="sub">'+esc(tituloCarro(c))+' · '+esc(fmtPlaca(c.placa))+'</div></div></div>'+
+ var h='<div class="v105editFlow"><div class="v102sheetHero"><div class="v102sheetIcon">✎</div><div><div class="v102eyebrow">MANUTENÇÃO · EDIÇÃO</div><h3>Editar manutenção</h3><div class="sub">'+esc(tituloCarro(c))+' · '+esc(fmtPlaca(c.placa))+' · '+esc(periodoTexto(m.dataIni,m.dataFim))+'</div></div></div>'+
   '<div class="v102panel"><div class="v102panelHead"><span>🚗</span><div><b>Serviço registrado</b><small>Corrija os dados sem alterar o histórico fora deste lançamento.</small></div></div>'+
   '<label>Motorista</label><input id="edMot" value="'+esc(m.motorista||'')+'">'+
   '<div class="grid2"><div><label>Data de início</label><input type="date" id="edIni" value="'+esc(m.dataIni||'')+'"></div>'+
@@ -4205,8 +4315,8 @@ function editarManut(id){
   '<button class="btn mini sec v100add" onclick="EB.push({titulo:\'Mecânico\',nome:\'\',valor:\'\',servicos:\'\'});edDesenha()">＋ Outro profissional / serviço</button></div>'+
   '<div class="v102panel"><div class="v102panelHead"><span>✓</span><div><b>Revisão</b><small>O total e os componentes serão reprocessados ao salvar.</small></div></div>'+
   '<div class="v100summary"><div class="v100sumRow"><span>Peças</span><strong id="edTotP">R$ 0,00</strong></div><div class="v100sumRow"><span>Mão de obra</span><strong id="edTotM">R$ 0,00</strong></div><div class="v100sumRow v100sumTotal"><span>TOTAL</span><strong id="edTotG">R$ 0,00</strong></div></div>'+
-  '<button class="btn ok v102primary" onclick="salvarEdicaoManut()">Salvar alterações</button></div>'+
-  '<button class="btn sec" onclick="closeSheet(2)">Cancelar</button>';
+  '<button class="btn ok v102primary v105saveMain" onclick="salvarEdicaoManut()">✓ Salvar alterações</button></div>'+
+  '<button class="btn sec" onclick="closeSheet(2)">Cancelar</button></div>';
  openSheet(h,2);
  setTimeout(edDesenha,30);
 }
@@ -4399,7 +4509,9 @@ function fechamentoDoMes(ym){
  });
  var lista=Object.keys(forn).map(function(n){return forn[n]}).sort(function(a,b){return b.total-a.total});
  var total=lista.reduce(function(s,f){return s+f.total},0);
- return {ym:ym,fornecedores:lista,total:total};
+ var totalFrota=lista.reduce(function(s,f){return s+f.totalFrota},0);
+ var totalPessoal=lista.reduce(function(s,f){return s+f.totalPessoal},0);
+ return {ym:ym,fornecedores:lista,total:total,totalFrota:totalFrota,totalPessoal:totalPessoal};
 }
 /* Texto no mesmo padrão que vocês mandam no grupo do fornecedor. */
 function textoFechamento(ym,nomeForn){
@@ -4594,14 +4706,20 @@ function vHistorico(){
      '<div style="margin:4px 0 10px"><span class="chip tap" onclick="copiarFechamento(\''+ym+'\',\''+esc(fo.nome).replace(/'/g,"\\\\'")+'\')">\ud83d\udccb copiar fatura</span></div>'+
      '</details>';
   });
-  h+='<div class="kv" style="margin-top:6px"><b>TOTAL DO M\u00caS</b><span>R$ '+fmtBRL(f.total)+'</span></div>';
+  h+='<div class="kv" style="margin-top:8px">'+
+     '<b style="font-weight:800;color:var(--tx)">TOTAL DO M\u00caS</b><span style="font-weight:800;color:var(--tx)">R$ '+fmtBRL(f.total)+'</span>'+
+     '<b>\u21b3 Frota F\u00e1bio</b><span>R$ '+fmtBRL(f.totalFrota)+'</span>'+
+     '<b>\u21b3 Frota Hudson</b><span>R$ '+fmtBRL(f.totalPessoal)+'</span></div>';
   h+=htmlConferencia(ym);
-  var ano=ym.slice(0,4),totAno=0,linhasAno='';
+  var ano=ym.slice(0,4),totAno=0,totAnoFrota=0,totAnoPessoal=0,linhasAno='';
   meses.filter(function(x){return x.slice(0,4)===ano}).sort().reverse().forEach(function(x){
-   var t=fechamentoDoMes(x).total;totAno+=t;
-   linhasAno+='<div class="mvrow"><div class="grow">'+_nomeMes(x)+'</div><div class="mvval">R$ '+fmtBRL(t)+'</div></div>';
+   var fx=fechamentoDoMes(x);totAno+=fx.total;totAnoFrota+=fx.totalFrota;totAnoPessoal+=fx.totalPessoal;
+   linhasAno+='<div class="mvrow"><div class="grow">'+_nomeMes(x)+
+     '<div class="sub">Frota F\u00e1bio R$ '+fmtBRL(fx.totalFrota)+' \u00b7 Frota Hudson R$ '+fmtBRL(fx.totalPessoal)+'</div></div>'+
+     '<div class="mvval">R$ '+fmtBRL(fx.total)+'</div></div>';
   });
-  h+='<details style="margin-top:6px"><summary class="sub" style="cursor:pointer">Fechamento anual '+ano+': R$ '+fmtBRL(totAno)+'</summary>'+linhasAno+'</details>';
+  h+='<details style="margin-top:6px"><summary class="sub" style="cursor:pointer">Fechamento anual '+ano+': R$ '+fmtBRL(totAno)+'</summary>'+
+     '<div class="kv" style="margin:4px 0 8px"><b>Frota F\u00e1bio</b><span>R$ '+fmtBRL(totAnoFrota)+'</span><b>Frota Hudson</b><span>R$ '+fmtBRL(totAnoPessoal)+'</span></div>'+linhasAno+'</details>';
   h+='</details></div>';
  })();
  if(!todas.length)h+='<div class="card"><div class="sub">Nenhuma manutenção registrada ainda.</div></div>';
@@ -4632,7 +4750,7 @@ function aplicarMascarasContrato(){
 }
 function vContrato(){
  var h='<div class="v100form">'+
-  '<div class="v100formHero"><div class="v100kicker">GUIMASCAR GESTÃO</div><div class="tit">📄 Novo contrato de locação</div><div class="sub">Preencha em blocos, revise e gere o mesmo Word padrão GuimasCar.</div>'+
+  '<div class="v100formHero v105formHero"><div class="v100kicker">CONTRATO · LOCAÇÃO</div><div class="tit">Novo contrato</div><div class="sub">O Gestão puxa os dados do carro; você completa o motorista, condições e pagamento e revisa antes de gerar.</div>'+
    '<div class="v100steps s5"><div class="v100step on"><strong>1</strong><small>Veículo</small></div><div class="v100step"><strong>2</strong><small>Motorista</small></div><div class="v100step"><strong>3</strong><small>Condições</small></div><div class="v100step"><strong>4</strong><small>Pagamento</small></div><div class="v100step"><strong>5</strong><small>Revisão</small></div></div></div>'+
   '<div class="v100panel"><div class="v100panelHead"><div class="v100panelIcon">🚗</div><div class="grow"><div class="v100panelTitle">Veículo e locador</div><div class="v100panelSub">Selecione o carro; o Gestão puxa o que já conhece.</div></div></div>'+
    '<label>Carro</label><select id="ncCarro" onchange="ncPuxaCarro();ncResumo()"><option value="">— selecione —</option>'+opcoesCarros()+'</select><div id="ncCarroInfo" class="v100vehicle"></div>'+
@@ -4662,9 +4780,25 @@ function vContrato(){
    '<div class="v100choice"><button type="button" class="v100payopt on" data-v="avista" onclick="ncUI34(\'avista\')">À vista</button><button type="button" class="v100payopt" data-v="parcelado" onclick="ncUI34(\'parcelado\')">Parcelada</button><button type="button" class="v100payopt" data-v="nao" onclick="ncUI34(\'nao\')">Não terá</button></div>'+
    '<div id="ncParcBox" style="display:none"><div class="sub">Uma linha por parcela. A soma precisa fechar o valor da semana.</div><div id="ncParcLista"></div><button class="btn mini sec v100add" onclick="ncParcAdd()">＋ Adicionar parcela</button><div class="sub" id="ncParcSoma" style="margin-top:6px"></div></div><textarea id="ncCl34" style="display:none"></textarea></div>'+
   '<div class="v100panel"><div class="v100panelHead"><div class="v100panelIcon">✓</div><div class="grow"><div class="v100panelTitle">Revisão final</div><div class="v100panelSub">Confira as informações principais antes de gerar.</div></div></div>'+
-   '<div class="v100review"><div class="v100reviewTitle">RESUMO DO CONTRATO</div><div id="ncResumo">Preencha o veículo e o nome do motorista para visualizar o resumo.</div></div>'+
-   '<button class="btn ok v100primary" onclick="gerarContrato()">📝 Gerar contrato Word + registrar</button><div class="v100hint">O conteúdo jurídico, o Word gerado e o registro do contrato continuam usando as regras atuais do sistema.</div></div></div>';
+   '<div class="v100review v105review"><div class="v100reviewTitle"><span>RESUMO DO CONTRATO</span><small>atualiza enquanto você preenche</small></div><div id="ncResumo">Preencha o veículo e o nome do motorista para visualizar o resumo.</div></div>'+
+   '<button class="btn ok v100primary v105saveMain" onclick="gerarContrato()"><span>✓</span> Gerar Word e registrar</button><div class="v100hint">O texto jurídico não é alterado: esta tela organiza apenas o preenchimento e a revisão dos dados.</div></div></div>';
+ setTimeout(function(){
+  try{aplicarMascarasContrato()}catch(e){}
+  var f=document.querySelector('.v100form');if(f){f.addEventListener('input',function(){try{ncResumo()}catch(e){};ncAtualizaSteps()});f.addEventListener('change',function(){try{ncResumo()}catch(e){};ncAtualizaSteps()})}
+  ncAtualizaSteps();
+ },30);
  return h;
+}
+function ncAtualizaSteps(){
+ var form=document.querySelector('.v100form');if(!form)return;
+ var st=form.querySelectorAll('.v100steps.s5 .v100step');if(st.length!==5)return;
+ var g=function(id){var e=document.getElementById(id);return e?String(e.value||'').trim():''};
+ var d0=!!g('ncCarro');
+ var d1=!!g('ncNome');
+ var d2=!!(g('ncSemanal')&&g('ncCaucao')&&g('ncIni')&&g('ncFim'));
+ var d3=!!(g('ncPixBanco')&&g('ncPixFav')&&g('ncPixChave'));
+ var done=[d0,d1,d2,d3,false],cur=!d0?0:(!d1?1:(!d2?2:(!d3?3:4)));
+ for(var i=0;i<st.length;i++){st[i].classList.toggle('done',!!done[i]);st[i].classList.toggle('on',i===cur)}
 }
 function ncPuxaCarro(){
  var pk=document.getElementById('ncCarro').value,c=S.carros[pk];
@@ -4678,7 +4812,7 @@ function ncPuxaCarro(){
  document.getElementById('ncKm').value=km||'';
  document.getElementById('ncComb').value=c.combustivel||'';
  ncCl34Auto();
- ncModo34();
+ ncModo34();ncAtualizaSteps();
 }
 function ncMultaAuto(){var v=document.getElementById('ncCaucao').value;document.getElementById('ncMultaResc').value=v}
 function ncResumo(){
