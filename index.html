@@ -760,6 +760,8 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 /* ============================================================
    v105/v106 — acabamento dos fluxos de Manutenção + Contrato
    v106 remove os indicadores artificiais de etapas; mantém os blocos reais.
+   v109 — saneia Últimas Trocas imediatamente após merge remoto e impede ressurreição de auto órfão;
+   preserva correções manuais, rastreia legado v97 e invalida somente autos comprovadamente obsoletos.
    ============================================================ */
 :root{--v105-ink:#15171C;--v105-muted:#737982;--v105-line:#E6E8EB;--v105-soft:#F7F8FA;--v105-amber:#C77A16;--v105-green:#1E7D52}
 /* Nunca mais texto escuro sobre painel preto no modo claro. */
@@ -872,7 +874,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=107; var APP_DATE='24/08/2026';
+var APP_VER=111; var APP_DATE='24/08/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -1024,7 +1026,7 @@ function normCarro(c){
  c.proximasTrocas=toArr(c.proximasTrocas);c.contratoVigenteId=c.contratoVigenteId||'';
  c.temCrlv=!!c.temCrlv;
  c.gnvRequalif=c.gnvRequalif||'';c.procLeilao=c.procLeilao||'Não';c.procFinanciado=c.procFinanciado||'Não';c.procObs=c.procObs||'';
- c.lidoCrlv=c.lidoCrlv||'';c.lidoGnv=c.lidoGnv||'';c.emVenda=!!c.emVenda;c.meuCarro=!!c.meuCarro;c.proxOleoManual=Number(c.proxOleoManual)||0;c.proxCorreiaManual=Number(c.proxCorreiaManual)||0;
+ c.lidoCrlv=c.lidoCrlv||'';c.lidoGnv=c.lidoGnv||'';c.emVenda=!!c.emVenda;c.meuCarro=!!c.meuCarro;c.proxOleoManual=Number(c.proxOleoManual)||0;c.proxCorreiaManual=Number(c.proxCorreiaManual)||0;c.editadoEm=Number(c.editadoEm)||0;c.fipeAtualizadoEm=Number(c.fipeAtualizadoEm)||0;
  return c;
 }
 /* ===== MÁSCARAS DE DOCUMENTO (formatam sozinhas, na digitação e na saída) ===== */
@@ -1089,7 +1091,7 @@ function normContrato(c){
  v.valorTotal=Number(v.valorTotal)||0;v.entrada=Number(v.entrada)||0;v.abatimento=Number(v.abatimento)||0;
  v.saldo=Number(v.saldo)||0;v.parcela=Number(v.parcela)||0;v.nParcelas=Number(v.nParcelas)||0;
  v.ultima=Number(v.ultima)||0;v.seguroMensal=Number(v.seguroMensal)||0;v.seguroDia=Number(v.seguroDia)||0;
- v.assinadoEm=v.assinadoEm||'';v.obs=v.obs||'';
+ v.assinadoEm=v.assinadoEm||'';v.obs=v.obs||'';c.criadoEm=Number(c.criadoEm)||0;c.editadoEm=Number(c.editadoEm)||0;
  return c;
 }
 /* Monta "Rua Humberto de Campos, 39 Sobrado, Lindo Parque, São Gonçalo/RJ" a partir dos
@@ -1119,14 +1121,13 @@ function normManut(m){
   return{titulo:b.titulo||'Mecânico',nome:nm,valor:v,servicos:toArr(b.servicos)};
  });
  m.totalPecas=Number(m.totalPecas)||0;m.totalMO=Number(m.totalMO)||0;m.total=Number(m.total)||0;
- m.texto=m.texto||'';m.criadoEm=m.criadoEm||0;
+ m.texto=m.texto||'';m.criadoEm=m.criadoEm||0;m.editadoEm=Number(m.editadoEm)||0;
  return m;
 }
 function normState(s){
  s=s||{};s.rev=s.rev||0;s.dev=s.dev||'';
  s.carros=s.carros||{};s.contratos=s.contratos||{};s.manutencoes=s.manutencoes||{};s.observacoes=s.observacoes||{};s.termos=s.termos||{};s.apagados=s.apagados||{};
- Object.keys(s.apagados).forEach(function(id){delete s.manutencoes[id];delete s.contratos[id];delete s.observacoes[id];delete s.termos[id];
-  if(id.indexOf('car_')===0)delete s.carros[id.slice(4)];});
+ Object.keys(s.apagados).forEach(function(id){['manutencoes','contratos','observacoes','termos'].forEach(function(c){var x=s[c]&&s[c][id];if(x&&_tombVence(s.apagados,id,x))delete s[c][id]});if(id.indexOf('car_')===0)delete s.carros[id.slice(4)];});
  Object.keys(s.carros).forEach(function(k){
   var c=s.carros[k]||{};
   if(c.proprietario)c.proprietario=String(c.proprietario).replace(/\s*\((mãe|avó|empresa do amigo)\)/g,'');
@@ -1278,41 +1279,59 @@ function alertasCarro(c){
  return a;
 }
 
+/* ===== REGRA ÚNICA DE CONFLITO DAS ÚLTIMAS TROCAS — v108 =====
+   1) A DATA DO EVENTO manda. Quilometragem só desempata.
+   2) Na mesma data, um ajuste manual vence o automático/legado, pois é uma correção explícita.
+   3) Entre dois manuais da mesma data, vence a edição manual mais recente (editadoEm).
+   4) Persistindo empate, prefere registro rastreável (mid) e depois a origem mais confiável.
+   Esta função é usada tanto no recálculo quanto no lançamento novo e no merge dos iPhones. */
+function _trocaPreferida108(a,b){
+ if(!a)return b;if(!b)return a;
+ var da=String(a.data||''),db=String(b.data||'');
+ if(da!==db){
+  if(da&&db)return db>da?b:a;
+  if(db&&!da)return b;
+  if(da&&!db)return a;
+ }
+ var ma=a.src==='manual',mb=b.src==='manual';
+ if(ma!==mb)return mb?b:a;
+ if(ma&&mb){
+  var ea=Number(a.editadoEm)||0,eb=Number(b.editadoEm)||0;
+  if(ea!==eb)return eb>ea?b:a;
+ }
+ var ka=Number(a.km)||0,kb=Number(b.km)||0;
+ if(ka!==kb)return kb>ka?b:a;
+ var ta=a.mid?1:0,tb=b.mid?1:0;if(ta!==tb)return tb?b:a;
+ var pr={manual:4,auto:3,legacy:2,'legacy-v107':1},pa=pr[a.src]||0,pb=pr[b.src]||0;
+ if(pa!==pb)return pb>pa?b:a;
+ var sa=String(a.mid||a.origem||a.src||''),sb=String(b.mid||b.origem||b.src||'');
+ return sb>sa?b:a;
+}
+
+
+/* ===== MERGE DE REGISTROS v110 =====
+   Coleções editáveis não são mais "remote wins" quando o mesmo id existe nos dois
+   aparelhos. Cada registro usa seu carimbo de edição/criação; tombstone é definitivo: não existe restauração implícita por um aparelho offline;
+   recuperação de backup também respeita exclusões já confirmadas. */
+function _regAt(x){return Math.max(Number(x&&x.editadoEm)||0,Number(x&&x.criadoEm)||0,Number(x&&x.at)||0)}
+function _regMaisNovo(a,b){if(!a)return b;if(!b)return a;var aa=_regAt(a),bb=_regAt(b);if(aa!==bb)return bb>aa?b:a;var sa=JSON.stringify(a),sb=JSON.stringify(b);return sb>sa?b:a}
+function _tombVence(apagados,id,obj){return (Number(apagados&&apagados[id])||0)>0}
+function _touchCarro(c){if(c)c.editadoEm=Date.now()}
+function _touchContrato(c){if(c){var n=Date.now();if(!c.criadoEm)c.criadoEm=n;c.editadoEm=n}}
+
 /* Une dois registros do MESMO carro, preferindo o dado mais recente/completo.
    Não decide por aparelho: decide campo a campo, então nenhum aparelho consegue
    rebaixar um dado bom do outro. */
 function mergeCarro(a,b){
  if(!b)return false;var mud=false;
- /* exercícios: fica com o MAIOR ano (2026 vence 2025) */
- ['exercicioCRLV','gnvExercicio'].forEach(function(k){
-  var va=parseInt(a[k],10)||0,vb=parseInt(b[k],10)||0;
-  if(vb>va){a[k]=b[k];mud=true}
- });
- /* datas de requalificação/validade: fica com a MAIS NOVA */
- ['gnvRequalif','gnvValidade'].forEach(function(k){
-  if(b[k]&&(!a[k]||String(b[k])>String(a[k]))){a[k]=b[k];mud=true}
- });
- /* documentos e campos do CRLV: preenche o que estiver vazio no outro */
- ['chassi','renavam','ano','cor','combustivel','potencia','proprietario','modeloCRLV',
-  'temCrlv','temGnvDoc','codigoRadio'].forEach(function(k){
-  if((a[k]===undefined||a[k]===''||a[k]===0||a[k]===false)&&b[k])(a[k]=b[k],mud=true);
- });
- /* últimas trocas por componente: para cada peça, fica com a de maior km/data */
- if(b.ultTrocas){
-  a.ultTrocas=a.ultTrocas||{};
-  Object.keys(b.ultTrocas).forEach(function(comp){
-   var tb=b.ultTrocas[comp],ta=a.ultTrocas[comp];
-   if(!tb)return;
-   if(!ta){a.ultTrocas[comp]=tb;mud=true;return}
-   var kmA=Number(ta.km)||0,kmB=Number(tb.km)||0;
-   var dA=String(ta.data||''),dB=String(tb.data||'');
-   if(kmB>kmA||(kmB===kmA&&dB>dA)){a.ultTrocas[comp]=tb;mud=true}
-  });
- }
- /* quilometragem: a mais recente por data (regra oficial do app) */
- if(b.kmUltimaData&&(!a.kmUltimaData||String(b.kmUltimaData)>String(a.kmUltimaData))){
-  a.kmUltima=b.kmUltima;a.kmUltimaData=b.kmUltimaData;mud=true;
- }
+ /* Campos de gestão editados pelo usuário: vence a ficha com edição explícita mais recente. */
+ var ea=Number(a.editadoEm)||0,eb=Number(b.editadoEm)||0,edB=(eb>ea)||(eb===ea&&eb>0&&JSON.stringify(b)>JSON.stringify(a));if(edB){['nome','modeloCRLV','motor','motorCodigo','ano','chassi','renavam','cor','potencia','combustivel','proprietario','locadorId','codigoRadio','motorista','status','semanalPadrao','caucaoPadrao','proximasTrocas','contratoVigenteId','gnvRequalif','procLeilao','procFinanciado','procObs','emVenda','meuCarro','oleoTipo','oleoIntervalo','correiaIntervalo','proxOleoKm','proxOleoManual','temCorreia','proxCorreiaKm','proxCorreiaManual'].forEach(function(k){a[k]=(b[k]&&typeof b[k]==='object')?JSON.parse(JSON.stringify(b[k])):b[k];mud=true});a.editadoEm=eb}
+ ['exercicioCRLV','gnvExercicio'].forEach(function(k){var va=parseInt(a[k],10)||0,vb=parseInt(b[k],10)||0;if(vb>va){a[k]=b[k];mud=true}});
+ ['gnvRequalif','gnvValidade'].forEach(function(k){if(b[k]&&(!a[k]||String(b[k])>String(a[k]))){a[k]=b[k];mud=true}});
+ ['chassi','renavam','ano','cor','combustivel','potencia','proprietario','modeloCRLV','temCrlv','temGnvDoc','codigoRadio'].forEach(function(k){if((a[k]===undefined||a[k]===''||a[k]===0||a[k]===false)&&b[k]){a[k]=b[k];mud=true}});
+ if(b.ultTrocas){a.ultTrocas=a.ultTrocas||{};Object.keys(b.ultTrocas).forEach(function(comp){var tb=b.ultTrocas[comp],ta=a.ultTrocas[comp];if(!tb)return;var vence=_trocaPreferida108(ta,tb);if(vence===tb&&vence!==ta){a.ultTrocas[comp]=tb;mud=true}})}
+ if(b.kmUltimaData&&(!a.kmUltimaData||String(b.kmUltimaData)>String(a.kmUltimaData))){a.kmUltima=b.kmUltima;a.kmUltimaData=b.kmUltimaData;mud=true}
+ var fa=Number(a.fipeAtualizadoEm)||0,fb=Number(b.fipeAtualizadoEm)||0;if(fb>fa||(fb===fa&&String(b.fipeMes||'')>String(a.fipeMes||''))){['fipeM','fipeMo','fipeA','valorRef','fipeMes'].forEach(function(k){if(b[k]!==undefined)a[k]=b[k]});a.fipeAtualizadoEm=fb;mud=true}
  return mud;
 }
 
@@ -1321,30 +1340,11 @@ function _carroApagado(apagados,pk){
  /* O túmulo oficial de carro é car_PLACA. Aceita também o formato antigo por compatibilidade. */
  return !!(apagados['car_'+pk]||apagados[pk]);
 }
-function mergeColecoes(base,extra){ /* une item a item; respeita exclusões (túmulos) */
- var add=0;base.apagados=base.apagados||{};var ea=(extra&&extra.apagados)||{};
- Object.keys(ea).forEach(function(k){
-  /* se os dois lados têm o mesmo túmulo, preserva o carimbo mais novo */
-  if(!base.apagados[k]||Number(ea[k])>Number(base.apagados[k]))base.apagados[k]=ea[k];
- });
- ['manutencoes','contratos','observacoes','termos'].forEach(function(c){
-  base[c]=base[c]||{};var e=(extra&&extra[c])||{};
-  Object.keys(e).forEach(function(k){if(!base[c][k]&&!base.apagados[k]){base[c][k]=e[k];add++}});
-  Object.keys(base.apagados).forEach(function(k){if(base[c][k])delete base[c][k]});
- });
- /* CARROS: merge campo a campo + túmulo car_PLACA. Um carro excluído em qualquer
-    iPhone não pode renascer só porque o outro aparelho ainda tinha uma cópia antiga. */
- base.carros=base.carros||{};var ec=(extra&&extra.carros)||{};
- Object.keys(ec).forEach(function(pk){
-  if(_carroApagado(base.apagados,pk))return;
-  if(!base.carros[pk]){base.carros[pk]=ec[pk];add++;return}
-  if(mergeCarro(base.carros[pk],ec[pk]))add++;
- });
- Object.keys(base.apagados).forEach(function(k){
-  var pk=k.indexOf('car_')===0?k.slice(4):k;
-  if(_carroApagado(base.apagados,pk)&&base.carros[pk])delete base.carros[pk];
- });
- return add;
+function mergeColecoes(base,extra){
+ var add=0;base.apagados=base.apagados||{};var ea=(extra&&extra.apagados)||{};Object.keys(ea).forEach(function(k){if(!base.apagados[k]||Number(ea[k])>Number(base.apagados[k]))base.apagados[k]=ea[k]});
+ ['manutencoes','contratos','observacoes','termos'].forEach(function(c){base[c]=base[c]||{};var e=(extra&&extra[c])||{},ks={};Object.keys(base[c]).concat(Object.keys(e)).forEach(function(k){ks[k]=1});Object.keys(ks).forEach(function(k){var a=base[c][k],b=e[k],best=_regMaisNovo(a,b);if(best&&_tombVence(base.apagados,k,best)){if(base[c][k]){delete base[c][k];add++}return}if(best&&base[c][k]!==best){base[c][k]=best;add++}})});
+ base.carros=base.carros||{};var ec=(extra&&extra.carros)||{};Object.keys(ec).forEach(function(pk){if(_carroApagado(base.apagados,pk))return;if(!base.carros[pk]){base.carros[pk]=ec[pk];add++;return}if(mergeCarro(base.carros[pk],ec[pk]))add++});
+ Object.keys(base.apagados).forEach(function(k){var pk=k.indexOf('car_')===0?k.slice(4):k;if(_carroApagado(base.apagados,pk)&&base.carros[pk])delete base.carros[pk]});return add;
 }
 /* ===== ROBUSTEZ DE SINCRONIZAÇÃO v103 ===== */
 var _cloudGuard={carros:0,manutencoes:0,contratos:0,rev:0};
@@ -1367,14 +1367,30 @@ function _guardarPontoSeguroCloud(x){
 function _refSetSeguro(obj,motivo){
  if(!REF)return Promise.resolve(false);
  if(!_estadoEstruturalValido(obj)){toast('⛔ Sincronização bloqueada: estado inválido');return Promise.resolve(false)}
- var c=_contaEstado(obj);
- /* trava anti-apagão: uma falha de código não pode zerar de uma vez uma coleção grande
-    que a nuvem acabou de confirmar. Exclusões normais de um item continuam funcionando. */
- var crit=['carros','manutencoes','contratos'];
+ /* v111: a gravação final é uma TRANSAÇÃO. Antes de qualquer commit, o estado que já
+    está na nuvem é unido ao deste aparelho pelas mesmas regras de merge usadas no
+    tempo real. Assim duas gravações simultâneas não podem simplesmente se sobrescrever. */
+ var local=normState(JSON.parse(JSON.stringify(obj))),c=_contaEstado(local),crit=['carros','manutencoes','contratos'];
  for(var i=0;i<crit.length;i++){var k=crit[i];if((_cloudGuard[k]||0)>=5&&c[k]===0){
-   toast('⛔ Proteção v103: gravação destrutiva bloqueada ('+k+')');return Promise.resolve(false);
+   toast('⛔ Proteção v111: gravação destrutiva bloqueada ('+k+')');return Promise.resolve(false);
   }}
- return REF.set(obj).then(function(){return true}).catch(function(e){toast('⚠️ Falha ao sincronizar: '+e.message);return false});
+ return new Promise(function(resolve){
+  REF.transaction(function(cur){
+   var junto=local;
+   if(cur&&_estadoEstruturalValido(cur)){
+    var remoto=normState(cur);junto=remoto;mergeColecoes(junto,local);junto=normState(junto);
+    var cc=_contaEstado(remoto),jc=_contaEstado(junto);
+    for(var j=0;j<crit.length;j++){var kk=crit[j];if((cc[kk]||0)>=5&&jc[kk]===0)return;}
+   }
+   junto.rev=Math.max(Number(junto.rev)||0,Number(local.rev)||0,Number(cur&&cur.rev)||0,Date.now());junto.dev=DEV;
+   return junto;
+  },function(err,committed,snap){
+   if(err){toast('⚠️ Falha ao sincronizar: '+err.message);resolve(false);return}
+   if(!committed){toast('⛔ Sincronização cancelada pela proteção de integridade');resolve(false);return}
+   try{if(snap&&snap.val())_guardarPontoSeguroCloud(normState(snap.val()))}catch(e){}
+   resolve(true);
+  },false);
+ });
 }
 function _integridadeLocal(){
  var r={ok:true,problemas:[]};if(!_estadoEstruturalValido(S)){r.ok=false;r.problemas.push('estrutura do estado inválida');return r}
@@ -1422,6 +1438,13 @@ function conectar(chave){
   vigiarConexao();
  });
 }
+
+var _snapPendente=null,_snapEspera=null;
+function _filaSnapshot(v){
+ _snapPendente=_snapPendente?function(){var r=normState(_snapPendente),n=normState(v);var base=(n.rev>=(r.rev||0))?n:r,extra=(base===n)?r:n;mergeColecoes(base,extra);return base}():v;
+ if(_snapEspera)return;_snapEspera=setInterval(function(){if(!digitando()){clearInterval(_snapEspera);_snapEspera=null;var x=_snapPendente;_snapPendente=null;if(x)aplicarSnapshot(x)}},700);
+}
+
 function aplicarSnapshot(v){
    _lastSnap=Date.now();
    document.getElementById('syncDot').classList.add('on');
@@ -1442,19 +1465,24 @@ function aplicarSnapshot(v){
     var outro=(base===v)?local:v;
     var add=mergeColecoes(base,outro);
     S=normState(base);
-    if(add>0||base===local||_saveQueued){_saveQueued=false;S.rev=Date.now();S.dev=DEV;_refSetSeguro(S,'primeiro-merge')}
+    /* v109: saneia referências derivadas ANTES de renderizar ou reenviar. Um tombstone
+       recebido da nuvem não pode ser desfeito por ultTrocas órfã presente no cache local. */
+    var recMerge=0;try{recMerge=recalcTudoSilencioso(true)}catch(e){}
+    if(add>0||recMerge>0||base===local||_saveQueued){_saveQueued=false;S.rev=Date.now();S.dev=DEV;_refSetSeguro(S,'primeiro-merge')}
     if(TAB===0||TAB===3||TAB===4)keepScreenStill(render);
     setTimeout(function(){atualizarFipe()},2500);
     return;
    }
-   if(v.dev===DEV||v.rev<=(S.rev||0))return;
+   /* v110: não descarta snapshot só por rev/relógio do aparelho; o merge por registro decide. */
    var adota=function(){
-    var local=S;var add=mergeColecoes(v,local);S=v;
-    if(add>0){S.rev=Date.now();S.dev=DEV;_refSetSeguro(S,'merge-remoto')}
+    var local=normState(JSON.parse(JSON.stringify(S))),base=local;var add=mergeColecoes(base,v);S=normState(base);
+    /* v109: o estado mesclado é recalculado antes da tela e antes do round-trip. Assim,
+       auto{mid:X} não ressuscita quando X já chegou tombstonado pelo outro aparelho. */
+    var recMerge=0;try{recMerge=recalcTudoSilencioso(true)}catch(e){}
+    if(add>0||recMerge>0){S.rev=Date.now();S.dev=DEV;_refSetSeguro(S,'merge-remoto')}
     if(TAB===0||TAB===3||TAB===4)render();
     try{if(window._fichaPk&&document.getElementById('ovSheet').classList.contains('open')&&!document.getElementById('ovSheet2').classList.contains('open'))ficha(window._fichaPk)}catch(e){}};
-   if(digitando()){var iv=setInterval(function(){if(!digitando()){clearInterval(iv);keepScreenStill(adota)}},2000)}
-   else keepScreenStill(adota);
+   if(digitando()){_filaSnapshot(v)}else keepScreenStill(adota);
 }
 var _lastSnap=0,_connOk=false,_resyncT=null;
 function resync(){ /* busca ativa: mesmo caminho do tempo real */
@@ -2220,7 +2248,7 @@ function salvarContratoImportado(){
  if(!_impCtx){toast('Nada para salvar');return}
  var pk=_impCtx.pk,d=_impCtx.dados,f=_impCtx.file,c=S.carros[pk];
  var ct=normContrato({
-  id:idNovo('ct'),carro:pk,origem:'anexado',tipo:'locacao',status:'vigente',
+  id:idNovo('ct'),carro:pk,origem:'anexado',criadoEm:Date.now(),tipo:'locacao',status:'vigente',
   locadorNome:(c&&c.proprietario)||'',
   locatario:{nome:d.nome,cpf:d.cpf,rg:d.rg,cnh:d.cnh,cnhVal:d.cnhVal,endereco:d.endereco,cep:d.cep,tel:d.tel},
   semanal:parseBRL(d.semanal),caucao:parseBRL(d.caucao),
@@ -2237,12 +2265,12 @@ function salvarContratoImportado(){
   if(d.nome)c.motorista=d.nome;
   if(ct.semanal)c.semanalPadrao=ct.semanal;
   if(ct.caucao)c.caucaoPadrao=ct.caucao;
-  if(c.status==='parado')c.status='ativo';
+  if(c.status==='parado')c.status='ativo';_touchCarro(c);
  }
  save();
  /* anexa o Word original ao contrato */
  enviarArquivo(f,pk+'/ct/'+ct.id+'/docx',function(){
-  ct.temDocx=true;save();closeSheet(2);ficha(pk);toast('✅ Contrato importado');
+  ct.temDocx=true;_touchContrato(ct);save();closeSheet(2);ficha(pk);toast('✅ Contrato importado');
  });
  _impCtx=null;
 }
@@ -2255,7 +2283,7 @@ function anexarContratoDoc(pk,ctId,qual){
  inp.onchange=function(){
   if(!inp.files||!inp.files[0])return;
   enviarArquivo(inp.files[0],pk+'/ct/'+ctId+'/'+qual,function(){
-   if(qual==='pdf')ct.temPdf=true;else ct.temDocx=true;
+   if(qual==='pdf')ct.temPdf=true;else ct.temDocx=true;_touchContrato(ct);
    save();ficha(pk);toast('✅ Contrato anexado');
   });
  };
@@ -2319,8 +2347,8 @@ function formVenda(pk,ctId){
 }
 function salvarVenda(pk,ctId){
  var g=function(id){var e=document.getElementById(id);return e?e.value.trim():''};
- var ct=ctId?S.contratos[ctId]:normContrato({id:idNovo('ct'),carro:pk,origem:'anexado'});
- ct.tipo='venda';ct.status='vigente';
+ var ct=ctId?S.contratos[ctId]:normContrato({id:idNovo('ct'),carro:pk,origem:'anexado',criadoEm:Date.now()});
+ ct.tipo='venda';ct.status='vigente';ct.editadoEm=Date.now();if(!ct.criadoEm)ct.criadoEm=ct.editadoEm;
  ct.locatario=ct.locatario||{};
  ct.locatario.nome=g('vd_nome');ct.locatario.cpf=g('vd_cpf');ct.locatario.rg=g('vd_rg');
  ct.locatario.nacionalidade=g('vd_nac');ct.locatario.estadoCivil=g('vd_ec');ct.locatario.cep=g('vd_cep');ct.locatario.endereco=montaEndereco('vd');
@@ -2331,7 +2359,7 @@ function salvarVenda(pk,ctId){
   ultima:parseBRL(g('vd_ult')),seguroMensal:parseBRL(g('vd_seg')),seguroDia:parseInt(g('vd_segd').replace(/\D/g,''),10)||0,
   assinadoEm:g('vd_ass'),obs:g('vd_obs')};
  S.contratos[ct.id]=normContrato(ct);
- var c=S.carros[pk];if(c)c.emVenda=true; /* carro em venda para de gerar alerta de manutenção */
+ var c=S.carros[pk];if(c)c.emVenda=true;_touchCarro(c); /* carro em venda para de gerar alerta de manutenção */
  save();closeSheet(2);ficha(pk);toast('✅ Compra e venda salva');
 }
 /* Semeia os dois contratos de compra e venda já existentes (dados lidos dos Word enviados).
@@ -2356,13 +2384,13 @@ function semearVendas(){
   if(!S.carros[b.pk]){pulados++;return}
   var ja=Object.keys(S.contratos).some(function(k){var x=S.contratos[k];return x.carro===b.pk&&x.tipo==='venda'});
   if(ja){pulados++;return}
-  var ct=normContrato({id:idNovo('ct'),carro:b.pk,origem:'anexado',tipo:'venda',status:'vigente',
+  var ct=normContrato({id:idNovo('ct'),carro:b.pk,origem:'anexado',tipo:'venda',status:'vigente',criadoEm:Date.now(),
    locadorNome:b.vend,locatario:{nome:b.nome,cpf:b.cpf,rg:b.rg,endereco:b.end},
    inicio:b.ini,fim:b.fim,
    venda:{valorTotal:b.total,entrada:b.entrada,abatimento:b.abat,saldo:b.saldo,parcela:b.parc,
     nParcelas:b.n,ultima:b.ult,seguroMensal:b.seg,seguroDia:b.segd,assinadoEm:b.ass,obs:b.obs}});
   S.contratos[ct.id]=ct;
-  S.carros[b.pk].emVenda=true;
+  S.carros[b.pk].emVenda=true;_touchCarro(S.carros[b.pk]);
   criados++;
  });
  save();render();
@@ -2377,7 +2405,7 @@ function semearVendas(){
    Alterna direto na ficha, sem entrar em Editar dados. */
 function alternarFrota(pk){
  var c=S.carros[pk];if(!c)return;
- c.meuCarro=!c.meuCarro;
+ c.meuCarro=!c.meuCarro;_touchCarro(c);
  save();ficha(pk);render();
  toast(c.meuCarro?'✅ Agora é Frota Hudson':'✅ Agora é Frota Fábio');
 }
@@ -2386,7 +2414,7 @@ function marcarFrotaHudson(){
  var placas=['LQZ6C72','OYZ9079','RJZ1B66','QUB5B64'];
  var ok=[],nao=[];
  placas.forEach(function(pk){
-  if(S.carros[pk]){S.carros[pk].meuCarro=true;ok.push(fmtPlaca(pk))}
+  if(S.carros[pk]){S.carros[pk].meuCarro=true;_touchCarro(S.carros[pk]);ok.push(fmtPlaca(pk))}
   else nao.push(pk);
  });
  save();render();
@@ -2427,7 +2455,7 @@ function editarMotorista(pk){
 }
 function salvarMotorista(pk){
  S.carros[pk].motorista=document.getElementById('motIn').value.trim();
- S.carros[pk].status=document.getElementById('stIn').value;
+ S.carros[pk].status=document.getElementById('stIn').value;_touchCarro(S.carros[pk]);
  save();closeSheet(2);ficha(pk);toast('✅ Salvo');render();
 }
 function addTroca(pk){
@@ -2501,7 +2529,7 @@ function salvarCarro(pk){
  c.gnvRequalif=(document.getElementById('e_gnvRequalif')||{value:''}).value;c.procLeilao=(document.getElementById('fc_procLeilao')||{value:'Não'}).value;c.procFinanciado=(document.getElementById('fc_procFinanciado')||{value:'Não'}).value;c.procObs=g('procObs');
  c.proprietario=g('proprietario');c.locadorId=document.getElementById('fc_locadorId').value;
  c.valorRef=parseBRL(g('valorRef'));c.semanalPadrao=parseBRL(g('semanalPadrao'));c.caucaoPadrao=parseBRL(g('caucaoPadrao'));
- S.carros[placa]=c;save();
+ _touchCarro(c);S.carros[placa]=c;save();
  var fileIn=document.getElementById('fc_crlv');
  if(novo&&fileIn&&fileIn.files&&fileIn.files[0]){
   enviarArquivo(fileIn.files[0],placa+'/crlv',function(){S.carros[placa].temCrlv=true;save();render()});
@@ -3342,7 +3370,7 @@ function salvarProg(pk){
  c.proxCorreiaKm=parseInt(String(g('pgProxC')).replace(/\D/g,''),10)||0;
  if(c.proxCorreiaKm&&c.proxCorreiaKm!==_antC)c.proxCorreiaManual=1;
  if(!c.proxCorreiaKm)c.proxCorreiaManual=0;
- save();closeSheet(2);ficha(pk);render();
+ _touchCarro(c);save();closeSheet(2);ficha(pk);render();
  toast('✎ Manutenção programada atualizada');
 }
 
@@ -3407,13 +3435,13 @@ function fipeVincular(pk){
   var v=parseBRL(d.Valor||'');
   if(!v){toast('⚠️ FIPE não retornou valor');return}
   var c=S.carros[pk];
-  c.fipeM=m;c.fipeMo=mo;c.fipeA=a;c.valorRef=v;c.fipeMes=(d.MesReferencia||'').trim();
+  c.fipeM=m;c.fipeMo=mo;c.fipeA=a;c.valorRef=v;c.fipeMes=(d.MesReferencia||'').trim();c.fipeAtualizadoEm=Date.now();
   save();closeSheet(2);ficha(pk);
   toast('✅ '+d.Modelo+' — R$ '+fmtBRL(v));
  }).catch(function(){toast('⚠️ FIPE fora do ar agora')});
 }
 function fipeDesvincular(pk){
- var c=S.carros[pk];c.fipeM='';c.fipeMo='';c.fipeA='';c.fipeMes='';
+ var c=S.carros[pk];c.fipeM='';c.fipeMo='';c.fipeA='';c.fipeMes='';c.fipeAtualizadoEm=Date.now();
  save();closeSheet(2);ficha(pk);toast('FIPE desvinculada — valor volta a ser manual');
 }
 function atualizarFipe(force){
@@ -3433,7 +3461,7 @@ function atualizarFipe(force){
   fetch(FIPE+'/marcas/'+c.fipeM+'/modelos/'+c.fipeMo+'/anos/'+c.fipeA)
    .then(function(r){return r.json()}).then(function(dd){
     var v=parseBRL(dd.Valor||'');
-    if(v){if(Math.round(v)!==Math.round(c.valorRef)){mudou=true}c.valorRef=v;c.fipeMes=(dd.MesReferencia||'').trim()}
+    if(v){if(Math.round(v)!==Math.round(c.valorRef)){mudou=true}c.valorRef=v;c.fipeMes=(dd.MesReferencia||'').trim();c.fipeAtualizadoEm=Date.now()}
     next();
    }).catch(function(){next()});
  })();
@@ -3625,9 +3653,9 @@ function gerarTermo(){
  /* ---- AUTOMAÇÃO: encerra contrato, carro fica sem motorista ---- */
  if(c.contratoVigenteId&&S.contratos[c.contratoVigenteId]){
   S.contratos[c.contratoVigenteId].status='encerrado';
-  S.contratos[c.contratoVigenteId].encerradoEm=fim;
+  S.contratos[c.contratoVigenteId].encerradoEm=fim;_touchContrato(S.contratos[c.contratoVigenteId]);
  }
- c.contratoVigenteId='';c.motorista='';c.status='parado';
+ c.contratoVigenteId='';c.motorista='';c.status='parado';_touchCarro(c);
  if(odo&&odo>(c.kmUltima||0)){c.kmUltima=odo;c.kmUltimaData=fim}
  save();tRascLimpa();
  closeSheet(2);ficha(pk);render();
@@ -3811,9 +3839,11 @@ function aplicarDeteccao(m,carro){
  carro.ultTrocas=carro.ultTrocas||{};
  var marcados=[];
  Object.keys(d.comps).forEach(function(comp){
-  var at=carro.ultTrocas[comp];
-  if(at&&at.src==='manual')return; /* não sobrescreve o que foi ajustado na mão */
-  if(!at||!at.km||odo>=at.km){carro.ultTrocas[comp]={km:odo,data:dt,src:'auto',mid:m.id||''};marcados.push(comp)}
+  var at=carro.ultTrocas[comp],cand={km:odo,data:dt,src:'auto',mid:m.id||''};
+  /* v108: a mesma regra do sync e do recálculo. Uma manutenção de data mais nova pode
+     superar um ajuste manual antigo; na mesma data, o manual continua soberano. */
+  var vence=_trocaPreferida108(at,cand);
+  if(vence===cand&&vence!==at){carro.ultTrocas[comp]=cand;marcados.push(comp)}
  });
  if(d.comps.oleo||d.comps.correia)recalcProximasTrocas(normPlaca(carro.placa));
  return marcados;
@@ -3868,50 +3898,52 @@ function recalcProximasTrocas(pk){
   }
  }
 }
-/* ===== PROTEÇÃO DAS ÚLTIMAS TROCAS v107 =====
-   REGRA FUNDAMENTAL: ausência no histórico estruturado NÃO significa que uma troca
-   antiga nunca aconteceu. Parte da frota já tinha referências históricas antes da
-   importação detalhada do WhatsApp. Por isso o recálculo automático agora é
-   MONOTÔNICO: ele pode acrescentar/atualizar uma troca comprovadamente mais nova,
-   mas nunca apaga um dado válido só porque não encontrou a origem no histórico atual. */
-var LEGACY_TROCAS_107={"PZT0F79":{"alternador":{"km":133929,"data":"2026-04-08"}},"GBV3B96":{"arranque":{"km":395388,"data":"2026-02-10"}},"LMY2A63":{"alternador":{"km":368236,"data":"2024-12-03"}},"PWL8H97":{"vela":{"km":187682,"data":"2025-07-01"},"cabos":{"km":187682,"data":"2025-07-01"},"embreagem":{"km":197944,"data":"2025-08-08"},"bateria":{"km":148220,"data":"2025-01-23"},"alternador":{"km":180742,"data":"2025-06-04"},"arranque":{"km":148095,"data":"2025-01-15"},"ventoinha":{"km":157883,"data":"2025-03-07"},"radiador":{"km":157883,"data":"2025-03-07"}},"FHP4B47":{"embreagem":{"km":216142,"data":"2025-07-04"},"bateria":{"km":216282,"data":"2025-07-05"},"freios":{"km":238789,"data":"2025-09-30"}},"PYO4A55":{"alternador":{"km":274671,"data":"2025-02-19"}}};
+/* ===== PROTEÇÃO DAS ÚLTIMAS TROCAS v108 =====
+   Estes 15 registros NÃO são estimativas: foram recuperados literalmente do objeto
+   migGrupos1/GW que já existia na v97 do próprio Gestão. Como alguns não possuem a
+   manutenção estruturada original (mid), ficam marcados como legado rastreável. */
+var LEGACY_TROCAS_V97={"PZT0F79":{"alternador":{"km":133929,"data":"2026-04-08"}},"GBV3B96":{"arranque":{"km":395388,"data":"2026-02-10"}},"LMY2A63":{"alternador":{"km":368236,"data":"2024-12-03"}},"PWL8H97":{"vela":{"km":187682,"data":"2025-07-01"},"cabos":{"km":187682,"data":"2025-07-01"},"embreagem":{"km":197944,"data":"2025-08-08"},"bateria":{"km":148220,"data":"2025-01-23"},"alternador":{"km":180742,"data":"2025-06-04"},"arranque":{"km":148095,"data":"2025-01-15"},"ventoinha":{"km":157883,"data":"2025-03-07"},"radiador":{"km":157883,"data":"2025-03-07"}},"FHP4B47":{"embreagem":{"km":216142,"data":"2025-07-04"},"bateria":{"km":216282,"data":"2025-07-05"},"freios":{"km":238789,"data":"2025-09-30"}},"PYO4A55":{"alternador":{"km":274671,"data":"2025-02-19"}}};
 
-/* Restaura SOMENTE registros históricos que foram comprovadamente apagados pelo
-   recálculo destrutivo antigo. Não sobrescreve nada existente nem valores manuais. */
+function _trocaLegadaV97(pk,comp){
+ var x=LEGACY_TROCAS_V97[pk]&&LEGACY_TROCAS_V97[pk][comp];if(!x)return null;
+ return {km:Number(x.km)||0,data:x.data||'',src:'legacy',origem:'migGrupos1-v97',recuperadoVersao:107};
+}
+
+/* Migração única: melhora a procedência dos registros restaurados pela v107. */
+function migrarProvenienciaTrocas108(){
+ if(!S||!S.carros||S.migProvenienciaTrocas108)return 0;var n=0;
+ Object.keys(S.carros).forEach(function(pk){
+  var u=(S.carros[pk]&&S.carros[pk].ultTrocas)||{};
+  Object.keys(u).forEach(function(comp){var x=u[comp];if(!x)return;
+   if(x.src==='legacy-v107'){x.src='legacy';x.origem=x.origem||'migGrupos1-v97';x.recuperadoVersao=x.recuperadoVersao||107;n++}
+  });
+ });
+ S.migProvenienciaTrocas108=true;return n+1;
+}
+
+/* Restaura SOMENTE registros históricos comprovados na v97 e apenas quando o campo
+   está vazio. Nunca sobrescreve manual, auto ou uma referência mais recente. */
 function restaurarTrocasLegado107(){
  if(!S||!S.carros)return 0;
  if(S.migRestoreTrocas107)return 0;
  var n=0;
- Object.keys(LEGACY_TROCAS_107).forEach(function(pk){
+ Object.keys(LEGACY_TROCAS_V97).forEach(function(pk){
   var c=S.carros[pk];if(!c)return;c.ultTrocas=c.ultTrocas||{};
-  var b=LEGACY_TROCAS_107[pk];
-  Object.keys(b).forEach(function(comp){
-   if(c.ultTrocas[comp])return;
-   var x=b[comp];
-   c.ultTrocas[comp]={km:Number(x.km)||0,data:x.data||'',src:'legacy-v107'};
-   n++;
+  Object.keys(LEGACY_TROCAS_V97[pk]).forEach(function(comp){
+   if(c.ultTrocas[comp])return;c.ultTrocas[comp]=_trocaLegadaV97(pk,comp);n++;
   });
  });
- S.migRestoreTrocas107=true;
- return n+1; /* +1 força persistência do marcador mesmo se nada precisou ser restaurado */
+ S.migRestoreTrocas107=true;return n+1;
 }
 
-function _trocaMaisNova(a,b){
- if(!a)return b;if(!b)return a;
- /* data é a referência principal; quilometragem apenas desempata. Isso evita um
-    odômetro digitado errado em manutenção antiga vencer um evento realmente mais novo. */
- var da=String(a.data||''),db=String(b.data||'');
- if(da&&db&&da!==db)return db>da?b:a;
- if(db&&!da)return b;
- if(da&&!db)return a;
- return (Number(b.km)||0)>(Number(a.km)||0)?b:a;
-}
+/* Compatibilidade: toda comparação de "troca mais nova" chama a mesma regra v108. */
+function _trocaMaisNova(a,b){return _trocaPreferida108(a,b)}
 
 /* Atualiza as últimas trocas com o que o histórico CONSEGUE COMPROVAR, sem apagar
-   referências anteriores. Valores manuais continuam soberanos. */
+   referências sem prova de invalidação. Manual vence no mesmo evento; data posterior vence. */
 function recalcTrocasCarro(pk){
  var c=S.carros[pk];if(!c)return null;
- var mans=manutsDoCarro(pk),antes=c.ultTrocas||{},novo={};
+ var mans=manutsDoCarro(pk),antes=c.ultTrocas||{},novo={},unidos={},atualizados=[],removidos=[],naoRastreaveis=[];
  mans.forEach(function(m){
   var d=detectarComponentes(m),odo=_odoManut(m),dt=_dtManut(m)||hoje();
   Object.keys(d.comps).forEach(function(comp){
@@ -3919,19 +3951,27 @@ function recalcTrocasCarro(pk){
    novo[comp]=_trocaMaisNova(novo[comp],cand);
   });
  });
- var unidos={},atualizados=[];
- Object.keys(antes).forEach(function(k){unidos[k]=antes[k]});
- Object.keys(novo).forEach(function(comp){
-  var ant=unidos[comp],cand=novo[comp];
-  if(ant&&ant.src==='manual')return;
-  var vence=_trocaMaisNova(ant,cand);
-  if(vence===cand&&(!ant||Number(ant.km)!==Number(cand.km)||String(ant.data||'')!==String(cand.data||''))){
-   unidos[comp]=cand;atualizados.push(comp);
-  }
+ /* Preserva manual/legado e autos antigos sem origem identificável. Porém, se um AUTO
+    possui mid e a manutenção sumiu ou a regra atual não detecta mais o componente,
+    existe prova objetiva de que esse auto ficou obsoleto: ele pode ser removido. */
+ Object.keys(antes).forEach(function(comp){
+  var ant=antes[comp];if(!ant)return;
+  if(ant.src==='auto'&&ant.mid){
+   var om=S.manutencoes&&S.manutencoes[ant.mid],ok=false;
+   if(om&&om.carro===pk){try{ok=!!detectarComponentes(om).comps[comp]}catch(e){ok=false}}
+   if(!ok){removidos.push(comp);return}
+  }else if(ant.src==='auto'&&!ant.mid){naoRastreaveis.push(comp)}
+  unidos[comp]=ant;
  });
- c.ultTrocas=unidos;
- recalcProximasTrocas(pk);
- return {qtd:Object.keys(novo).length,atualizados:atualizados,removidos:[]};
+ Object.keys(novo).forEach(function(comp){
+  var ant=unidos[comp],cand=novo[comp],vence=_trocaMaisNova(ant,cand);
+  if(vence===cand&&vence!==ant){unidos[comp]=cand;atualizados.push(comp)}
+ });
+ /* Se um auto rastreável inválido havia substituído um legado comprovado e não existe
+    outra manutenção válida para o componente, retorna ao legado em vez de zerar. */
+ removidos.forEach(function(comp){if(!unidos[comp]){var leg=_trocaLegadaV97(pk,comp);if(leg)unidos[comp]=leg}});
+ c.ultTrocas=unidos;recalcProximasTrocas(pk);
+ return {qtd:Object.keys(novo).length,atualizados:atualizados,removidos:removidos,naoRastreaveis:naoRastreaveis};
 }
 
 /* Quando o USUÁRIO edita ou exclui uma manutenção específica, aí sim existe prova
@@ -3954,8 +3994,8 @@ function recomputarCompsAposAlteracao(pk,comps,midAlterado){
   });
   if(best)c.ultTrocas[comp]=best;
   else{
-   var leg=LEGACY_TROCAS_107[pk]&&LEGACY_TROCAS_107[pk][comp];
-   if(leg)c.ultTrocas[comp]={km:Number(leg.km)||0,data:leg.data||'',src:'legacy-v107'};
+   var leg=_trocaLegadaV97(pk,comp);
+   if(leg)c.ultTrocas[comp]=leg;
    else delete c.ultTrocas[comp];
   }
  });
@@ -3967,9 +4007,9 @@ function recomputarCompsAposAlteracao(pk,comps,midAlterado){
    componentes e próximas trocas de óleo/correia, sempre pela troca mais recente de
    verdade. Roda ao abrir o app e antes de qualquer diagnóstico, para que nenhum número
    gravado antigo continue aparecendo na tela. */
-function recalcTudoSilencioso(){
+function recalcTudoSilencioso(semSalvar){
  if(!window.S||!S.carros||!S.manutencoes)return 0;
- var rest=restaurarTrocasLegado107(),mud=0;
+ var rest=restaurarTrocasLegado107()+migrarProvenienciaTrocas108(),mud=0;
  Object.keys(S.carros).forEach(function(pk){
   var c=S.carros[pk];if(!c)return;
   var a=Number(c.proxOleoKm)||0,b=Number(c.proxCorreiaKm)||0;
@@ -3977,9 +4017,28 @@ function recalcTudoSilencioso(){
   try{recalcTrocasCarro(pk)}catch(e){}
   if((Number(c.proxOleoKm)||0)!==a||(Number(c.proxCorreiaKm)||0)!==b||JSON.stringify(c.ultTrocas||{})!==antes)mud++;
  });
- if(mud||rest){try{save()}catch(e){}}
+ /* No merge ao vivo, quem controla a gravação é aplicarSnapshot: isso evita uma escrita
+    imediata do merge + outra escrita atrasada pelo debounce de save(). */
+ if((mud||rest)&&!semSalvar){try{save()}catch(e){}}
  return mud+(rest?1:0);
 }
+function auditarUltimasTrocas108(){
+ var st=document.getElementById('recTudoStat'),lin=[],trace=0,leg=0,man=0,unv=0,quebr=0;
+ Object.keys(S.carros||{}).forEach(function(pk){var u=(S.carros[pk]&&S.carros[pk].ultTrocas)||{};
+  Object.keys(u).forEach(function(comp){var x=u[comp];if(!x)return;
+   if(x.src==='manual'){man++;return}if(x.src==='legacy'||x.src==='legacy-v107'){leg++;return}
+   if(x.src==='auto'&&x.mid){trace++;var m=S.manutencoes&&S.manutencoes[x.mid],ok=false;
+    if(m&&m.carro===pk){try{ok=!!detectarComponentes(m).comps[comp]}catch(e){ok=false}}
+    if(!ok){quebr++;lin.push('<b>'+esc(fmtPlaca(pk))+'</b> · '+esc(nomeComp(comp))+' — origem automática inválida ('+esc(String(x.mid))+')')}
+   }else if(x.src==='auto'){unv++;lin.push('<b>'+esc(fmtPlaca(pk))+'</b> · '+esc(nomeComp(comp))+' — automático antigo sem mid; preservado para não perder histórico')}
+  });
+ });
+ var h='<b>Auditoria das Últimas trocas</b><br>✅ automáticos rastreáveis: '+trace+' · ✍️ manuais: '+man+' · 🗂 legados v97: '+leg;
+ h+='<br>⚠️ automáticos antigos sem origem: '+unv+' · ❌ automáticos com origem inválida: '+quebr;
+ if(lin.length)h+='<br><br>'+lin.join('<br>');else h+='<br><br>✅ Nenhuma inconsistência rastreável encontrada.';
+ if(st)st.innerHTML=h;return {traceaveis:trace,manuais:man,legados:leg,naoRastreaveis:unv,invalidos:quebr};
+}
+
 function diagnosticoFrota(){
  recalcTudoSilencioso();
  var st=document.getElementById('recTudoStat');
@@ -4024,7 +4083,7 @@ function _diagDocs(){
 }
 function recalcTodosCarros(){
  var st=document.getElementById('recTudoStat');
- ask('Recalcular TODOS os carros?','Vou varrer o histórico de manutenções de cada carro e atualizar as últimas trocas somente quando houver uma troca mais nova comprovada. Dados históricos que não estejam detalhados no histórico não serão apagados. Itens ajustados na mão são preservados.','Recalcular tudo',function(){
+ ask('Recalcular TODOS os carros?','Vou varrer o histórico de manutenções de cada carro e atualizar as últimas trocas somente quando houver uma troca mais nova comprovada. Dados históricos que não estejam detalhados no histórico não serão apagados. Ajustes manuais vencem o mesmo evento; uma manutenção comprovadamente posterior pela data pode substituí-los.','Recalcular tudo',function(){
   var mud=[],n=0;
   Object.keys(S.carros).forEach(function(pk){
    var c=S.carros[pk],antesO=Number(c.proxOleoKm)||0,antesC=Number(c.proxCorreiaKm)||0;
@@ -4042,7 +4101,7 @@ function recalcTodosCarros(){
 }
 function recalcTrocasUI(pk){
  var c=S.carros[pk];if(!c)return;
- ask('Recalcular componentes do histórico?','Vou varrer todas as manutenções do '+c.nome+' e atualizar as "Últimas trocas" quando houver uma troca mais nova comprovada. O que já existe não será apagado só por não aparecer no histórico estruturado. Itens marcados na mão são preservados.','Recalcular',function(){
+ ask('Recalcular componentes do histórico?','Vou varrer todas as manutenções do '+c.nome+' e atualizar as "Últimas trocas" quando houver uma troca mais nova comprovada. O que já existe não será apagado só por não aparecer no histórico estruturado. Ajustes manuais vencem o mesmo evento; uma manutenção comprovadamente posterior pela data pode substituí-los.','Recalcular',function(){
   var r=recalcTrocasCarro(pk);save();ficha(pk);
   if(r&&r.atualizados&&r.atualizados.length)toast('✅ '+r.atualizados.length+' componente(s) atualizado(s) pelo histórico');
   else toast('✅ Histórico conferido — nenhum dado válido foi apagado');
@@ -4051,7 +4110,7 @@ function recalcTrocasUI(pk){
 function editarTrocas(pk){
  var c=S.carros[pk];if(!c)return;var u=c.ultTrocas||{};
  var h='<h3>✏️ Últimas trocas — '+esc(tituloCarro(c))+'</h3>'+
-  '<p class="sub">Ajuste na mão a km e a data da última troca de cada componente. Deixe os dois vazios para limpar o item. O que você salvar aqui vira <b>manual</b> e o recálculo automático não mexe mais nele.</p>';
+  '<p class="sub">Ajuste na mão a km e a data da última troca de cada componente. Deixe os dois vazios para limpar o item. O que você salvar aqui vira <b>manual</b>. Ele vence automáticos do mesmo evento; uma manutenção comprovadamente posterior pela data pode substituí-lo.</p>';
  COMPS_LST.forEach(function(par){
   if(par[0]==='correia'&&!c.temCorreia)return;
   var v=u[par[0]]||{};
@@ -4072,7 +4131,7 @@ function salvarTrocas(pk){
   var km=ek?(parseInt((ek.value||'').replace(/\D/g,''),10)||0):0;
   var dt=ed?ed.value:'';
   if(!km&&!dt)delete c.ultTrocas[par[0]];
-  else c.ultTrocas[par[0]]={km:km,data:dt,src:'manual'};
+  else c.ultTrocas[par[0]]={km:km,data:dt,src:'manual',editadoEm:Date.now()};
  });
  save();closeSheet(2);ficha(pk);toast('✅ Últimas trocas atualizadas');
 }
@@ -4124,7 +4183,7 @@ function obsItemHtml(o){
 }
 function obsToggle(id){
  var o=S.observacoes[id];if(!o)return;
- o.feito=!o.feito;o.feitoEm=o.feito?hoje():'';
+ o.feito=!o.feito;o.feitoEm=o.feito?hoje():'';o.editadoEm=Date.now();
  save();render();
  if(window._fichaPk)ficha(window._fichaPk);
  toast(o.feito?'✅ Marcada como feita':'↩️ Voltou para pendentes');
@@ -4436,7 +4495,7 @@ function salvarEdicaoManut(){
  m.dataFim=document.getElementById('edFim').value||'';
  var odo=parseInt((document.getElementById('edOdo').value||'').replace(/\D/g,''),10)||0;
  if(odo)m.odometro=odo;
- m.pecas=pecas;m.blocos=blocos;m.totalPecas=tp;m.totalMO=tm;m.total=tp+tm;
+ m.pecas=pecas;m.blocos=blocos;m.totalPecas=tp;m.totalMO=tm;m.total=tp+tm;m.editadoEm=Date.now();
  m=normManut(m);
  if(carro){
   m.texto=buildManutTexto(m,carro);
@@ -4996,7 +5055,7 @@ function dadosContratoDoForm(){
  if(!g('ncIni')||!g('ncFim')){toast('Preencha as datas');return null}
  var cnh=g('ncCnh'),cnhVal=g('ncCnhVal');
  return normContrato({
-  id:idNovo('ct'),carro:pk,origem:'gerado',status:'vigente',
+  id:idNovo('ct'),carro:pk,origem:'gerado',status:'vigente',criadoEm:Date.now(),
   locadorId:g('ncLocador'),locadorNome:LOCADORES[g('ncLocador')].nome,
   locatario:{nome:g('ncNome').toUpperCase(),cpf:g('ncCpf'),
    rg:'RG '+g('ncRgNum')+' – '+g('ncRgOrg')+(cnh?' | CNH '+cnh+(cnhVal?' (val. '+dataBR(cnhVal)+')':''):''),
@@ -5013,10 +5072,10 @@ function gerarContrato(){
  var c=S.carros[ct.carro],pk=ct.carro;
  if(c.contratoVigenteId&&S.contratos[c.contratoVigenteId]){
   S.contratos[c.contratoVigenteId].status='encerrado';
-  S.contratos[c.contratoVigenteId].encerradoEm=hoje();
+  S.contratos[c.contratoVigenteId].encerradoEm=hoje();_touchContrato(S.contratos[c.contratoVigenteId]);
  }
  S.contratos[ct.id]=ct;
- c.contratoVigenteId=ct.id;c.motorista=ct.locatario.nome;c.status='ativo';
+ c.contratoVigenteId=ct.id;c.motorista=ct.locatario.nome;c.status='ativo';_touchCarro(c);
  if(ct.kmInicial){c.kmAtual=ct.kmInicial;c.kmUltima=ct.kmInicial;c.kmUltimaData=ct.inicio}
  c.semanalPadrao=ct.semanal;c.caucaoPadrao=ct.caucao;
  save();
@@ -5032,7 +5091,7 @@ function gerarContrato(){
    return DOCSREF.child(pk+'/ct/'+ct.id+'/docx').set(doc);
   });
  }).then(function(){
-  S.contratos[ct.id].temDocx=true;save();ficha(pk);
+  S.contratos[ct.id].temDocx=true;_touchContrato(S.contratos[ct.id]);save();ficha(pk);
   toast('✅ Word no padrão GuimasCar — baixado, salvo no aparelho e na nuvem');
  }).catch(function(e){
   toast('⚠️ Contrato REGISTRADO, mas o arquivo falhou ('+e.message+'). Use "Regerar Word" na ficha.');
@@ -5043,9 +5102,9 @@ function trocarMotorista(pk){
  ask('Trocar motorista do '+c.nome+'?','O contrato de '+primNome(c.motorista)+' será encerrado e vai para os contratos anteriores (nada se perde). Em seguida você cria o novo.','Encerrar e continuar',function(){
   if(c.contratoVigenteId&&S.contratos[c.contratoVigenteId]){
    S.contratos[c.contratoVigenteId].status='encerrado';
-   S.contratos[c.contratoVigenteId].encerradoEm=hoje();
+   S.contratos[c.contratoVigenteId].encerradoEm=hoje();_touchContrato(S.contratos[c.contratoVigenteId]);
   }
-  c.contratoVigenteId='';c.motorista='';c.status='parado';
+  c.contratoVigenteId='';c.motorista='';c.status='parado';_touchCarro(c);
   save();closeSheet();go(2);
   setTimeout(function(){var s=document.getElementById('ncCarro');if(s){s.value=pk;ncPuxaCarro()}},80);
   toast('🔁 Contrato encerrado — preencha o novo motorista');
@@ -5063,7 +5122,7 @@ function regerarContrato(id){
    idbSet(ct.carro+'/ct/'+id+'/docx',doc);
    return DOCSREF.child(ct.carro+'/ct/'+id+'/docx').set(doc);
   });
- }).then(function(){S.contratos[id].temDocx=true;save();toast('✅ Word regerado no padrão')})
+ }).then(function(){S.contratos[id].temDocx=true;_touchContrato(S.contratos[id]);save();toast('✅ Word regerado no padrão')})
  .catch(function(e){toast('⚠️ '+e.message)});
 }
 /* ---------- GERADOR DOCX (modelo GuimasCar, 11 cláusulas) ---------- */
@@ -5222,7 +5281,7 @@ function openCfg(){
   '<div class="v102setBlock"><b>Documentos neste aparelho</b><p>Substitui cópias locais antigas pelas versões atuais da nuvem.</p><button class="btn" onclick="baixarTudoOffline()">🔄 Atualizar documentos deste aparelho</button><div class="filestat" id="offStat"></div></div>'+
  '</div></details>'+
  '<details><summary><span class="v102setIcon">🔧</span><div><b>Manutenção e histórico</b><small>Recálculo, diagnóstico e importação</small></div><i>⌄</i></summary><div class="v102settingsBody">'+
-  '<div class="v102setBlock"><b>Recálculo geral</b><p>Revarre o histórico de todos os carros e reconstrói últimas trocas e próximas trocas conforme as regras atuais.</p><button class="btn" onclick="recalcTodosCarros()">🔄 Recalcular todos os carros</button><button class="btn sec" onclick="diagnosticoFrota()">🔍 Diagnóstico da frota</button><div class="filestat" id="recTudoStat"></div></div>'+
+  '<div class="v102setBlock"><b>Recálculo geral</b><p>Reanalisa todas as manutenções, atualiza trocas comprovadamente mais novas e invalida apenas automáticos rastreáveis que deixaram de cumprir as regras atuais. Dados manuais e legados não são apagados só por ausência de histórico.</p><button class="btn" onclick="recalcTodosCarros()">🔄 Recalcular todos os carros</button><button class="btn sec" onclick="diagnosticoFrota()">🔍 Diagnóstico da frota</button><button class="btn sec" onclick="auditarUltimasTrocas108()">🧾 Auditar últimas trocas</button><div class="filestat" id="recTudoStat"></div></div>'+
   '<div class="v102setBlock"><b>Histórico antigo do WhatsApp</b><p>Importação única, sem duplicar lançamentos já existentes.</p><input type="file" id="waHist" accept=".json"><button class="btn sec" onclick="importarHistoricoWA()">📚 Importar histórico</button><div class="filestat" id="waHistStat"></div></div>'+
  '</div></details>'+
  '<details><summary><span class="v102setIcon">🚗</span><div><b>Ferramentas da frota</b><small>Ajustes administrativos especiais</small></div><i>⌄</i></summary><div class="v102settingsBody">'+
@@ -5234,7 +5293,7 @@ function openCfg(){
   '<div class="v102setBlock"><b>Restaurar backup</b><p>A restauração soma o que estiver faltando e não apaga os dados existentes.</p><input type="file" id="bkpIn" accept=".json"><button class="btn sec" onclick="restaurarBackup()">♻️ Restaurar de um backup</button></div>'+
  '</div></details>'+
  '<details><summary><span class="v102setIcon">🔗</span><div><b>Conexão e sincronização</b><small>Estado deste iPhone e chave da família</small></div><i>⌄</i></summary><div class="v102settingsBody">'+
-  '<div class="v102setBlock"><div class="v102keyrow"><span>Chave atual</span><b>'+esc(key)+'</b></div><p>Proteções v103: merge com túmulos de carros, trava anti-apagão, documentos monotônicos e diagnóstico sem sobrescrever a nuvem.</p><div class="filestat v102status" id="syncDiag">Verificando…</div><button class="btn sec" onclick="syncDiagRodar()">🛡️ Verificar integridade e sincronização</button><button class="btn sec" onclick="closeSheet();pedirChave()">🔑 Trocar chave da família</button></div>'+
+  '<div class="v102setBlock"><div class="v102keyrow"><span>Chave atual</span><b>'+esc(key)+'</b></div><p>Proteções v103/v108: merge com túmulos de carros, trava anti-apagão, documentos monotônicos e Últimas trocas com regra única por data em todos os iPhones.</p><div class="filestat v102status" id="syncDiag">Verificando…</div><button class="btn sec" onclick="syncDiagRodar()">🛡️ Verificar integridade e sincronização</button><button class="btn sec" onclick="closeSheet();pedirChave()">🔑 Trocar chave da família</button></div>'+
  '</div></details></div>'+
  '<button class="btn sec" onclick="closeSheet()">Fechar</button>');
 }
@@ -5336,18 +5395,18 @@ function importar(){
     var cv=null;
     Object.keys(S.contratos).forEach(function(k){var x=S.contratos[k];if(x.carro===alvo&&x.tipo==='venda')cv=x});
     if(!cv){
-     cv=normContrato({id:idNovo('ct'),carro:alvo,origem:'anexado',tipo:'venda',status:'vigente'});
-     S.contratos[cv.id]=cv;S.carros[alvo].emVenda=true;
+     cv=normContrato({id:idNovo('ct'),carro:alvo,origem:'anexado',tipo:'venda',status:'vigente',criadoEm:Date.now()});
+     S.contratos[cv.id]=cv;S.carros[alvo].emVenda=true;_touchCarro(S.carros[alvo]);
     }
     var ehPdf=/\.pdf$/i.test(f.name);
     return subir(alvo+'/ct/'+cv.id+'/'+(ehPdf?'pdf':'docx'),function(){
-     if(ehPdf)cv.temPdf=true;else cv.temDocx=true;
+     if(ehPdf)cv.temPdf=true;else cv.temDocx=true;_touchContrato(cv);
     },f,fmtPlaca(alvo)+' \u00b7 compra e venda');
    }
   }
   if(m=nome.match(/^CRLV-([A-Z0-9]{7})$/i)){var pk=m[1].toUpperCase();if(S.carros[pk])return subir(pk+'/crlv',function(){S.carros[pk].temCrlv=true},f,fmtPlaca(pk)+' \u00b7 CRLV');}
-  else if(m=nome.match(/^CONTRATOPDF-([A-Z0-9]{7})$/i)){var pk2=m[1].toUpperCase(),c2=S.carros[pk2];if(c2&&c2.contratoVigenteId)return subir(pk2+'/ct/'+c2.contratoVigenteId+'/pdf',function(){S.contratos[c2.contratoVigenteId].temPdf=true},f,fmtPlaca(pk2)+' \u00b7 contrato PDF');}
-  else if(m=nome.match(/^CONTRATO-([A-Z0-9]{7})$/i)){var pk3=m[1].toUpperCase(),c3=S.carros[pk3];if(c3&&c3.contratoVigenteId)return subir(pk3+'/ct/'+c3.contratoVigenteId+'/docx',function(){S.contratos[c3.contratoVigenteId].temDocx=true},f,fmtPlaca(pk3)+' \u00b7 contrato Word');}
+  else if(m=nome.match(/^CONTRATOPDF-([A-Z0-9]{7})$/i)){var pk2=m[1].toUpperCase(),c2=S.carros[pk2];if(c2&&c2.contratoVigenteId)return subir(pk2+'/ct/'+c2.contratoVigenteId+'/pdf',function(){S.contratos[c2.contratoVigenteId].temPdf=true;_touchContrato(S.contratos[c2.contratoVigenteId])},f,fmtPlaca(pk2)+' \u00b7 contrato PDF');}
+  else if(m=nome.match(/^CONTRATO-([A-Z0-9]{7})$/i)){var pk3=m[1].toUpperCase(),c3=S.carros[pk3];if(c3&&c3.contratoVigenteId)return subir(pk3+'/ct/'+c3.contratoVigenteId+'/docx',function(){S.contratos[c3.contratoVigenteId].temDocx=true;_touchContrato(S.contratos[c3.contratoVigenteId])},f,fmtPlaca(pk3)+' \u00b7 contrato Word');}
   else if(m=nome.match(/^VISTORIA-([A-Z0-9]{7})$/i)){var pk4=m[1].toUpperCase();if(S.carros[pk4])return subir(pk4+'/gnv',function(){S.carros[pk4].temGnvDoc=true},f,fmtPlaca(pk4)+' \u00b7 vistoria GNV');}
   if(/\.pdf$/i.test(f.name)){return impInteligente(f,subir,stat,function(){falha.push(f.name);prox()});}
   falha.push(f.name);stat.innerHTML='\u26a0\ufe0f '+esc(f.name)+': Word sem nome padrão (use CONTRATO-PLACA.docx)<br>'+stat.innerHTML;prox();
