@@ -872,7 +872,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=106; var APP_DATE='24/08/2026';
+var APP_VER=107; var APP_DATE='24/08/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -3813,7 +3813,7 @@ function aplicarDeteccao(m,carro){
  Object.keys(d.comps).forEach(function(comp){
   var at=carro.ultTrocas[comp];
   if(at&&at.src==='manual')return; /* não sobrescreve o que foi ajustado na mão */
-  if(!at||!at.km||odo>=at.km){carro.ultTrocas[comp]={km:odo,data:dt,src:'auto'};marcados.push(comp)}
+  if(!at||!at.km||odo>=at.km){carro.ultTrocas[comp]={km:odo,data:dt,src:'auto',mid:m.id||''};marcados.push(comp)}
  });
  if(d.comps.oleo||d.comps.correia)recalcProximasTrocas(normPlaca(carro.placa));
  return marcados;
@@ -3868,24 +3868,97 @@ function recalcProximasTrocas(pk){
   }
  }
 }
-/* Reconstrói ultTrocas do carro varrendo TODO o histórico (cronológico), pegando a última troca
-   REAL de cada componente. Preserva itens marcados na mão (src:'manual'). */
+/* ===== PROTEÇÃO DAS ÚLTIMAS TROCAS v107 =====
+   REGRA FUNDAMENTAL: ausência no histórico estruturado NÃO significa que uma troca
+   antiga nunca aconteceu. Parte da frota já tinha referências históricas antes da
+   importação detalhada do WhatsApp. Por isso o recálculo automático agora é
+   MONOTÔNICO: ele pode acrescentar/atualizar uma troca comprovadamente mais nova,
+   mas nunca apaga um dado válido só porque não encontrou a origem no histórico atual. */
+var LEGACY_TROCAS_107={"PZT0F79":{"alternador":{"km":133929,"data":"2026-04-08"}},"GBV3B96":{"arranque":{"km":395388,"data":"2026-02-10"}},"LMY2A63":{"alternador":{"km":368236,"data":"2024-12-03"}},"PWL8H97":{"vela":{"km":187682,"data":"2025-07-01"},"cabos":{"km":187682,"data":"2025-07-01"},"embreagem":{"km":197944,"data":"2025-08-08"},"bateria":{"km":148220,"data":"2025-01-23"},"alternador":{"km":180742,"data":"2025-06-04"},"arranque":{"km":148095,"data":"2025-01-15"},"ventoinha":{"km":157883,"data":"2025-03-07"},"radiador":{"km":157883,"data":"2025-03-07"}},"FHP4B47":{"embreagem":{"km":216142,"data":"2025-07-04"},"bateria":{"km":216282,"data":"2025-07-05"},"freios":{"km":238789,"data":"2025-09-30"}},"PYO4A55":{"alternador":{"km":274671,"data":"2025-02-19"}}};
+
+/* Restaura SOMENTE registros históricos que foram comprovadamente apagados pelo
+   recálculo destrutivo antigo. Não sobrescreve nada existente nem valores manuais. */
+function restaurarTrocasLegado107(){
+ if(!S||!S.carros)return 0;
+ if(S.migRestoreTrocas107)return 0;
+ var n=0;
+ Object.keys(LEGACY_TROCAS_107).forEach(function(pk){
+  var c=S.carros[pk];if(!c)return;c.ultTrocas=c.ultTrocas||{};
+  var b=LEGACY_TROCAS_107[pk];
+  Object.keys(b).forEach(function(comp){
+   if(c.ultTrocas[comp])return;
+   var x=b[comp];
+   c.ultTrocas[comp]={km:Number(x.km)||0,data:x.data||'',src:'legacy-v107'};
+   n++;
+  });
+ });
+ S.migRestoreTrocas107=true;
+ return n+1; /* +1 força persistência do marcador mesmo se nada precisou ser restaurado */
+}
+
+function _trocaMaisNova(a,b){
+ if(!a)return b;if(!b)return a;
+ /* data é a referência principal; quilometragem apenas desempata. Isso evita um
+    odômetro digitado errado em manutenção antiga vencer um evento realmente mais novo. */
+ var da=String(a.data||''),db=String(b.data||'');
+ if(da&&db&&da!==db)return db>da?b:a;
+ if(db&&!da)return b;
+ if(da&&!db)return a;
+ return (Number(b.km)||0)>(Number(a.km)||0)?b:a;
+}
+
+/* Atualiza as últimas trocas com o que o histórico CONSEGUE COMPROVAR, sem apagar
+   referências anteriores. Valores manuais continuam soberanos. */
 function recalcTrocasCarro(pk){
  var c=S.carros[pk];if(!c)return null;
- var mans=manutsDoCarro(pk);
- var novo={};
+ var mans=manutsDoCarro(pk),antes=c.ultTrocas||{},novo={};
  mans.forEach(function(m){
   var d=detectarComponentes(m),odo=_odoManut(m),dt=_dtManut(m)||hoje();
-  Object.keys(d.comps).forEach(function(comp){novo[comp]={km:odo,data:dt,src:'auto',mid:m.id}});
+  Object.keys(d.comps).forEach(function(comp){
+   var cand={km:odo,data:dt,src:'auto',mid:m.id};
+   novo[comp]=_trocaMaisNova(novo[comp],cand);
+  });
  });
- var antes=c.ultTrocas||{};
- var manuais={};Object.keys(antes).forEach(function(k){if(antes[k]&&antes[k].src==='manual')manuais[k]=antes[k]});
- var removidos=[];Object.keys(antes).forEach(function(k){
-  if(!manuais[k]&&!novo[k]&&antes[k]&&(antes[k].km||antes[k].data))removidos.push(k);
+ var unidos={},atualizados=[];
+ Object.keys(antes).forEach(function(k){unidos[k]=antes[k]});
+ Object.keys(novo).forEach(function(comp){
+  var ant=unidos[comp],cand=novo[comp];
+  if(ant&&ant.src==='manual')return;
+  var vence=_trocaMaisNova(ant,cand);
+  if(vence===cand&&(!ant||Number(ant.km)!==Number(cand.km)||String(ant.data||'')!==String(cand.data||''))){
+   unidos[comp]=cand;atualizados.push(comp);
+  }
  });
- c.ultTrocas=Object.assign({},novo,manuais);
+ c.ultTrocas=unidos;
  recalcProximasTrocas(pk);
- return {qtd:Object.keys(novo).length,removidos:removidos};
+ return {qtd:Object.keys(novo).length,atualizados:atualizados,removidos:[]};
+}
+
+/* Quando o USUÁRIO edita ou exclui uma manutenção específica, aí sim existe prova
+   explícita para invalidar uma detecção ligada àquele lançamento. Só nesses casos
+   recalculamos os componentes afetados e, se houver, voltamos para a troca anterior. */
+function recomputarCompsAposAlteracao(pk,comps,midAlterado){
+ var c=S.carros[pk];if(!c||!comps||!comps.length)return;
+ c.ultTrocas=c.ultTrocas||{};
+ comps.forEach(function(comp){
+  var atual=c.ultTrocas[comp];
+  if(atual&&atual.src==='manual')return;
+  /* só mexe se o valor atual veio exatamente da manutenção alterada/excluída */
+  if(!atual||String(atual.mid||'')!==String(midAlterado||''))return;
+  var best=null;
+  manutsDoCarro(pk).forEach(function(m){
+   if(String(m.id||'')===String(midAlterado||''))return;
+   var d=detectarComponentes(m);if(!d.comps[comp])return;
+   var cand={km:_odoManut(m),data:_dtManut(m)||hoje(),src:'auto',mid:m.id};
+   best=_trocaMaisNova(best,cand);
+  });
+  if(best)c.ultTrocas[comp]=best;
+  else{
+   var leg=LEGACY_TROCAS_107[pk]&&LEGACY_TROCAS_107[pk][comp];
+   if(leg)c.ultTrocas[comp]={km:Number(leg.km)||0,data:leg.data||'',src:'legacy-v107'};
+   else delete c.ultTrocas[comp];
+  }
+ });
 }
 /* Relatório: para CADA carro, qual foi a última troca de óleo detectada, a linha exata
    que gerou essa conclusão e a próxima troca resultante. Serve para conferir a frota toda
@@ -3896,15 +3969,16 @@ function recalcTrocasCarro(pk){
    gravado antigo continue aparecendo na tela. */
 function recalcTudoSilencioso(){
  if(!window.S||!S.carros||!S.manutencoes)return 0;
- var mud=0;
+ var rest=restaurarTrocasLegado107(),mud=0;
  Object.keys(S.carros).forEach(function(pk){
   var c=S.carros[pk];if(!c)return;
   var a=Number(c.proxOleoKm)||0,b=Number(c.proxCorreiaKm)||0;
+  var antes=JSON.stringify(c.ultTrocas||{});
   try{recalcTrocasCarro(pk)}catch(e){}
-  if((Number(c.proxOleoKm)||0)!==a||(Number(c.proxCorreiaKm)||0)!==b)mud++;
+  if((Number(c.proxOleoKm)||0)!==a||(Number(c.proxCorreiaKm)||0)!==b||JSON.stringify(c.ultTrocas||{})!==antes)mud++;
  });
- if(mud){try{save()}catch(e){}}
- return mud;
+ if(mud||rest){try{save()}catch(e){}}
+ return mud+(rest?1:0);
 }
 function diagnosticoFrota(){
  recalcTudoSilencioso();
@@ -3950,7 +4024,7 @@ function _diagDocs(){
 }
 function recalcTodosCarros(){
  var st=document.getElementById('recTudoStat');
- ask('Recalcular TODOS os carros?','Vou varrer o histórico de manutenções de cada carro e reescrever as últimas trocas e as próximas trocas de óleo/correia pela troca mais recente de verdade. Itens ajustados na mão são preservados.','Recalcular tudo',function(){
+ ask('Recalcular TODOS os carros?','Vou varrer o histórico de manutenções de cada carro e atualizar as últimas trocas somente quando houver uma troca mais nova comprovada. Dados históricos que não estejam detalhados no histórico não serão apagados. Itens ajustados na mão são preservados.','Recalcular tudo',function(){
   var mud=[],n=0;
   Object.keys(S.carros).forEach(function(pk){
    var c=S.carros[pk],antesO=Number(c.proxOleoKm)||0,antesC=Number(c.proxCorreiaKm)||0;
@@ -3968,12 +4042,10 @@ function recalcTodosCarros(){
 }
 function recalcTrocasUI(pk){
  var c=S.carros[pk];if(!c)return;
- ask('Recalcular componentes do histórico?','Vou varrer todas as manutenções do '+c.nome+' e reescrever as "Últimas trocas" pegando a última troca REAL de cada item. Itens marcados na mão são preservados.','Recalcular',function(){
+ ask('Recalcular componentes do histórico?','Vou varrer todas as manutenções do '+c.nome+' e atualizar as "Últimas trocas" quando houver uma troca mais nova comprovada. O que já existe não será apagado só por não aparecer no histórico estruturado. Itens marcados na mão são preservados.','Recalcular',function(){
   var r=recalcTrocasCarro(pk);save();ficha(pk);
-  if(r&&r.removidos.length){
-   var nomes=r.removidos.map(nomeComp).join(', ');
-   setTimeout(function(){toast('⚠️ Não achei no histórico: '+nomes+'. Se foi troca real, re-adicione na mão (✎).')},900);
-  }else toast('✅ Componentes recalculados pelo histórico');
+  if(r&&r.atualizados&&r.atualizados.length)toast('✅ '+r.atualizados.length+' componente(s) atualizado(s) pelo histórico');
+  else toast('✅ Histórico conferido — nenhum dado válido foi apagado');
  });
 }
 function editarTrocas(pk){
@@ -4351,6 +4423,7 @@ function edTotais(){
 }
 function salvarEdicaoManut(){
  var m=S.manutencoes[_edMid];if(!m){toast('Manutenção não encontrada');return}
+ var _oldComps=Object.keys(detectarComponentes(m).comps||{});
  var carro=S.carros[m.carro];
  var pecas=EP.filter(function(p){return p.desc.trim()||parseBRL(p.valor)>0}).map(function(p){return{valor:parseBRL(p.valor),desc:p.desc.trim(),loja:p.loja.trim()}});
  var blocos=EB.filter(function(b){return b.nome.trim()||b.servicos.trim()||parseBRL(b.valor)>0}).map(function(b){
@@ -4370,7 +4443,11 @@ function salvarEdicaoManut(){
   if(m.odometro>(carro.kmUltima||0)){carro.kmUltima=m.odometro;carro.kmUltimaData=m.dataFim||m.dataIni}
  }
  S.manutencoes[_edMid]=m;
- if(carro)recalcTrocasCarro(m.carro); /* reprocessa os componentes de forma consistente com todo o histórico */
+ if(carro){
+  var _newD=detectarComponentes(m),_sumiu=_oldComps.filter(function(comp){return !_newD.comps[comp]});
+  recomputarCompsAposAlteracao(m.carro,_sumiu,m.id);
+  recalcTrocasCarro(m.carro); /* só acrescenta/atualiza; não apaga histórico legado */
+ }
  save();closeSheet(2);
  if(window._fichaPk===m.carro)ficha(m.carro);
  render();
@@ -4404,10 +4481,13 @@ function verManut(id){
   '<button class="btn sec" onclick="closeSheet(2)">Fechar</button></div>',2);
 }
 function excluirManut(id){
- var m=S.manutencoes[id];
+ var m=S.manutencoes[id];if(!m)return;
+ var _comps=Object.keys(detectarComponentes(m).comps||{});
  ask('Excluir manutenção?','R$ '+fmtBRL(m.total)+' de '+periodoTexto(m.dataIni,m.dataFim)+' sai do histórico e do total do carro.','Excluir',function(){
   var _pk=m&&m.carro;S.apagados[id]=Date.now();delete S.manutencoes[id];
-  if(_pk&&S.carros[_pk]){try{recalcTrocasCarro(_pk)}catch(e){}}
+  if(_pk&&S.carros[_pk]){
+   try{recomputarCompsAposAlteracao(_pk,_comps,id);recalcTrocasCarro(_pk)}catch(e){}
+  }
   save();closeSheet(2);render();toast('🗑 Excluída');
  });
 }
