@@ -874,7 +874,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=113; var APP_DATE='25/08/2026';
+var APP_VER=114; var APP_DATE='25/08/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -1318,7 +1318,7 @@ function _regMaisNovo(a,b){if(!a)return b;if(!b)return a;var aa=_regAt(a),bb=_re
 /* Exclusão normal é definitiva contra cópias antigas/offline. A única exceção é uma
    restauração EXPLÍCITA de backup, marcada com restauradoEm posterior ao túmulo. */
 function _tombVence(apagados,id,obj){var t=Number(apagados&&apagados[id])||0;if(!t)return false;return !(Number(obj&&obj.restauradoEm)>t)}
-var CARRO_CAMPOS_EDIT=['nome','modeloCRLV','motor','motorCodigo','ano','chassi','renavam','cor','potencia','combustivel','proprietario','locadorId','codigoRadio','motorista','status','semanalPadrao','caucaoPadrao','proximasTrocas','contratoVigenteId','procLeilao','procFinanciado','procObs','emVenda','meuCarro','oleoTipo','oleoIntervalo','correiaIntervalo','proxOleoKm','proxOleoManual','temCorreia','proxCorreiaKm','proxCorreiaManual'];
+var CARRO_CAMPOS_EDIT=['nome','modeloCRLV','motor','motorCodigo','ano','chassi','renavam','cor','potencia','combustivel','proprietario','locadorId','codigoRadio','motorista','status','semanalPadrao','caucaoPadrao','proximasTrocas','contratoVigenteId','procLeilao','procFinanciado','procObs','emVenda','meuCarro','oleoTipo','oleoIntervalo','correiaIntervalo','proxOleoKm','proxOleoManual','temCorreia','proxCorreiaKm','proxCorreiaManual','sincronismoOrigem','sincronismoRegra','sincronismoConfirmadoEm'];
 function _garanteCampoAt(c){if(!c)return {};if(!c._campoAt||typeof c._campoAt!=='object'){c._campoAt={_legacy:Number(c.editadoEm)||0}}else if(c._campoAt._legacy===undefined)c._campoAt._legacy=Number(c.editadoEm)||0;return c._campoAt}
 function _campoAtCarro(c,k){var m=c&&c._campoAt;if(m&&typeof m==='object')return Number(m[k])||Number(m._all)||Number(m._legacy)||0;return Number(c&&c.editadoEm)||0}
 function _touchCarro(c,campos){if(!c)return;var n=Date.now(),m=_garanteCampoAt(c);c.editadoEm=n;if(campos&&campos.length){campos.forEach(function(k){m[k]=n})}else m._all=n}
@@ -1988,7 +1988,6 @@ function ficha(pk){window._fichaPk=pk;
    h+='<div class="kv"><b>⚙️ Correia dentada</b><span>'+(c.proxCorreiaKm?('próxima: '+fmtKm(c.proxCorreiaKm)+' km'+(km?(fc<=0?' · <span style="color:var(--warn)">VENCIDA</span>':' · faltam '+fmtKm(fc)+' km'):'')):'—')+'</span></div>';
    h+=_ult(_uc);
   }else {
-   h+='<div class="kv"><b>⚙️ Comando</b><span>corrente (sem correia dentada)</span></div>';
    var _ucmd=(c.ultTrocas||{}).comando;
    h+='<div class="kv"><b>⛓ Corrente de comando</b><span>'+
      (_ucmd&&(_ucmd.km||_ucmd.data)?((_ucmd.km?fmtKm(_ucmd.km)+' km':'')+(_ucmd.km&&_ucmd.data?' · ':'')+(_ucmd.data?dataBR(_ucmd.data):'')):'—')+'</span></div>';
@@ -2482,10 +2481,97 @@ function rmTroca(pk,i){
  });
 }
 
+/* ===== SINCRONISMO DO MOTOR v114 =====
+   Para carro NOVO: sugere correia x corrente a partir dos dados técnicos do CRLV/ficha.
+   A base é conservadora: só responde quando a combinação é conhecida com alta confiança.
+   Se não reconhecer, NÃO chuta — obriga escolha manual. Carros antigos nunca são
+   reclassificados automaticamente. Escolha manual sempre vence. */
+var SINCRONISMO_BASE_VER=1,FC_CRLV_LENDO=false;
+function _sincAno(c){var m=String((c&&c.ano)||'').match(/(?:19|20)\d{2}/g)||[];return m.length?Math.max.apply(null,m.map(Number)):0}
+function _sincCc(c){
+ var t=String((c&&c.motor)||'')+' '+String((c&&c.modeloCRLV)||'')+' '+String((c&&c.nome)||'');
+ var mx=t.match(/\b([0-4])[\.,](\d)\b/);if(mx)return Number(mx[1]+'.'+mx[2])*1000;
+ var p=String((c&&c.potencia)||'').match(/\/\s*(\d{3,4})\b/);if(p){var n=Number(p[1]);if(n>=800&&n<=5000)return n}
+ return 0;
+}
+function _sincCv(c){var m=String((c&&c.potencia)||'').match(/\b(\d{2,3})\s*CV\b/i);return m?Number(m[1]):0}
+function detectarSincronismo(c){
+ c=c||{};
+ var modelo=semAcento(String(c.modeloCRLV||'')+' '+String(c.nome||'')).toUpperCase().replace(/\s+/g,' ').trim();
+ var motor=semAcento(String(c.motor||'')).toUpperCase().replace(/\s+/g,' ').trim();
+ var cod=semAcento(String(c.motorCodigo||'')).toUpperCase().replace(/\s+/g,'');
+ var pot=semAcento(String(c.potencia||'')).toUpperCase();
+ var tudo=modelo+' '+motor+' '+cod+' '+pot,ano=_sincAno(c),cc=_sincCc(c),cv=_sincCv(c);
+ function r(tipo,id,base){return{tipo:tipo,regra:id,base:base,confianca:'alta',ver:SINCRONISMO_BASE_VER}}
+ function mod(re){return re.test(modelo)}
+ /* Família/código de motor primeiro: evidência mais específica. */
+ if(/^HR16/.test(cod)||/\bHR16DE\b/.test(tudo))return r('corrente','nissan-hr16','HR16DE');
+ if(/^H4M/.test(cod)||/\bH4M\b/.test(tudo))return r('corrente','renault-h4m','H4M / SCe 1.6');
+ if(/^B4D/.test(cod)||/\bB4D\b/.test(tudo)||/\bBR10DE\b/.test(tudo))return r('corrente','renault-b4d','B4D / SCe 1.0');
+ if(/^K7M/.test(cod)||/\bK7M\b/.test(tudo))return r('correia','renault-k7m','K7M 1.6 8V');
+ if(/^K4M/.test(cod)||/\bK4M\b/.test(tudo))return r('correia','renault-k4m','K4M 1.6 16V');
+ if(/^D4D/.test(cod)||/\bD4D\b/.test(tudo))return r('correia','renault-d4d','D4D 1.0 16V');
+ if(/^2TR/.test(cod)||/\b2TR[- ]?FE\b/.test(tudo))return r('corrente','toyota-2tr','Toyota 2TR-FE');
+ if(/^310A5/.test(cod)||/\bE\.?TORQ\b/.test(tudo))return r('corrente','fiat-etorq','Fiat E.torQ 1.6/1.8 16V');
+ if(/^327A0/.test(cod))return r('correia','fiat-fire-evo-code','Fiat Fire / Fire EVO 1.0/1.4 8V');
+ if(/\bROCAM\b/.test(tudo))return r('corrente','ford-rocam','Ford Zetec Rocam');
+ /* Aplicações claras quando o CRLV não expõe a família nominal do motor. */
+ if(mod(/\bFIAT[ /](?:ARGO|CRONOS|UNO|MOBI)\b/)&&((/\b1\.0\s*6V\b/.test(motor))||(/\b1\.3\s*8V\b/.test(motor))||
+    (mod(/\b(?:ARGO|CRONOS)\b/)&&((cc>=990&&cc<=1010)||(cc>=1280&&cc<=1340)))||
+    (mod(/\bUNO\b/)&&ano>=2017&&cc>=990&&cc<=1010&&cv>=76)))return r('corrente','fiat-firefly','Fiat Firefly / GSE');
+ if(mod(/\bFIAT[ /]MOBI\b/)&&cc>=990&&cc<=1010){
+   if(/\b6V\b/.test(motor)||cv>=76)return r('corrente','fiat-mobi-firefly','Mobi Firefly 1.0 6V');
+   if(/\b8V\b/.test(motor)||(cv>0&&cv<=75))return r('correia','fiat-mobi-fire-evo','Mobi Fire EVO 1.0 8V');
+ }
+ if(mod(/\bFIAT[ /](?:SIENA|GRAND SIENA)\b/)&&((/\b1\.6\s*16V\b/.test(motor))||(cc>=1580&&cc<=1620&&cv>=112))&&(ano>=2010&&ano<=2017))return r('corrente','fiat-siena-etorq','Siena/Grand Siena 1.6 E.torQ');
+ if(mod(/\bFIAT[ /](?:SIENA|GRAND SIENA)\b/)&&(((cc>=1350&&cc<=1410)||/\b1\.4\s*8V\b/.test(motor))||(cc>=990&&cc<=1010&&/\b1\.0/.test(tudo))))return r('correia','fiat-siena-fire','Siena/Grand Siena Fire / Fire EVO');
+ if(mod(/\bRENAULT[ /](?:LOGAN|SANDERO)\b/)&&((/^K7M/.test(cod))||(cc>=1550&&cc<=1620&&cv>0&&cv<=110)))return r('correia','renault-16-8v-k7m','Renault 1.6 8V K7M');
+ if(mod(/\bRENAULT[ /](?:LOGAN|SANDERO)\b/)&&((/^D4D/.test(cod))||(cc>=980&&cc<=1010&&cv>0&&cv<=82&&ano<=2017)))return r('correia','renault-10-16v-d4d','Renault 1.0 16V D4D');
+ if(mod(/\bRENAULT[ /](?:LOGAN|SANDERO)\b/)&&((/\bSCE\b/.test(modelo)&&cc>=1550)||(cc>=1550&&cc<=1620&&cv>=112&&ano>=2017)))return r('corrente','renault-16-sce','Renault 1.6 16V SCe / H4M');
+ if(mod(/\bRENAULT[ /](?:LOGAN|SANDERO|KWID)\b/)&&((/\b1\.0\s*12V\b/.test(motor))||(cc>=980&&cc<=1010&&cv>=66&&ano>=2017&&/\bSCE\b/.test(modelo))))return r('corrente','renault-10-sce','Renault 1.0 12V SCe / B4D');
+ if(mod(/\bFORD[ /]KA\b/)&&cc>=1450&&cc<=1520)return r('correia','ford-ka-15','Ford Ka 1.5 Sigma / Dragon');
+ if(mod(/\bFORD[ /]KA\b/)&&cc>=980&&cc<=1010&&ano>=2014)return r('correia','ford-ka-10-tivct','Ford Ka 1.0 Ti-VCT');
+ if(mod(/\bFORD[ /]FIESTA\b/)&&cc>=980&&cc<=1620&&cv>0&&cv<=111&&ano&&ano<=2014)return r('corrente','ford-fiesta-rocam','Fiesta Zetec Rocam');
+ if(mod(/\bCHEVROLET[ /]COBALT\b/)&&cc>=1350&&cc<=1850&&ano<=2020)return r('correia','gm-cobalt-familia1','Chevrolet Família I / SPE-4');
+ if(mod(/\bCHEVROLET[ /]ONIX\b/)&&cc>=980&&cc<=1410&&ano&&ano<=2019)return r('correia','gm-onix-spe4','Onix 1ª geração SPE/4');
+ if(mod(/\bCHEVROLET[ /](?:ONIX|ONIX PLUS)\b/)&&cc>=980&&cc<=1220&&ano>=2020)return r('correia','gm-onix-css-prime','Onix 2ª geração CSS Prime');
+ if(mod(/\bNISSAN[ /]VERSA\b/)&&cc>=1550&&cc<=1620)return r('corrente','nissan-versa-hr16','Versa 1.6 HR16DE');
+ if(mod(/\bTOYOTA HILUX\b/)&&cc>=2650&&cc<=2750)return r('corrente','toyota-hilux-27','Hilux 2.7 2TR-FE');
+ if(mod(/\bVW[ /]VOYAGE\b/)&&cc>=1550&&cc<=1620)return r('correia','vw-voyage-16','VW Voyage 1.6');
+ return{tipo:'',regra:'',base:'',confianca:'',ver:SINCRONISMO_BASE_VER};
+}
+function _fcDadosSinc(){
+ function g(id){var e=document.getElementById('fc_'+id);return e?e.value.trim():''}
+ return{nome:g('nome'),modeloCRLV:g('modeloCRLV'),motor:g('motor'),motorCodigo:g('motorCodigo'),ano:g('ano'),potencia:g('potencia')};
+}
+function fcAtualizaSinc(){
+ var sel=document.getElementById('fc_sincModo'),box=document.getElementById('fc_sincInfo');if(!sel||!box)return;
+ if(sel.value!=='auto'){box.innerHTML='✓ Definido manualmente como <b>'+(sel.value==='correia'?'Correia dentada':'Corrente de comando')+'</b>. A escolha manual sempre vence o automático.';return}
+ var d=detectarSincronismo(_fcDadosSinc());
+ if(d.tipo)box.innerHTML='🔎 Sugestão automática: <b>'+(d.tipo==='correia'?'Correia dentada':'Corrente de comando')+'</b><br><span class="sub">Reconhecido por '+esc(d.base)+'. Você ainda pode trocar manualmente.</span>';
+ else box.innerHTML='<span style="color:var(--warn)">⚠ Não consegui identificar com segurança.</span><br><span class="sub">Escolha Correia dentada ou Corrente de comando antes de salvar. O app não vai chutar.</span>';
+}
+function fcInitSinc(novo){
+ ['nome','modeloCRLV','motor','motorCodigo','ano','potencia'].forEach(function(k){var e=document.getElementById('fc_'+k);if(e){e.addEventListener('input',fcAtualizaSinc);e.addEventListener('change',fcAtualizaSinc)}});
+ fcAtualizaSinc();
+}
+function fcLerCrlvNovo(inp){
+ if(!inp||!inp.files||!inp.files[0])return;var f=inp.files[0];FC_CRLV_LENDO=true;toast('📄 Lendo CRLV do carro novo…');
+ var r=new FileReader();r.onload=function(){
+  impTextoPdf(r.result).then(function(txt){
+   var dc=impDadosCRLV(txt||'');
+   var mapa={placa:'placa',nome:null,modeloCRLV:'modeloCRLV',ano:'ano',cor:'cor',potencia:'potencia',combustivel:'combustivel',proprietario:'proprietario',chassi:'chassi',renavam:'renavam',exercicio:'exercicioCRLV'};
+   Object.keys(mapa).forEach(function(k){var id=mapa[k];if(!id||!dc[k])return;var e=document.getElementById('fc_'+id);if(e&&!e.value.trim())e.value=dc[k]});
+   FC_CRLV_LENDO=false;fcAtualizaSinc();toast(dc.modeloCRLV?'📄 CRLV lido — dados e sincronismo conferidos':'📄 CRLV lido — confira os dados antes de salvar');
+  }).catch(function(){FC_CRLV_LENDO=false;fcAtualizaSinc();toast('⚠️ Não consegui ler o texto do CRLV. Preencha os dados e escolha o sincronismo manualmente.')});
+ };r.onerror=function(){FC_CRLV_LENDO=false;toast('⚠️ Falha ao ler o CRLV')};r.readAsArrayBuffer(f);
+}
+
 /* ---------- FORM CARRO (novo/editar) ---------- */
 function formCarro(pk){
  var c=pk?S.carros[pk]:normCarro({status:'parado'});
  var novo=!pk;
+ var _sincSel=novo?'auto':(c.temCorreia?'correia':'corrente');
  function f(l,id,v,ph){return '<label>'+l+'</label><input id="fc_'+id+'" value="'+esc(v)+'"'+(ph?' placeholder="'+ph+'"':'')+'>'}
  var h='<div class="v102sheetHero"><div class="v102sheetIcon">'+(novo?'＋':'✎')+'</div><div><div class="v102eyebrow">FROTA</div><h3>'+(novo?'Adicionar carro':'Editar veículo')+'</h3><div class="sub">'+(novo?'Cadastre o veículo e deixe a ficha pronta para documentos, manutenção e contratos.':esc(tituloCarro(c))+' · '+esc(fmtPlaca(c.placa)))+'</div></div></div>'+
  '<div class="v102panel"><div class="v102panelHead"><span>🚗</span><div><b>Identificação</b><small>Dados principais do veículo</small></div></div>'+
@@ -2498,7 +2584,12 @@ function formCarro(pk){
  f('Código do motor (CRLV)','motorCodigo',c.motorCodigo)+f('Chassi','chassi',c.chassi)+f('Renavam','renavam',c.renavam)+f('Código do rádio','codigoRadio',c.codigoRadio||'')+
  '<div class="grid2">'+f('Exercício CRLV','exercicioCRLV',c.exercicioCRLV,'2026')+f('Exercício vistoria GNV','gnvExercicio',c.gnvExercicio||'')+'</div>'+
  '<label>Próxima requalificação do cilindro GNV</label><input type="date" id="e_gnvRequalif" value="'+esc(c.gnvRequalif||'')+'">'+
- (novo?'<label>CRLV em PDF <span class="v102optional">opcional agora</span></label><input type="file" id="fc_crlv" accept="application/pdf">':'')+'</div>'+
+ (novo?'<label>CRLV em PDF <span class="v102optional">opcional agora</span></label><input type="file" id="fc_crlv" accept="application/pdf" onchange="fcLerCrlvNovo(this)">':'')+'</div>'+
+ '<div class="v102panel"><div class="v102panelHead"><span>⛓</span><div><b>Sincronismo do motor</b><small>'+(novo?'Sugestão automática para carro novo; manual sempre disponível':'Configuração atual do veículo; altere manualmente se necessário')+'</small></div></div>'+
+ '<label>Tipo de acionamento do comando</label><select id="fc_sincModo" onchange="fcAtualizaSinc()">'+
+ (novo?'<option value="auto"'+(_sincSel==='auto'?' selected':'')+'>Automático — detectar pelos dados do veículo</option>':'')+
+ '<option value="correia"'+(_sincSel==='correia'?' selected':'')+'>Correia dentada</option><option value="corrente"'+(_sincSel==='corrente'?' selected':'')+'>Corrente de comando</option></select>'+
+ '<div class="v102info" id="fc_sincInfo">'+(novo?'Analisando os dados do veículo…':(c.sincronismoOrigem==='auto'&&c.sincronismoRegra?'Identificado automaticamente na inclusão do carro.':'Configuração existente preservada.'))+'</div></div>'+
  '<div class="v102panel"><div class="v102panelHead"><span>🧭</span><div><b>Uso e quilometragem</b><small>Situação operacional da frota</small></div></div>'+
  '<div class="grid2">'+f('KM de quando alugou','kmAtual',c.kmAtual||'')+f('Última quilometragem','kmUltima',c.kmUltima||'')+'</div>'+
  '<label>Data em que viu essa quilometragem</label><input type="date" id="e_kmUltimaData" value="'+esc(c.kmUltimaData||'')+'">'+
@@ -2517,6 +2608,7 @@ function formCarro(pk){
  (novo?'':'<button class="btn red" onclick="excluirCarro(\''+pk+'\')">🗑 Excluir carro</button>')+
  '<button class="btn sec" onclick="'+(novo?'closeSheet()':'closeSheet(2)')+'">Cancelar</button></div>';
  openSheet(h,pk?2:undefined);
+ setTimeout(function(){fcInitSinc(novo)},0);
 }
 function opcoesSel(arr,sel){return arr.map(function(v){return '<option value="'+v+'"'+(v===sel?' selected':'')+'>'+v+'</option>'}).join('')}
 function selLocadores(sel){
@@ -2527,12 +2619,17 @@ function salvarCarro(pk){
  var placa=normPlaca(g('placa'));
  if(placa.length!==7){toast('Placa inválida');return}
  var novo=!pk;
+ if(novo&&FC_CRLV_LENDO){toast('📄 Aguarde terminar a leitura do CRLV antes de salvar');return}
  if(novo&&S.carros[placa]){toast('Já existe carro com essa placa');return}
- var c=novo?normCarro({}):S.carros[pk],antesCarro=novo?null:JSON.parse(JSON.stringify(c));
+ var sincModo=(document.getElementById('fc_sincModo')||{value:(novo?'auto':'corrente')}).value,sincDet=novo&&sincModo==='auto'?detectarSincronismo(_fcDadosSinc()):null;
+ if(novo&&sincModo==='auto'&&(!sincDet||!sincDet.tipo)){fcAtualizaSinc();toast('⚠️ Sincronismo não identificado. Escolha Correia dentada ou Corrente de comando.');return}
+ var c=novo?normCarro({}):S.carros[pk],antesCarro=novo?null:JSON.parse(JSON.stringify(c)),_temCorreiaAntes=!!c.temCorreia;
  if(!novo&&placa!==pk){toast('Para trocar a placa, crie um carro novo');return}
  c.placa=fmtPlaca(placa);c.nome=g('nome')||c.placa;c.motor=g('motor');c.ano=g('ano');
  c.modeloCRLV=g('modeloCRLV');c.motorCodigo=g('motorCodigo');c.chassi=g('chassi').toUpperCase();c.renavam=g('renavam');
  c.cor=g('cor');c.potencia=g('potencia');c.combustivel=g('combustivel');
+ if(novo){var _tipoNovo=sincModo==='auto'?sincDet.tipo:sincModo;c.temCorreia=_tipoNovo==='correia';c.sincronismoOrigem=sincModo==='auto'?'auto':'manual';c.sincronismoRegra=sincModo==='auto'?(sincDet.regra||''):'';c.sincronismoConfirmadoEm=Date.now()}
+ else if(sincModo==='correia'||sincModo==='corrente'){c.temCorreia=sincModo==='correia';if(c.temCorreia!==_temCorreiaAntes){c.sincronismoOrigem='manual';c.sincronismoRegra='';c.sincronismoConfirmadoEm=Date.now()}}
  c.kmAtual=parseInt(g('kmAtual').replace(/\D/g,''),10)||0;c.kmUltima=parseInt(g('kmUltima').replace(/\D/g,''),10)||c.kmAtual;c.kmUltimaData=(document.getElementById('e_kmUltimaData')||{value:''}).value||c.kmUltimaData||'';c.exercicioCRLV=g('exercicioCRLV');c.gnvExercicio=g('gnvExercicio');c.codigoRadio=g('codigoRadio');
  c.emVenda=((document.getElementById('fc_emVenda')||{value:''}).value||'').indexOf('venda')>=0;
  c.meuCarro=/hudson/i.test(semAcento((document.getElementById('fc_meuCarro')||{value:''}).value||''));
@@ -3360,11 +3457,13 @@ function editarProg(pk){
   '<p class="sub">O app continua atualizando sozinho pelas manutenções; aqui você ajusta na mão quando precisar (ex.: esticar a troca pro motorista novo).</p>'+
   '<label>Tipo de óleo (viscosidade)</label><input id="pgOleo" value="'+esc(c.oleoTipo||'')+'" placeholder="5W30">'+
   '<label>Próxima troca de óleo (km)</label><input id="pgProxO" inputmode="numeric" value="'+(c.proxOleoKm||'')+'">'+
-  '<label>Comando do motor</label><select id="pgCor"><option value="sim"'+(c.temCorreia?' selected':'')+'>Correia dentada</option><option value="nao"'+(!c.temCorreia?' selected':'')+'>Corrente (sem correia)</option></select>'+
-  '<label>Próxima correia dentada (km)</label><input id="pgProxC" inputmode="numeric" value="'+(c.proxCorreiaKm||'')+'">'+
+  '<label>Sincronismo do motor</label><select id="pgCor" onchange="pgAtualizaSinc()"><option value="sim"'+(c.temCorreia?' selected':'')+'>Correia dentada</option><option value="nao"'+(!c.temCorreia?' selected':'')+'>Corrente de comando</option></select>'+
+  '<div id="pgCorKmWrap"><label>Próxima correia dentada (km)</label><input id="pgProxC" inputmode="numeric" value="'+(c.proxCorreiaKm||'')+'"></div>'+
   '<button class="btn ok" onclick="salvarProg(\''+pk+'\')">Salvar</button>'+
   '<button class="btn sec" onclick="closeSheet(2)">Voltar</button>',2);
+ setTimeout(pgAtualizaSinc,0);
 }
+function pgAtualizaSinc(){var s=document.getElementById('pgCor'),w=document.getElementById('pgCorKmWrap');if(w)w.style.display=(s&&s.value==='sim')?'block':'none'}
 function salvarProg(pk){
  var c=S.carros[pk],g=function(i){return (document.getElementById(i)||{value:''}).value};
  c.oleoTipo=g('pgOleo').trim();
@@ -3375,12 +3474,13 @@ function salvarProg(pk){
     Caso típico: carro alugado sem trocar o óleo, com a próxima ajustada na mão. */
  if(c.proxOleoKm&&c.proxOleoKm!==_antO)c.proxOleoManual=1;
  if(!c.proxOleoKm)c.proxOleoManual=0;
- c.temCorreia=g('pgCor')==='sim';
+ var _antTemCorreia=!!c.temCorreia;c.temCorreia=g('pgCor')==='sim';
+ if(c.temCorreia!==_antTemCorreia){c.sincronismoOrigem='manual';c.sincronismoRegra='';c.sincronismoConfirmadoEm=Date.now()}
  var _antC=Number(c.proxCorreiaKm)||0;
  c.proxCorreiaKm=parseInt(String(g('pgProxC')).replace(/\D/g,''),10)||0;
  if(c.proxCorreiaKm&&c.proxCorreiaKm!==_antC)c.proxCorreiaManual=1;
  if(!c.proxCorreiaKm)c.proxCorreiaManual=0;
- _touchCarro(c,['oleoTipo','proxOleoKm','proxOleoManual','temCorreia','proxCorreiaKm','proxCorreiaManual']);save();closeSheet(2);ficha(pk);render();
+ _touchCarro(c,['oleoTipo','proxOleoKm','proxOleoManual','temCorreia','proxCorreiaKm','proxCorreiaManual','sincronismoOrigem','sincronismoRegra','sincronismoConfirmadoEm']);save();closeSheet(2);ficha(pk);render();
  toast('✎ Manutenção programada atualizada');
 }
 
