@@ -836,8 +836,16 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 .v105review .v100reviewTitle small{font-size:9.5px!important;color:#A0A5AB!important;font-weight:500!important;text-transform:none!important;letter-spacing:0!important}
 .v100choice{gap:6px!important}.v100payopt{border-radius:11px!important;min-height:42px!important}.v100payopt.on{box-shadow:0 0 0 2px rgba(199,122,22,.08)!important}
 
+/* Ficha do carro: sem animações empilhadas. A combinação fade do overlay + subida da
+   sheet + surge dos cards causava um 'pisca' visual ao abrir ou ao re-renderizar.
+   Só a ficha principal recebe esta trava; demais sheets mantêm as animações existentes. */
+.overlay.fichaEstavel.open{animation:none!important}
+.overlay.fichaEstavel.open .sheetwrap{animation:none!important}
+.overlay.fichaEstavel .sheet .sect,.overlay.fichaEstavel .sheet .card{animation:none!important}
+
 /* Sheets de edição mais suaves. */
 .overlay.open .sheetwrap{animation:v105SheetIn .36s var(--mola)!important}
+.overlay.fichaEstavel.open .sheetwrap{animation:none!important}
 @keyframes v105SheetIn{from{opacity:.25;transform:translateY(34px) scale(.99)}to{opacity:1;transform:none}}
 @media(max-width:390px){.v105savedActions{grid-template-columns:1fr}.v100step small{font-size:8.8px!important}.v100panel{padding:12px!important}}
 @media(prefers-reduced-motion:reduce){#toast,.v100item,.v105saved,.overlay.open .sheetwrap{transition:none!important;animation:none!important}}
@@ -874,7 +882,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=114; var APP_DATE='25/08/2026';
+var APP_VER=115; var APP_DATE='25/08/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -993,7 +1001,7 @@ function syncLock(){
  else if(n===0&&_locked){_locked=false;b.position='';b.top='';b.left='';b.right='';b.width='';window.scrollTo(0,_lockY);}
 }
 function openSheet(html,which){var id=which===2?'sheetBody2':'sheetBody';var ov=which===2?'ovSheet2':'ovSheet';document.getElementById(id).innerHTML=html;document.getElementById(ov).classList.add('open');document.getElementById(id).scrollTop=0;syncLock()}
-function closeSheet(which){document.getElementById(which===2?'ovSheet2':'ovSheet').classList.remove('open');syncLock()}
+function closeSheet(which){var ov=document.getElementById(which===2?'ovSheet2':'ovSheet');ov.classList.remove('open');if(which!==2)ov.classList.remove('fichaEstavel');syncLock()}
 
 try{
  document.getElementById('ovSheet').addEventListener('click',function(e){if(e.target===this)closeSheet()});
@@ -2104,6 +2112,7 @@ h+='<div class="sect">Devolução do carro</div>';
  });
  h+='</div></details>';
  h+='<button class="btn sec" onclick="closeSheet()">Fechar</button>';
+ var _ovFicha=document.getElementById('ovSheet');if(_ovFicha)_ovFicha.classList.add('fichaEstavel');
  openSheet(h);
 }
 function fimPassado(iso){return iso&&iso<hoje()}
