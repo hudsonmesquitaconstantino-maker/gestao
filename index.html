@@ -522,7 +522,7 @@ input,select,textarea{border-radius:11px}
 .v100itemTitle{font-size:11px;font-weight:750;color:var(--tx2);letter-spacing:.02em}
 .v100remove{background:transparent;border:0;color:var(--red);font-size:11.5px;font-weight:650;padding:5px 2px}
 .v100pieceGrid{display:grid;grid-template-columns:minmax(92px,.75fr) minmax(0,1.25fr);gap:7px}
-.v100pieceGrid .desc{grid-column:1/-1}
+.v100pieceGrid .desc,.v100pieceGrid .wide{grid-column:1/-1}
 .v100pieceGrid label,.v100laborGrid label{font-size:10.5px;margin:3px 0 3px}
 .v100pieceGrid input,.v100pieceGrid textarea,.v100laborGrid input,.v100laborGrid textarea{background:#fff}
 .v100laborGrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
@@ -874,7 +874,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=118; var APP_DATE='27/08/2026';
+var APP_VER=119; var APP_DATE='31/08/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -1113,12 +1113,12 @@ function montaEndereco(pref){
 }
 function normManut(m){
  m=m||{};m.id=m.id||'';m.carro=m.carro||'';m.motorista=m.motorista||'';
- m.dataIni=m.dataIni||'';m.dataFim=m.dataFim||'';m.odometro=Number(m.odometro)||0;
- m.pecas=toArr(m.pecas).map(function(p){return{valor:Number(p.valor)||0,desc:p.desc||'',loja:p.loja||''}});
+ m.dataIni=m.dataIni||'';m.dataFim=m.dataFim||'';m.dataPecasPadrao=m.dataPecasPadrao||'';m.odometro=Number(m.odometro)||0;
+ m.pecas=toArr(m.pecas).map(function(p){p=p||{};return{valor:Number(p.valor)||0,desc:p.desc||'',loja:p.loja||'',data:p.data||'',pendenteFinanceiro:!!p.pendenteFinanceiro}});
  m.blocos=toArr(m.blocos).map(function(b){
   b=b||{};var v=Number(b.valor)||0,nm=b.nome||'';
   if(!v){var mm=String(nm).match(/R\$\s*([\d\.\,]+)/);if(mm){v=parseBRL(mm[1]);nm=nm.replace(/\s*[—\-–]?\s*R\$\s*[\d\.\,]+\s*$/,'').trim()}}
-  return{titulo:b.titulo||'Mecânico',nome:nm,valor:v,servicos:toArr(b.servicos)};
+  return{titulo:b.titulo||'Mecânico',nome:nm,valor:v,servicos:toArr(b.servicos),dataIni:b.dataIni||'',dataFim:b.dataFim||'',pendenteFinanceiro:!!b.pendenteFinanceiro};
  });
  m.totalPecas=Number(m.totalPecas)||0;m.totalMO=Number(m.totalMO)||0;m.total=Number(m.total)||0;
  m.texto=m.texto||'';m.criadoEm=m.criadoEm||0;m.editadoEm=Number(m.editadoEm)||0;
@@ -1652,14 +1652,24 @@ function gastosCarroResumo(pk){
  var r={total:0,mesAtual:0,anoAtual:0,ano:anoAtual,ym:ymAtual,anos:{},semData:0};
  Object.keys(S.manutencoes||{}).forEach(function(k){
   var m=S.manutencoes[k];if(!m||m.carro!==pk)return;
-  var v=Number(m.total)||0;r.total+=v;
-  var ym=_mesDe(m);
-  if(!/^\d{4}-\d{2}$/.test(ym)){r.semData+=v;return}
-  var a=ym.slice(0,4);
-  if(!r.anos[a])r.anos[a]={total:0,meses:{}};
-  r.anos[a].total+=v;r.anos[a].meses[ym]=(r.anos[a].meses[ym]||0)+v;
-  if(a===anoAtual)r.anoAtual+=v;
-  if(ym===ymAtual)r.mesAtual+=v;
+  var its=_itensFinanceirosManut(m),todos=_itensFinanceirosManut(m,true);
+  if(todos.length){
+   its.forEach(function(it){r.total+=Number(it.valor)||0});
+  }else{
+   var v0=Number(m.total)||0;r.total+=v0;
+   var ym0=_mesDe(m);
+   if(!ym0){r.semData+=v0;return}
+   its=[{valor:v0,ym:ym0}];
+  }
+  its.forEach(function(it){
+   var v=Number(it.valor)||0,ym=it.ym||'';
+   if(!/^\d{4}-\d{2}$/.test(ym)){r.semData+=v;return}
+   var a=ym.slice(0,4);
+   if(!r.anos[a])r.anos[a]={total:0,meses:{}};
+   r.anos[a].total+=v;r.anos[a].meses[ym]=(r.anos[a].meses[ym]||0)+v;
+   if(a===anoAtual)r.anoAtual+=v;
+   if(ym===ymAtual)r.mesAtual+=v;
+  });
  });
  return r;
 }
@@ -3597,7 +3607,7 @@ var RASC_K='gestao_rascunho_manut';
 function mRasc(){ /* rascunho contra fechamento do app */
  try{
   var g=function(id){var e=document.getElementById(id);return e?e.value:''};
-  localStorage.setItem(RASC_K,JSON.stringify({carro:g('mCarro'),mot:g('mMotorista'),ini:g('mIni'),fim:g('mFim'),odo:g('mOdo'),MP:MP,MB:MB,em:Date.now()}));
+  localStorage.setItem(RASC_K,JSON.stringify({carro:g('mCarro'),mot:g('mMotorista'),ini:g('mIni'),fim:g('mFim'),odo:g('mOdo'),pdat:g('mPecasData'),MP:MP,MB:MB,em:Date.now()}));
  }catch(e){}
 }
 function mRascLimpa(){try{localStorage.removeItem(RASC_K)}catch(e){}}
@@ -4374,12 +4384,12 @@ function vManut(){
   setTimeout(function(){
    var s=function(id,v){var e=document.getElementById(id);if(e&&v)e.value=v};
    s('mCarro',rasc.carro);if(rasc.carro)mPuxaCarro();
-   s('mMotorista',rasc.mot);s('mIni',rasc.ini);s('mFim',rasc.fim);s('mOdo',rasc.odo);
+   s('mMotorista',rasc.mot);s('mIni',rasc.ini);s('mFim',rasc.fim);s('mOdo',rasc.odo);s('mPecasData',rasc.pdat);
    toast('📝 Rascunho recuperado — nada se perdeu');
   },60);
  }
- if(!MP.length)MP=[{valor:'',desc:'',loja:''}];
- if(!MB.length)MB=[{titulo:'Mecânico',nome:'Vinícius',valor:'',servicos:''}];
+ if(!MP.length)MP=[{valor:'',desc:'',loja:'',data:'',pendenteFinanceiro:false}];
+ if(!MB.length)MB=[{titulo:'Mecânico',nome:'Vinícius',valor:'',servicos:'',dataIni:'',dataFim:'',pendenteFinanceiro:false}];
  var h='<div class="v100form">'+
   '<div class="v100formHero v105formHero"><div class="v100kicker">MANUTENÇÃO · LANÇAMENTO</div><div class="tit">Nova manutenção</div><div class="sub">Selecione o carro, lance peças e serviços e confira o total antes de salvar.</div>'+
    '</div>'+
@@ -4390,10 +4400,11 @@ function vManut(){
    '<div class="grid2"><div><label>Data de início</label><input type="date" id="mIni" onchange="mRasc();mAtualizaSteps()" value="'+hoje()+'"></div>'+
    '<div><label>Data final <span style="font-weight:400">(opcional)</span></label><input type="date" id="mFim" onchange="mRasc()"></div></div>'+
    '<label>Odômetro (km)</label><input id="mOdo" oninput="mRasc()" inputmode="numeric" placeholder="101117"></div>'+
-  '<div class="v100panel"><div class="v100panelHead"><div class="v100panelIcon">🧩</div><div class="grow"><div class="v100panelTitle">Peças</div><div class="v100panelSub">Valor, descrição e loja de cada item.</div></div></div><div id="mPecas"></div>'+
-   '<button class="btn mini sec v100add" onclick="MP.push({valor:\'\',desc:\'\',loja:\'\'});mDesenha()">＋ Adicionar peça</button></div>'+
+  '<div class="v100panel"><div class="v100panelHead"><div class="v100panelIcon">🧩</div><div class="grow"><div class="v100panelTitle">Peças</div><div class="v100panelSub">Cada peça pode ter sua própria data de competência. Se todas forem do mesmo mês, use a data padrão abaixo.</div></div></div>'+
+   '<label>Data padrão das peças <span style="font-weight:400">(opcional)</span></label><input type="date" id="mPecasData" onchange="mRasc()"><div class="sub" style="margin:4px 0 10px">Peças sem data individual usam esta data. Se ficar vazio, mantêm a regra antiga da manutenção.</div><div id="mPecas"></div>'+
+   '<button class="btn mini sec v100add" onclick="MP.push({valor:\'\',desc:\'\',loja:\'\',data:\'\'});mDesenha()">＋ Adicionar peça</button></div>'+
   '<div class="v100panel"><div class="v100panelHead"><div class="v100panelIcon">🛠️</div><div class="grow"><div class="v100panelTitle">Mão de obra e serviços</div><div class="v100panelSub">Separe mecânico, borracheiro, retífica ou outro profissional.</div></div></div><div id="mBlocos"></div>'+
-   '<button class="btn mini sec v100add" onclick="MB.push({titulo:\'\',nome:\'\',valor:\'\',servicos:\'\'});mDesenha()">＋ Outro profissional / serviço</button></div>'+
+   '<button class="btn mini sec v100add" onclick="MB.push({titulo:\'\',nome:\'\',valor:\'\',servicos:\'\',dataIni:\'\',dataFim:\'\'});mDesenha()">＋ Outro profissional / serviço</button></div>'+
   '<div class="v100panel"><div class="v100panelHead"><div class="v100panelIcon">✓</div><div class="grow"><div class="v100panelTitle">Revisão</div><div class="v100panelSub">Confira os valores antes de registrar.</div></div></div>'+
    '<div class="v100summary"><div class="v100sumRow"><span>Peças</span><strong id="mTotP">R$ 0,00</strong></div><div class="v100sumRow"><span>Mão de obra</span><strong id="mTotM">R$ 0,00</strong></div><div class="v100sumRow v100sumTotal"><span>TOTAL</span><strong id="mTotG">R$ 0,00</strong></div></div>'+
    '<button class="btn ok v100primary v105saveMain" onclick="gerarManut()"><span>✓</span> Salvar manutenção</button><div class="v100hint">Ao salvar, o Gestão atualiza o histórico, recalcula os componentes detectados e prepara o texto do WhatsApp.</div><div id="mSaida"></div></div></div>';
@@ -4421,7 +4432,9 @@ function mDesenha(){
   hp+='<div class="v100item"><div class="v100itemTop"><div class="v100itemTitle">PEÇA '+('0'+(i+1)).slice(-2)+'</div><button class="v100remove" onclick="MP.splice('+i+',1);mDesenha()">Remover</button></div>'+
    '<div class="v100pieceGrid"><div class="desc"><label>Descrição</label><textarea rows="1" class="taflex" placeholder="Ex.: Pastilha de freio dianteira" oninput="MP['+i+'].desc=this.value;taGrow(this);mRasc();mAtualizaSteps()">'+esc(p.desc)+'</textarea></div>'+
    '<div><label>Valor (R$)</label><input placeholder="0,00" inputmode="decimal" value="'+esc(p.valor)+'" oninput="MP['+i+'].valor=this.value;mTotais();mAtualizaSteps()"></div>'+
-   '<div><label>Loja / fornecedor</label><input placeholder="Ex.: Auto Peças" value="'+esc(p.loja)+'" oninput="MP['+i+'].loja=this.value;mRasc()"></div></div></div>';
+   '<div><label>Data desta peça <span style="font-weight:400">(opcional)</span></label><input type="date" value="'+esc(p.data||'')+'" onchange="MP['+i+'].data=this.value;mRasc()"></div>'+
+   '<div class="wide"><label>Status no fechamento</label><select onchange="MP['+i+'].pendenteFinanceiro=this.value===\'1\';mRasc()"><option value="0"'+(!p.pendenteFinanceiro?' selected':'')+'>Pago / contabilizar</option><option value="1"'+(p.pendenteFinanceiro?' selected':'')+'>Pendente / não contabilizar ainda</option></select></div>'+
+   '<div class="wide"><label>Loja / fornecedor</label><input placeholder="Ex.: Auto Peças" value="'+esc(p.loja)+'" oninput="MP['+i+'].loja=this.value;mRasc()"></div></div></div>';
  });
  document.getElementById('mPecas').innerHTML=hp||'<div class="sub">Sem peças.</div>';
  setTimeout(function(){document.querySelectorAll('#mPecas .taflex').forEach(function(t){taGrow(t)})},30);
@@ -4430,6 +4443,9 @@ function mDesenha(){
   hb+='<div class="v100item"><div class="v100itemTop"><div class="v100itemTitle">MÃO DE OBRA '+('0'+(i+1)).slice(-2)+'</div><button class="v100remove" onclick="MB.splice('+i+',1);mDesenha()">Remover</button></div>'+
    '<div class="v100laborGrid"><div><label>Tipo</label><input placeholder="Mecânico / Borracheiro / Retífica" value="'+esc(b.titulo)+'" oninput="MB['+i+'].titulo=this.value;mRasc()"></div>'+
    '<div><label>Profissional</label><input placeholder="Vinícius" value="'+esc(b.nome)+'" oninput="MB['+i+'].nome=this.value;mRasc();mAtualizaSteps()"></div>'+
+   '<div><label>Início deste serviço <span style="font-weight:400">(opcional)</span></label><input type="date" value="'+esc(b.dataIni||'')+'" onchange="MB['+i+'].dataIni=this.value;mRasc()"></div>'+
+   '<div><label>Final / competência <span style="font-weight:400">(opcional)</span></label><input type="date" value="'+esc(b.dataFim||'')+'" onchange="MB['+i+'].dataFim=this.value;mRasc()"></div>'+
+   '<div class="wide"><label>Status no fechamento</label><select onchange="MB['+i+'].pendenteFinanceiro=this.value===\'1\';mRasc()"><option value="0"'+(!b.pendenteFinanceiro?' selected':'')+'>Pago / contabilizar</option><option value="1"'+(b.pendenteFinanceiro?' selected':'')+'>Pendente / não contabilizar ainda</option></select></div>'+
    '<div class="wide"><label>Valor da mão de obra (R$)</label><input placeholder="1.700,00" inputmode="decimal" value="'+esc(b.valor)+'" oninput="MB['+i+'].valor=this.value;mTotais();mAtualizaSteps()"></div>'+
    '<div class="wide"><label>Serviços realizados <span style="font-weight:400">(um por linha)</span></label><textarea placeholder="Ex.: Troca da pastilha dianteira\nPróxima troca com X km\nGARANTIA ATÉ data" oninput="MB['+i+'].servicos=this.value;taGrow(this);mRasc();mAtualizaSteps()">'+esc(b.servicos)+'</textarea></div></div></div>';
  });
@@ -4479,13 +4495,13 @@ function gerarManut(){
  var ini=document.getElementById('mIni').value,fim=document.getElementById('mFim').value;
  if(!ini){toast('Informe a data');return}
  var odo=parseInt(document.getElementById('mOdo').value.replace(/\D/g,''),10)||0;
- var pecas=MP.filter(function(p){return p.desc.trim()||parseBRL(p.valor)>0}).map(function(p){return{valor:parseBRL(p.valor),desc:p.desc.trim(),loja:p.loja.trim()}});
+ var pecas=MP.filter(function(p){return p.desc.trim()||parseBRL(p.valor)>0}).map(function(p){return{valor:parseBRL(p.valor),desc:p.desc.trim(),loja:p.loja.trim(),data:p.data||'',pendenteFinanceiro:!!p.pendenteFinanceiro}});
  var blocos=MB.filter(function(b){return b.nome.trim()||b.servicos.trim()||parseBRL(b.valor)>0}).map(function(b){
-  return{titulo:(b.titulo||'Mecânico').trim(),nome:b.nome.trim(),valor:parseBRL(b.valor),servicos:b.servicos.split('\n').map(function(s){return s.trim()}).filter(Boolean)};
+  return{titulo:(b.titulo||'Mecânico').trim(),nome:b.nome.trim(),valor:parseBRL(b.valor),servicos:b.servicos.split('\n').map(function(s){return s.trim()}).filter(Boolean),dataIni:b.dataIni||'',dataFim:b.dataFim||'',pendenteFinanceiro:!!b.pendenteFinanceiro};
  });
  var tp=0;pecas.forEach(function(p){tp+=p.valor});
  var tm=0;blocos.forEach(function(b){tm+=b.valor});
- var m=normManut({id:idNovo('mn'),carro:pk,motorista:mot,dataIni:ini,dataFim:fim||'',odometro:odo,
+ var m=normManut({id:idNovo('mn'),carro:pk,motorista:mot,dataIni:ini,dataFim:fim||'',dataPecasPadrao:(document.getElementById('mPecasData')||{value:''}).value||'',odometro:odo,
   pecas:pecas,blocos:blocos,totalPecas:tp,totalMO:tm,total:tp+tm,criadoEm:Date.now()});
  m.texto=buildManutTexto(m,carro);
  S.manutencoes[m.id]=m;
@@ -4508,7 +4524,7 @@ function gerarManut(){
  setTimeout(function(){var e=document.getElementById('mSavedCard');if(e)try{e.scrollIntoView({behavior:'smooth',block:'center'})}catch(x){}},120);
 }
 function mNovaAposSalvar(){
- MP=[{valor:'',desc:'',loja:''}];MB=[{titulo:'Mecânico',nome:'Vinícius',valor:'',servicos:''}];mRascLimpa();
+ MP=[{valor:'',desc:'',loja:'',data:'',pendenteFinanceiro:false}];MB=[{titulo:'Mecânico',nome:'Vinícius',valor:'',servicos:'',dataIni:'',dataFim:'',pendenteFinanceiro:false}];mRascLimpa();
  go(1);setTimeout(function(){window.scrollTo({top:0,behavior:'smooth'});var c=document.getElementById('mCarro');if(c)c.focus()},80);
 }
 function mAtualizaSteps(){
@@ -4542,10 +4558,10 @@ var EP=[],EB=[],_edMid='';
 function editarManut(id){
  var m=S.manutencoes[id];if(!m)return;
  _edMid=id;
- EP=(m.pecas||[]).map(function(p){return {valor:p.valor?fmtBRL(p.valor):'',desc:p.desc||'',loja:p.loja||''}});
- EB=(m.blocos||[]).map(function(b){return {titulo:b.titulo||'Mecânico',nome:b.nome||'',valor:tNum(b.valor)?fmtBRL(tNum(b.valor)):'',servicos:(Array.isArray(b.servicos)?b.servicos.join('\n'):String(b.servicos||''))}});
- if(!EP.length)EP=[{valor:'',desc:'',loja:''}];
- if(!EB.length)EB=[{titulo:'Mecânico',nome:'',valor:'',servicos:''}];
+ EP=(m.pecas||[]).map(function(p){return {valor:p.valor?fmtBRL(p.valor):'',desc:p.desc||'',loja:p.loja||'',data:p.data||'',pendenteFinanceiro:!!p.pendenteFinanceiro}});
+ EB=(m.blocos||[]).map(function(b){return {titulo:b.titulo||'Mecânico',nome:b.nome||'',valor:tNum(b.valor)?fmtBRL(tNum(b.valor)):'',servicos:(Array.isArray(b.servicos)?b.servicos.join('\n'):String(b.servicos||'')),dataIni:b.dataIni||'',dataFim:b.dataFim||'',pendenteFinanceiro:!!b.pendenteFinanceiro}});
+ if(!EP.length)EP=[{valor:'',desc:'',loja:'',data:'',pendenteFinanceiro:false}];
+ if(!EB.length)EB=[{titulo:'Mecânico',nome:'',valor:'',servicos:'',dataIni:'',dataFim:'',pendenteFinanceiro:false}];
  var c=S.carros[m.carro]||{nome:m.carro,placa:m.carro,motor:''};
  var h='<div class="v105editFlow"><div class="v102sheetHero"><div class="v102sheetIcon">✎</div><div><div class="v102eyebrow">MANUTENÇÃO · EDIÇÃO</div><h3>Editar manutenção</h3><div class="sub">'+esc(tituloCarro(c))+' · '+esc(fmtPlaca(c.placa))+' · '+esc(periodoTexto(m.dataIni,m.dataFim))+'</div></div></div>'+
   '<div class="v102panel"><div class="v102panelHead"><span>🚗</span><div><b>Serviço registrado</b><small>Corrija os dados sem alterar o histórico fora deste lançamento.</small></div></div>'+
@@ -4553,10 +4569,11 @@ function editarManut(id){
   '<div class="grid2"><div><label>Data de início</label><input type="date" id="edIni" value="'+esc(m.dataIni||'')+'"></div>'+
   '<div><label>Data final</label><input type="date" id="edFim" value="'+esc(m.dataFim||'')+'"></div></div>'+
   '<label>Odômetro (km)</label><input id="edOdo" inputmode="numeric" value="'+esc(m.odometro?String(m.odometro):'')+'"></div>'+
-  '<div class="v102panel"><div class="v102panelHead"><span>🧩</span><div><b>Peças</b><small>Descrição, valor e fornecedor.</small></div></div><div id="edPecas"></div>'+
-  '<button class="btn mini sec v100add" onclick="EP.push({valor:\'\',desc:\'\',loja:\'\'});edDesenha()">＋ Adicionar peça</button></div>'+
+  '<div class="v102panel"><div class="v102panelHead"><span>🧩</span><div><b>Peças</b><small>Descrição, valor, fornecedor e competência financeira.</small></div></div>'+
+  '<label>Data padrão das peças <span style="font-weight:400">(opcional)</span></label><input type="date" id="edPecasData" value="'+esc(m.dataPecasPadrao||'')+'"><div class="sub" style="margin:4px 0 10px">Peças sem data individual usam esta data; sem ela, continuam usando a data geral da manutenção.</div><div id="edPecas"></div>'+
+  '<button class="btn mini sec v100add" onclick="EP.push({valor:\'\',desc:\'\',loja:\'\',data:\'\'});edDesenha()">＋ Adicionar peça</button></div>'+
   '<div class="v102panel"><div class="v102panelHead"><span>🛠️</span><div><b>Mão de obra e serviços</b><small>Um bloco para cada profissional.</small></div></div><div id="edBlocos"></div>'+
-  '<button class="btn mini sec v100add" onclick="EB.push({titulo:\'Mecânico\',nome:\'\',valor:\'\',servicos:\'\'});edDesenha()">＋ Outro profissional / serviço</button></div>'+
+  '<button class="btn mini sec v100add" onclick="EB.push({titulo:\'Mecânico\',nome:\'\',valor:\'\',servicos:\'\',dataIni:\'\',dataFim:\'\'});edDesenha()">＋ Outro profissional / serviço</button></div>'+
   '<div class="v102panel"><div class="v102panelHead"><span>✓</span><div><b>Revisão</b><small>O total e os componentes serão reprocessados ao salvar.</small></div></div>'+
   '<div class="v100summary"><div class="v100sumRow"><span>Peças</span><strong id="edTotP">R$ 0,00</strong></div><div class="v100sumRow"><span>Mão de obra</span><strong id="edTotM">R$ 0,00</strong></div><div class="v100sumRow v100sumTotal"><span>TOTAL</span><strong id="edTotG">R$ 0,00</strong></div></div>'+
   '<button class="btn ok v102primary v105saveMain" onclick="salvarEdicaoManut()">✓ Salvar alterações</button></div>'+
@@ -4570,7 +4587,9 @@ function edDesenha(){
   hp+='<div class="v100item"><div class="v100itemTop"><div class="v100itemTitle">PEÇA '+('0'+(i+1)).slice(-2)+'</div><button class="v100remove" onclick="EP.splice('+i+',1);edDesenha()">Remover</button></div>'+
    '<div class="v100pieceGrid"><div class="desc"><label>Descrição</label><textarea rows="1" class="taflex" placeholder="Ex.: Pastilha de freio dianteira" oninput="EP['+i+'].desc=this.value;taGrow(this)">'+esc(p.desc)+'</textarea></div>'+
    '<div><label>Valor (R$)</label><input placeholder="0,00" inputmode="decimal" value="'+esc(p.valor)+'" oninput="EP['+i+'].valor=this.value;edTotais()"></div>'+
-   '<div><label>Loja / fornecedor</label><input value="'+esc(p.loja)+'" oninput="EP['+i+'].loja=this.value"></div></div></div>';
+   '<div><label>Data desta peça <span style="font-weight:400">(opcional)</span></label><input type="date" value="'+esc(p.data||'')+'" onchange="EP['+i+'].data=this.value"></div>'+
+   '<div class="wide"><label>Status no fechamento</label><select onchange="EP['+i+'].pendenteFinanceiro=this.value===\'1\'"><option value="0"'+(!p.pendenteFinanceiro?' selected':'')+'>Pago / contabilizar</option><option value="1"'+(p.pendenteFinanceiro?' selected':'')+'>Pendente / não contabilizar ainda</option></select></div>'+
+   '<div class="wide"><label>Loja / fornecedor</label><input value="'+esc(p.loja)+'" oninput="EP['+i+'].loja=this.value"></div></div></div>';
  });
  document.getElementById('edPecas').innerHTML=hp||'<div class="v102empty">Sem peças.</div>';
  setTimeout(function(){document.querySelectorAll('#edPecas .taflex').forEach(function(t){taGrow(t)})},30);
@@ -4579,6 +4598,9 @@ function edDesenha(){
   hb+='<div class="v100item"><div class="v100itemTop"><div class="v100itemTitle">MÃO DE OBRA '+('0'+(i+1)).slice(-2)+'</div><button class="v100remove" onclick="EB.splice('+i+',1);edDesenha()">Remover</button></div>'+
    '<div class="v100laborGrid"><div><label>Tipo</label><input value="'+esc(b.titulo)+'" oninput="EB['+i+'].titulo=this.value"></div>'+
    '<div><label>Profissional</label><input value="'+esc(b.nome)+'" oninput="EB['+i+'].nome=this.value"></div>'+
+   '<div><label>Início deste serviço <span style="font-weight:400">(opcional)</span></label><input type="date" value="'+esc(b.dataIni||'')+'" onchange="EB['+i+'].dataIni=this.value"></div>'+
+   '<div><label>Final / competência <span style="font-weight:400">(opcional)</span></label><input type="date" value="'+esc(b.dataFim||'')+'" onchange="EB['+i+'].dataFim=this.value"></div>'+
+   '<div class="wide"><label>Status no fechamento</label><select onchange="EB['+i+'].pendenteFinanceiro=this.value===\'1\'"><option value="0"'+(!b.pendenteFinanceiro?' selected':'')+'>Pago / contabilizar</option><option value="1"'+(b.pendenteFinanceiro?' selected':'')+'>Pendente / não contabilizar ainda</option></select></div>'+
    '<div class="wide"><label>Valor (R$)</label><input inputmode="decimal" value="'+esc(b.valor)+'" oninput="EB['+i+'].valor=this.value;edTotais()"></div>'+
    '<div class="wide"><label>Serviços realizados</label><textarea class="taflex" oninput="EB['+i+'].servicos=this.value;taGrow(this)">'+esc(b.servicos)+'</textarea></div></div></div>';
  });
@@ -4597,15 +4619,16 @@ function salvarEdicaoManut(){
  var m=S.manutencoes[_edMid];if(!m){toast('Manutenção não encontrada');return}
  var _oldComps=Object.keys(detectarComponentes(m).comps||{});
  var carro=S.carros[m.carro];
- var pecas=EP.filter(function(p){return p.desc.trim()||parseBRL(p.valor)>0}).map(function(p){return{valor:parseBRL(p.valor),desc:p.desc.trim(),loja:p.loja.trim()}});
+ var pecas=EP.filter(function(p){return p.desc.trim()||parseBRL(p.valor)>0}).map(function(p){return{valor:parseBRL(p.valor),desc:p.desc.trim(),loja:p.loja.trim(),data:p.data||'',pendenteFinanceiro:!!p.pendenteFinanceiro}});
  var blocos=EB.filter(function(b){return b.nome.trim()||b.servicos.trim()||parseBRL(b.valor)>0}).map(function(b){
-  return{titulo:(b.titulo||'Mecânico').trim(),nome:b.nome.trim(),valor:parseBRL(b.valor),servicos:b.servicos.split('\n').map(function(s){return s.trim()}).filter(Boolean)};
+  return{titulo:(b.titulo||'Mecânico').trim(),nome:b.nome.trim(),valor:parseBRL(b.valor),servicos:b.servicos.split('\n').map(function(s){return s.trim()}).filter(Boolean),dataIni:b.dataIni||'',dataFim:b.dataFim||'',pendenteFinanceiro:!!b.pendenteFinanceiro};
  });
  var tp=0;pecas.forEach(function(p){tp+=p.valor});
  var tm=0;blocos.forEach(function(b){tm+=b.valor});
  m.motorista=document.getElementById('edMot').value.trim()||m.motorista;
  m.dataIni=document.getElementById('edIni').value||m.dataIni;
  m.dataFim=document.getElementById('edFim').value||'';
+ m.dataPecasPadrao=(document.getElementById('edPecasData')||{value:''}).value||'';
  var odo=parseInt((document.getElementById('edOdo').value||'').replace(/\D/g,''),10)||0;
  if(odo)m.odometro=odo;
  m.pecas=pecas;m.blocos=blocos;m.totalPecas=tp;m.totalMO=tm;m.total=tp+tm;m.editadoEm=Date.now();
@@ -4634,13 +4657,22 @@ function verManut(id){
  if((m.pecas||[]).length){
   h+='<div class="v102panel"><div class="v102panelHead"><span>🧩</span><div><b>Peças</b><small>'+(m.totalPecas>0?'R$ '+fmtBRL(m.totalPecas):'Itens registrados')+'</small></div></div>';
   m.pecas.forEach(function(p){
-   h+='<div class="v102line"><div class="grow"><strong>'+esc(p.desc||'Peça')+'</strong>'+(p.loja?'<small>'+esc(p.loja)+'</small>':'')+'</div>'+
+   var pd=_dataPeca(m,p),ps=[];
+   if(p.loja)ps.push(esc(p.loja));
+   if(p.pendenteFinanceiro)ps.push('⏳ pendente · fora do fechamento');else if(pd)ps.push('competência '+esc(dataBR(pd)));
+   h+='<div class="v102line"><div class="grow"><strong>'+esc(p.desc||'Peça')+'</strong>'+(ps.length?'<small>'+ps.join(' · ')+'</small>':'')+'</div>'+
     (p.valor>0?'<b>R$ '+fmtBRL(p.valor)+'</b>':'')+'</div>';
   });
   h+='</div>';
  }
  (m.blocos||[]).forEach(function(b){
-  h+='<div class="v102panel"><div class="v102panelHead"><span>🛠️</span><div><b>'+esc(b.titulo||'Mão de obra')+'</b><small>'+(b.nome?esc(b.nome):'')+(tNum(b.valor)>0?' · R$ '+fmtBRL(tNum(b.valor)):'')+'</small></div></div>';
+  var bs=[];if(b.nome)bs.push(esc(b.nome));if(tNum(b.valor)>0)bs.push('R$ '+fmtBRL(tNum(b.valor)));
+  var bi=b.dataIni||'',bf=b.dataFim||'',be=_dataBloco(m,b);
+  if(b.pendenteFinanceiro)bs.push('⏳ pendente · fora do fechamento');
+  else if(bi&&bf)bs.push(esc(periodoTexto(bi,bf)));
+  else if(bf||bi)bs.push('competência '+esc(dataBR(bf||bi)));
+  else if(be)bs.push('competência '+esc(dataBR(be)));
+  h+='<div class="v102panel"><div class="v102panelHead"><span>🛠️</span><div><b>'+esc(b.titulo||'Mão de obra')+'</b><small>'+bs.join(' · ')+'</small></div></div>';
   var svs=Array.isArray(b.servicos)?b.servicos:String(b.servicos||'').split('\n');
   svs.filter(function(x){return String(x).trim()}).forEach(function(x){h+='<div class="v102service">• '+esc(x)+'</div>'});
   h+='</div>';
@@ -4713,18 +4745,44 @@ function hAplica(){
  var z=document.getElementById('hZero');if(z)z.style.display=achou?'none':'';
 }
 /* ===== FECHAMENTO MENSAL POR FORNECEDOR =====
-   Soma sozinho, a partir das manutenções já lançadas: cada peça tem a loja e cada bloco
-   de mão de obra tem o profissional. O ciclo é o mês do calendário (01 a 30/31), igual
-   ao que vocês fecham no WhatsApp. Nada é "zerado": o mês fica gravado nas manutenções,
-   então o histórico de qualquer mês pode ser reaberto a qualquer momento. */
-function _mesDe(m){var d=m.dataFim||m.dataIni||'';return d.slice(0,7)} /* AAAA-MM */
+   v119: a manutenção pode atravessar meses sem jogar tudo para o mês da data final.
+   Cada peça pode ter sua própria data; existe uma data padrão das peças; e cada bloco
+   de mão de obra pode ter período próprio. Registros antigos, sem essas datas, mantêm
+   exatamente a regra legada (dataFim ou dataIni da manutenção). */
+function _dataLegadaManut(m){return (m&&((m.dataFim||m.dataIni)||''))||''}
+function _dataPeca(m,p){
+ p=p||{};m=m||{};
+ return p.data||m.dataPecasPadrao||_dataLegadaManut(m);
+}
+function _dataBloco(m,b){
+ b=b||{};m=m||{};
+ return b.dataFim||b.dataIni||_dataLegadaManut(m);
+}
+function _mesData(d){return /^\d{4}-\d{2}/.test(String(d||''))?String(d).slice(0,7):''}
+function _mesDe(m){return _mesData(_dataLegadaManut(m))} /* compatibilidade/legado */
+function _itensFinanceirosManut(m,incluirPendentes){
+ var a=[];m=m||{};
+ (m.pecas||[]).forEach(function(p){
+  if(p&&p.pendenteFinanceiro&&!incluirPendentes)return;
+  var v=Number(p.valor)||0;if(!v)return;
+  var d=_dataPeca(m,p);
+  a.push({tipo:'peca',valor:v,fornecedor:p.loja||'',desc:p.desc||'Peça',data:d,ym:_mesData(d),mid:m.id||'',carro:m.carro||''});
+ });
+ (m.blocos||[]).forEach(function(b){
+  if(b&&b.pendenteFinanceiro&&!incluirPendentes)return;
+  var v=Number(b.valor)||0;if(!v)return;
+  var d=_dataBloco(m,b);
+  a.push({tipo:'mo',valor:v,fornecedor:b.nome||b.titulo||'',desc:b.titulo||'Mão de obra',data:d,ym:_mesData(d),mid:m.id||'',carro:m.carro||''});
+ });
+ return a;
+}
 function _nomeMes(ym){
  var M=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
  var p=String(ym||'').split('-');return (M[Number(p[1])-1]||'?')+'/'+p[0];
 }
 function mesesComGasto(){
  var s={};Object.keys(S.manutencoes||{}).forEach(function(k){
-  var ym=_mesDe(S.manutencoes[k]);if(ym)s[ym]=1;
+  _itensFinanceirosManut(S.manutencoes[k]).forEach(function(it){if(it.ym)s[it.ym]=1});
  });
  return Object.keys(s).sort().reverse();
 }
@@ -4748,15 +4806,10 @@ function fechamentoDoMes(ym){
   if(pessoal)f.totalPessoal+=valor;else f.totalFrota+=valor;
  }
  Object.keys(S.manutencoes||{}).forEach(function(k){
-  var m=S.manutencoes[k];if(_mesDe(m)!==ym)return;
-  var dt=m.dataFim||m.dataIni||'';
-  (m.pecas||[]).forEach(function(p){
-   var v=Number(p.valor)||0;if(!v)return;
-   add(p.loja,m.carro,p.desc,v,'peca',dt,m.id);
-  });
-  (m.blocos||[]).forEach(function(b){
-   var v=Number(b.valor)||0;if(!v)return;
-   add(b.nome||b.titulo,m.carro,(b.titulo||'Mão de obra'),v,'mo',dt,m.id);
+  var m=S.manutencoes[k];
+  _itensFinanceirosManut(m).forEach(function(it){
+   if(it.ym!==ym)return;
+   add(it.fornecedor,m.carro,it.desc,it.valor,it.tipo,it.data,m.id);
   });
  });
  var lista=Object.keys(forn).map(function(n){return forn[n]}).sort(function(a,b){return b.total-a.total});
@@ -4801,33 +4854,34 @@ function textoFechamento(ym,nomeForn){
 function conferirContas(ym){
  var r={ym:ym,divergentes:[],semForn:[],somaItens:0,somaManut:0,somaFornecedores:0,manutencoes:0};
  Object.keys(S.manutencoes||{}).forEach(function(k){
-  var m=S.manutencoes[k];if(_mesDe(m)!==ym)return;
+  var m=S.manutencoes[k],todos=_itensFinanceirosManut(m,true),mesItens=_itensFinanceirosManut(m).filter(function(it){return it.ym===ym});
+  if(!mesItens.length)return;
   r.manutencoes++;
   var itens=0,semF=0;
-  (m.pecas||[]).forEach(function(p){
-   var v=Number(p.valor)||0;itens+=v;
-   if(v&&!String(p.loja||'').trim())semF+=v;
+  mesItens.forEach(function(it){
+   itens+=Number(it.valor)||0;
+   if((Number(it.valor)||0)>0&&!String(it.fornecedor||'').trim())semF+=Number(it.valor)||0;
   });
-  (m.blocos||[]).forEach(function(b){
-   var v=Number(b.valor)||0;itens+=v;
-   if(v&&!String(b.nome||'').trim())semF+=v;
-  });
-  var grav=Number(m.total)||0;
-  r.somaItens+=itens;r.somaManut+=grav;
-  if(Math.abs(itens-grav)>0.005){
-   r.divergentes.push({id:k,carro:m.carro,data:m.dataFim||m.dataIni||'',itens:itens,gravado:grav,dif:grav-itens});
+  var grav=Number(m.total)||0,totalItens=0;
+  todos.forEach(function(it){totalItens+=Number(it.valor)||0});
+  r.somaItens+=itens;r.somaManut+=itens;
+  if(Math.abs(totalItens-grav)>0.005){
+   r.divergentes.push({id:k,carro:m.carro,data:m.dataFim||m.dataIni||'',itens:totalItens,gravado:grav,dif:grav-totalItens});
   }
-  if(semF>0.005)r.semForn.push({id:k,carro:m.carro,data:m.dataFim||m.dataIni||'',valor:semF});
+  if(semF>0.005){
+   var d=mesItens.filter(function(it){return !String(it.fornecedor||'').trim()})[0];
+   r.semForn.push({id:k,carro:m.carro,data:(d&&d.data)||m.dataFim||m.dataIni||'',valor:semF});
+  }
  });
  var f=fechamentoDoMes(ym);
  r.somaFornecedores=f.total;
  return r;
 }
 function corrigirTotaisDoMes(ym){
- ask('Corrigir os totais?','Vou reescrever o total de cada manutenção divergente deste mês para a soma real das peças e da mão de obra. Os itens não são alterados.','Corrigir',function(){
+ ask('Corrigir os totais?','Vou reescrever o total das manutenções que têm itens neste mês para a soma real de todas as peças e mãos de obra. As datas e os itens não são alterados.','Corrigir',function(){
   var n=0;
   Object.keys(S.manutencoes||{}).forEach(function(k){
-   var m=S.manutencoes[k];if(_mesDe(m)!==ym)return;
+   var m=S.manutencoes[k],tem=_itensFinanceirosManut(m).some(function(it){return it.ym===ym});if(!tem)return;
    var tp=0,tm=0;
    (m.pecas||[]).forEach(function(p){tp+=Number(p.valor)||0});
    (m.blocos||[]).forEach(function(b){tm+=Number(b.valor)||0});
@@ -4836,15 +4890,16 @@ function corrigirTotaisDoMes(ym){
   save();render();toast(n?('✅ '+n+' manutenção(ões) corrigida(s)'):'Nada a corrigir');
  });
 }
+
 function htmlConferencia(ym){
  var r=conferirContas(ym);
- var ok=(Math.abs(r.somaItens-r.somaManut)<0.005)&&(Math.abs(r.somaItens-r.somaFornecedores)<0.005);
+ var ok=(Math.abs(r.somaItens-r.somaManut)<0.005)&&(Math.abs(r.somaItens-r.somaFornecedores)<0.005)&&!r.divergentes.length&&!r.semForn.length;
  var h='<div class="sect">🧮 Conferência das contas</div>';
  h+='<div class="kv"><b>Manutenções no mês</b><span>'+r.manutencoes+'</span>'+
     '<b>Soma dos itens</b><span>R$ '+fmtBRL(r.somaItens)+'</span>'+
     '<b>Soma dos fornecedores</b><span>R$ '+fmtBRL(r.somaFornecedores)+'</span>'+
-    '<b>Soma dos totais gravados</b><span>R$ '+fmtBRL(r.somaManut)+'</span></div>';
- if(ok)h+='<div class="sub" style="color:var(--ok)">✅ Fecha certo: cada centavo lançado está dentro de algum fornecedor.</div>';
+    '<b>Soma pela competência</b><span>R$ '+fmtBRL(r.somaManut)+'</span></div>';
+ if(ok)h+='<div class="sub" style="color:var(--ok)">✅ Fecha certo: cada centavo deste mês está na competência e no fornecedor corretos.</div>';
  else h+='<div class="sub" style="color:var(--warn)">⚠ Os números não fecham — veja abaixo.</div>';
  if(r.divergentes.length){
   h+='<div class="sub" style="color:var(--warn);margin-top:6px">'+r.divergentes.length+' manutenção(ões) com total gravado diferente da soma dos itens:</div>';
@@ -4872,16 +4927,25 @@ function copiarFechamento(ym,nome){
  copiarTexto(t);
 }
 /* Soma por carro para a visão mensal, anual ou histórica do ranking.
-   Usa _mesDe(), exatamente a mesma regra de competência do fechamento por fornecedor. */
+   Mensal/anual usam a competência de cada item; histórico mantém o total integral da manutenção. */
 function totaisGastoPorCarro(modo,periodo){
  var tot={};
  Object.keys((S&&S.manutencoes)||{}).forEach(function(k){
   var m=S.manutencoes[k];if(!m||!m.carro)return;
-  var ym=_mesDe(m),ok=true;
-  if(modo==='mes')ok=(ym===periodo);
-  else if(modo==='ano')ok=(ym&&ym.slice(0,4)===periodo);
-  if(!ok)return;
-  tot[m.carro]=(tot[m.carro]||0)+(Number(m.total)||0);
+  var its=_itensFinanceirosManut(m),todos=_itensFinanceirosManut(m,true);
+  if(modo==='historico'){
+   var vh=0;
+   if(todos.length)its.forEach(function(it){vh+=Number(it.valor)||0});
+   else vh=Number(m.total)||0;
+   tot[m.carro]=(tot[m.carro]||0)+vh;return;
+  }
+  if(!todos.length&&Number(m.total)){
+   var ym0=_mesDe(m);its=[{valor:Number(m.total)||0,ym:ym0}];
+  }
+  its.forEach(function(it){
+   var ym=it.ym||'',ok=(modo==='mes'?(ym===periodo):(modo==='ano'&&(ym&&ym.slice(0,4)===periodo)));
+   if(ok)tot[m.carro]=(tot[m.carro]||0)+(Number(it.valor)||0);
+  });
  });
  return tot;
 }
