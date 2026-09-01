@@ -540,6 +540,34 @@ input,select,textarea{border-radius:11px}
 .v100payopt{border:0;background:transparent;color:var(--tx2);font-family:var(--sf);font-size:11.5px;font-weight:650;padding:9px 5px;border-radius:8px;line-height:1.15}
 .v100payopt.on{background:#fff;color:var(--tx);box-shadow:0 1px 3px rgba(17,24,39,.11)}
 .v100nativeSelect{display:none!important}
+
+/* v125 — Tipo da chave PIX precisa ser um select visível.
+   ncTem34 continua oculto de propósito porque é controlado pelos botões
+   À vista / Parcelada / Não terá. */
+.v125pixTypeSelect{
+ display:block!important;
+ width:100%!important;
+ min-height:52px!important;
+ margin:6px 0 10px!important;
+ padding:0 38px 0 14px!important;
+ border:1px solid #E1E4E8!important;
+ border-radius:14px!important;
+ background:#F7F8FA!important;
+ color:#15171C!important;
+ font-family:var(--sf)!important;
+ font-size:15px!important;
+ font-weight:650!important;
+ line-height:1.2!important;
+ -webkit-appearance:menulist!important;
+ appearance:auto!important;
+ box-sizing:border-box!important;
+}
+.v125pixTypeSelect:focus{
+ border-color:rgba(199,122,22,.55)!important;
+ box-shadow:0 0 0 3px rgba(199,122,22,.10)!important;
+ outline:none!important;
+}
+
 /* v124 — seletores VISÍVEIS do fluxo de levar motorista para outro carro.
    Não altera os selects ocultos do contrato, que continuam usando v100nativeSelect. */
 .v124transferSelect{
@@ -900,7 +928,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=124; var APP_DATE='01/09/2026';
+var APP_VER=125; var APP_DATE='01/09/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -5270,7 +5298,7 @@ function vContrato(){
    '<label>Combustíveis</label><input id="ncComb" placeholder="Etanol / GNV 16m³"></div>'+
   '<div class="v100panel"><div class="v100panelHead"><div class="v100panelIcon">🏦</div><div class="grow"><div class="v100panelTitle">Pagamento</div><div class="v100panelSub">PIX de recebimento e forma da semana antecipada.</div></div></div>'+
    '<div class="grid2"><div><label>Banco</label><input id="ncPixBanco" value="Inter"></div><div><label>Favorecido</label><input id="ncPixFav" value="Fabio"></div></div>'+
-   '<div class="grid2"><div><label>Tipo da chave PIX</label><select id="ncPixTipo" class="v100nativeSelect" onchange="ncPixTipoChange(true);ncResumo()"><option value="cpf">CPF</option><option value="celular">Celular</option><option value="email">E-mail</option><option value="aleatoria">Aleatória</option></select></div><div><label id="ncPixLabel">Chave PIX (CPF)</label><input id="ncPixChave" inputmode="numeric" placeholder="000.000.000-00" value="075.351.417-65" oninput="ncPixFormata()"></div></div>'+
+   '<div class="grid2"><div><label>Tipo da chave PIX</label><select id="ncPixTipo" class="v125pixTypeSelect" onchange="ncPixTipoChange(true);ncResumo()"><option value="cpf">CPF</option><option value="celular">Celular</option><option value="email">E-mail</option><option value="aleatoria">Aleatória</option></select></div><div><label id="ncPixLabel">Chave PIX (CPF)</label><input id="ncPixChave" inputmode="numeric" placeholder="000.000.000-00" value="075.351.417-65" oninput="ncPixFormata()"></div></div>'+
    '<div class="sect" style="margin-top:16px">Semana antecipada</div><div class="sub">Como será paga a semana final do contrato?</div>'+
    '<select id="ncTem34" class="v100nativeSelect" onchange="ncModo34();ncCl34Auto(true);ncResumo()"><option value="avista">Paga à vista no ato (padrão)</option><option value="parcelado">Parcelada (200 no ato + domingos)</option><option value="nao">Sem semana antecipada</option></select>'+
    '<div class="v100choice"><button type="button" class="v100payopt on" data-v="avista" onclick="ncUI34(\'avista\')">À vista</button><button type="button" class="v100payopt" data-v="parcelado" onclick="ncUI34(\'parcelado\')">Parcelada</button><button type="button" class="v100payopt" data-v="nao" onclick="ncUI34(\'nao\')">Não terá</button></div>'+
