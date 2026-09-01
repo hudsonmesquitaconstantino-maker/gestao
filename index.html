@@ -874,7 +874,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=119; var APP_DATE='31/08/2026';
+var APP_VER=121; var APP_DATE='01/09/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -1074,6 +1074,49 @@ function separaEndereco(txt){
  else if(p.length===3&&!o.uf)o.bairro=p[1];
  return o;
 }
+/* ===== PIX flexível: CPF, celular, e-mail ou chave aleatória ===== */
+function pixTipoInfer(chave){
+ chave=String(chave||'').trim();
+ if(!chave)return 'cpf';
+ if(chave.indexOf('@')>0)return 'email';
+ if(/^\+?55\D*\(?\d{2}\)?\D*9?\d{4}\D*\d{4}$/.test(chave)||/^\(\d{2}\)\s*9?\d{4}-\d{4}$/.test(chave))return 'celular';
+ if(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(chave))return 'aleatoria';
+ if(chave.length>=20&&!/^\d{11}$/.test(chave.replace(/\D/g,'')))return 'aleatoria';
+ return 'cpf';
+}
+function pixTipoNorm(tipo,chave){
+ tipo=String(tipo||'').toLowerCase().trim();
+ if(tipo==='telefone'||tipo==='phone'||tipo==='numero'||tipo==='número')tipo='celular';
+ if(tipo==='e-mail')tipo='email';
+ if(tipo==='random')tipo='aleatoria';
+ if(['cpf','celular','email','aleatoria'].indexOf(tipo)<0)tipo=pixTipoInfer(chave);
+ return tipo;
+}
+function pixTipoLabel(tipo){
+ tipo=pixTipoNorm(tipo,'');
+ if(tipo==='celular')return 'Chave PIX (Celular)';
+ if(tipo==='email')return 'Chave PIX (E-mail)';
+ if(tipo==='aleatoria')return 'Chave PIX (Aleatória)';
+ return 'Chave PIX (CPF)';
+}
+function fmtPixCel(v){
+ var d=soDig(v).slice(0,13),pais='';
+ if(d.length>11&&d.slice(0,2)==='55'){pais='+55 ';d=d.slice(2)}
+ d=d.slice(0,11);
+ if(d.length<=2)return pais+(d?'('+d:'');
+ var ddd=d.slice(0,2),n=d.slice(2);
+ if(n.length<=4)return pais+'('+ddd+') '+n;
+ if(n.length<=8)return pais+'('+ddd+') '+n.slice(0,4)+'-'+n.slice(4);
+ return pais+'('+ddd+') '+n.slice(0,5)+'-'+n.slice(5,9);
+}
+function fmtPixChave(v,tipo){
+ tipo=pixTipoNorm(tipo,v);
+ v=String(v||'');
+ if(tipo==='cpf')return fmtCPF(v);
+ if(tipo==='celular')return fmtPixCel(v);
+ if(tipo==='email')return v.replace(/\s+/g,'').slice(0,120);
+ return v.trim().replace(/\s+/g,'').slice(0,120);
+}
 function normContrato(c){
  c=c||{};c.id=c.id||'';c.carro=c.carro||'';c.origem=c.origem||'gerado';c.status=c.status||'vigente';
  c.locadorId=c.locadorId||'hudson';c.locadorNome=c.locadorNome||'';
@@ -1081,7 +1124,7 @@ function normContrato(c){
  l.nome=l.nome||'';l.cpf=l.cpf||'';l.rg=l.rg||'';l.cnh=l.cnh||'';l.cnhVal=l.cnhVal||'';l.endereco=l.endereco||'';l.cep=l.cep||'';l.tel=l.tel||'';
  c.semanal=Number(c.semanal)||0;c.caucao=Number(c.caucao)||0;c.multaDiaria=Number(c.multaDiaria)||0;c.multaRescisao=Number(c.multaRescisao)||0;
  c.inicio=c.inicio||'';c.fim=c.fim||'';c.kmInicial=Number(c.kmInicial)||0;
- c.pix=c.pix||'';c.cl34=c.cl34||'';c.acessorios=c.acessorios||'Estepe, triângulo, chave de roda, macaco';
+ c.pix=c.pix||'';var _px=(c.pix||'').split('/').map(function(x){return x.trim()});c.pixTipo=pixTipoNorm(c.pixTipo,_px[2]||'');c.cl34=c.cl34||'';c.acessorios=c.acessorios||'Estepe, triângulo, chave de roda, macaco';
  c.combustiveis=c.combustiveis||'';c.formato=c.formato||'';c.temDocx=!!c.temDocx;c.temPdf=!!c.temPdf;
  c.encerradoEm=c.encerradoEm||'';
  /* tipo: 'locacao' (padrão) ou 'venda' (compra e venda com reserva de domínio).
@@ -2205,7 +2248,9 @@ function impDadosContrato(texto){
  o.multaDiaria=(T.match(/multa\s*di[áa]ria\s*de\s*R\$\s*([\d.]+,\d{2})/i)||[])[1]||'';
  o.caucao=(T.match(/t[íi]tulo\s*de\s*CAU[ÇC][ÃA]O[^R]*R\$\s*([\d.]+,\d{2})/i)||[])[1]||'';
  o.multaResc=(T.match(/multa\s*contratual\s*no\s*valor\s*de\s*R\$\s*([\d.]+,\d{2})/i)||[])[1]||'';
- o.pix=(T.match(/Chave\s*PIX\s*\(?CPF\)?:\s*(\d{3}\.\d{3}\.\d{3}-\d{2})/i)||[])[1]||'';
+ var _pm=T.match(/Chave\s*PIX\s*(?:\((CPF|Celular|E-mail|Aleat[oó]ria)\))?\s*:\s*([^\r\n<]+)/i);
+ o.pix=_pm?String(_pm[2]||'').trim():'';
+ o.pixTipo=pixTipoNorm(_pm&&_pm[1],o.pix);
  o.antecipado=(T.match(/semana\s*final\s*do\s*contrato\s*de\s*forma\s*antecipada\s*\(R\$\s*([\d.]+,\d{2})/i)||[])[1]||'';
  return o;
 }
@@ -3409,7 +3454,7 @@ function verContratoHtml(id){
   BAR('CLÁUSULA TERCEIRA – DO PREÇO E FORMA DE PAGAMENTO')+
   P('3.1.','O valor do aluguel semanal é de <b>R$ '+fmtBRL(ct.semanal)+' ('+esc(extenso(ct.semanal))+')</b>.')+
   P('3.2.','O pagamento deverá ser efetuado semanalmente, todas as Quartas-feiras até às 12:00h, mediante depósito ou transferência PIX para:')+
-  '<ul class="cul">'+LI('<b>Banco:</b> '+esc(pix[0]||''))+LI('<b>Favorecido:</b> '+esc(pix[1]||''))+LI('<b>Chave PIX (CPF):</b> '+esc(pix[2]||''))+'</ul>'+
+  '<ul class="cul">'+LI('<b>Banco:</b> '+esc(pix[0]||''))+LI('<b>Favorecido:</b> '+esc(pix[1]||''))+LI('<b>'+esc(pixTipoLabel(ct.pixTipo))+':</b> '+esc(pix[2]||''))+'</ul>'+
   P('3.3.','<b>Do Atraso:</b> O não pagamento no prazo estipulado acarretará a cobrança de multa diária de R$ '+fmtBRL(ct.multaDiaria)+' ('+esc(extenso(ct.multaDiaria))+') por dia de atraso, limitando-se ao domingo da semana corrente.')+
   '<p class="cp cind"><b>Parágrafo Único:</b> Caso o pagamento não seja regularizado até o domingo, o LOCATÁRIO obriga-se a devolver o veículo na segunda-feira subsequente, às 07:30h, sob pena de configuração de apropriação indébita e autorização para bloqueio imediato do veículo via rastreador.</p>'+
   (ct.cl34?P('3.4.','<b>Do Pagamento Antecipado:</b> '+esc(ct.cl34.replace(/^3\.4\.?\s*/,'').replace(/^Do Pagamento Antecipado:\s*/i,'')).replace(/\n/g,'<br>'))+
@@ -4822,8 +4867,9 @@ function fechamentoDoMes(ym){
 function textoFechamento(ym,nomeForn){
  var f=fechamentoDoMes(ym).fornecedores.filter(function(x){return x.nome===nomeForn})[0];
  if(!f)return '';
- var x='FECHAMENTO DE FATURA — '+nomeForn.toUpperCase()+' '+_nomeMes(ym).toUpperCase().replace('/',' ')+'\n\n';
- x+='🚗 FROTA GUIMASCAR\n\n';
+ /* Formatação nativa do WhatsApp: asterisco simples = negrito. */
+ var x='*FECHAMENTO DE FATURA — '+nomeForn.toUpperCase()+' '+_nomeMes(ym).toUpperCase().replace('/',' ')+'*\n\n';
+ x+='*🚗 FROTA GUIMASCAR*\n\n';
  var pks=Object.keys(f.carros);
  pks.filter(function(pk){return !f.carros[pk].pessoal}).forEach(function(pk){
   var c=f.carros[pk],car=S.carros[pk];
@@ -4832,17 +4878,17 @@ function textoFechamento(ym,nomeForn){
   x+='Subtotal: R$ '+fmtBRL(c.sub)+'\n\n';
  });
  var pess=pks.filter(function(pk){return f.carros[pk].pessoal});
- x+='👤 VEÍCULOS SEPARADOS\n\n';
+ x+='*👤 VEÍCULOS SEPARADOS (HUDSON)*\n\n';
  pess.forEach(function(pk){
   var c=f.carros[pk],car=S.carros[pk];
   x+=(car?tituloCarro(car):pk)+' ('+fmtPlaca(pk).split('-')[0]+')\n';
   c.itens.forEach(function(i){x+='• R$ '+fmtBRL(i.valor)+' - '+i.desc+'\n'});
   x+='Subtotal: R$ '+fmtBRL(c.sub)+'\n\n';
  });
- x+='📊 RESUMO DA FATURA\n';
- x+='Total Frota Fábio: R$ '+fmtBRL(f.totalFrota)+'\n';
- x+='Total Frota Hudson: R$ '+fmtBRL(f.totalPessoal)+'\n';
- x+='TOTAL GERAL A PAGAR: R$ '+fmtBRL(f.total);
+ x+='*📊 RESUMO DA FATURA*\n';
+ x+='*Total Frota Fábio:* R$ '+fmtBRL(f.totalFrota)+'\n';
+ x+='*Total Frota Hudson:* R$ '+fmtBRL(f.totalPessoal)+'\n';
+ x+='*TOTAL GERAL A PAGAR: R$* '+fmtBRL(f.total);
  return x;
 }
 
@@ -5062,7 +5108,7 @@ function aplicarMascarasContrato(){
  mascaraInput(document.getElementById('ncCpf'),fmtCPF);
  mascaraInput(document.getElementById('ncCep'),fmtCEP);
  mascaraInput(document.getElementById('ncTel'),fmtTel);
- mascaraInput(document.getElementById('ncPixChave'),fmtCPF);
+ ncPixTipoChange(false);
 }
 function vContrato(){
  var h='<div class="v100form">'+
@@ -5090,7 +5136,7 @@ function vContrato(){
    '<label>Combustíveis</label><input id="ncComb" placeholder="Etanol / GNV 16m³"></div>'+
   '<div class="v100panel"><div class="v100panelHead"><div class="v100panelIcon">🏦</div><div class="grow"><div class="v100panelTitle">Pagamento</div><div class="v100panelSub">PIX de recebimento e forma da semana antecipada.</div></div></div>'+
    '<div class="grid2"><div><label>Banco</label><input id="ncPixBanco" value="Inter"></div><div><label>Favorecido</label><input id="ncPixFav" value="Fabio"></div></div>'+
-   '<label>Chave PIX (CPF)</label><input id="ncPixChave" value="075.351.417-65">'+
+   '<div class="grid2"><div><label>Tipo da chave PIX</label><select id="ncPixTipo" class="v100nativeSelect" onchange="ncPixTipoChange(true);ncResumo()"><option value="cpf">CPF</option><option value="celular">Celular</option><option value="email">E-mail</option><option value="aleatoria">Aleatória</option></select></div><div><label id="ncPixLabel">Chave PIX (CPF)</label><input id="ncPixChave" inputmode="numeric" placeholder="000.000.000-00" value="075.351.417-65" oninput="ncPixFormata()"></div></div>'+
    '<div class="sect" style="margin-top:16px">Semana antecipada</div><div class="sub">Como será paga a semana final do contrato?</div>'+
    '<select id="ncTem34" class="v100nativeSelect" onchange="ncModo34();ncCl34Auto(true);ncResumo()"><option value="avista">Paga à vista no ato (padrão)</option><option value="parcelado">Parcelada (200 no ato + domingos)</option><option value="nao">Sem semana antecipada</option></select>'+
    '<div class="v100choice"><button type="button" class="v100payopt on" data-v="avista" onclick="ncUI34(\'avista\')">À vista</button><button type="button" class="v100payopt" data-v="parcelado" onclick="ncUI34(\'parcelado\')">Parcelada</button><button type="button" class="v100payopt" data-v="nao" onclick="ncUI34(\'nao\')">Não terá</button></div>'+
@@ -5104,6 +5150,29 @@ function vContrato(){
   ncAtualizaSteps();
  },30);
  return h;
+}
+function ncPixTipoChange(reformatar){
+ var sel=document.getElementById('ncPixTipo'),inp=document.getElementById('ncPixChave'),lab=document.getElementById('ncPixLabel');
+ if(!sel||!inp)return;
+ var t=pixTipoNorm(sel.value,inp.value);sel.value=t;
+ if(lab)lab.textContent=pixTipoLabel(t);
+ if(t==='cpf'){inp.inputMode='numeric';inp.placeholder='000.000.000-00';}
+ else if(t==='celular'){inp.inputMode='tel';inp.placeholder='(21) 99999-9999';}
+ else if(t==='email'){inp.inputMode='email';inp.placeholder='nome@provedor.com';}
+ else{inp.inputMode='text';inp.placeholder='Cole a chave aleatória';}
+ if(reformatar)inp.value=fmtPixChave(inp.value,t);
+}
+function ncPixFormata(){
+ var sel=document.getElementById('ncPixTipo'),inp=document.getElementById('ncPixChave');if(!sel||!inp)return;
+ var p=inp.selectionStart||0,antes=inp.value,novo=fmtPixChave(antes,sel.value);
+ if(novo!==antes){inp.value=novo;try{inp.setSelectionRange(novo.length,novo.length)}catch(e){}}
+}
+function ncPixValida(tipo,chave){
+ tipo=pixTipoNorm(tipo,chave);chave=String(chave||'').trim();if(!chave)return false;
+ if(tipo==='cpf')return soDig(chave).length===11;
+ if(tipo==='celular'){var d=soDig(chave);if(d.slice(0,2)==='55')d=d.slice(2);return d.length===10||d.length===11;}
+ if(tipo==='email')return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(chave);
+ return chave.length>=8;
 }
 function ncAtualizaSteps(){
  var form=document.querySelector('.v100form');if(!form)return;
@@ -5231,6 +5300,9 @@ function dadosContratoDoForm(){
  if(!g('ncNome')){toast('Nome do locatário é obrigatório');return null}
  if(!g('ncIni')||!g('ncFim')){toast('Preencha as datas');return null}
  var cnh=g('ncCnh'),cnhVal=g('ncCnhVal');
+ var pixTipo=pixTipoNorm(g('ncPixTipo'),g('ncPixChave'));
+ var pixChave=fmtPixChave(g('ncPixChave'),pixTipo);
+ if(!ncPixValida(pixTipo,pixChave)){toast('Confira a '+pixTipoLabel(pixTipo).toLowerCase());return null}
  return normContrato({
   id:idNovo('ct'),carro:pk,origem:'gerado',status:'vigente',criadoEm:Date.now(),
   locadorId:g('ncLocador'),locadorNome:LOCADORES[g('ncLocador')].nome,
@@ -5240,7 +5312,7 @@ function dadosContratoDoForm(){
   semanal:parseBRL(g('ncSemanal')),caucao:parseBRL(g('ncCaucao')),
   multaDiaria:parseBRL(g('ncMultaDia'))||115,multaRescisao:parseBRL(g('ncMultaResc'))||parseBRL(g('ncCaucao')),
   inicio:g('ncIni'),fim:g('ncFim'),kmInicial:parseInt(g('ncKm').replace(/\D/g,''),10)||0,
-  pix:g('ncPixBanco')+' / '+g('ncPixFav')+' / '+g('ncPixChave'),
+  pix:g('ncPixBanco')+' / '+g('ncPixFav')+' / '+pixChave,pixTipo:pixTipo,
   cl34:(document.getElementById('ncTem34').value==='nao')?'':g('ncCl34'),acessorios:g('ncAcess'),combustiveis:g('ncComb'),temDocx:false,temPdf:false
  });
 }
@@ -5313,7 +5385,7 @@ function clausulasContrato(ct,carro){
  var c3=[
   {p:'3.1. O valor do aluguel semanal é de '+moedaExtenso(ct.semanal)+'.'},
   {p:'3.2. O pagamento deverá ser efetuado semanalmente, todas as Quartas-feiras até às 12:00h, mediante depósito ou transferência PIX para:'},
-  {p:'▪ Banco: '+(pix[0]||'')},{p:'▪ Favorecido: '+(pix[1]||'')},{p:'▪ Chave PIX (CPF): '+(pix[2]||'')},
+  {p:'▪ Banco: '+(pix[0]||'')},{p:'▪ Favorecido: '+(pix[1]||'')},{p:'▪ '+pixTipoLabel(ct.pixTipo)+': '+(pix[2]||'')},
   {p:'3.3. Do Atraso: O não pagamento no prazo estipulado acarretará a cobrança de multa diária de '+moedaExtenso(ct.multaDiaria)+' por dia de atraso, limitando-se ao domingo da semana corrente.'},
   {p:'Parágrafo Único: Caso o pagamento não seja regularizado até o domingo, o LOCATÁRIO obriga-se a devolver o veículo na segunda-feira subsequente, às 07:30h, sob pena de configuração de apropriação indébita e autorização para bloqueio imediato do veículo via rastreador.'}
  ];
@@ -5422,6 +5494,7 @@ function montarDocx(ct,carro){
  try{
   var loc=LOCADORES[ct.locadorId]||{nome:ct.locadorNome,cpf:'',rg:''},lt=ct.locatario;
   var x=TPL_DOC;
+  x=x.split('Chave PIX (CPF):').join(pixTipoLabel(ct.pixTipo)+':');
   var miolo34='';
   if(ct.cl34){
    var cl=ct.cl34.replace(/^3\.4\.?\s*/,'').replace(/^Do Pagamento Antecipado:\s*/i,'');
