@@ -874,7 +874,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=121; var APP_DATE='01/09/2026';
+var APP_VER=123; var APP_DATE='01/09/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -1125,6 +1125,7 @@ function normContrato(c){
  c.semanal=Number(c.semanal)||0;c.caucao=Number(c.caucao)||0;c.multaDiaria=Number(c.multaDiaria)||0;c.multaRescisao=Number(c.multaRescisao)||0;
  c.inicio=c.inicio||'';c.fim=c.fim||'';c.kmInicial=Number(c.kmInicial)||0;
  c.pix=c.pix||'';var _px=(c.pix||'').split('/').map(function(x){return x.trim()});c.pixTipo=pixTipoNorm(c.pixTipo,_px[2]||'');c.cl34=c.cl34||'';c.acessorios=c.acessorios||'Estepe, triângulo, chave de roda, macaco';
+ c.caucaoTransferidaValor=Number(c.caucaoTransferidaValor)||0;c.semanaAntecipadaTransferidaValor=Number(c.semanaAntecipadaTransferidaValor)||0;
  c.combustiveis=c.combustiveis||'';c.formato=c.formato||'';c.temDocx=!!c.temDocx;c.temPdf=!!c.temPdf;
  c.encerradoEm=c.encerradoEm||'';
  /* tipo: 'locacao' (padrão) ou 'venda' (compra e venda com reserva de domínio).
@@ -2090,6 +2091,7 @@ function ficha(pk){window._fichaPk=pk;
    '<div class="sub">R$ '+fmtBRL(ct.semanal)+'/semana · caução R$ '+fmtBRL(ct.caucao)+'</div>'+
    '<div class="sub">'+dataBR(ct.inicio)+' → '+dataBR(ct.fim)+(fimPassado(ct.fim)?' <span class="chip warn">renovação automática</span>':'')+'</div>'+
    docBtns(ct)+
+   '<button class="btn mini ok" onclick="prepararTransferenciaContrato(\''+pk+'\')">🚗 Levar motorista para outro carro</button>'+ 
    '<button class="btn mini red" onclick="trocarMotorista(\''+pk+'\')">🔁 Encerrar e trocar motorista</button></div>';
  }else h+='<div class="sub">Sem contrato vigente.</div><button class="btn mini ok" onclick="novoContratoPara(\'' + pk + '\')">📄 Criar contrato para este carro</button>';
   h+='<button class="btn mini sec" onclick="importarContratoWord(\''+pk+'\')">\ud83d\udcce Importar contrato pronto (Word)</button>';
@@ -2097,7 +2099,7 @@ function ficha(pk){window._fichaPk=pk;
   h+='<details class="v99details"><summary class="v99summary"><span>Contratos anteriores</span><span>'+anteriores.length+' ›</span></summary><div class="v99detailbody">';
   anteriores.forEach(function(x){
    h+='<div class="card" style="margin:0 0 6px"><div class="tit" style="font-size:14px">'+esc(x.locatario.nome)+'</div>'+
-    '<div class="sub">'+dataBR(x.inicio)+' → '+dataBR(x.fim)+(x.encerradoEm?' · encerrado em '+dataBR(x.encerradoEm):'')+'</div>'+docBtns(x)+
+    '<div class="sub">'+dataBR(x.inicio)+' → '+dataBR(x.fim)+(x.encerradoEm?' · encerrado em '+dataBR(x.encerradoEm):'')+(x.transferidoParaCarro?' · transferido para '+esc(fmtPlaca(x.transferidoParaCarro)):'')+'</div>'+docBtns(x)+
     '<button class="btn mini red" onclick="excluirContrato(\''+x.id+'\')">🗑 Excluir contrato</button></div>';
   });
   h+='</div></details>';
@@ -2493,6 +2495,7 @@ function marcarFrotaHudson(){
 }
 
 function novoContratoPara(pk){
+ NCTRANSFER=null;
  closeSheet(2);closeSheet();
  go(2);
  setTimeout(function(){
@@ -2501,6 +2504,111 @@ function novoContratoPara(pk){
   var t=document.getElementById('ncNome');
   if(t)try{t.scrollIntoView({block:'center'})}catch(e){}
  },120);
+}
+/* ===== TRANSFERÊNCIA SEGURA DE MOTORISTA ENTRE CARROS v122 =====
+   O contrato atual só é encerrado quando o novo contrato é efetivamente registrado. */
+var NCTRANSFER=null;
+function _ctVigenteDoCarro(pk){
+ var c=S&&S.carros&&S.carros[pk];if(!c)return null;
+ var id=c.contratoVigenteId||'',ct=id&&S.contratos&&S.contratos[id];
+ return (ct&&ct.tipo!=='venda'&&ct.status==='vigente')?ct:null;
+}
+function _carroOcupadoTransfer(pk){var c=S&&S.carros&&S.carros[pk];if(!c)return true;return !!(_ctVigenteDoCarro(pk)||(c.status==='ativo'&&String(c.motorista||'').trim()))}
+function _opcoesDestinoTransfer(origPk){
+ var ks=Object.keys(S.carros||{}).sort(function(a,b){
+  var ca=S.carros[a]||{},cb=S.carros[b]||{};
+  return semAcento(tituloCarro(ca)+' '+fmtPlaca(a)).localeCompare(semAcento(tituloCarro(cb)+' '+fmtPlaca(b)));
+ });
+ var h='<option value="">— escolha o carro novo —</option>';
+ ks.forEach(function(pk){
+  var c=S.carros[pk],vig=_ctVigenteDoCarro(pk),bloq=(pk===origPk)||_carroOcupadoTransfer(pk);
+  var extra=pk===origPk?' · carro atual':(vig?' · ocupado por '+primNome((vig.locatario||{}).nome||c.motorista||''):' · disponível');
+  h+='<option value="'+esc(pk)+'"'+(bloq?' disabled':'')+'>'+esc(tituloCarro(c))+' · '+esc(fmtPlaca(pk))+esc(extra)+'</option>';
+ });
+ return h;
+}
+function prepararTransferenciaContrato(origPk){
+ var c=S.carros[origPk],ct=_ctVigenteDoCarro(origPk);
+ if(!c||!ct){toast('Não há contrato vigente para reaproveitar');return}
+ var livres=Object.keys(S.carros||{}).filter(function(pk){return pk!==origPk&&!_carroOcupadoTransfer(pk)});
+ if(!livres.length){toast('Nenhum outro carro está livre para receber este motorista');return}
+ var h='<h3>🚗 Levar motorista para outro carro</h3>'+ 
+  '<p class="sub">Escolha primeiro o que deve acontecer com o contrato atual. <b>Nada será alterado até o novo contrato ser gerado.</b></p>'+ 
+  '<div class="card" style="margin:8px 0 12px"><div class="tit">'+esc(ct.locatario&&ct.locatario.nome||c.motorista||'Motorista')+'</div>'+ 
+  '<div class="sub">Contrato atual: '+esc(tituloCarro(c))+' · '+esc(fmtPlaca(origPk))+'</div>'+ 
+  '<div class="sub">R$ '+fmtBRL(ct.semanal)+'/semana · caução R$ '+fmtBRL(ct.caucao)+'</div></div>'+ 
+  '<label>Tipo da operação</label><select id="trModo" class="v100nativeSelect" onchange="trModoInfo()">'+
+   '<option value="">— escolha —</option><option value="definitiva">Transferência definitiva — encerrar o contrato atual</option><option value="reserva">Carro reserva / contrato adicional — manter o atual vigente</option></select>'+ 
+  '<div id="trModoInfo" class="v102info" style="display:none;margin-top:8px"></div>'+ 
+  '<label style="margin-top:12px">Carro de destino</label><select id="trDestino" class="v100nativeSelect">'+_opcoesDestinoTransfer(origPk)+'</select>'+ 
+  '<div class="sub" style="margin-top:8px">Nos dois casos o Gestão reaproveita dados pessoais, CNH, endereço, telefone e valores como base de preenchimento. Quilometragem, combustível e locador vêm do carro novo.</div>'+ 
+  '<button class="btn ok" onclick="confirmarTransferenciaContrato(\''+origPk+'\')">Continuar para o novo contrato</button>'+ 
+  '<button class="btn sec" onclick="closeSheet(2)">Cancelar</button>';
+ openSheet(h,2);
+}
+function trModoInfo(){
+ var s=document.getElementById('trModo'),e=document.getElementById('trModoInfo');if(!s||!e)return;
+ if(s.value==='definitiva'){e.style.display='';e.innerHTML='<b>Transferência definitiva:</b> o contrato atual continua vigente durante o preenchimento e só será encerrado no instante em que o novo contrato for registrado. Caução/semana antecipada já entregues podem ser aproveitadas como crédito no novo contrato.'}
+ else if(s.value==='reserva'){e.style.display='';e.innerHTML='<b>Carro reserva / contrato adicional:</b> o contrato atual NÃO será encerrado. O motorista ficará com dois contratos vigentes, um para cada carro. Os valores são apenas copiados como base e o novo Word é um contrato normal, sem dizer que a caução ou a semana antecipada foram transferidas.'}
+ else{e.style.display='none';e.innerHTML=''}
+}
+function confirmarTransferenciaContrato(origPk){
+ var ct=_ctVigenteDoCarro(origPk),sel=document.getElementById('trDestino'),dest=sel?sel.value:'',ms=document.getElementById('trModo'),modo=ms?ms.value:'';
+ if(!ct){toast('O contrato de origem mudou. Abra a ficha novamente.');return}
+ if(modo!=='definitiva'&&modo!=='reserva'){toast('Escolha se é transferência definitiva ou carro reserva');return}
+ if(!dest||dest===origPk){toast('Escolha outro carro');return}
+ if(!S.carros[dest]){toast('Carro de destino não encontrado');return}
+ if(_carroOcupadoTransfer(dest)){toast('Esse carro já está ocupado ou possui contrato vigente');return}
+ NCTRANSFER={fromPk:origPk,fromCtId:ct.id,destPk:dest,modo:modo,preparadoEm:Date.now()};
+ closeSheet(2);closeSheet();go(2);
+ setTimeout(preencherContratoTransferido,160);
+}
+function cancelarTransferenciaContrato(){NCTRANSFER=null;go(2);toast('Operação cancelada — contrato atual não foi alterado')}
+function _rgTransferDados(l){
+ l=l||{};var raw=String(l.rg||'').trim(),base=raw.replace(/\s*\|\s*CNH.*$/i,'').replace(/^RG\s*/i,'').trim();
+ base=base.replace(/\s+e\s+CNH\b.*$/i,'').replace(/\s+e\s+CPF\b.*$/i,'').trim();
+ var num='',org='',m=base.match(/^([0-9.\-]+)\s*[–—-]\s*(.+)$/);
+ if(m){num=m[1];org=m[2]}else{m=base.match(/^([0-9.\-]+)\s+(.+)$/);if(m){num=m[1];org=m[2]}else num=base}
+ var cnh=String(l.cnh||'').trim();if(!cnh){var rx=/CNH\s*(?:n[ºo]\.?\s*)?([0-9]{6,15})/ig,mc,best='';while((mc=rx.exec(raw))){if(mc[1].length>best.length)best=mc[1]}cnh=best}
+ var val=String(l.cnhVal||'').trim();if(!val){var mv=raw.match(/(?:val\.?|validade)\s*([0-3]?\d\/[01]?\d\/\d{4})/i);if(mv){var p=mv[1].split('/');val=p[2]+'-'+('0'+p[1]).slice(-2)+'-'+('0'+p[0]).slice(-2)}}
+ return {num:num,org:org,cnh:cnh,cnhVal:val};
+}
+function _pixPartesTransfer(ct){
+ var a=String((ct&&ct.pix)||'').split('/'),b=(a.shift()||'').trim(),f=(a.shift()||'').trim(),k=a.join('/').trim();
+ return {banco:b,fav:f,chave:k,tipo:pixTipoNorm(ct&&ct.pixTipo,k)};
+}
+function _pixPreferidoTransfer(locadorId,ctOrig){
+ if(ctOrig&&ctOrig.locadorId===locadorId&&ctOrig.pix)return _pixPartesTransfer(ctOrig);
+ var cand=[];Object.keys(S.contratos||{}).forEach(function(id){var x=S.contratos[id];if(x&&x.tipo!=='venda'&&x.locadorId===locadorId&&x.pix)cand.push(x)});
+ cand.sort(function(a,b){return (Number(b.criadoEm)||Date.parse(b.inicio||'')||0)-(Number(a.criadoEm)||Date.parse(a.inicio||'')||0)});
+ return cand.length?_pixPartesTransfer(cand[0]):{banco:'',fav:'',chave:'',tipo:'cpf'};
+}
+function _parcelasDeCl34(txt){
+ var out=[];String(txt||'').split(/\n+/).forEach(function(l){
+  var m=l.match(/R\$\s*([\d.]+(?:,\d{1,2})?)(?:[^—\n-]*[—-]\s*(.*))?$/i);
+  if(m){var v=parseBRL(m[1]);if(v>0)out.push({v:v,q:(m[2]||'').trim()})}
+ });return out;
+}
+function preencherContratoTransferido(){
+ if(!NCTRANSFER)return;
+ var ctx=NCTRANSFER,orig=S.carros[ctx.fromPk],ct=S.contratos[ctx.fromCtId],dest=S.carros[ctx.destPk];
+ if(!orig||!ct||!dest){NCTRANSFER=null;toast('Não consegui recuperar os dados da transferência');return}
+ var vigOrig=_ctVigenteDoCarro(ctx.fromPk);if(!vigOrig||vigOrig.id!==ctx.fromCtId){NCTRANSFER=null;toast('O contrato de origem não está mais vigente');return}
+ if(_carroOcupadoTransfer(ctx.destPk)){NCTRANSFER=null;toast('O carro de destino passou a estar ocupado');return}
+ var set=function(id,v){var e=document.getElementById(id);if(e)e.value=v==null?'':String(v)};
+ set('ncCarro',ctx.destPk);ncPuxaCarro();
+ var l=ct.locatario||{},rg=_rgTransferDados(l),end=separaEndereco(l.endereco||'');
+ set('ncNome',l.nome||'');set('ncCpf',showCPF(l.cpf||''));set('ncRgNum',rg.num);set('ncRgOrg',rg.org);set('ncCnh',rg.cnh);set('ncCnhVal',rg.cnhVal);
+ set('ncRua',end.rua);set('ncNum',end.num);set('ncCompl',end.compl);set('ncBairro',end.bairro);set('ncCidade',end.cidade||'São Gonçalo');set('ncUf',end.uf||'RJ');set('ncCep',showCEP(l.cep||''));set('ncTel',showTel(l.tel||''));
+ if(ct.semanal)set('ncSemanal',fmtBRL(ct.semanal));if(ct.caucao)set('ncCaucao',fmtBRL(ct.caucao));if(ct.multaDiaria)set('ncMultaDia',fmtBRL(ct.multaDiaria));if(ct.multaRescisao)set('ncMultaResc',fmtBRL(ct.multaRescisao));
+ set('ncIni',hoje());set('ncFim',mais3Meses(hoje()));
+ var px=_pixPreferidoTransfer(dest.locadorId,ct);set('ncPixBanco',px.banco);set('ncPixFav',px.fav);set('ncPixTipo',px.tipo);set('ncPixChave',fmtPixChave(px.chave,px.tipo));ncPixTipoChange(true);
+ NCPARC=[];var cl=String(ct.cl34||'').trim(),modo='nao';
+ if(cl){var ps=_parcelasDeCl34(cl);if(/da seguinte forma/i.test(cl)&&ps.length){modo='parcelado';NCPARC=ps}else modo='avista'}
+ set('ncTem34',modo);ncModo34();if(modo==='parcelado')ncParcDraw();else ncCl34Auto(true);
+ var hero=document.querySelector('.v100formHero');if(hero){var av=document.createElement('div');av.className='v102info';av.style.marginTop='10px';var _res=ctx.modo==='reserva';av.innerHTML='<b>'+(_res?'Contrato adicional / reserva preparado:':'Transferência definitiva preparada:')+'</b> '+esc(primNome(l.nome||''))+' · '+esc(fmtPlaca(ctx.fromPk))+' → '+esc(fmtPlaca(ctx.destPk))+'<br><span class="sub">'+(_res?'O contrato do carro original continuará vigente. Este será um novo contrato normal e independente; os valores copiados continuam editáveis.':'O contrato antigo só será encerrado quando o novo for registrado. Os valores já entregues podem ser aproveitados como crédito e continuam editáveis.')+'</span><br><button type="button" class="btn mini sec" style="margin-top:7px" onclick="cancelarTransferenciaContrato()">Cancelar operação</button>';hero.appendChild(av)}
+ try{ncResumo();ncAtualizaSteps()}catch(e){}
+ toast('✅ Dados do motorista e valores reaproveitados — confira e gere o novo contrato');
 }
 function docBtns(ct){
  var pk=ct.carro,h='';
@@ -5196,6 +5304,11 @@ function ncPuxaCarro(){
  if(c.caucaoPadrao){document.getElementById('ncCaucao').value=fmtBRL(c.caucaoPadrao);ncMultaAuto()}
  document.getElementById('ncKm').value=km||'';
  document.getElementById('ncComb').value=c.combustivel||'';
+ if(NCTRANSFER&&pk!==NCTRANSFER.fromPk){
+  var _cto=S.contratos[NCTRANSFER.fromCtId],_px=_pixPreferidoTransfer(c.locadorId,_cto);
+  var _b=document.getElementById('ncPixBanco'),_f=document.getElementById('ncPixFav'),_t=document.getElementById('ncPixTipo'),_k=document.getElementById('ncPixChave');
+  if(_b)_b.value=_px.banco;if(_f)_f.value=_px.fav;if(_t)_t.value=_px.tipo;if(_k)_k.value=fmtPixChave(_px.chave,_px.tipo);try{ncPixTipoChange(true)}catch(e){}
+ }
  ncCl34Auto();
  ncModo34();ncAtualizaSteps();
 }
@@ -5318,15 +5431,36 @@ function dadosContratoDoForm(){
 }
 function gerarContrato(){
  var ct=dadosContratoDoForm();if(!ct)return;
- var c=S.carros[ct.carro],pk=ct.carro;
- if(c.contratoVigenteId&&S.contratos[c.contratoVigenteId]){
+ var c=S.carros[ct.carro],pk=ct.carro,ctx=NCTRANSFER,orig=null,ctOrig=null;
+ if(ctx){
+  orig=S.carros[ctx.fromPk];ctOrig=S.contratos[ctx.fromCtId];
+  if(!orig||!ctOrig||orig.contratoVigenteId!==ctx.fromCtId||ctOrig.status!=='vigente'){toast('⛔ Operação cancelada: o contrato de origem mudou');return}
+  if(pk===ctx.fromPk){toast('Escolha um carro diferente');return}
+  if(_carroOcupadoTransfer(pk)){toast('⛔ O carro de destino já está ocupado ou possui contrato vigente');return}
+  if(ctx.modo==='reserva'){
+   /* Contrato adicional/reserva: reaproveita os dados como preenchimento, mas NÃO encerra
+      nem altera o contrato original e NÃO converte caução/semana em crédito transferido. */
+   ct.copiadoDeCarro=ctx.fromPk;ct.copiadoDeContrato=ctx.fromCtId;ct.vinculoOrigem='reserva';ct.copiadoEm=Date.now();
+  }else{
+   ct.transferidoDeCarro=ctx.fromPk;ct.transferidoDeContrato=ctx.fromCtId;ct.transferidoEm=Date.now();
+   /* Transferência definitiva: valores já entregues não viram nova cobrança. */
+   ct.caucaoTransferidaValor=Number(ctOrig.caucao)||0;
+   ct.semanaAntecipadaTransferidaValor=String(ctOrig.cl34||'').trim()?(Number(ctOrig.semanal)||0):0;
+   if(ct.semanaAntecipadaTransferidaValor>0){ct.cl34='Do Pagamento Antecipado: O crédito de R$ '+fmtBRL(ct.semanaAntecipadaTransferidaValor)+' referente à semana final antecipada do contrato anterior é aproveitado neste contrato, sem nova cobrança desse valor. Se o valor semanal deste novo contrato for diferente, eventual diferença deverá ser ajustada entre as partes.'}
+  }
+ }else if(c.contratoVigenteId&&S.contratos[c.contratoVigenteId]){
   S.contratos[c.contratoVigenteId].status='encerrado';
   S.contratos[c.contratoVigenteId].encerradoEm=hoje();_touchContrato(S.contratos[c.contratoVigenteId]);
  }
  S.contratos[ct.id]=ct;
+ if(ctx&&ctx.modo!=='reserva'){
+  ctOrig.status='encerrado';ctOrig.encerradoEm=hoje();ctOrig.transferidoParaCarro=pk;ctOrig.transferidoParaContrato=ct.id;ctOrig.transferidoEm=Date.now();_touchContrato(ctOrig);
+  orig.contratoVigenteId='';orig.motorista='';orig.status='parado';_touchCarro(orig,['contratoVigenteId','motorista','status']);
+ }
  c.contratoVigenteId=ct.id;c.motorista=ct.locatario.nome;c.status='ativo';_touchCarro(c,['contratoVigenteId','motorista','status','kmAtual','kmUltima','kmUltimaData','semanalPadrao','caucaoPadrao']);
  if(ct.kmInicial){c.kmAtual=ct.kmInicial;c.kmUltima=ct.kmInicial;c.kmUltimaData=ct.inicio}
  c.semanalPadrao=ct.semanal;c.caucaoPadrao=ct.caucao;
+ NCTRANSFER=null;
  save();
  go(0);ficha(pk);
  toast('📑 Contrato registrado · gerando Word…');
@@ -5403,7 +5537,7 @@ function clausulasContrato(ct,carro){
    {p:'2.2. O contrato poderá ser renovado automaticamente por igual período (3 meses), desde que haja interesse mútuo manifestado por escrito ou meio eletrônico (WhatsApp/E-mail) com antecedência mínima de 15 (quinze) dias, ocasião em que os valores poderão ser reajustados.'}]},
   {h:'CLÁUSULA TERCEIRA – DO PREÇO E FORMA DE PAGAMENTO',itens:c3},
   {h:'CLÁUSULA QUARTA – DA GARANTIA (CAUÇÃO)',itens:[
-   {p:'4.1. O LOCATÁRIO entrega neste ato, a título de CAUÇÃO, a quantia de '+moedaExtenso(ct.caucao)+'.'},
+   {p:ct.caucaoTransferidaValor>0?('4.1. O crédito de '+moedaExtenso(ct.caucaoTransferidaValor)+' já entregue a título de CAUÇÃO no contrato anterior é transferido para este contrato, sem nova cobrança desse valor. Se a caução prevista neste novo contrato for diferente, eventual diferença deverá ser ajustada entre as partes.'):('4.1. O LOCATÁRIO entrega neste ato, a título de CAUÇÃO, a quantia de '+moedaExtenso(ct.caucao)+'.')},
    {p:'4.2. Finalidade da Caução: Este valor visa garantir prioritariamente o pagamento da Franquia do Seguro em caso de sinistro.'},
    {p:'4.2.1. Em caso de sinistro com acionamento do seguro, se o valor da franquia for superior à caução, o LOCATÁRIO deverá complementar a diferença imediatamente.'},
    {p:'4.3. Devolução: Não havendo avarias, multas, sinistros ou pendências financeiras, a caução será devolvida ao LOCATÁRIO no prazo de 30 (trinta) dias após o término do contrato, tempo necessário para verificação de multas de trânsito tardias.'},
