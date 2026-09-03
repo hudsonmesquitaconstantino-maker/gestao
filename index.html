@@ -973,7 +973,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=138; var APP_DATE='03/09/2026';
+var APP_VER=139; var APP_DATE='03/09/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -2361,6 +2361,7 @@ h+='<div class="sect">Devolução do carro</div>';
    h+='<div class="card" style="margin:0 0 6px"><div class="tit" style="font-size:14px">'+esc(primNome(t.motorista||''))+' · '+esc(t.motivo||'')+'</div>'+
     '<div class="sub">'+dataBR(t.dataFim||'')+' · '+(t.aDevolver?'a devolver':'devido pelo motorista')+' R$ '+fmtBRL(t.saldo||0)+'</div>'+
     '<button class="btn mini" onclick="verTermo(\''+t.id+'\')">👁 Ver / copiar</button>'+
+    '<button class="btn mini" onclick="editarTermo(\''+t.id+'\')">✏️ Editar termo</button>'+
     '<button class="btn mini red" onclick="excluirTermo(\''+t.id+'\')">🗑 Excluir</button></div>';
   });
  }
@@ -4099,7 +4100,7 @@ function mRascLimpa(){try{localStorage.removeItem(RASC_K)}catch(e){}}
 
 
 /* ===================== TERMO DE DEVOLUÇÃO E ACERTO DE CONTAS ===================== */
-var TP=[],TB=[],TI=[],TD=[],TC=[],_termoPk='',_termoContratoId='';
+var TP=[],TB=[],TI=[],TD=[],TC=[],_termoPk='',_termoContratoId='',_termoEditId='';
 var TIMP_SEL={},TIMP_CANDS=[],TIMP_SHOW_ALL=false;
 var RASC_T='gestao_rascunho_termo';
 
@@ -4140,7 +4141,7 @@ function _tMarcaCreditoLegadoAuto(ct){
  if(d.indexOf('CAUCAO RETIDA NO INICIO DO CONTRATO')>=0)TC[0]._autoContratoCaucao=1;
 }
 function tRasc(){try{var g=function(i){var e=document.getElementById(i);return e?e.value:''};
- localStorage.setItem(RASC_T,JSON.stringify({pk:_termoPk,contratoId:_termoContratoId||g('tvContrato'),mot:g('tvMot'),motivo:g('tvMotivo'),ini:g('tvIni'),fim:g('tvFim'),odo:g('tvOdo'),TP:TP,TB:TB,TI:TI,TD:TD,TC:TC,em:Date.now()}));}catch(e){}}
+ localStorage.setItem(RASC_T,JSON.stringify({pk:_termoPk,editId:_termoEditId||'',contratoId:_termoContratoId||g('tvContrato'),mot:g('tvMot'),motivo:g('tvMotivo'),ini:g('tvIni'),fim:g('tvFim'),odo:g('tvOdo'),TP:TP,TB:TB,TI:TI,TD:TD,TC:TC,em:Date.now()}));}catch(e){}}
 function tRascLimpa(){try{localStorage.removeItem(RASC_T)}catch(e){}}
 function tContratoAtualizaUI(){
  var c=S.carros[_termoPk],ct=_termoContratoId&&S.contratos[_termoContratoId];
@@ -4181,10 +4182,11 @@ function tContratoEscolhido(id){
  if(oldId&&oldId!==_termoContratoId)toast('Contrato do termo alterado. Revise os lançamentos já preenchidos.');
 }
 function abrirTermo(pk){
+ _termoEditId='';
  _termoPk=pk;
  var c=S.carros[pk],lista=_tContratosDoCarro(pk),curId=c.contratoVigenteId||'';
  var rasc=null;try{rasc=JSON.parse(localStorage.getItem(RASC_T)||'null')}catch(e){}
- if(!(rasc&&rasc.pk===pk))rasc=null;
+ if(!(rasc&&rasc.pk===pk&&!rasc.editId))rasc=null;
  _termoContratoId=_tContratoInicial(pk,rasc,lista);
  var ct=_termoContratoId?S.contratos[_termoContratoId]:null;
  if(rasc){TP=rasc.TP||[];TB=rasc.TB||[];TI=rasc.TI||[];TD=rasc.TD||[];TC=rasc.TC||[];_tMarcaCreditoLegadoAuto(ct)}
@@ -4522,6 +4524,7 @@ function buildTermoTexto(t,carro){
  return x;
 }
 function gerarTermo(){
+ _termoEditId='';
  var g=function(i){var e=document.getElementById(i);return e?e.value:''};
  var pk=_termoPk,c=S.carros[pk];
  var contratoId=_termoContratoId||g('tvContrato'),ct=contratoId&&S.contratos[contratoId];
@@ -4562,11 +4565,85 @@ function gerarTermo(){
  toast(fechaContratoAtual?'🧾 Termo gerado · contrato selecionado encerrado · carro sem motorista':'🧾 Termo histórico gerado · contrato e motorista atuais preservados');
  setTimeout(function(){verTermo(id)},350);
 }
+function _tCopiaLista(a){return JSON.parse(JSON.stringify(Array.isArray(a)?a:[]))}
+function _tContratoTextoEdit(t){
+ var ct=t&&t.contratoId&&S.contratos&&S.contratos[t.contratoId];
+ if(ct)return _tContratoLabel(ct,(S.carros[t.carro]||{}).contratoVigenteId||'');
+ return 'Termo antigo sem vínculo explícito de contrato';
+}
+function editarTermo(id){
+ var t=S.termos&&S.termos[id];if(!t){toast('Termo não encontrado');return}
+ _termoEditId=id;_termoPk=t.carro||'';_termoContratoId=t.contratoId||'';
+ var c=S.carros[_termoPk];if(!c){toast('Carro do termo não encontrado');return}
+ var rasc=null;try{rasc=JSON.parse(localStorage.getItem(RASC_T)||'null')}catch(e){}
+ if(!(rasc&&rasc.editId===id&&rasc.pk===_termoPk))rasc=null;
+ if(rasc){TP=rasc.TP||[];TB=rasc.TB||[];TI=rasc.TI||[];TD=rasc.TD||[];TC=rasc.TC||[]}
+ else{
+  TP=_tCopiaLista(t.pecas);TB=_tCopiaLista(t.blocos);TI=_tCopiaLista(t.integrais);TD=_tCopiaLista(t.debitos);TC=_tCopiaLista(t.creditos);
+ }
+ TIMP_SEL={};TIMP_CANDS=[];TIMP_SHOW_ALL=false;
+ var motVal=(rasc&&rasc.mot)||t.motorista||'',motivoVal=(rasc&&rasc.motivo)||t.motivo||'Fim do Contrato';
+ var iniVal=(rasc&&rasc.ini)||t.dataIni||'',fimVal=(rasc&&rasc.fim)||t.dataFim||'',odoVal=(rasc&&rasc.odo)||t.odometro||'';
+ var h='<h3>✏️ Editar termo finalizado — '+esc(tituloCarro(c))+' ('+esc(fmtPlaca(_termoPk))+')</h3>'+ 
+  '<div class="v138contractBox"><b>Contrato do termo</b><div class="sub" style="margin-top:5px">'+esc(_tContratoTextoEdit(t))+'</div>'+ 
+  '<div class="v138contractNote history">Editar este termo NÃO reabre, encerra ou altera nenhum contrato e NÃO muda o motorista atual do carro. Somente o termo salvo será atualizado.</div></div>'+ 
+  '<p class="sub">Você pode corrigir datas e odômetro, acrescentar/remover lançamentos e puxar novas manutenções do histórico. O saldo e o texto para WhatsApp são recalculados ao salvar.</p>'+ 
+  '<label>Motorista</label><input id="tvMot" oninput="tRasc()" value="'+esc(motVal)+'">'+ 
+  '<label>Motivo da devolução</label><select id="tvMotivo" onchange="tCalc()"><option'+(motivoVal!=='Quebra de Contrato'?' selected':'')+'>Fim do Contrato</option><option'+(motivoVal==='Quebra de Contrato'?' selected':'')+'>Quebra de Contrato</option></select>'+ 
+  '<div class="grid2"><div><label>Início do contrato</label><input type="date" id="tvIni" onchange="tCalc()" value="'+esc(iniVal)+'"></div>'+ 
+  '<div><label>Data da devolução</label><input type="date" id="tvFim" onchange="tCalc()" value="'+esc(fimVal)+'"></div></div>'+ 
+  '<div class="sub" style="margin:-2px 0 10px">Se houver saldo a devolver e o motivo for Fim do Contrato, a data programada do PIX será recalculada para exatamente 30 dias após a nova data de devolução.</div>'+ 
+  '<label>Odômetro na devolução (km)</label><input id="tvOdo" inputmode="numeric" oninput="tRasc()" value="'+esc(odoVal)+'">'+ 
+  '<div class="v137importBox"><button class="btn sec" onclick="tImportAbrir()">📥 Puxar mais do histórico de manutenções</button>'+ 
+   '<div class="sub">Você pode acrescentar novas manutenções ao termo já finalizado. Itens já presentes continuam protegidos contra duplicidade.</div><div id="tvImportPanel" class="v137importPanel"></div></div>'+ 
+  '<div class="sect">1. Manutenção corretiva — divisão 50/50 · Peças</div><div id="tvPecas"></div>'+ 
+  '<button class="btn mini sec" onclick="TP.push({valor:\'\',desc:\'\',loja:\'\'});tDesenha()">➕ Peça</button>'+ 
+  '<div class="sect">Mão de obra (um bloco por profissional)</div><div id="tvBlocos"></div>'+ 
+  '<button class="btn mini sec" onclick="TB.push({titulo:\'Mecânico\',nome:\'\',valor:\'\',servicos:\'\'});tDesenha()">➕ Mão de obra</button>'+ 
+  '<div class="sect">2. Custos de uso integral — 100% motorista</div><div id="tvInteg"></div>'+ 
+  '<button class="btn mini sec" onclick="TI.push({valor:\'\',desc:\'\'});tDesenha()">➕ Custo integral</button>'+ 
+  '<div class="sect">3. Balanço — Débitos</div><div id="tvDeb"></div>'+ 
+  '<button class="btn mini sec" onclick="TD.push({valor:\'\',desc:\'\'});tDesenha()">➕ Débito</button>'+ 
+  '<div class="sect">3. Balanço — Créditos (caução etc.)</div><div id="tvCred"></div>'+ 
+  '<button class="btn mini sec" onclick="TC.push({valor:\'\',desc:\'\'});tDesenha()">➕ Crédito</button>'+ 
+  '<div class="sect">Resumo atualizado</div><div class="filestat" id="tvResumo"></div>'+ 
+  '<button class="btn ok" onclick="salvarEdicaoTermo()">✅ SALVAR ALTERAÇÕES DO TERMO</button>'+ 
+  '<button class="btn sec" onclick="closeSheet(2)">Fechar sem salvar agora</button>';
+ openSheet(h,2);setTimeout(function(){tDesenha();if(rasc)toast('📝 Rascunho da edição recuperado')},60);
+}
+function salvarEdicaoTermo(){
+ var id=_termoEditId,ant=S.termos&&S.termos[id];if(!ant){toast('Termo não encontrado');return}
+ var g=function(i){var e=document.getElementById(i);return e?e.value:''};
+ var c=S.carros[ant.carro];if(!c){toast('Carro do termo não encontrado');return}
+ var mot=g('tvMot').trim(),motivo=g('tvMotivo'),ini=g('tvIni'),fim=g('tvFim');
+ if(!mot){toast('Informe o motorista');return}if(!ini||!fim){toast('Informe as datas do período');return}
+ if(!ordemDatasOk(ini,fim)){toast('⚠️ A devolução não pode ser anterior ao início do contrato');return}
+ var odo=parseInt(String(g('tvOdo')).replace(/\D/g,''),10)||0;
+ var pecas=TP.filter(function(p){return p.desc||tNum(p.valor)}).map(function(p){return {valor:tNum(p.valor),desc:p.desc||'',loja:p.loja||'',origemChave:p.origemChave||'',origemManut:p.origemManut||'',origemData:p.origemData||''}});
+ var blocos=TB.filter(function(b){return b.nome||b.servicos||tNum(b.valor)}).map(function(b){return {titulo:b.titulo||'Mecânico',nome:b.nome||'',valor:tNum(b.valor),servicos:b.servicos||'',origemChave:b.origemChave||'',origemManut:b.origemManut||'',origemData:b.origemData||''}});
+ var integrais=TI.filter(function(x){return x.desc||tNum(x.valor)}).map(function(x){return {valor:tNum(x.valor),desc:x.desc||'',origemChave:x.origemChave||'',origemManut:x.origemManut||'',origemData:x.origemData||''}});
+ var debitos=TD.filter(function(x){return x.desc||tNum(x.valor)}).map(function(x){return {valor:tNum(x.valor),desc:x.desc||'',origemChave:x.origemChave||'',origemManut:x.origemManut||'',origemData:x.origemData||''}});
+ var creditos=TC.filter(function(x){return x.desc||tNum(x.valor)}).map(function(x){return {valor:tNum(x.valor),desc:x.desc||''}});
+ var tp=pecas.reduce(function(s,p){return s+p.valor},0),tmo=blocos.reduce(function(s,b){return s+tNum(b.valor)},0),tm=tp+tmo,cota=tm/2;
+ var ti=integrais.reduce(function(s,x){return s+tNum(x.valor)},0),td=debitos.reduce(function(s,x){return s+tNum(x.valor)},0),tc=creditos.reduce(function(s,x){return s+tNum(x.valor)},0),saldoRaw=cota+ti+td-tc;
+ var t=JSON.parse(JSON.stringify(ant));
+ t.id=ant.id;t.carro=ant.carro;t.contratoId=ant.contratoId||'';t.motorista=mot;t.motivo=motivo;t.dataIni=ini;t.dataFim=fim;t.odometro=odo;
+ t.pecas=pecas;t.blocos=blocos;t.integrais=integrais;t.debitos=debitos;t.creditos=creditos;t.totalPecas=tp;t.totalMO=tmo;t.totalManut=tm;t.cota=cota;
+ t.totalIntegrais=ti;t.totalDebitos=td;t.totalCreditos=tc;t.saldo=Math.abs(saldoRaw);t.aDevolver=saldoRaw<0;t.criadoEm=ant.criadoEm||Date.now();t.editadoEm=Date.now();
+ if(ant.revisoes&&Array.isArray(ant.revisoes))t.revisoes=ant.revisoes.slice(-19);else t.revisoes=[];
+ t.revisoes.push({em:t.editadoEm,dataFimAntes:ant.dataFim||'',saldoAntes:Number(ant.saldo)||0,aDevolverAntes:!!ant.aDevolver});
+ t.texto=buildTermoTexto(t,c);S.termos[id]=t;
+ /* v139: editar termo finalizado é documental/financeiro. Nunca altera o estado atual
+    do carro, contrato vigente, motorista do carro ou quilometragem operacional. */
+ save();tRascLimpa();_termoEditId='';closeSheet(2);if(window._fichaPk)ficha(window._fichaPk);render();toast('✅ Termo atualizado sem alterar contrato ou carro');
+ setTimeout(function(){verTermo(id)},250);
+}
 function verTermo(id){
  var t=S.termos[id];if(!t)return;
  openSheet('<h3>🧾 Termo — '+esc(primNome(t.motorista))+'</h3>'+
   '<pre style="white-space:pre-wrap;background:var(--card2);border-radius:10px;padding:12px;font-size:12.5px;line-height:1.45">'+esc(t.texto)+'</pre>'+
   '<button class="btn" onclick="copiarTermo(\''+id+'\')">📋 Copiar (padrão WhatsApp)</button>'+
+  '<button class="btn sec" onclick="editarTermo(\''+id+'\')">✏️ Editar termo finalizado</button>'+
   '<button class="btn sec" onclick="closeSheet(2)">Fechar</button>',2);
 }
 function copiarTermo(id){
