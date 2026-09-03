@@ -773,6 +773,36 @@ input[type="file"]{padding:9px 10px;font-size:12.5px}
 #tvBlocos>.card{border-radius:14px!important;background:#F8F9FA!important;box-shadow:none!important}
 .prow{border-radius:12px}
 .prow2{gap:7px}
+
+/* ===== v137 · IMPORTADOR DO HISTÓRICO PARA TERMO ===== */
+.v137importBox{margin:14px 0 4px;padding:13px;border:1px solid var(--bord);border-radius:16px;background:var(--card2)}
+.v137importBox .btn{margin-top:0}
+.v137importBox .sub{margin:7px 2px 0;line-height:1.35}
+.v137importPanel{margin-top:12px}
+.v137importHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:5px 0 10px}
+.v137importHead b{font-size:15px}
+.v137impActions{display:flex;gap:7px;flex-wrap:wrap;margin:9px 0}
+.v137impMaint{display:block;border:1px solid var(--bord);border-radius:14px;background:var(--card);padding:11px;margin:8px 0}
+.v137impMaintTop{display:flex;gap:10px;align-items:flex-start}
+.v137impMaintTop input[type=checkbox]{width:22px;height:22px;min-width:22px;margin-top:2px;accent-color:#C77A16}
+.v137impMaint .tit{font-size:14px}
+.v137impMaint details{margin-top:7px}
+.v137impMaint summary{cursor:pointer;font-size:12px;color:var(--muted);font-weight:700}
+.v137impPreview{font-size:12px;line-height:1.45;color:var(--muted);padding:7px 0 0 32px}
+.v137triageCard{border:1px solid var(--bord);border-radius:14px;background:var(--card);padding:12px;margin:9px 0}
+.v137triageCard.used{opacity:.62;background:var(--card2)}
+.v137triageMeta{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.02em;margin-bottom:5px}
+.v137triageTitle{font-size:14px;font-weight:800;line-height:1.3}
+.v137triageSub{font-size:12px;color:var(--muted);line-height:1.4;margin-top:4px;white-space:pre-line}
+.v137triageValue{font-size:14px;font-weight:850;color:var(--warn);margin-top:6px}
+.v137triageCard select{margin-top:9px;width:100%;min-height:48px}
+.v137split{display:none;margin-top:8px;padding:9px;border-radius:12px;background:var(--card2);border:1px dashed var(--bord)}
+.v137split.open{display:block}
+.v137split .grid2{margin-top:0}
+.v137usedBadge{display:inline-block;margin-top:8px;padding:5px 8px;border-radius:999px;background:rgba(41,145,94,.10);color:var(--ok);font-size:11px;font-weight:800}
+.v137importCount{font-size:12px;color:var(--muted);font-weight:700}
+.v137importHint{border-left:3px solid #C77A16;padding:7px 9px;margin:8px 0;background:rgba(199,122,22,.06);border-radius:8px;font-size:12px;line-height:1.4;color:var(--muted)}
+
 .mv-head{background:#F8F9FA;border:.5px solid var(--v102-line);border-radius:14px;padding:9px}
 .mvrow{border-bottom:.5px solid var(--v102-line)!important}
 .mv-total{border-radius:14px!important}
@@ -928,7 +958,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=136; var APP_DATE='03/09/2026';
+var APP_VER=137; var APP_DATE='03/09/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -4055,6 +4085,7 @@ function mRascLimpa(){try{localStorage.removeItem(RASC_K)}catch(e){}}
 
 /* ===================== TERMO DE DEVOLUÇÃO E ACERTO DE CONTAS ===================== */
 var TP=[],TB=[],TI=[],TD=[],TC=[],_termoPk='';
+var TIMP_SEL={},TIMP_CANDS=[],TIMP_SHOW_ALL=false;
 var RASC_T='gestao_rascunho_termo';
 function tRasc(){try{var g=function(i){var e=document.getElementById(i);return e?e.value:''};
  localStorage.setItem(RASC_T,JSON.stringify({pk:_termoPk,mot:g('tvMot'),motivo:g('tvMotivo'),ini:g('tvIni'),fim:g('tvFim'),odo:g('tvOdo'),TP:TP,TB:TB,TI:TI,TD:TD,TC:TC,em:Date.now()}));}catch(e){}}
@@ -4078,6 +4109,9 @@ function abrirTermo(pk){
   '<div class="grid2"><div><label>Início do contrato</label><input type="date" id="tvIni" onchange="tCalc()" value="'+esc((rasc&&rasc.ini)||(ct?ct.inicio:''))+'"></div>'+
   '<div><label>Data da devolução</label><input type="date" id="tvFim" onchange="tCalc()" value="'+esc((rasc&&rasc.fim)||hoje())+'"></div></div>'+
   '<label>Odômetro na devolução (km)</label><input id="tvOdo" inputmode="numeric" oninput="tRasc()" value="'+esc((rasc&&rasc.odo)||'')+'" placeholder="'+(c.kmUltima||c.kmAtual||'')+'">'+
+  '<div class="v137importBox"><button class="btn sec" onclick="tImportAbrir()">📥 Puxar do histórico de manutenções</button>'+
+   '<div class="sub">Escolha as manutenções e depois decida, item por item, se entra em 50/50, 100% motorista, débito ou se deve ser ignorado. A manutenção original nunca é alterada.</div>'+
+   '<div id="tvImportPanel" class="v137importPanel"></div></div>'+
   '<div class="sect">1. Manutenção corretiva — divisão 50/50 · Peças</div><div id="tvPecas"></div>'+
   '<button class="btn mini sec" onclick="TP.push({valor:\'\',desc:\'\',loja:\'\'});tDesenha()">➕ Peça</button>'+
   '<div class="sect">Mão de obra (um bloco por profissional)</div><div id="tvBlocos"></div>'+
@@ -4094,6 +4128,193 @@ function abrirTermo(pk){
  openSheet(h,2);
  setTimeout(function(){tDesenha();if(rasc&&rasc.pk===pk)toast('📝 Rascunho do termo recuperado')},60);
 }
+
+function _tImpData(m){return String((m&&m.dataFim)||(m&&m.dataIni)||'')}
+function _tImpOrigemLabel(m){
+ var d=_tImpData(m);return d?dataBR(d):'sem data';
+}
+function _tImpKey(mid,tipo,idx){return String(mid||'')+'|'+String(tipo||'')+'|'+String(idx)}
+function _tImpJaUsado(key){
+ var grupos=[TP,TB,TI,TD];
+ for(var g=0;g<grupos.length;g++)for(var i=0;i<grupos[g].length;i++)if(grupos[g][i]&&grupos[g][i].origemChave===key)return true;
+ return false;
+}
+function _tImpManuts(){
+ var a=manutsDoCarro(_termoPk).slice();
+ a.sort(function(x,y){var dx=_tImpData(x),dy=_tImpData(y);if(dx!==dy)return dy.localeCompare(dx);return (Number(y.criadoEm)||0)-(Number(x.criadoEm)||0)});
+ return a;
+}
+function _tImpDesdeContrato(){
+ var e=document.getElementById('tvIni');return e&&e.value?e.value:'';
+}
+function _tImpVisiveis(){
+ var a=_tImpManuts(),ini=_tImpDesdeContrato();
+ if(TIMP_SHOW_ALL||!ini)return a;
+ return a.filter(function(m){return _tImpData(m)>=ini});
+}
+function _tImpResumoHtml(m){
+ var hs=[];
+ (m.pecas||[]).forEach(function(p){if(p&&(p.desc||Number(p.valor)))hs.push('• '+esc(p.desc||'Peça')+(Number(p.valor)?' · R$ '+fmtBRL(p.valor):''))});
+ (m.blocos||[]).forEach(function(b){
+  if(!b)return;var ss=Array.isArray(b.servicos)?b.servicos:String(b.servicos||'').split(/\r?\n/);
+  hs.push('• '+esc((b.titulo||'Mão de obra')+(b.nome?' · '+b.nome:'')+(Number(b.valor)?' · R$ '+fmtBRL(b.valor):'')));
+  ss.map(function(s){return String(s||'').trim()}).filter(Boolean).slice(0,6).forEach(function(s){hs.push('&nbsp;&nbsp;↳ '+esc(s))});
+ });
+ return hs.join('<br>')||'<span class="sub">Sem itens estruturados.</span>';
+}
+function tImportAbrir(){
+ TIMP_SEL={};TIMP_CANDS=[];TIMP_SHOW_ALL=false;
+ tImportRenderLista();
+}
+function tImportCancelar(){
+ var p=document.getElementById('tvImportPanel');if(p)p.innerHTML='';
+ TIMP_SEL={};TIMP_CANDS=[];
+}
+function tImportToggleAll(on){
+ var a=_tImpVisiveis();
+ a.forEach(function(m){TIMP_SEL[m.id]=!!on});
+ tImportRenderLista();
+}
+function tImportSel(id,on){TIMP_SEL[id]=!!on;tImportAtualizaContador()}
+function tImportAtualizaContador(){
+ var n=Object.keys(TIMP_SEL).filter(function(k){return TIMP_SEL[k]}).length;
+ var e=document.getElementById('v137impCount');if(e)e.textContent=n+' selecionada'+(n===1?'':'s');
+}
+function tImportMostrarTodas(){
+ TIMP_SHOW_ALL=!TIMP_SHOW_ALL;tImportRenderLista();
+}
+function tImportRenderLista(){
+ var p=document.getElementById('tvImportPanel');if(!p)return;
+ var a=_tImpVisiveis(),ini=_tImpDesdeContrato();
+ var h='<div class="v137importHead"><b>1. Escolha as manutenções</b><span id="v137impCount" class="v137importCount">0 selecionadas</span></div>'+
+  '<div class="v137importHint">Por segurança, nada é classificado automaticamente. Você escolhe o destino de cada peça e de cada bloco de mão de obra na próxima etapa.</div>'+
+  '<div class="v137impActions"><button class="btn mini sec" onclick="tImportToggleAll(true)">Marcar todas visíveis</button><button class="btn mini sec" onclick="tImportToggleAll(false)">Limpar seleção</button>'+
+  (ini?'<button class="btn mini sec" onclick="tImportMostrarTodas()">'+(TIMP_SHOW_ALL?'Mostrar só desde '+esc(dataBR(ini)):'Mostrar anteriores ao contrato')+'</button>':'')+'</div>';
+ if(!a.length)h+='<div class="empty">Nenhuma manutenção encontrada para este carro.</div>';
+ a.forEach(function(m){
+  var ck=!!TIMP_SEL[m.id];
+  h+='<div class="v137impMaint"><div class="v137impMaintTop"><input type="checkbox" '+(ck?'checked ':'')+'onchange="tImportSel(\''+esc(m.id)+'\',this.checked)"><div class="grow">'+
+    '<div class="tit">'+esc(periodoTexto(m.dataIni,m.dataFim)||_tImpOrigemLabel(m))+'</div>'+
+    '<div class="sub">'+esc(primNome(m.motorista||''))+(m.odometro?' · '+fmtKm(m.odometro)+' km':'')+' · R$ '+fmtBRL(m.total||0)+' · '+(m.pecas||[]).length+' peça'+((m.pecas||[]).length===1?'':'s')+' · '+(m.blocos||[]).length+' bloco'+((m.blocos||[]).length===1?'':'s')+'</div>'+
+   '</div></div><details><summary>Ver itens desta manutenção</summary><div class="v137impPreview">'+_tImpResumoHtml(m)+'</div></details></div>';
+ });
+ h+='<div class="v137impActions"><button class="btn ok" onclick="tImportPreparar()">Continuar — escolher destino</button><button class="btn sec" onclick="tImportCancelar()">Cancelar importação</button></div>';
+ p.innerHTML=h;tImportAtualizaContador();
+ setTimeout(function(){try{p.scrollIntoView({behavior:'smooth',block:'start'})}catch(e){}},20);
+}
+function _tImpDescBloco(b){
+ var sv=Array.isArray(b.servicos)?b.servicos:String(b.servicos||'').split(/\r?\n/);
+ sv=sv.map(function(s){return String(s||'').trim()}).filter(Boolean);
+ var cab=(b.titulo||'Mão de obra')+(b.nome?' - '+b.nome:'');
+ return cab+(sv.length?': '+sv.join(' · '):'');
+}
+function _tImportCandidatos(ids){
+ var out=[];
+ (ids||[]).forEach(function(mid){
+  var m=S.manutencoes&&S.manutencoes[mid];if(!m||m.carro!==_termoPk)return;
+  var data=_tImpData(m);
+  (m.pecas||[]).forEach(function(p,i){
+   if(!p||(!p.desc&&!Number(p.valor)))return;
+   var key=_tImpKey(mid,'p',i);
+   out.push({key:key,mid:mid,tipo:'peca',data:data,desc:p.desc||'Peça',valor:Number(p.valor)||0,loja:p.loja||'',titulo:'',nome:'',servicos:'',destino:'',used:_tImpJaUsado(key)});
+  });
+  (m.blocos||[]).forEach(function(b,i){
+   if(!b)return;
+   var sv=Array.isArray(b.servicos)?b.servicos:String(b.servicos||'').split(/\r?\n/);
+   sv=sv.map(function(s){return String(s||'').trim()}).filter(Boolean);
+   if(!b.nome&&!b.titulo&&!sv.length&&!Number(b.valor))return;
+   var key=_tImpKey(mid,'b',i);
+   out.push({key:key,mid:mid,tipo:'bloco',data:data,desc:_tImpDescBloco(b),valor:Number(b.valor)||0,loja:'',titulo:b.titulo||'Mecânico',nome:b.nome||'',servicos:sv.join('\n'),destino:'',split50:'',split100:'',used:_tImpJaUsado(key)});
+  });
+ });
+ return out;
+}
+function tImportPreparar(){
+ var ids=Object.keys(TIMP_SEL).filter(function(k){return TIMP_SEL[k]});
+ if(!ids.length){toast('Selecione pelo menos uma manutenção');return}
+ TIMP_CANDS=_tImportCandidatos(ids);
+ if(!TIMP_CANDS.length){toast('As manutenções selecionadas não possuem itens estruturados');return}
+ tImportRenderTriagem();
+}
+function tImportSetDest(i,v){
+ if(!TIMP_CANDS[i]||TIMP_CANDS[i].used)return;
+ TIMP_CANDS[i].destino=v;
+ var e=document.getElementById('v137split_'+i);if(e)e.classList.toggle('open',v==='split');
+}
+function tImportSplit(i,campo,v){if(TIMP_CANDS[i])TIMP_CANDS[i][campo]=v}
+function _tImpDestOptions(c){
+ var a=[['','Escolher destino…'],['50',c.tipo==='peca'?'50/50 · Peça':'50/50 · Mão de obra'],['100','100% motorista'],['deb','Débito'],['ign','Ignorar']];
+ if(c.tipo==='bloco')a.splice(4,0,['split','✂️ Dividir 50/50 + 100%']);
+ return a.map(function(o){return '<option value="'+o[0]+'"'+(c.destino===o[0]?' selected':'')+'>'+o[1]+'</option>'}).join('');
+}
+function tImportRenderTriagem(){
+ var p=document.getElementById('tvImportPanel');if(!p)return;
+ var usados=TIMP_CANDS.filter(function(c){return c.used}).length;
+ var h='<div class="v137importHead"><b>2. Escolha o destino de cada item</b><span class="v137importCount">'+TIMP_CANDS.length+' itens</span></div>'+
+  '<div class="v137importHint">Apenas uma cópia vai para o termo. Alterar ou excluir aqui não modifica a manutenção original. Itens já importados ficam bloqueados para evitar cobrança duplicada.</div>';
+ TIMP_CANDS.forEach(function(c,i){
+  h+='<div class="v137triageCard'+(c.used?' used':'')+'"><div class="v137triageMeta">'+(c.tipo==='peca'?'PEÇA':'MÃO DE OBRA')+' · '+esc(c.data?dataBR(c.data):'sem data')+'</div>'+
+   '<div class="v137triageTitle">'+esc(c.tipo==='peca'?c.desc:((c.titulo||'Mão de obra')+(c.nome?' · '+c.nome:'')))+'</div>'+
+   (c.tipo==='peca'?(c.loja?'<div class="v137triageSub">Loja: '+esc(c.loja)+'</div>':''):(c.servicos?'<div class="v137triageSub">'+esc(c.servicos)+'</div>':''))+
+   '<div class="v137triageValue">R$ '+fmtBRL(c.valor||0)+'</div>';
+  if(c.used)h+='<span class="v137usedBadge">✅ Já adicionado ao termo</span>';
+  else{
+   h+='<select onchange="tImportSetDest('+i+',this.value)">'+_tImpDestOptions(c)+'</select>';
+   if(c.tipo==='bloco')h+='<div id="v137split_'+i+'" class="v137split'+(c.destino==='split'?' open':'')+'"><div class="sub">Informe quanto deste bloco vai para cada parte. A descrição permanece editável depois da importação.</div>'+
+    '<div class="grid2"><div><label>Parte 50/50 (R$)</label><input inputmode="decimal" value="'+esc(c.split50||'')+'" oninput="tImportSplit('+i+',\'split50\',this.value)"></div>'+
+    '<div><label>Parte 100% motorista (R$)</label><input inputmode="decimal" value="'+esc(c.split100||'')+'" oninput="tImportSplit('+i+',\'split100\',this.value)"></div></div></div>';
+  }
+  h+='</div>';
+ });
+ h+='<div class="v137impActions"><button class="btn ok" onclick="tImportAplicar()">Adicionar ao termo</button><button class="btn sec" onclick="tImportRenderLista()">← Voltar às manutenções</button><button class="btn sec" onclick="tImportCancelar()">Cancelar</button></div>';
+ p.innerHTML=h;
+ setTimeout(function(){try{p.scrollIntoView({behavior:'smooth',block:'start'})}catch(e){}},20);
+}
+function _tImpMeta(c){return{origemChave:c.key,origemManut:c.mid,origemData:c.data||''}}
+function _tImpComMeta(obj,c){var m=_tImpMeta(c);Object.keys(m).forEach(function(k){obj[k]=m[k]});return obj}
+function _tImpLimpaPlaceholders(){
+ TP=TP.filter(function(p){return p&&(p.desc||p.loja||tNum(p.valor))});
+ TB=TB.filter(function(b){
+  if(!b)return false;
+  var sv=String(b.servicos||'').trim(),vl=tNum(b.valor),tit=String(b.titulo||'').trim(),nm=String(b.nome||'').trim();
+  return !!(sv||vl||(tit&&tit!=='Mecânico')||(nm&&nm!=='Vinícius'));
+ });
+ TI=TI.filter(function(x){return x&&(x.desc||tNum(x.valor))});
+ /* Débito padrão "Semanal pendente" e crédito de caução são intencionais: não limpar. */
+}
+function tImportAplicar(){
+ for(var i=0;i<TIMP_CANDS.length;i++){
+  var c=TIMP_CANDS[i];if(c.used)continue;
+  if(!c.destino){toast('Escolha um destino ou “Ignorar” para todos os itens');return}
+  if(c.destino==='split'&&!tNum(c.split50)&&!tNum(c.split100)){toast('Informe ao menos um valor no bloco dividido');return}
+ }
+ _tImpLimpaPlaceholders();
+ var add=0;
+ TIMP_CANDS.forEach(function(c){
+  if(c.used||c.destino==='ign')return;
+  if(c.destino==='50'){
+   if(c.tipo==='peca')TP.push(_tImpComMeta({valor:c.valor,desc:c.desc,loja:c.loja},c));
+   else TB.push(_tImpComMeta({titulo:c.titulo,nome:c.nome,valor:c.valor,servicos:c.servicos},c));
+   add++;return;
+  }
+  if(c.destino==='100'){
+   TI.push(_tImpComMeta({valor:c.valor,desc:c.tipo==='peca'?c.desc:_tImpDescBloco(c)},c));add++;return;
+  }
+  if(c.destino==='deb'){
+   TD.push(_tImpComMeta({valor:c.valor,desc:c.tipo==='peca'?c.desc:_tImpDescBloco(c)},c));add++;return;
+  }
+  if(c.destino==='split'){
+   var v50=tNum(c.split50),v100=tNum(c.split100);
+   if(v50){TB.push(_tImpComMeta({titulo:c.titulo,nome:c.nome,valor:v50,servicos:c.servicos},c));add++}
+   if(v100){TI.push(_tImpComMeta({valor:v100,desc:_tImpDescBloco(c)},c));add++}
+  }
+ });
+ tDesenha();tRasc();
+ var p=document.getElementById('tvImportPanel');if(p)p.innerHTML='<div class="v137importHint">✅ '+add+' lançamento'+(add===1?'':'s')+' adicionado'+(add===1?'':'s')+'. Revise os campos abaixo; tudo continua editável antes de gerar o termo.</div><div class="v137impActions"><button class="btn mini sec" onclick="tImportAbrir()">Puxar mais manutenções</button></div>';
+ TIMP_SEL={};TIMP_CANDS=[];
+ toast('✅ Histórico importado para o termo');
+}
+
 function tNum(v){
  /* Se já é número, devolve como está. Antes, um número como 21.41 virava o texto
     "21.41", o ponto era apagado como se fosse separador de milhar e o valor
@@ -4196,11 +4417,11 @@ function gerarTermo(){
  if(!ini||!fim){toast('Informe as datas do período');return}
  if(!ordemDatasOk(ini,fim)){toast('⚠️ A devolução não pode ser anterior ao início do contrato');return}
  var odo=parseInt(String(g('tvOdo')).replace(/\D/g,''),10)||0;
- var pecas=TP.filter(function(p){return p.desc||tNum(p.valor)}).map(function(p){return {valor:tNum(p.valor),desc:p.desc,loja:p.loja}});
- var blocos=TB.filter(function(b){return (b.nome||b.servicos||tNum(b.valor))});
- var integrais=TI.filter(function(x){return x.desc||tNum(x.valor)});
- var debitos=TD.filter(function(x){return x.desc&&(tNum(x.valor)||x.desc)}).filter(function(x){return x.desc||tNum(x.valor)});
- var creditos=TC.filter(function(x){return x.desc||tNum(x.valor)});
+ var pecas=TP.filter(function(p){return p.desc||tNum(p.valor)}).map(function(p){return {valor:tNum(p.valor),desc:p.desc,loja:p.loja,origemChave:p.origemChave||'',origemManut:p.origemManut||'',origemData:p.origemData||''}});
+ var blocos=TB.filter(function(b){return (b.nome||b.servicos||tNum(b.valor))}).map(function(b){return {titulo:b.titulo||'Mecânico',nome:b.nome||'',valor:tNum(b.valor),servicos:b.servicos||'',origemChave:b.origemChave||'',origemManut:b.origemManut||'',origemData:b.origemData||''}});
+ var integrais=TI.filter(function(x){return x.desc||tNum(x.valor)}).map(function(x){return {valor:tNum(x.valor),desc:x.desc||'',origemChave:x.origemChave||'',origemManut:x.origemManut||'',origemData:x.origemData||''}});
+ var debitos=TD.filter(function(x){return x.desc&&(tNum(x.valor)||x.desc)}).filter(function(x){return x.desc||tNum(x.valor)}).map(function(x){return {valor:tNum(x.valor),desc:x.desc||'',origemChave:x.origemChave||'',origemManut:x.origemManut||'',origemData:x.origemData||''}});
+ var creditos=TC.filter(function(x){return x.desc||tNum(x.valor)}).map(function(x){return {valor:tNum(x.valor),desc:x.desc||''}});
  var tp=pecas.reduce(function(s,p){return s+p.valor},0),tmo=blocos.reduce(function(s,b){return s+tNum(b.valor)},0);
  var tm=tp+tmo,cota=tm/2;
  var ti=integrais.reduce(function(s,x){return s+tNum(x.valor)},0);
