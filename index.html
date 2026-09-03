@@ -928,7 +928,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=131; var APP_DATE='03/09/2026';
+var APP_VER=132; var APP_DATE='03/09/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -2253,6 +2253,8 @@ function ficha(pk){window._fichaPk=pk;
    '<div class="sub">R$ '+fmtBRL(ct.semanal)+'/semana · caução R$ '+fmtBRL(ct.caucao)+'</div>'+
    '<div class="sub">'+dataBR(ct.inicio)+' → '+dataBR(ct.fim)+(fimPassado(ct.fim)?' <span class="chip warn">renovação automática</span>':'')+'</div>'+
    docBtns(ct)+
+   (ct.origem==='gerado'?'<button class="btn mini sec" onclick="editarContratoVigente(\''+ct.id+'\')">✏️ Corrigir contrato</button>':'')+ 
+   (ct.ultimaCorrecaoEm?'<div class="sub" style="margin:5px 0 2px;color:var(--muted)">Última correção: '+dataBR(ct.ultimaCorrecaoData||'')+(ct.pdfDesatualizadoEm?' · ⚠️ PDF anterior à correção':'')+'</div>':'')+
    '<button class="btn mini ok" onclick="prepararTransferenciaContrato(\''+pk+'\')">🚗 Levar motorista para outro carro</button>'+ 
    '<button class="btn mini red" onclick="trocarMotorista(\''+pk+'\')">🔁 Encerrar e trocar motorista</button></div>';
  }else h+='<div class="sub">Sem contrato vigente.</div><button class="btn mini ok" onclick="novoContratoPara(\'' + pk + '\')">📄 Criar contrato para este carro</button>';
@@ -2778,6 +2780,85 @@ function preencherContratoTransferido(){
  var hero=document.querySelector('.v100formHero');if(hero){var av=document.createElement('div');av.className='v102info';av.style.marginTop='10px';var _res=ctx.modo==='reserva';av.innerHTML='<b>'+(_res?'Contrato adicional / reserva preparado:':'Transferência definitiva preparada:')+'</b> '+esc(primNome(l.nome||''))+' · '+esc(fmtPlaca(ctx.fromPk))+' → '+esc(fmtPlaca(ctx.destPk))+'<br><span class="sub">'+(_res?'O contrato do carro original continuará vigente. Este será um novo contrato normal e independente; os valores copiados continuam editáveis.':'O contrato antigo só será encerrado quando o novo for registrado. Os valores já entregues podem ser aproveitados como crédito e continuam editáveis.')+'</span><br><button type="button" class="btn mini sec" style="margin-top:7px" onclick="cancelarTransferenciaContrato()">Cancelar operação</button>';hero.appendChild(av)}
  try{ncResumo();ncAtualizaSteps()}catch(e){}
  toast('✅ Dados do motorista e valores reaproveitados — confira e gere o novo contrato');
+}
+/* ===== v132 — CORREÇÃO CONTROLADA DE CONTRATO JÁ CRIADO =====
+   Corrige o MESMO contrato (mesmo id), sem apagar/recriar motorista, sem trocar carro
+   e sem encerrar o vínculo. Mantém trilha curta de revisões e não sobrescreve odômetro
+   mais novo do carro. */
+var CTEDIT=null;
+function _ctDiasEntre(a,b){
+ if(!a||!b)return 0;var pa=String(a).split('-'),pb=String(b).split('-');
+ var da=new Date(+pa[0],+pa[1]-1,+pa[2]),db=new Date(+pb[0],+pb[1]-1,+pb[2]);
+ return Math.round((db-da)/864e5);
+}
+function _ctSomaDias(iso,n){
+ if(!iso)return '';var p=String(iso).split('-'),d=new Date(+p[0],+p[1]-1,+p[2]);
+ if(!p[0]||!p[1]||!p[2]||isNaN(d.getTime()))return '';
+ d.setDate(d.getDate()+(Number(n)||0));
+ return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
+}
+function editarContratoVigente(id){
+ var ct=S.contratos&&S.contratos[id];if(!ct){toast('Contrato não encontrado');return}
+ if((ct.tipo||'locacao')!=='locacao'){toast('Esta correção é somente para contrato de locação');return}
+ if(ct.origem!=='gerado'){toast('Contratos importados/históricos ficam protegidos. Use esta correção nos contratos gerados pelo Gestão.');return}
+ if(ct.status!=='vigente'){toast('Somente o contrato vigente pode ser corrigido por esta tela');return}
+ var c=S.carros&&S.carros[ct.carro];if(!c){toast('Carro do contrato não encontrado');return}
+ CTEDIT={id:id,pk:ct.carro,ini:ct.inicio||'',fim:ct.fim||'',km:Number(ct.kmInicial)||0,dur:_ctDiasEntre(ct.inicio,ct.fim),fimManual:false};
+ var aviso=ct.temPdf?'<div class="sourceWarning" style="margin:8px 0">⚠️ Este contrato possui PDF anexado. A correção atualiza o cadastro e gera um novo Word, mas NÃO altera automaticamente o PDF já anexado.</div>':'';
+ openSheet('<h3>✏️ Corrigir contrato</h3>'+
+  '<p class="sub"><b>'+esc(c.nome)+' · '+esc(fmtPlaca(c.placa))+'</b><br>'+esc(ct.locatario&&ct.locatario.nome||'')+'<br>O contrato continua sendo o mesmo. Altere apenas o que estiver errado.</p>'+aviso+
+  '<div class="sect">Datas e quilometragem</div>'+
+  '<div class="grid2"><div><label>Início do contrato</label><input type="date" id="ecIni" value="'+esc(ct.inicio||'')+'" onchange="ecIniMudou()"></div><div><label>Fim do contrato</label><input type="date" id="ecFim" value="'+esc(ct.fim||'')+'" onchange="if(CTEDIT)CTEDIT.fimManual=true"></div></div>'+
+  '<div class="sub" style="margin:-2px 0 8px">Ao mudar o início, o fim acompanha a mesma diferença de dias enquanto você não alterar o fim manualmente.</div>'+
+  '<label>Quilometragem inicial</label><input id="ecKm" inputmode="numeric" value="'+esc(String(ct.kmInicial||''))+'" placeholder="Ex.: 52310">'+
+  '<div class="sect" style="margin-top:15px">Dados do veículo no contrato</div>'+
+  '<label>Acessórios</label><input id="ecAcess" value="'+esc(ct.acessorios||'')+'">'+
+  '<label>Combustíveis</label><input id="ecComb" value="'+esc(ct.combustiveis||c.combustivel||'')+'">'+
+  '<button class="btn ok" onclick="salvarCorrecaoContrato(\''+id+'\')">✓ Salvar e gerar Word corrigido</button>'+
+  '<button class="btn sec" onclick="CTEDIT=null;closeSheet(2)">Cancelar sem alterar</button>',2);
+}
+function ecIniMudou(){
+ if(!CTEDIT||CTEDIT.fimManual)return;
+ var e=document.getElementById('ecIni'),f=document.getElementById('ecFim');if(!e||!f||!e.value)return;
+ if(CTEDIT.dur>=0)f.value=_ctSomaDias(e.value,CTEDIT.dur);
+}
+function _ctCamposMudaram(antes,depois){
+ var r=[];['inicio','fim','kmInicial','acessorios','combustiveis'].forEach(function(k){if(String(antes[k]==null?'':antes[k])!==String(depois[k]==null?'':depois[k]))r.push(k)});return r;
+}
+function salvarCorrecaoContrato(id){
+ var ct=S.contratos&&S.contratos[id];if(!ct||!CTEDIT||CTEDIT.id!==id){toast('A edição expirou. Abra novamente o contrato.');return}
+ if(ct.status!=='vigente'){toast('⛔ O contrato deixou de estar vigente. Nada foi alterado.');CTEDIT=null;closeSheet(2);return}
+ var c=S.carros&&S.carros[ct.carro];if(!c||c.contratoVigenteId!==id){toast('⛔ O vínculo do carro mudou. Nada foi alterado.');return}
+ var gi=function(x){var e=document.getElementById(x);return e?String(e.value||'').trim():''};
+ var ini=gi('ecIni'),fim=gi('ecFim'),km=parseInt(gi('ecKm').replace(/\D/g,''),10)||0;
+ if(!ini||!fim){toast('Preencha as duas datas');return}
+ if(!ordemDatasOk(ini,fim)){toast('⚠️ O fim do contrato não pode ser anterior ao início');return}
+ if(km<=0){toast('Confira a quilometragem inicial');return}
+ var antes={inicio:ct.inicio||'',fim:ct.fim||'',kmInicial:Number(ct.kmInicial)||0,acessorios:ct.acessorios||'',combustiveis:ct.combustiveis||''};
+ var depois={inicio:ini,fim:fim,kmInicial:km,acessorios:gi('ecAcess'),combustiveis:gi('ecComb')};
+ var campos=_ctCamposMudaram(antes,depois);if(!campos.length){CTEDIT=null;closeSheet(2);toast('Nenhuma alteração feita');return}
+ var agora=Date.now();
+ ct.inicio=depois.inicio;ct.fim=depois.fim;ct.kmInicial=depois.kmInicial;ct.acessorios=depois.acessorios;ct.combustiveis=depois.combustiveis;
+ ct.revisoes=Array.isArray(ct.revisoes)?ct.revisoes:[];
+ ct.revisoes.push({em:agora,campos:campos.slice(),antes:antes,depois:depois});if(ct.revisoes.length>20)ct.revisoes=ct.revisoes.slice(-20);
+ ct.ultimaCorrecaoEm=agora;ct.ultimaCorrecaoData=hoje();
+ if(ct.temPdf)ct.pdfDesatualizadoEm=agora;
+ /* Esconde o Word antigo até a nova versão ser realmente gerada; evita baixar documento
+    com datas/km anteriores se a geração falhar por falta de internet. */
+ ct.temDocx=false;
+ _touchContrato(ct);
+ /* Só acompanha o odômetro do CARRO quando ainda é claramente o mesmo marco criado
+    pelo contrato. Se já existe leitura posterior, não rebaixa nem sobrescreve. */
+ var mudouCarro=[];
+ if(Number(c.kmAtual)===Number(antes.kmInicial)&&Number(antes.kmInicial)>0&&Number(c.kmAtual)!==km){c.kmAtual=km;mudouCarro.push('kmAtual')}
+ if(Number(c.kmUltima)===Number(antes.kmInicial)&&String(c.kmUltimaData||'')===String(antes.inicio||'')){
+  if(Number(c.kmUltima)!==km){c.kmUltima=km;mudouCarro.push('kmUltima')}
+  if(String(c.kmUltimaData||'')!==ini){c.kmUltimaData=ini;mudouCarro.push('kmUltimaData')}
+ }
+ if(mudouCarro.length)_touchCarro(c,mudouCarro);
+ save();CTEDIT=null;closeSheet(2);ficha(ct.carro);render();
+ toast('✅ Contrato corrigido — gerando novo Word…');
+ setTimeout(function(){try{regerarContrato(id)}catch(e){toast('⚠️ Contrato salvo; use “Regerar Word” para baixar a versão corrigida.')}},120);
 }
 function docBtns(ct){
  var pk=ct.carro,h='';
