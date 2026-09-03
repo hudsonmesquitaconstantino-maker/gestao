@@ -928,7 +928,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=135; var APP_DATE='03/09/2026';
+var APP_VER=136; var APP_DATE='03/09/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -2823,7 +2823,7 @@ function editarContratoVigente(id){
   '<div class="sub" style="margin:-2px 0 8px">Ao mudar o início, o fim vai automaticamente para a primeira quarta-feira na data de 3 meses ou depois dela. Se você alterar o fim manualmente, o Gestão respeita sua escolha.</div>'+
   '<label>Quilometragem inicial</label><input id="ecKm" inputmode="numeric" value="'+esc(String(ct.kmInicial||''))+'" placeholder="Ex.: 52310">'+
   '<div class="sect" style="margin-top:15px">Condições financeiras</div>'+
-  '<div class="grid2"><div><label>Valor semanal (R$)</label><input id="ecSemanal" inputmode="decimal" value="'+esc(fmtBRL(ct.semanal||0))+'"></div><div><label>Caução (R$)</label><input id="ecCaucao" inputmode="decimal" value="'+esc(fmtBRL(ct.caucao||0))+'"></div></div>'+
+  '<div class="grid2"><div><label>Valor semanal (R$)</label><input id="ecSemanal" inputmode="decimal" value="'+esc(fmtBRL(ct.semanal||0))+'" oninput="ecMultaDiaAuto()"></div><div><label>Caução (R$)</label><input id="ecCaucao" inputmode="decimal" value="'+esc(fmtBRL(ct.caucao||0))+'"></div></div>'+
   '<div class="grid2"><div><label>Multa diária / juros de atraso (R$)</label><input id="ecMultaDia" inputmode="decimal" value="'+esc(fmtBRL(ct.multaDiaria||0))+'"></div><div><label>Quebra / rescisão (R$)</label><input id="ecMultaResc" inputmode="decimal" value="'+esc(fmtBRL(ct.multaRescisao||0))+'"></div></div>'+
   '<div class="sub" style="margin:-2px 0 8px">Esses valores atualizam o mesmo contrato e o Word corrigido. Não criam um novo contrato.</div>'+
   '<div class="sect" style="margin-top:15px">Dados do veículo no contrato</div>'+
@@ -5593,7 +5593,7 @@ function vContrato(){
   '<div class="v100panel"><div class="v100panelHead"><div class="v100panelIcon">👤</div><div class="grow"><div class="v100panelTitle">Locatário</div><div class="v100panelSub">Dados pessoais, CNH, endereço e contato.</div></div></div>'+
    '<label>Nome completo</label><input id="ncNome" oninput="ncResumo()">'+
    '<label>CPF</label><input id="ncCpf" inputmode="numeric" placeholder="000.000.000-00">'+
-   '<div class="grid2"><div><label>RG (número)</label><input id="ncRgNum" inputmode="numeric"></div><div><label>Órgão expedidor</label><input id="ncRgOrg" placeholder="DETRAN/RJ"></div></div>'+
+   '<div class="grid2"><div><label>RG (número/letras)</label><input id="ncRgNum" inputmode="text" autocapitalize="characters" placeholder="Ex.: 12.345.678-X"></div><div><label>Órgão expedidor</label><input id="ncRgOrg" placeholder="DETRAN/RJ"></div></div>'+
    '<div class="grid2"><div><label>CNH</label><input id="ncCnh" inputmode="numeric"></div><div><label>Validade CNH</label><input type="date" id="ncCnhVal"></div></div>'+
    '<div class="sect" style="margin-top:15px">Endereço</div>'+
    '<div class="grid2"><div style="flex:2"><label>Rua / Avenida</label><input id="ncRua" placeholder="Rua Humberto de Campos"></div><div><label>Número</label><input id="ncNum" placeholder="39"></div></div>'+
@@ -5601,7 +5601,7 @@ function vContrato(){
    '<div class="grid2"><div><label>Cidade</label><input id="ncCidade" value="São Gonçalo"></div><div><label>UF</label><input id="ncUf" maxlength="2" value="RJ"></div></div>'+
    '<div class="grid2"><div><label>CEP</label><input id="ncCep" inputmode="numeric"></div><div><label>Telefone</label><input id="ncTel" inputmode="tel" placeholder="(21) 9…"></div></div></div>'+
   '<div class="v100panel"><div class="v100panelHead"><div class="v100panelIcon">💰</div><div class="grow"><div class="v100panelTitle">Condições da locação</div><div class="v100panelSub">Valores, prazo, quilometragem e itens do veículo.</div></div></div>'+
-   '<div class="grid2"><div><label>Semanal (R$)</label><input id="ncSemanal" inputmode="decimal" oninput="ncCl34Auto();ncResumo()"></div><div><label>Caução (R$)</label><input id="ncCaucao" inputmode="decimal" oninput="ncMultaAuto();ncResumo()"></div></div>'+
+   '<div class="grid2"><div><label>Semanal (R$)</label><input id="ncSemanal" inputmode="decimal" oninput="ncMultaDiaAuto();ncCl34Auto();ncResumo()"></div><div><label>Caução (R$)</label><input id="ncCaucao" inputmode="decimal" oninput="ncMultaAuto();ncResumo()"></div></div>'+
    '<div class="grid2"><div><label>Multa diária de atraso (R$)</label><input id="ncMultaDia" inputmode="decimal" value="115,00"></div><div><label>Multa de rescisão (R$)</label><input id="ncMultaResc" inputmode="decimal"></div></div>'+
    '<div class="grid2"><div><label>Início</label><input type="date" id="ncIni" value="'+hoje()+'" onchange="document.getElementById(\'ncFim\').value=fimContratoQuarta(this.value);ncResumo()"></div><div><label>Fim (1ª quarta após 3 meses)</label><input type="date" id="ncFim" onchange="ncResumo()" value="'+fimContratoQuarta(hoje())+'"></div></div>'+
    '<label>Quilometragem inicial</label><input id="ncKm" inputmode="numeric">'+
@@ -5665,7 +5665,7 @@ function ncPuxaCarro(){
  var km=c.kmUltima||c.kmAtual||0;
  if(info){info.className='v100vehicle show';info.innerHTML='<div class="v100vehicleTop"><div class="v100carBadge">🚗</div><div class="grow"><strong>'+esc(tituloCarro(c))+' · '+esc(fmtPlaca(c.placa))+'</strong><div class="sub">'+fmtKm(km)+' km · referência '+(c.valorRef?'R$ '+fmtBRL(c.valorRef):'—')+'</div></div></div><div class="v100vehicleMeta"><span class="v100miniChip">'+esc(c.status||'—')+'</span>'+(c.motorista?'<span class="v100miniChip">Atual: '+esc(primNome(c.motorista))+'</span>':'')+'</div>'}
  document.getElementById('ncLocador').value=c.locadorId;
- if(c.semanalPadrao)document.getElementById('ncSemanal').value=fmtBRL(c.semanalPadrao);
+ if(c.semanalPadrao){document.getElementById('ncSemanal').value=fmtBRL(c.semanalPadrao);ncMultaDiaAuto()}
  if(c.caucaoPadrao){document.getElementById('ncCaucao').value=fmtBRL(c.caucaoPadrao);ncMultaAuto()}
  document.getElementById('ncKm').value=km||'';
  document.getElementById('ncComb').value=c.combustivel||'';
@@ -5676,6 +5676,25 @@ function ncPuxaCarro(){
  }
  ncCl34Auto();
  ncModo34();ncAtualizaSteps();
+}
+function multaDiariaPorSemanal(v){
+ v=(typeof v==='string')?parseBRL(v):(Number(v)||0);
+ if(!(v>0))return 0;
+ /* Faz a conta em centavos para evitar ruído de ponto flutuante:
+    semanal / 7, sempre arredondado para o próximo REAL inteiro. */
+ return Math.ceil(Math.round(v*100)/700);
+}
+function ncMultaDiaAuto(){
+ var s=document.getElementById('ncSemanal'),d=document.getElementById('ncMultaDia');
+ if(!s||!d)return;
+ var v=multaDiariaPorSemanal(s.value);
+ d.value=v?fmtBRL(v):'';
+}
+function ecMultaDiaAuto(){
+ var s=document.getElementById('ecSemanal'),d=document.getElementById('ecMultaDia');
+ if(!s||!d)return;
+ var v=multaDiariaPorSemanal(s.value);
+ d.value=v?fmtBRL(v):'';
 }
 function ncMultaAuto(){var v=document.getElementById('ncCaucao').value;document.getElementById('ncMultaResc').value=v}
 function ncResumo(){
