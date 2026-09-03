@@ -928,7 +928,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=132; var APP_DATE='03/09/2026';
+var APP_VER=134; var APP_DATE='03/09/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -2811,6 +2811,10 @@ function editarContratoVigente(id){
   '<div class="grid2"><div><label>Início do contrato</label><input type="date" id="ecIni" value="'+esc(ct.inicio||'')+'" onchange="ecIniMudou()"></div><div><label>Fim do contrato</label><input type="date" id="ecFim" value="'+esc(ct.fim||'')+'" onchange="if(CTEDIT)CTEDIT.fimManual=true"></div></div>'+
   '<div class="sub" style="margin:-2px 0 8px">Ao mudar o início, o fim acompanha a mesma diferença de dias enquanto você não alterar o fim manualmente.</div>'+
   '<label>Quilometragem inicial</label><input id="ecKm" inputmode="numeric" value="'+esc(String(ct.kmInicial||''))+'" placeholder="Ex.: 52310">'+
+  '<div class="sect" style="margin-top:15px">Condições financeiras</div>'+
+  '<div class="grid2"><div><label>Valor semanal (R$)</label><input id="ecSemanal" inputmode="decimal" value="'+esc(fmtBRL(ct.semanal||0))+'"></div><div><label>Caução (R$)</label><input id="ecCaucao" inputmode="decimal" value="'+esc(fmtBRL(ct.caucao||0))+'"></div></div>'+
+  '<div class="grid2"><div><label>Multa diária / juros de atraso (R$)</label><input id="ecMultaDia" inputmode="decimal" value="'+esc(fmtBRL(ct.multaDiaria||0))+'"></div><div><label>Quebra / rescisão (R$)</label><input id="ecMultaResc" inputmode="decimal" value="'+esc(fmtBRL(ct.multaRescisao||0))+'"></div></div>'+
+  '<div class="sub" style="margin:-2px 0 8px">Esses valores atualizam o mesmo contrato e o Word corrigido. Não criam um novo contrato.</div>'+
   '<div class="sect" style="margin-top:15px">Dados do veículo no contrato</div>'+
   '<label>Acessórios</label><input id="ecAcess" value="'+esc(ct.acessorios||'')+'">'+
   '<label>Combustíveis</label><input id="ecComb" value="'+esc(ct.combustiveis||c.combustivel||'')+'">'+
@@ -2823,7 +2827,18 @@ function ecIniMudou(){
  if(CTEDIT.dur>=0)f.value=_ctSomaDias(e.value,CTEDIT.dur);
 }
 function _ctCamposMudaram(antes,depois){
- var r=[];['inicio','fim','kmInicial','acessorios','combustiveis'].forEach(function(k){if(String(antes[k]==null?'':antes[k])!==String(depois[k]==null?'':depois[k]))r.push(k)});return r;
+ var r=[];['inicio','fim','kmInicial','semanal','caucao','multaDiaria','multaRescisao','acessorios','combustiveis'].forEach(function(k){if(String(antes[k]==null?'':antes[k])!==String(depois[k]==null?'':depois[k]))r.push(k)});return r;
+}
+function _ctAtualizaCl34Semanal(txt,antes,depois){
+ txt=String(txt||'');antes=Number(antes)||0;depois=Number(depois)||0;
+ if(!txt||antes===depois||!antes||!depois)return txt;
+ /* Só altera o texto automático padrão da semana antecipada. Cláusulas de crédito
+    transferido/customizadas permanecem intocadas para não reescrever fato financeiro. */
+ if(/cr[eé]dito|contrato anterior|transferid/i.test(txt))return txt;
+ if(!/semana final|pagamento antecipado/i.test(txt))return txt;
+ var alvo='R$ '+fmtBRL(antes),novo='R$ '+fmtBRL(depois);
+ if(txt.indexOf(alvo)>=0)return txt.replace(alvo,novo);
+ return txt;
 }
 function salvarCorrecaoContrato(id){
  var ct=S.contratos&&S.contratos[id];if(!ct||!CTEDIT||CTEDIT.id!==id){toast('A edição expirou. Abra novamente o contrato.');return}
@@ -2831,14 +2846,20 @@ function salvarCorrecaoContrato(id){
  var c=S.carros&&S.carros[ct.carro];if(!c||c.contratoVigenteId!==id){toast('⛔ O vínculo do carro mudou. Nada foi alterado.');return}
  var gi=function(x){var e=document.getElementById(x);return e?String(e.value||'').trim():''};
  var ini=gi('ecIni'),fim=gi('ecFim'),km=parseInt(gi('ecKm').replace(/\D/g,''),10)||0;
+ var semanal=parseBRL(gi('ecSemanal')),caucao=parseBRL(gi('ecCaucao')),multaDia=parseBRL(gi('ecMultaDia')),multaResc=parseBRL(gi('ecMultaResc'));
  if(!ini||!fim){toast('Preencha as duas datas');return}
  if(!ordemDatasOk(ini,fim)){toast('⚠️ O fim do contrato não pode ser anterior ao início');return}
  if(km<=0){toast('Confira a quilometragem inicial');return}
- var antes={inicio:ct.inicio||'',fim:ct.fim||'',kmInicial:Number(ct.kmInicial)||0,acessorios:ct.acessorios||'',combustiveis:ct.combustiveis||''};
- var depois={inicio:ini,fim:fim,kmInicial:km,acessorios:gi('ecAcess'),combustiveis:gi('ecComb')};
+ if(semanal<=0){toast('Confira o valor semanal');return}
+ if(caucao<0||multaDia<0||multaResc<0){toast('Os valores financeiros não podem ser negativos');return}
+ var antes={inicio:ct.inicio||'',fim:ct.fim||'',kmInicial:Number(ct.kmInicial)||0,semanal:Number(ct.semanal)||0,caucao:Number(ct.caucao)||0,multaDiaria:Number(ct.multaDiaria)||0,multaRescisao:Number(ct.multaRescisao)||0,acessorios:ct.acessorios||'',combustiveis:ct.combustiveis||''};
+ var depois={inicio:ini,fim:fim,kmInicial:km,semanal:semanal,caucao:caucao,multaDiaria:multaDia,multaRescisao:multaResc,acessorios:gi('ecAcess'),combustiveis:gi('ecComb')};
  var campos=_ctCamposMudaram(antes,depois);if(!campos.length){CTEDIT=null;closeSheet(2);toast('Nenhuma alteração feita');return}
  var agora=Date.now();
- ct.inicio=depois.inicio;ct.fim=depois.fim;ct.kmInicial=depois.kmInicial;ct.acessorios=depois.acessorios;ct.combustiveis=depois.combustiveis;
+ ct.inicio=depois.inicio;ct.fim=depois.fim;ct.kmInicial=depois.kmInicial;
+ ct.semanal=depois.semanal;ct.caucao=depois.caucao;ct.multaDiaria=depois.multaDiaria;ct.multaRescisao=depois.multaRescisao;
+ ct.cl34=_ctAtualizaCl34Semanal(ct.cl34,antes.semanal,depois.semanal);
+ ct.acessorios=depois.acessorios;ct.combustiveis=depois.combustiveis;
  ct.revisoes=Array.isArray(ct.revisoes)?ct.revisoes:[];
  ct.revisoes.push({em:agora,campos:campos.slice(),antes:antes,depois:depois});if(ct.revisoes.length>20)ct.revisoes=ct.revisoes.slice(-20);
  ct.ultimaCorrecaoEm=agora;ct.ultimaCorrecaoData=hoje();
@@ -2855,6 +2876,11 @@ function salvarCorrecaoContrato(id){
   if(Number(c.kmUltima)!==km){c.kmUltima=km;mudouCarro.push('kmUltima')}
   if(String(c.kmUltimaData||'')!==ini){c.kmUltimaData=ini;mudouCarro.push('kmUltimaData')}
  }
+ /* Mantém os padrões do carro alinhados somente se ainda eram os mesmos valores
+    herdados do contrato antes da correção. Se alguém já mudou o padrão do carro
+    separadamente, a correção do contrato não sobrescreve essa decisão. */
+ if(Number(c.semanalPadrao)===Number(antes.semanal)&&Number(c.semanalPadrao)!==Number(depois.semanal)){c.semanalPadrao=depois.semanal;mudouCarro.push('semanalPadrao')}
+ if(Number(c.caucaoPadrao)===Number(antes.caucao)&&Number(c.caucaoPadrao)!==Number(depois.caucao)){c.caucaoPadrao=depois.caucao;mudouCarro.push('caucaoPadrao')}
  if(mudouCarro.length)_touchCarro(c,mudouCarro);
  save();CTEDIT=null;closeSheet(2);ficha(ct.carro);render();
  toast('✅ Contrato corrigido — gerando novo Word…');
@@ -4373,6 +4399,15 @@ function detectarComponentes(m){
  if(out.comps.oleo&&!out.proxOleo&&out._proxSolto)out.proxOleo=out._proxSolto;
  return out;
 }
+/* v134 — uma NOVA troca registrada torna obsoleto o alvo manual da troca anterior.
+   O manual serve para ajustar a próxima quilometragem do evento ATUAL; não deve sobreviver
+   a uma nova troca real feita antes do alvo antigo. */
+function _liberarProximaManualPorNovaTroca(c,d){
+ if(!c||!d||!d.comps)return [];var f=[];
+ if(d.comps.oleo&&c.proxOleoManual){c.proxOleoManual=0;f.push('proxOleoManual')}
+ if(d.comps.correia&&c.proxCorreiaManual){c.proxCorreiaManual=0;f.push('proxCorreiaManual')}
+ return f;
+}
 function aplicarDeteccao(m,carro){
  var d=detectarComponentes(m);
  var odo=Number(m.odometro)||0,dt=m.dataFim||m.dataIni||hoje();
@@ -4414,27 +4449,39 @@ function recalcProximasTrocas(pk){
  var ultO=null,ultC=null,ivO=0,ivC=0;
  manutsDoCarro(pk).forEach(function(m){
   var d=detectarComponentes(m),odo=_odoManut(m);
-  if(d.comps.oleo&&odo>0){ultO={odo:odo,prox:d.proxOleo};if(d.proxOleo>odo)ivO=d.proxOleo-odo}
-  if(d.comps.correia&&odo>0){ultC={odo:odo,prox:d.proxCorreia};if(d.proxCorreia>odo)ivC=d.proxCorreia-odo}
+  if(d.comps.oleo&&odo>0){ultO={odo:odo,prox:d.proxOleo,dt:_dtManut(m)||''};if(d.proxOleo>odo)ivO=d.proxOleo-odo}
+  if(d.comps.correia&&odo>0){ultC={odo:odo,prox:d.proxCorreia,dt:_dtManut(m)||''};if(d.proxCorreia>odo)ivC=d.proxCorreia-odo}
  });
  if(ultO){
   if(ivO)c.oleoIntervalo=ivO;
   /* Um valor digitado à mão só é descartado quando aparece uma troca de óleo
      MAIS NOVA que o ajuste — aí a conta volta a ser automática. */
   var manualO=c.proxOleoManual&&Number(c.proxOleoKm)>0;
+  var _carO=Number((c._campoAt||{}).proxOleoManual)||Number((c._campoAt||{}).proxOleoKm)||0;
+  /* v134: auto-cura conservadora para manual LEGADO sem carimbo. Só substitui o
+     alvo antigo quando a própria troca de óleo é também o último odômetro do carro.
+     Isso identifica o caso real em que uma troca NOVA foi gravada antes do alvo manual
+     anterior, sem apagar ajustes manuais históricos legítimos. */
+  var legadoO=manualO&&!_carO&&ultO.prox>ultO.odo&&
+   Number(c.kmUltima||0)===Number(ultO.odo||0)&&String(c.kmUltimaData||'')===String(ultO.dt||'');
   var trocaDepois=manualO&&(ultO.odo>=Number(c.proxOleoKm));
-  if(!manualO||trocaDepois){
+  if(!manualO||trocaDepois||legadoO){
    c.proxOleoKm=ultO.prox||(ultO.odo+(Number(c.oleoIntervalo)||10000));
-   if(trocaDepois)c.proxOleoManual=0;
+   if(trocaDepois||legadoO)c.proxOleoManual=0;
+   if(legadoO)try{_touchCarro(c,['proxOleoKm','proxOleoManual','oleoIntervalo'])}catch(e){}
   }
  }
  if(ultC&&c.temCorreia){
   if(ivC)c.correiaIntervalo=ivC;
   var manualC=c.proxCorreiaManual&&Number(c.proxCorreiaKm)>0;
+  var _carC=Number((c._campoAt||{}).proxCorreiaManual)||Number((c._campoAt||{}).proxCorreiaKm)||0;
+  var legadoC=manualC&&!_carC&&ultC.prox>ultC.odo&&
+   Number(c.kmUltima||0)===Number(ultC.odo||0)&&String(c.kmUltimaData||'')===String(ultC.dt||'');
   var trocaDepoisC=manualC&&(ultC.odo>=Number(c.proxCorreiaKm));
-  if(!manualC||trocaDepoisC){
+  if(!manualC||trocaDepoisC||legadoC){
    c.proxCorreiaKm=ultC.prox||(ultC.odo+(Number(c.correiaIntervalo)||40000));
-   if(trocaDepoisC)c.proxCorreiaManual=0;
+   if(trocaDepoisC||legadoC)c.proxCorreiaManual=0;
+   if(legadoC)try{_touchCarro(c,['proxCorreiaKm','proxCorreiaManual','correiaIntervalo'])}catch(e){}
   }
  }
 }
@@ -4930,7 +4977,15 @@ function gerarManut(){
  m.texto=buildManutTexto(m,carro);
  S.manutencoes[m.id]=m;_gestaoFormDirty=false;
  if(odo>0&&odo>=(Number(carro.kmUltima)||0)){carro.kmUltima=odo;carro.kmUltimaData=fim||ini}
+ var _detNova=detectarComponentes(m);
+ var _libNova=_liberarProximaManualPorNovaTroca(carro,_detNova);
  var _marc=aplicarDeteccao(m,carro);
+ if(_detNova.comps.oleo||_detNova.comps.correia){
+  var _camDer=[];
+  if(_detNova.comps.oleo)_camDer=_camDer.concat(['proxOleoKm','proxOleoManual','oleoIntervalo']);
+  if(_detNova.comps.correia)_camDer=_camDer.concat(['proxCorreiaKm','proxCorreiaManual','correiaIntervalo']);
+  _touchCarro(carro,_camDer);
+ }
  if(_marc.length)setTimeout(function(){toast('🤖 Atualizado automático: '+_marc.join(', '))},900);
  /* próximas trocas automáticas */
  blocos.forEach(function(b){b.servicos.forEach(function(s){
@@ -5041,7 +5096,8 @@ function edTotais(){
 }
 function salvarEdicaoManut(){
  var m=S.manutencoes[_edMid];if(!m){toast('Manutenção não encontrada');return}
- var _oldComps=Object.keys(detectarComponentes(m).comps||{});
+ var _oldD=detectarComponentes(m),_oldComps=Object.keys(_oldD.comps||{});
+ var _oldOdo=Number(m.odometro)||0,_oldDt=_dtManut(m)||'';
  var carro=S.carros[m.carro];
  var _edi=document.getElementById('edIni').value||m.dataIni,_edf=document.getElementById('edFim').value||'';
  if(!ordemDatasOk(_edi,_edf)){toast('⚠️ A data final não pode ser anterior à data de início');return}
@@ -5068,8 +5124,15 @@ function salvarEdicaoManut(){
  S.manutencoes[_edMid]=m;
  if(carro){
   var _newD=detectarComponentes(m),_sumiu=_oldComps.filter(function(comp){return !_newD.comps[comp]});
+  var _mudouEvt=(Number(m.odometro)||0)!==_oldOdo||(_dtManut(m)||'')!==_oldDt;
+  var _mudouO=!!_newD.comps.oleo&&(!_oldD.comps.oleo||_mudouEvt||Number(_newD.proxOleo||0)!==Number(_oldD.proxOleo||0));
+  var _mudouC=!!_newD.comps.correia&&(!_oldD.comps.correia||_mudouEvt||Number(_newD.proxCorreia||0)!==Number(_oldD.proxCorreia||0));
+  if(_mudouO&&carro.proxOleoManual)carro.proxOleoManual=0;
+  if(_mudouC&&carro.proxCorreiaManual)carro.proxCorreiaManual=0;
   recomputarCompsAposAlteracao(m.carro,_sumiu,m.id);
   recalcTrocasCarro(m.carro); /* só acrescenta/atualiza; não apaga histórico legado */
+  if(_mudouO)_touchCarro(carro,['proxOleoKm','proxOleoManual','oleoIntervalo']);
+  if(_mudouC)_touchCarro(carro,['proxCorreiaKm','proxCorreiaManual','correiaIntervalo']);
  }
  save();closeSheet(2);
  if(window._fichaPk===m.carro)ficha(m.carro);
