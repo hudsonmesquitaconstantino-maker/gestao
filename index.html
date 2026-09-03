@@ -928,7 +928,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=134; var APP_DATE='03/09/2026';
+var APP_VER=135; var APP_DATE='03/09/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -955,6 +955,17 @@ function mais3Meses(iso){
  var alvo=m+3,ya=y+Math.floor(alvo/12),ma=((alvo%12)+12)%12;
  var ultimo=new Date(ya,ma+1,0).getDate(),dia=Math.min(d,ultimo);
  return ya+'-'+('0'+(ma+1)).slice(-2)+'-'+('0'+dia).slice(-2);
+}
+/* v135 — os contratos da GuimasCar encerram sempre em uma quarta-feira.
+   Primeiro calcula 3 meses de calendário; depois avança para a primeira quarta-feira
+   naquela data ou depois dela. Se o alvo já cair numa quarta, mantém a própria data. */
+function fimContratoQuarta(iso){
+ var base=mais3Meses(iso);if(!base)return '';
+ var p=base.split('-'),d=new Date(+p[0],+p[1]-1,+p[2]);
+ if(isNaN(d.getTime()))return '';
+ var falta=(3-d.getDay()+7)%7; /* getDay(): domingo=0 ... quarta=3 */
+ d.setDate(d.getDate()+falta);
+ return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
 }
 function ordemDatasOk(ini,fim){return !ini||!fim||String(fim)>=String(ini)}
 function periodoTexto(ini,fim){
@@ -2772,7 +2783,7 @@ function preencherContratoTransferido(){
  set('ncNome',l.nome||'');set('ncCpf',showCPF(l.cpf||''));set('ncRgNum',rg.num);set('ncRgOrg',rg.org);set('ncCnh',rg.cnh);set('ncCnhVal',rg.cnhVal);
  set('ncRua',end.rua);set('ncNum',end.num);set('ncCompl',end.compl);set('ncBairro',end.bairro);set('ncCidade',end.cidade||'São Gonçalo');set('ncUf',end.uf||'RJ');set('ncCep',showCEP(l.cep||''));set('ncTel',showTel(l.tel||''));
  if(ct.semanal)set('ncSemanal',fmtBRL(ct.semanal));if(ct.caucao)set('ncCaucao',fmtBRL(ct.caucao));if(ct.multaDiaria)set('ncMultaDia',fmtBRL(ct.multaDiaria));if(ct.multaRescisao)set('ncMultaResc',fmtBRL(ct.multaRescisao));
- set('ncIni',hoje());set('ncFim',mais3Meses(hoje()));
+ set('ncIni',hoje());set('ncFim',fimContratoQuarta(hoje()));
  var px=_pixPreferidoTransfer(dest.locadorId,ct);set('ncPixBanco',px.banco);set('ncPixFav',px.fav);set('ncPixTipo',px.tipo);set('ncPixChave',fmtPixChave(px.chave,px.tipo));ncPixTipoChange(true);
  NCPARC=[];var cl=String(ct.cl34||'').trim(),modo='nao';
  if(cl){var ps=_parcelasDeCl34(cl);if(/da seguinte forma/i.test(cl)&&ps.length){modo='parcelado';NCPARC=ps}else modo='avista'}
@@ -2809,7 +2820,7 @@ function editarContratoVigente(id){
   '<p class="sub"><b>'+esc(c.nome)+' · '+esc(fmtPlaca(c.placa))+'</b><br>'+esc(ct.locatario&&ct.locatario.nome||'')+'<br>O contrato continua sendo o mesmo. Altere apenas o que estiver errado.</p>'+aviso+
   '<div class="sect">Datas e quilometragem</div>'+
   '<div class="grid2"><div><label>Início do contrato</label><input type="date" id="ecIni" value="'+esc(ct.inicio||'')+'" onchange="ecIniMudou()"></div><div><label>Fim do contrato</label><input type="date" id="ecFim" value="'+esc(ct.fim||'')+'" onchange="if(CTEDIT)CTEDIT.fimManual=true"></div></div>'+
-  '<div class="sub" style="margin:-2px 0 8px">Ao mudar o início, o fim acompanha a mesma diferença de dias enquanto você não alterar o fim manualmente.</div>'+
+  '<div class="sub" style="margin:-2px 0 8px">Ao mudar o início, o fim vai automaticamente para a primeira quarta-feira na data de 3 meses ou depois dela. Se você alterar o fim manualmente, o Gestão respeita sua escolha.</div>'+
   '<label>Quilometragem inicial</label><input id="ecKm" inputmode="numeric" value="'+esc(String(ct.kmInicial||''))+'" placeholder="Ex.: 52310">'+
   '<div class="sect" style="margin-top:15px">Condições financeiras</div>'+
   '<div class="grid2"><div><label>Valor semanal (R$)</label><input id="ecSemanal" inputmode="decimal" value="'+esc(fmtBRL(ct.semanal||0))+'"></div><div><label>Caução (R$)</label><input id="ecCaucao" inputmode="decimal" value="'+esc(fmtBRL(ct.caucao||0))+'"></div></div>'+
@@ -2824,7 +2835,7 @@ function editarContratoVigente(id){
 function ecIniMudou(){
  if(!CTEDIT||CTEDIT.fimManual)return;
  var e=document.getElementById('ecIni'),f=document.getElementById('ecFim');if(!e||!f||!e.value)return;
- if(CTEDIT.dur>=0)f.value=_ctSomaDias(e.value,CTEDIT.dur);
+ f.value=fimContratoQuarta(e.value);
 }
 function _ctCamposMudaram(antes,depois){
  var r=[];['inicio','fim','kmInicial','semanal','caucao','multaDiaria','multaRescisao','acessorios','combustiveis'].forEach(function(k){if(String(antes[k]==null?'':antes[k])!==String(depois[k]==null?'':depois[k]))r.push(k)});return r;
@@ -4031,7 +4042,7 @@ function excluirContrato(id){
 }
 </script><script>
 /* ===================== NOVA MANUTENÇÃO ===================== */
-var MP=[],MB=[]; /* linhas de peças e blocos de mão de obra (rascunho) */
+var MP=[],MB=[]; /* linhas de peças e blocos de mão de obra (rascunho); datas vazias herdam os padrões da manutenção */
 var RASC_K='gestao_rascunho_manut';
 function mRasc(){ /* rascunho contra fechamento do app */
  try{
@@ -4861,11 +4872,11 @@ function vManut(){
    '<label>Carro</label><select id="mCarro" onchange="mPuxaCarro();mRasc();mAtualizaSteps()"><option value="">— selecione —</option>'+opcoesCarros()+'</select>'+
    '<div id="mCarroInfo" class="v100vehicle"></div>'+
    '<label>Motorista</label><input id="mMotorista" oninput="mRasc();mAtualizaSteps()" placeholder="sugere o atual ao escolher o carro">'+
-   '<div class="grid2"><div><label>Data de início</label><input type="date" id="mIni" onchange="mRasc();mAtualizaSteps()" value="'+hoje()+'"></div>'+
-   '<div><label>Data final <span style="font-weight:400">(opcional)</span></label><input type="date" id="mFim" onchange="mRasc()"></div></div>'+
+   '<div class="grid2"><div><label>Data de início</label><input type="date" id="mIni" onchange="mRasc();mAtualizaSteps();mDesenha()" value="'+hoje()+'"></div>'+
+   '<div><label>Data final</label><input type="date" id="mFim" onchange="mRasc();mDesenha()" value="'+hoje()+'"></div></div>'+
    '<label>Odômetro (km)</label><input id="mOdo" oninput="mRasc()" inputmode="numeric" placeholder="101117"></div>'+
   '<div class="v100panel"><div class="v100panelHead"><div class="v100panelIcon">🧩</div><div class="grow"><div class="v100panelTitle">Peças</div><div class="v100panelSub">Cada peça pode ter sua própria data de competência. Se todas forem do mesmo mês, use a data padrão abaixo.</div></div></div>'+
-   '<label>Data padrão das peças <span style="font-weight:400">(opcional)</span></label><input type="date" id="mPecasData" onchange="mRasc()"><div class="sub" style="margin:4px 0 10px">Peças sem data individual usam esta data. Se ficar vazio, mantêm a regra antiga da manutenção.</div><div id="mPecas"></div>'+
+   '<label>Data padrão das peças</label><input type="date" id="mPecasData" value="'+hoje()+'" onchange="mRasc();mDesenha()"><div class="sub" style="margin:4px 0 10px">Já vem com a data de hoje. Todas as peças usam esta competência; altere a data individual somente quando uma peça pertencer a outro dia/mês.</div><div id="mPecas"></div>'+
    '<button class="btn mini sec v100add" onclick="MP.push({valor:\'\',desc:\'\',loja:\'\',data:\'\'});mDesenha()">＋ Adicionar peça</button></div>'+
   '<div class="v100panel"><div class="v100panelHead"><div class="v100panelIcon">🛠️</div><div class="grow"><div class="v100panelTitle">Mão de obra e serviços</div><div class="v100panelSub">Separe mecânico, borracheiro, retífica ou outro profissional.</div></div></div><div id="mBlocos"></div>'+
    '<button class="btn mini sec v100add" onclick="MB.push({titulo:\'\',nome:\'\',valor:\'\',servicos:\'\',dataIni:\'\',dataFim:\'\'});mDesenha()">＋ Outro profissional / serviço</button></div>'+
@@ -4895,12 +4906,15 @@ function mDesenha(){
     redesenhar esses campos depois que o usuário já mudou de aba/fechou o formulário. */
  var _mP=document.getElementById('mPecas'),_mB=document.getElementById('mBlocos');
  if(!_mP||!_mB)return;
+ var _baseIni=(document.getElementById('mIni')||{}).value||hoje();
+ var _baseFim=(document.getElementById('mFim')||{}).value||_baseIni;
+ var _basePecas=(document.getElementById('mPecasData')||{}).value||_baseFim||_baseIni;
  var hp='';
  MP.forEach(function(p,i){
   hp+='<div class="v100item"><div class="v100itemTop"><div class="v100itemTitle">PEÇA '+('0'+(i+1)).slice(-2)+'</div><button class="v100remove" onclick="MP.splice('+i+',1);mDesenha()">Remover</button></div>'+
    '<div class="v100pieceGrid"><div class="desc"><label>Descrição</label><textarea rows="1" class="taflex" placeholder="Ex.: Pastilha de freio dianteira" oninput="MP['+i+'].desc=this.value;taGrow(this);mRasc();mAtualizaSteps()">'+esc(p.desc)+'</textarea></div>'+
    '<div><label>Valor (R$)</label><input placeholder="0,00" inputmode="decimal" value="'+esc(p.valor)+'" oninput="MP['+i+'].valor=this.value;mTotais();mAtualizaSteps()"></div>'+
-   '<div><label>Data desta peça <span style="font-weight:400">(opcional)</span></label><input type="date" value="'+esc(p.data||'')+'" onchange="MP['+i+'].data=this.value;mRasc()"></div>'+
+   '<div><label>Data desta peça <span style="font-weight:400">(herda a padrão)</span></label><input type="date" value="'+esc(p.data||_basePecas)+'" onchange="MP['+i+'].data=this.value;mRasc()"></div>'+
    '<div class="wide"><label>Status no fechamento</label><select onchange="MP['+i+'].pendenteFinanceiro=this.value===\'1\';mRasc()"><option value="0"'+(!p.pendenteFinanceiro?' selected':'')+'>Pago / contabilizar</option><option value="1"'+(p.pendenteFinanceiro?' selected':'')+'>Pendente / não contabilizar ainda</option></select></div>'+
    '<div class="wide"><label>Loja / fornecedor</label><input placeholder="Ex.: Auto Peças" value="'+esc(p.loja)+'" oninput="MP['+i+'].loja=this.value;mRasc()"></div></div></div>';
  });
@@ -4911,8 +4925,8 @@ function mDesenha(){
   hb+='<div class="v100item"><div class="v100itemTop"><div class="v100itemTitle">MÃO DE OBRA '+('0'+(i+1)).slice(-2)+'</div><button class="v100remove" onclick="MB.splice('+i+',1);mDesenha()">Remover</button></div>'+
    '<div class="v100laborGrid"><div><label>Tipo</label><input placeholder="Mecânico / Borracheiro / Retífica" value="'+esc(b.titulo)+'" oninput="MB['+i+'].titulo=this.value;mRasc()"></div>'+
    '<div><label>Profissional</label><input placeholder="Vinícius" value="'+esc(b.nome)+'" oninput="MB['+i+'].nome=this.value;mRasc();mAtualizaSteps()"></div>'+
-   '<div><label>Início deste serviço <span style="font-weight:400">(opcional)</span></label><input type="date" value="'+esc(b.dataIni||'')+'" onchange="MB['+i+'].dataIni=this.value;mRasc()"></div>'+
-   '<div><label>Final / competência <span style="font-weight:400">(opcional)</span></label><input type="date" value="'+esc(b.dataFim||'')+'" onchange="MB['+i+'].dataFim=this.value;mRasc()"></div>'+
+   '<div><label>Início deste serviço <span style="font-weight:400">(padrão: manutenção)</span></label><input type="date" value="'+esc(b.dataIni||_baseIni)+'" onchange="MB['+i+'].dataIni=this.value;mRasc()"></div>'+
+   '<div><label>Final / competência <span style="font-weight:400">(padrão: manutenção)</span></label><input type="date" value="'+esc(b.dataFim||_baseFim)+'" onchange="MB['+i+'].dataFim=this.value;mRasc()"></div>'+
    '<div class="wide"><label>Status no fechamento</label><select onchange="MB['+i+'].pendenteFinanceiro=this.value===\'1\';mRasc()"><option value="0"'+(!b.pendenteFinanceiro?' selected':'')+'>Pago / contabilizar</option><option value="1"'+(b.pendenteFinanceiro?' selected':'')+'>Pendente / não contabilizar ainda</option></select></div>'+
    '<div class="wide"><label>Valor da mão de obra (R$)</label><input placeholder="1.700,00" inputmode="decimal" value="'+esc(b.valor)+'" oninput="MB['+i+'].valor=this.value;mTotais();mAtualizaSteps()"></div>'+
    '<div class="wide"><label>Serviços realizados <span style="font-weight:400">(um por linha)</span></label><textarea placeholder="Ex.: Troca da pastilha dianteira\nPróxima troca com X km\nGARANTIA ATÉ data" oninput="MB['+i+'].servicos=this.value;taGrow(this);mRasc();mAtualizaSteps()">'+esc(b.servicos)+'</textarea></div></div></div>';
@@ -4966,9 +4980,11 @@ function gerarManut(){
  var _blocoDataRuim=MB.some(function(b){return b&&b.dataIni&&b.dataFim&&!ordemDatasOk(b.dataIni,b.dataFim)});
  if(_blocoDataRuim){toast('⚠️ Há um serviço com data final anterior ao início');return}
  var odo=parseInt(document.getElementById('mOdo').value.replace(/\D/g,''),10)||0;
- var pecas=MP.filter(function(p){return p.desc.trim()||parseBRL(p.valor)>0}).map(function(p){return{valor:parseBRL(p.valor),desc:p.desc.trim(),loja:p.loja.trim(),data:p.data||'',pendenteFinanceiro:!!p.pendenteFinanceiro}});
+ var _pData=(document.getElementById('mPecasData')||{value:''}).value||fim||ini||hoje();
+ var pecas=MP.filter(function(p){return p.desc.trim()||parseBRL(p.valor)>0}).map(function(p){return{valor:parseBRL(p.valor),desc:p.desc.trim(),loja:p.loja.trim(),data:p.data||_pData,pendenteFinanceiro:!!p.pendenteFinanceiro}});
  var blocos=MB.filter(function(b){return b.nome.trim()||b.servicos.trim()||parseBRL(b.valor)>0}).map(function(b){
-  return{titulo:(b.titulo||'Mecânico').trim(),nome:b.nome.trim(),valor:parseBRL(b.valor),servicos:b.servicos.split('\n').map(function(s){return s.trim()}).filter(Boolean),dataIni:b.dataIni||'',dataFim:b.dataFim||'',pendenteFinanceiro:!!b.pendenteFinanceiro};
+  var _bi=b.dataIni||ini||hoje(),_bf=b.dataFim||fim||_bi;
+  return{titulo:(b.titulo||'Mecânico').trim(),nome:b.nome.trim(),valor:parseBRL(b.valor),servicos:b.servicos.split('\n').map(function(s){return s.trim()}).filter(Boolean),dataIni:_bi,dataFim:_bf,pendenteFinanceiro:!!b.pendenteFinanceiro};
  });
  var tp=0;pecas.forEach(function(p){tp+=p.valor});
  var tm=0;blocos.forEach(function(b){tm+=b.valor});
@@ -5587,7 +5603,7 @@ function vContrato(){
   '<div class="v100panel"><div class="v100panelHead"><div class="v100panelIcon">💰</div><div class="grow"><div class="v100panelTitle">Condições da locação</div><div class="v100panelSub">Valores, prazo, quilometragem e itens do veículo.</div></div></div>'+
    '<div class="grid2"><div><label>Semanal (R$)</label><input id="ncSemanal" inputmode="decimal" oninput="ncCl34Auto();ncResumo()"></div><div><label>Caução (R$)</label><input id="ncCaucao" inputmode="decimal" oninput="ncMultaAuto();ncResumo()"></div></div>'+
    '<div class="grid2"><div><label>Multa diária de atraso (R$)</label><input id="ncMultaDia" inputmode="decimal" value="115,00"></div><div><label>Multa de rescisão (R$)</label><input id="ncMultaResc" inputmode="decimal"></div></div>'+
-   '<div class="grid2"><div><label>Início</label><input type="date" id="ncIni" value="'+hoje()+'" onchange="document.getElementById(\'ncFim\').value=mais3Meses(this.value);ncResumo()"></div><div><label>Fim (padrão 3 meses)</label><input type="date" id="ncFim" onchange="ncResumo()" value="'+mais3Meses(hoje())+'"></div></div>'+
+   '<div class="grid2"><div><label>Início</label><input type="date" id="ncIni" value="'+hoje()+'" onchange="document.getElementById(\'ncFim\').value=fimContratoQuarta(this.value);ncResumo()"></div><div><label>Fim (1ª quarta após 3 meses)</label><input type="date" id="ncFim" onchange="ncResumo()" value="'+fimContratoQuarta(hoje())+'"></div></div>'+
    '<label>Quilometragem inicial</label><input id="ncKm" inputmode="numeric">'+
    '<label>Acessórios</label><input id="ncAcess" value="Estepe, triângulo, chave de roda, macaco">'+
    '<label>Combustíveis</label><input id="ncComb" placeholder="Etanol / GNV 16m³"></div>'+
