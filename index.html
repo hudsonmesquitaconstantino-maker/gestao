@@ -803,6 +803,21 @@ input[type="file"]{padding:9px 10px;font-size:12.5px}
 .v137importCount{font-size:12px;color:var(--muted);font-weight:700}
 .v137importHint{border-left:3px solid #C77A16;padding:7px 9px;margin:8px 0;background:rgba(199,122,22,.06);border-radius:8px;font-size:12px;line-height:1.4;color:var(--muted)}
 
+/* ===== v138 · CONTRATO DO TERMO + SELEÇÃO TÁTIL DAS MANUTENÇÕES ===== */
+.v138contractBox{margin:10px 0 12px;padding:12px;border:1px solid var(--bord);border-radius:15px;background:#F8F9FA}
+.v138contractBox label{margin-top:0}
+.v138contractBox select{display:block!important;width:100%!important;min-height:52px!important;background:#fff!important}
+.v138contractNote{margin-top:8px;padding:8px 10px;border-radius:10px;font-size:12px;line-height:1.4;border:1px solid var(--bord);background:#fff;color:var(--muted)}
+.v138contractNote.current{border-color:rgba(185,78,68,.22);background:rgba(185,78,68,.05);color:#7E3E37}
+.v138contractNote.history{border-color:rgba(41,145,94,.20);background:rgba(41,145,94,.06);color:#236A4C}
+.v138pickTop{width:100%;border:0;background:transparent;color:inherit;padding:0;margin:0;display:flex;gap:10px;align-items:flex-start;text-align:left;font:inherit;-webkit-appearance:none;appearance:none}
+.v138pickTop .v138check{width:31px;height:31px;min-width:31px;border-radius:10px;border:1.5px solid #D6D9DE;background:#F7F8FA;display:flex;align-items:center;justify-content:center;color:transparent;font-size:18px;font-weight:900;transition:.15s ease}
+.v138pickTop.on .v138check{background:#E9F6EF;border-color:#45A574;color:#197348}
+.v138pickTop .v138pickText{display:block;margin-top:5px;font-size:11.5px;font-weight:800;color:#7A8089}
+.v138pickTop.on .v138pickText{color:#197348}
+.v137impMaint.selected{border-color:rgba(41,145,94,.34);background:#FBFEFC}
+
+
 .mv-head{background:#F8F9FA;border:.5px solid var(--v102-line);border-radius:14px;padding:9px}
 .mvrow{border-bottom:.5px solid var(--v102-line)!important}
 .mv-total{border-radius:14px!important}
@@ -958,7 +973,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=137; var APP_DATE='03/09/2026';
+var APP_VER=138; var APP_DATE='03/09/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -4084,33 +4099,117 @@ function mRascLimpa(){try{localStorage.removeItem(RASC_K)}catch(e){}}
 
 
 /* ===================== TERMO DE DEVOLUÇÃO E ACERTO DE CONTAS ===================== */
-var TP=[],TB=[],TI=[],TD=[],TC=[],_termoPk='';
+var TP=[],TB=[],TI=[],TD=[],TC=[],_termoPk='',_termoContratoId='';
 var TIMP_SEL={},TIMP_CANDS=[],TIMP_SHOW_ALL=false;
 var RASC_T='gestao_rascunho_termo';
+
+function _tContratosDoCarro(pk){
+ var cur=(S.carros&&S.carros[pk]&&S.carros[pk].contratoVigenteId)||'';
+ return Object.keys(S.contratos||{}).map(function(k){return S.contratos[k]}).filter(function(ct){
+  return ct&&ct.carro===pk&&(ct.tipo||'locacao')==='locacao';
+ }).sort(function(a,b){
+  var ac=a.id===cur?1:0,bc=b.id===cur?1:0;if(ac!==bc)return bc-ac;
+  var ad=String(a.encerradoEm||a.inicio||''),bd=String(b.encerradoEm||b.inicio||'');
+  if(ad!==bd)return bd.localeCompare(ad);
+  return (Number(b.criadoEm)||0)-(Number(a.criadoEm)||0);
+ });
+}
+function _tNormNome(s){return semAcento(String(s||'')).toUpperCase().replace(/\s+/g,' ').trim()}
+function _tContratoInicial(pk,rasc,lista){
+ if(rasc&&rasc.contratoId&&S.contratos&&S.contratos[rasc.contratoId]&&S.contratos[rasc.contratoId].carro===pk)return rasc.contratoId;
+ if(rasc&&rasc.mot){
+  var nm=_tNormNome(rasc.mot),m=(lista||[]).filter(function(ct){return _tNormNome(ct.locatario&&ct.locatario.nome)===nm});
+  if(m.length===1)return m[0].id;
+ }
+ if((lista||[]).length===1)return lista[0].id;
+ return '';
+}
+function _tContratoLabel(ct,curId){
+ var st=ct.id===curId&&ct.status==='vigente'?'VIGENTE':'ANTERIOR';
+ var nm=(ct.locatario&&ct.locatario.nome)||'Sem nome';
+ var per=(ct.inicio?dataBR(ct.inicio):'sem início')+' → '+(ct.encerradoEm?dataBR(ct.encerradoEm):(ct.fim?dataBR(ct.fim):'sem fim'));
+ return st+' · '+primNome(nm)+' · '+per;
+}
+function _tCreditoCaucaoAuto(){
+ for(var i=0;i<TC.length;i++)if(TC[i]&&TC[i]._autoContratoCaucao)return TC[i];
+ return null;
+}
+function _tMarcaCreditoLegadoAuto(ct){
+ if(!ct||TC.length!==1||!TC[0]||TC[0]._autoContratoCaucao)return;
+ var d=_tNormNome(TC[0].desc);
+ if(d.indexOf('CAUCAO RETIDA NO INICIO DO CONTRATO')>=0)TC[0]._autoContratoCaucao=1;
+}
 function tRasc(){try{var g=function(i){var e=document.getElementById(i);return e?e.value:''};
- localStorage.setItem(RASC_T,JSON.stringify({pk:_termoPk,mot:g('tvMot'),motivo:g('tvMotivo'),ini:g('tvIni'),fim:g('tvFim'),odo:g('tvOdo'),TP:TP,TB:TB,TI:TI,TD:TD,TC:TC,em:Date.now()}));}catch(e){}}
+ localStorage.setItem(RASC_T,JSON.stringify({pk:_termoPk,contratoId:_termoContratoId||g('tvContrato'),mot:g('tvMot'),motivo:g('tvMotivo'),ini:g('tvIni'),fim:g('tvFim'),odo:g('tvOdo'),TP:TP,TB:TB,TI:TI,TD:TD,TC:TC,em:Date.now()}));}catch(e){}}
 function tRascLimpa(){try{localStorage.removeItem(RASC_T)}catch(e){}}
+function tContratoAtualizaUI(){
+ var c=S.carros[_termoPk],ct=_termoContratoId&&S.contratos[_termoContratoId];
+ var av=document.getElementById('tvContratoAviso'),bt=document.getElementById('tvGerarBtn');
+ if(!ct){
+  if(av){av.className='v138contractNote';av.textContent='Escolha primeiro qual contrato este termo está encerrando/acertando.'}
+  if(bt){bt.disabled=true;bt.textContent='🧾 ESCOLHA O CONTRATO ACIMA'}
+  return;
+ }
+ var atual=!!(c&&c.contratoVigenteId===ct.id&&ct.status==='vigente');
+ if(av){
+  av.className='v138contractNote '+(atual?'current':'history');
+  av.textContent=atual
+   ?'Contrato vigente selecionado. Ao gerar o termo, ESTE contrato será encerrado e o carro ficará sem motorista.'
+   :'Contrato anterior selecionado. Ao gerar este termo, o contrato e o motorista que estão vigentes hoje NÃO serão alterados.';
+ }
+ if(bt){
+  bt.disabled=false;
+  bt.textContent=atual?'🧾 GERAR TERMO + ENCERRAR ESTE CONTRATO':'🧾 GERAR TERMO · MANTER CONTRATO ATUAL';
+ }
+}
+function tContratoEscolhido(id){
+ var oldId=_termoContratoId,oldCt=oldId&&S.contratos[oldId];
+ _termoContratoId=id||'';
+ var ct=_termoContratoId&&S.contratos[_termoContratoId];
+ if(!ct){tContratoAtualizaUI();tRasc();return}
+ var mot=document.getElementById('tvMot'),ini=document.getElementById('tvIni'),fim=document.getElementById('tvFim');
+ if(mot)mot.value=(ct.locatario&&ct.locatario.nome)||'';
+ if(ini)ini.value=ct.inicio||'';
+ if(fim)fim.value=(ct.status!=='vigente'&&ct.encerradoEm)?ct.encerradoEm:hoje();
+ _tMarcaCreditoLegadoAuto(oldCt||ct);
+ var ca=_tCreditoCaucaoAuto();
+ if(!ca){ca={valor:'',desc:'Caução retida no início do contrato',_autoContratoCaucao:1};TC.push(ca)}
+ ca.valor=ct.caucao||'';ca.desc='Caução retida no início do contrato';
+ TIMP_SEL={};TIMP_CANDS=[];TIMP_SHOW_ALL=false;
+ var p=document.getElementById('tvImportPanel');if(p)p.innerHTML='';
+ tDesenha();tContratoAtualizaUI();tRasc();
+ if(oldId&&oldId!==_termoContratoId)toast('Contrato do termo alterado. Revise os lançamentos já preenchidos.');
+}
 function abrirTermo(pk){
  _termoPk=pk;
- var c=S.carros[pk],ct=c.contratoVigenteId?S.contratos[c.contratoVigenteId]:null;
+ var c=S.carros[pk],lista=_tContratosDoCarro(pk),curId=c.contratoVigenteId||'';
  var rasc=null;try{rasc=JSON.parse(localStorage.getItem(RASC_T)||'null')}catch(e){}
- if(rasc&&rasc.pk===pk){TP=rasc.TP||[];TB=rasc.TB||[];TI=rasc.TI||[];TD=rasc.TD||[];TC=rasc.TC||[]}
+ if(!(rasc&&rasc.pk===pk))rasc=null;
+ _termoContratoId=_tContratoInicial(pk,rasc,lista);
+ var ct=_termoContratoId?S.contratos[_termoContratoId]:null;
+ if(rasc){TP=rasc.TP||[];TB=rasc.TB||[];TI=rasc.TI||[];TD=rasc.TD||[];TC=rasc.TC||[];_tMarcaCreditoLegadoAuto(ct)}
  else{
   TP=[{valor:'',desc:'',loja:''}];
   TB=[{titulo:'Mecânico',nome:'Vinícius',valor:'',servicos:''}];
   TI=[{valor:'',desc:''}];
   TD=[{valor:'',desc:'Semanal pendente'}];
-  TC=ct?[{valor:ct.caucao||'',desc:'Caução retida no início do contrato'}]:[{valor:'',desc:''}];
+  TC=ct?[{valor:ct.caucao||'',desc:'Caução retida no início do contrato',_autoContratoCaucao:1}]:[{valor:'',desc:'',_autoContratoCaucao:1}];
  }
+ var opts='<option value="">Escolha o contrato…</option>';
+ lista.forEach(function(x){opts+='<option value="'+esc(x.id)+'"'+(x.id===_termoContratoId?' selected':'')+'>'+esc(_tContratoLabel(x,curId))+'</option>'});
+ var motVal=(rasc&&rasc.mot)||(ct&&ct.locatario&&ct.locatario.nome)||'';
+ var iniVal=(rasc&&rasc.ini)||(ct&&ct.inicio)||'';
+ var fimVal=(rasc&&rasc.fim)||((ct&&ct.status!=='vigente'&&ct.encerradoEm)?ct.encerradoEm:hoje());
  var h='<h3>🧾 Termo de devolução — '+esc(tituloCarro(c))+' ('+esc(fmtPlaca(pk))+')</h3>'+
-  '<p class="sub">Preencha como na manutenção. Ao gerar: o contrato vigente é encerrado e vai para o histórico, e o carro fica sem motorista — tudo automático.</p>'+
-  '<label>Motorista</label><input id="tvMot" oninput="tRasc()" value="'+esc((rasc&&rasc.pk===pk&&rasc.mot)||(ct?ct.locatario.nome:c.motorista||''))+'">'+
+  '<p class="sub">Escolha qual contrato pertence a esta devolução. Um termo de contrato anterior nunca pode encerrar o contrato que está vigente hoje.</p>'+
+  '<div class="v138contractBox"><label>Contrato relacionado a este termo</label><select id="tvContrato" onchange="tContratoEscolhido(this.value)">'+opts+'</select><div id="tvContratoAviso" class="v138contractNote"></div></div>'+
+  '<label>Motorista</label><input id="tvMot" oninput="tRasc()" value="'+esc(motVal)+'">'+
   '<label>Motivo da devolução</label><select id="tvMotivo" onchange="tCalc()"><option'+(!(rasc&&rasc.motivo==='Quebra de Contrato')?' selected':'')+'>Fim do Contrato</option><option'+((rasc&&rasc.motivo)==='Quebra de Contrato'?' selected':'')+'>Quebra de Contrato</option></select>'+
-  '<div class="grid2"><div><label>Início do contrato</label><input type="date" id="tvIni" onchange="tCalc()" value="'+esc((rasc&&rasc.ini)||(ct?ct.inicio:''))+'"></div>'+
-  '<div><label>Data da devolução</label><input type="date" id="tvFim" onchange="tCalc()" value="'+esc((rasc&&rasc.fim)||hoje())+'"></div></div>'+
+  '<div class="grid2"><div><label>Início do contrato</label><input type="date" id="tvIni" onchange="tCalc()" value="'+esc(iniVal)+'"></div>'+
+  '<div><label>Data da devolução</label><input type="date" id="tvFim" onchange="tCalc()" value="'+esc(fimVal)+'"></div></div>'+
   '<label>Odômetro na devolução (km)</label><input id="tvOdo" inputmode="numeric" oninput="tRasc()" value="'+esc((rasc&&rasc.odo)||'')+'" placeholder="'+(c.kmUltima||c.kmAtual||'')+'">'+
   '<div class="v137importBox"><button class="btn sec" onclick="tImportAbrir()">📥 Puxar do histórico de manutenções</button>'+
-   '<div class="sub">Escolha as manutenções e depois decida, item por item, se entra em 50/50, 100% motorista, débito ou se deve ser ignorado. A manutenção original nunca é alterada.</div>'+
+   '<div class="sub">Selecione somente as manutenções que pertencem a esta devolução. Nada é selecionado automaticamente. Depois você escolhe o destino de cada item.</div>'+
    '<div id="tvImportPanel" class="v137importPanel"></div></div>'+
   '<div class="sect">1. Manutenção corretiva — divisão 50/50 · Peças</div><div id="tvPecas"></div>'+
   '<button class="btn mini sec" onclick="TP.push({valor:\'\',desc:\'\',loja:\'\'});tDesenha()">➕ Peça</button>'+
@@ -4123,10 +4222,10 @@ function abrirTermo(pk){
   '<div class="sect">3. Balanço — Créditos (caução etc.)</div><div id="tvCred"></div>'+
   '<button class="btn mini sec" onclick="TC.push({valor:\'\',desc:\'\'});tDesenha()">➕ Crédito</button>'+
   '<div class="sect">Resumo</div><div class="filestat" id="tvResumo"></div>'+
-  '<button class="btn ok" onclick="gerarTermo()">🧾 GERAR TERMO + ENCERRAR CONTRATO</button>'+
+  '<button id="tvGerarBtn" class="btn ok" onclick="gerarTermo()">🧾 ESCOLHA O CONTRATO ACIMA</button>'+
   '<button class="btn sec" onclick="closeSheet(2)">Voltar</button>';
  openSheet(h,2);
- setTimeout(function(){tDesenha();if(rasc&&rasc.pk===pk)toast('📝 Rascunho do termo recuperado')},60);
+ setTimeout(function(){tDesenha();tContratoAtualizaUI();if(rasc)toast('📝 Rascunho do termo recuperado')},60);
 }
 
 function _tImpData(m){return String((m&&m.dataFim)||(m&&m.dataIni)||'')}
@@ -4176,6 +4275,18 @@ function tImportToggleAll(on){
  tImportRenderLista();
 }
 function tImportSel(id,on){TIMP_SEL[id]=!!on;tImportAtualizaContador()}
+function tImportToggleOne(id,idx){
+ var on=!TIMP_SEL[id];TIMP_SEL[id]=on;
+ var card=document.getElementById('v138card_'+idx),bt=document.getElementById('v138pick_'+idx);
+ if(card)card.classList.toggle('selected',on);
+ if(bt){
+  bt.classList.toggle('on',on);
+  var ch=bt.querySelector('.v138check'),tx=bt.querySelector('.v138pickText');
+  if(ch)ch.textContent=on?'✓':'';
+  if(tx)tx.textContent=on?'Selecionada':'Toque para selecionar';
+ }
+ tImportAtualizaContador();
+}
 function tImportAtualizaContador(){
  var n=Object.keys(TIMP_SEL).filter(function(k){return TIMP_SEL[k]}).length;
  var e=document.getElementById('v137impCount');if(e)e.textContent=n+' selecionada'+(n===1?'':'s');
@@ -4187,16 +4298,17 @@ function tImportRenderLista(){
  var p=document.getElementById('tvImportPanel');if(!p)return;
  var a=_tImpVisiveis(),ini=_tImpDesdeContrato();
  var h='<div class="v137importHead"><b>1. Escolha as manutenções</b><span id="v137impCount" class="v137importCount">0 selecionadas</span></div>'+
-  '<div class="v137importHint">Por segurança, nada é classificado automaticamente. Você escolhe o destino de cada peça e de cada bloco de mão de obra na próxima etapa.</div>'+
+  '<div class="v137importHint">Nada é selecionado automaticamente. Toque no bloco da manutenção que você quer usar. Só as marcadas seguirão para a próxima etapa.</div>'+
   '<div class="v137impActions"><button class="btn mini sec" onclick="tImportToggleAll(true)">Marcar todas visíveis</button><button class="btn mini sec" onclick="tImportToggleAll(false)">Limpar seleção</button>'+
   (ini?'<button class="btn mini sec" onclick="tImportMostrarTodas()">'+(TIMP_SHOW_ALL?'Mostrar só desde '+esc(dataBR(ini)):'Mostrar anteriores ao contrato')+'</button>':'')+'</div>';
  if(!a.length)h+='<div class="empty">Nenhuma manutenção encontrada para este carro.</div>';
  a.forEach(function(m){
   var ck=!!TIMP_SEL[m.id];
-  h+='<div class="v137impMaint"><div class="v137impMaintTop"><input type="checkbox" '+(ck?'checked ':'')+'onchange="tImportSel(\''+esc(m.id)+'\',this.checked)"><div class="grow">'+
-    '<div class="tit">'+esc(periodoTexto(m.dataIni,m.dataFim)||_tImpOrigemLabel(m))+'</div>'+
-    '<div class="sub">'+esc(primNome(m.motorista||''))+(m.odometro?' · '+fmtKm(m.odometro)+' km':'')+' · R$ '+fmtBRL(m.total||0)+' · '+(m.pecas||[]).length+' peça'+((m.pecas||[]).length===1?'':'s')+' · '+(m.blocos||[]).length+' bloco'+((m.blocos||[]).length===1?'':'s')+'</div>'+
-   '</div></div><details><summary>Ver itens desta manutenção</summary><div class="v137impPreview">'+_tImpResumoHtml(m)+'</div></details></div>';
+  var ix=a.indexOf(m);
+  h+='<div id="v138card_'+ix+'" class="v137impMaint'+(ck?' selected':'')+'"><button type="button" id="v138pick_'+ix+'" class="v138pickTop'+(ck?' on':'')+'" onclick="tImportToggleOne(\''+esc(m.id)+'\','+ix+')"><span class="v138check">'+(ck?'✓':'')+'</span><span class="grow">'+
+    '<span class="tit">'+esc(periodoTexto(m.dataIni,m.dataFim)||_tImpOrigemLabel(m))+'</span>'+
+    '<span class="sub" style="display:block">'+esc(primNome(m.motorista||''))+(m.odometro?' · '+fmtKm(m.odometro)+' km':'')+' · R$ '+fmtBRL(m.total||0)+' · '+(m.pecas||[]).length+' peça'+((m.pecas||[]).length===1?'':'s')+' · '+(m.blocos||[]).length+' bloco'+((m.blocos||[]).length===1?'':'s')+'</span>'+
+    '<span class="v138pickText">'+(ck?'Selecionada':'Toque para selecionar')+'</span></span></button><details><summary>Ver itens desta manutenção</summary><div class="v137impPreview">'+_tImpResumoHtml(m)+'</div></details></div>';
  });
  h+='<div class="v137impActions"><button class="btn ok" onclick="tImportPreparar()">Continuar — escolher destino</button><button class="btn sec" onclick="tImportCancelar()">Cancelar importação</button></div>';
  p.innerHTML=h;tImportAtualizaContador();
@@ -4412,6 +4524,8 @@ function buildTermoTexto(t,carro){
 function gerarTermo(){
  var g=function(i){var e=document.getElementById(i);return e?e.value:''};
  var pk=_termoPk,c=S.carros[pk];
+ var contratoId=_termoContratoId||g('tvContrato'),ct=contratoId&&S.contratos[contratoId];
+ if(!ct||ct.carro!==pk||(ct.tipo||'locacao')!=='locacao'){toast('Escolha o contrato correto desta devolução');return}
  var mot=g('tvMot').trim(),motivo=g('tvMotivo'),ini=g('tvIni'),fim=g('tvFim');
  if(!mot){toast('Informe o motorista');return}
  if(!ini||!fim){toast('Informe as datas do período');return}
@@ -4429,22 +4543,23 @@ function gerarTermo(){
  var tc=creditos.reduce(function(s,x){return s+tNum(x.valor)},0);
  var saldoRaw=cota+ti+td-tc;
  var id=idNovo('tm');
- var t={id:id,carro:pk,motorista:mot,motivo:motivo,dataIni:ini,dataFim:fim,odometro:odo,
+ var fechaContratoAtual=!!(c.contratoVigenteId===ct.id&&ct.status==='vigente');
+ var t={id:id,carro:pk,contratoId:ct.id,contratoEraVigente:fechaContratoAtual,motorista:mot,motivo:motivo,dataIni:ini,dataFim:fim,odometro:odo,
   pecas:pecas,blocos:blocos,integrais:integrais,debitos:debitos,creditos:creditos,
   totalPecas:tp,totalMO:tmo,totalManut:tm,cota:cota,totalIntegrais:ti,totalDebitos:td,totalCreditos:tc,
   saldo:Math.abs(saldoRaw),aDevolver:saldoRaw<0,criadoEm:Date.now()};
  t.texto=buildTermoTexto(t,c);
  S.termos[id]=t;
- /* ---- AUTOMAÇÃO: encerra contrato, carro fica sem motorista ---- */
- if(c.contratoVigenteId&&S.contratos[c.contratoVigenteId]){
-  S.contratos[c.contratoVigenteId].status='encerrado';
-  S.contratos[c.contratoVigenteId].encerradoEm=fim;_touchContrato(S.contratos[c.contratoVigenteId]);
+ /* v138: só encerra/desvincula se o contrato ESCOLHIDO for exatamente o vigente atual.
+    Termo de contrato antigo não pode derrubar o motorista que alugou o carro depois. */
+ if(fechaContratoAtual){
+  ct.status='encerrado';ct.encerradoEm=fim;_touchContrato(ct);
+  c.contratoVigenteId='';c.motorista='';c.status='parado';_touchCarro(c,['contratoVigenteId','motorista','status']);
+  if(odo&&odo>(c.kmUltima||0)){c.kmUltima=odo;c.kmUltimaData=fim}
  }
- c.contratoVigenteId='';c.motorista='';c.status='parado';_touchCarro(c,['contratoVigenteId','motorista','status']);
- if(odo&&odo>(c.kmUltima||0)){c.kmUltima=odo;c.kmUltimaData=fim}
  save();tRascLimpa();
  closeSheet(2);ficha(pk);render();
- toast('🧾 Termo gerado · contrato encerrado (foi p/ o histórico) · carro sem motorista');
+ toast(fechaContratoAtual?'🧾 Termo gerado · contrato selecionado encerrado · carro sem motorista':'🧾 Termo histórico gerado · contrato e motorista atuais preservados');
  setTimeout(function(){verTermo(id)},350);
 }
 function verTermo(id){
