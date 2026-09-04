@@ -79,6 +79,56 @@ canvas.pdfpg{display:block;background:#fff}
 #pdfFull .pdfttl{flex:1;min-width:0;color:#fff;font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 3px #000}
 #pdfFull .pdfic{pointer-events:auto;flex:0 0 auto;width:38px;height:38px;line-height:38px;text-align:center;border-radius:50%;background:#1d2530d9;border:1px solid var(--bord);color:var(--tx);font-size:17px;text-decoration:none;padding:0}
 #pdfFull iframe.pdfv2{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff}
+
+/* ===== LEITOR CLARO DO TERMO DE DEVOLUÇÃO (v145) ===== */
+#pdfFull.pdfTermoLight{
+ background:#f3f5f7;
+}
+#pdfFull.pdfTermoLight #pdfView{
+ background:#f3f5f7;
+}
+#pdfFull.pdfTermoLight .pdftop{
+ background:rgba(255,255,255,.97);
+ border-bottom:1px solid #dfe4ea;
+ box-shadow:0 2px 12px rgba(15,35,60,.08);
+ padding:calc(7px + env(safe-area-inset-top)) 12px 8px;
+}
+#pdfFull.pdfTermoLight .pdfttl{
+ color:#102a50;
+ text-shadow:none;
+ font-size:14px;
+ font-weight:800;
+}
+#pdfFull.pdfTermoLight .pdfic{
+ -webkit-appearance:none;
+ appearance:none;
+ display:inline-flex;
+ align-items:center;
+ justify-content:center;
+ width:40px;
+ height:40px;
+ line-height:1;
+ border-radius:50%;
+ background:#fff;
+ border:1px solid #cfd7e2;
+ color:#102a50 !important;
+ font-size:20px;
+ font-weight:700;
+ text-decoration:none;
+ padding:0;
+ box-shadow:0 1px 4px rgba(15,35,60,.08);
+}
+#pdfFull.pdfTermoLight .pdfic:active{
+ background:#edf2f7;
+ transform:scale(.97);
+}
+#pdfFull.pdfTermoLight #pdfPages .pdfwrap,
+#pdfFull.pdfTermoLight #pdfPages canvas.pdfpg{
+ background:#fff;
+}
+#pdfFull.pdfTermoLight #pdfPages .pdfwrap{
+ box-shadow:0 2px 14px rgba(15,35,60,.12);
+}
 body.noscroll{overflow:hidden}
 .filestat{font-size:12px;color:var(--tx2);margin-top:4px;line-height:1.6}
 a.dl{color:var(--ac);text-decoration:none;font-weight:700}
@@ -973,7 +1023,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=144; var APP_DATE='03/09/2026';
+var APP_VER=145; var APP_DATE='03/09/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -3238,6 +3288,7 @@ function abrirPdf(b64,titulo,opts){
  var nome=opts.fileName||((titulo||'Documento')+'.pdf');
  var shareBtn=opts.share?'<button class="pdfic" onclick="compartilharPdfAtual()" aria-label="Compartilhar">\u2197</button>':'';
  var ov=document.createElement('div');ov.id='pdfFull';
+ if(opts.light)ov.className='pdfTermoLight';
  ov.innerHTML='<div class="pdftop"><div class="pdfttl">'+esc(titulo)+'</div>'+
   shareBtn+
   '<a class="pdfic" href="'+url+'" download="'+esc(nome)+'" aria-label="Baixar">\u2b07</a>'+
@@ -4919,7 +4970,7 @@ function verTermo(id){
   _tpdfBuild(doc,t,c);
   var blob=doc.output('blob'),nome=_tpdfFileName(c),titulo=nome.replace(/\.pdf$/i,'');
   return blobB64(blob).then(function(b64){
-   abrirPdf(b64,titulo,{fileName:nome,share:true,boost:2});
+   abrirPdf(b64,titulo,{fileName:nome,share:true,boost:2,light:true});
   });
  }).catch(function(e){
   toast('⚠️ Não consegui abrir o PDF: '+(e&&e.message?e.message:e));
