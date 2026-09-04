@@ -973,7 +973,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=143; var APP_DATE='03/09/2026';
+var APP_VER=144; var APP_DATE='03/09/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -3230,18 +3230,23 @@ function verDocx(path,titulo,pk,tipo){
   if(!w){var a=document.createElement('a');a.href=url;a.download=(d.name||titulo+'.docx');document.body.appendChild(a);a.click();setTimeout(function(){document.body.removeChild(a)},400)}
  }).catch(function(e){toast('⚠️ '+e.message)});
 }
-var PDFV={doc:null,scale:1,fit:1,tx:0,ty:0,W:0,H:0,q:0,seq:0,url:'',alturas:[],nitPag:-1,nitQ:0};
-function abrirPdf(b64,titulo){
+var PDFV={doc:null,scale:1,fit:1,tx:0,ty:0,W:0,H:0,q:0,seq:0,url:'',alturas:[],nitPag:-1,nitQ:0,boost:1,b64:'',fileName:'',share:false};
+function abrirPdf(b64,titulo,opts){
+ opts=opts||{};
  var url=b64ToUrl(b64,'application/pdf');
  fecharPdf();
+ var nome=opts.fileName||((titulo||'Documento')+'.pdf');
+ var shareBtn=opts.share?'<button class="pdfic" onclick="compartilharPdfAtual()" aria-label="Compartilhar">\u2197</button>':'';
  var ov=document.createElement('div');ov.id='pdfFull';
  ov.innerHTML='<div class="pdftop"><div class="pdfttl">'+esc(titulo)+'</div>'+
-  '<a class="pdfic" href="'+url+'" download="'+esc(titulo)+'.pdf">\u2b07</a>'+
-  '<button class="pdfic" onclick="fecharPdf()">\u2715</button></div>'+
+  shareBtn+
+  '<a class="pdfic" href="'+url+'" download="'+esc(nome)+'" aria-label="Baixar">\u2b07</a>'+
+  '<button class="pdfic" onclick="fecharPdf()" aria-label="Fechar">\u2715</button></div>'+
   '<div id="pdfView"><div id="pdfPages"></div></div>';
  document.body.appendChild(ov);
  if(document.body.classList)document.body.classList.add('noscroll');
- PDFV={doc:null,scale:1,fit:1,tx:0,ty:0,W:0,H:0,q:0,seq:0,url:url,alturas:[],nitPag:-1,nitQ:0};
+ PDFV={doc:null,scale:1,fit:1,tx:0,ty:0,W:0,H:0,q:0,seq:0,url:url,alturas:[],nitPag:-1,nitQ:0,
+  boost:Math.max(1,Number(opts.boost)||1),b64:b64,fileName:nome,share:!!opts.share};
  pdfLigarGestos();
  garantirPdfjs().then(function(){
   var bin=atob(b64),arr=new Uint8Array(bin.length);
@@ -3260,6 +3265,33 @@ function fecharPdf(){
  if(document.body.classList)document.body.classList.remove('noscroll');
  PDFV.doc=null;PDFV.seq++;
 }
+function compartilharPdfAtual(){
+ try{
+  if(!PDFV||!PDFV.b64){toast('PDF indisponível para compartilhar');return}
+  var bin=atob(PDFV.b64),u=new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
+  var nome=PDFV.fileName||'Documento.pdf';
+  var blob=new Blob([u],{type:'application/pdf'}),file=null;
+  try{file=new File([blob],nome,{type:'application/pdf'})}catch(e){}
+  if(navigator.share&&file&&(!navigator.canShare||navigator.canShare({files:[file]}))){
+   navigator.share({files:[file],title:nome}).catch(function(e){
+    if(e&&e.name==='AbortError')return;
+    _pdfShareFallback(blob,nome);
+   });
+   return;
+  }
+  _pdfShareFallback(blob,nome);
+ }catch(e){toast('⚠️ Não consegui compartilhar o PDF')}
+}
+function _pdfShareFallback(blob,nome){
+ try{
+  var u=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=u;a.download=nome;document.body.appendChild(a);a.click();
+  setTimeout(function(){try{document.body.removeChild(a)}catch(e){}try{URL.revokeObjectURL(u)}catch(e){}},1500);
+  toast('📥 PDF preparado');
+ }catch(e){toast('⚠️ Compartilhamento indisponível')}
+}
+
 /* ===================== PDF NATIVO DO TERMO (v143) =====================
    O termo profissional NÃO passa pelo PDF.js/canvas.
    O blob PDF real é entregue diretamente ao renderizador nativo do navegador/iOS,
@@ -3344,7 +3376,7 @@ function pdfNitidez(){
   var v=pdfVista();
   var idx=pdfPaginaVisivel(PDFV.ty,PDFV.scale,PDFV.alturas,v.h);
   var dpr=Math.min(window.devicePixelRatio||1,3);
-  var q=Math.min(dpr*PDFV.scale,8);
+  var q=Math.min(dpr*PDFV.scale*(PDFV.boost||1),10);
   if(idx===PDFV.nitPag&&Math.abs(q-PDFV.nitQ)<0.3)return;
   if(PDFV.nitPag>=0&&PDFV.nitPag!==idx)pdfPintar(PDFV.nitPag,dpr);
   PDFV.nitPag=idx;PDFV.nitQ=q;
@@ -3360,7 +3392,7 @@ function pdfPintar(idx,q){
  pdf.getPage(idx+1).then(function(page){
   if(meu!==PDFV.seq)return;
   var vp0=page.getViewport({scale:1});
-  var wPix=Math.min(Math.round(W*q),4200);
+  var wPix=Math.min(Math.round(W*q),6000);
   var vp=page.getViewport({scale:wPix/vp0.width});
   cv.width=Math.round(vp.width);cv.height=Math.round(vp.height);
   cv.style.width=W+'px';cv.style.height=Math.round(vp.height*W/vp.width)+'px';
@@ -3374,7 +3406,7 @@ function pdfRender(manter){
  var v=pdfVista();
  var W=v.w;                       /* pagina ocupa a largura inteira da tela */
  var dpr=Math.min(window.devicePixelRatio||1,3);
- var q=dpr;                       /* base: densidade real do aparelho */
+ var q=Math.min(dpr*(PDFV.boost||1),8); /* resolução-base ajustável por documento */
  PDFV.W=W;PDFV.q=q;PDFV.alturas=[];PDFV.nitPag=-1;PDFV.nitQ=0;
  host.style.width=W+'px';
  host.innerHTML='';
@@ -3384,7 +3416,7 @@ function pdfRender(manter){
   pdf.getPage(n).then(function(page){
    if(meu!==PDFV.seq)return;
    var vp0=page.getViewport({scale:1});
-   var wPix=Math.min(Math.round(W*q),4200);
+   var wPix=Math.min(Math.round(W*q),6000);
    var vp=page.getViewport({scale:wPix/vp0.width});
    var hCss=Math.round(vp.height*W/vp.width);
    var wrap=document.createElement('div');wrap.className='pdfwrap';
@@ -3450,7 +3482,7 @@ function pdfLigarGestos(){
    var sc=G.s0*(dist(t)/G.d0);
    if(sc<1)sc=1; if(sc>6)sc=6;
    var f=pdfFoco(PDFV.scale,PDFV.tx,PDFV.ty,sc,G.cx,G.cy);
-   PDFV.scale=sc;PDFV.tx=f.tx;PDFV.ty=f.ty;pdfAplicar();
+   PDFV.scale=sc;PDFV.tx=f.tx;PDFV.ty=f.ty;pdfAplicar();pdfNitidez();
   }else if(t.length===1){
    if(pdfSelecionando())return;   /* deixa o iOS ajustar a seleção de texto */
    e.preventDefault();
@@ -4880,13 +4912,15 @@ function verTermo(id){
  var t=S.termos&&S.termos[id];if(!t){toast('Termo não encontrado');return}
  var c=S.carros&&S.carros[t.carro];if(!c){toast('Carro do termo não encontrado');return}
  if(window._termoPdfViewBusy){toast('PDF já está sendo preparado');return}
- window._termoPdfViewBusy=true;toast('📄 Abrindo PDF…');
+ window._termoPdfViewBusy=true;toast('📄 Abrindo termo…');
  garantirJspdf().then(function(){
   if(!(window.jspdf&&window.jspdf.jsPDF))throw new Error('Gerador PDF indisponível');
   var doc=new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true,putOnlyUsedFonts:true});
   _tpdfBuild(doc,t,c);
   var blob=doc.output('blob'),nome=_tpdfFileName(c),titulo=nome.replace(/\.pdf$/i,'');
-  abrirPdfTermoNativo(blob,titulo,nome);
+  return blobB64(blob).then(function(b64){
+   abrirPdf(b64,titulo,{fileName:nome,share:true,boost:2});
+  });
  }).catch(function(e){
   toast('⚠️ Não consegui abrir o PDF: '+(e&&e.message?e.message:e));
  }).then(function(){
