@@ -1023,7 +1023,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=146; var APP_DATE='03/09/2026';
+var APP_VER=147; var APP_DATE='04/09/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -2371,6 +2371,7 @@ function ficha(pk){window._fichaPk=pk;
   anteriores.forEach(function(x){
    h+='<div class="card" style="margin:0 0 6px"><div class="tit" style="font-size:14px">'+esc(x.locatario.nome)+'</div>'+
     '<div class="sub">'+dataBR(x.inicio)+' → '+dataBR(x.fim)+(x.encerradoEm?' · encerrado em '+dataBR(x.encerradoEm):'')+(x.transferidoParaCarro?' · transferido para '+esc(fmtPlaca(x.transferidoParaCarro)):'')+'</div>'+docBtns(x)+
+    (x.transferidoParaCarro?'':'<button class="btn mini ok" onclick="reativarContrato(\''+x.id+'\')">↩ Reativar contrato</button>')+
     '<button class="btn mini red" onclick="excluirContrato(\''+x.id+'\')">🗑 Excluir contrato</button></div>';
   });
   h+='</div></details>';
@@ -2405,7 +2406,9 @@ function ficha(pk){window._fichaPk=pk;
   '<button class="btn mini ok" onclick="formVenda(\''+pk+'\',\'\')">📄 Registrar compra e venda</button>';
 h+='<div class="sect">Devolução do carro</div>';
  h+='<button class="btn mini sec" onclick="abrirTermo(\''+pk+'\')">🧾 Gerar termo de devolução / acerto de contas</button>';
- var _tms=Object.keys(S.termos||{}).map(function(k){return S.termos[k]}).filter(function(t){return t.carro===pk}).sort(function(a,b){return (b.criadoEm||0)-(a.criadoEm||0)});
+ var _tmsTodos=Object.keys(S.termos||{}).map(function(k){return S.termos[k]}).filter(function(t){return t.carro===pk}).sort(function(a,b){return (b.criadoEm||0)-(a.criadoEm||0)});
+ var _tms=_tmsTodos.filter(function(t){return t.status!=='revogado'});
+ var _tmsRev=_tmsTodos.filter(function(t){return t.status==='revogado'});
  if(_tms.length){
   h+='<details class="v99details"><summary class="v99summary"><span>Termos de devolução</span><span>'+_tms.length+' ›</span></summary><div class="v99detailbody">';
   _tms.forEach(function(t){
@@ -2414,6 +2417,16 @@ h+='<div class="sect">Devolução do carro</div>';
     '<button class="btn mini ok" onclick="gerarPdfTermo(\''+t.id+'\')">📄 PDF profissional</button>'+
     '<button class="btn mini" onclick="verTermo(\''+t.id+'\')">👁 Ver termo</button>'+
     '<button class="btn mini" onclick="editarTermo(\''+t.id+'\')">✏️ Editar termo</button>'+
+    '<button class="btn mini red" onclick="excluirTermo(\''+t.id+'\')">🗑 Excluir</button></div>';
+  });
+  h+='</div></details>';
+ }
+ if(_tmsRev.length){
+  h+='<details class="v99details"><summary class="v99summary"><span>Termos revogados</span><span>'+_tmsRev.length+' ›</span></summary><div class="v99detailbody">';
+  _tmsRev.forEach(function(t){
+   h+='<div class="card" style="margin:0 0 6px;opacity:.88"><div class="tit" style="font-size:14px">'+esc(primNome(t.motorista||''))+' · '+esc(t.motivo||'')+' <span class="chip warn">revogado</span></div>'+
+    '<div class="sub">'+dataBR(t.dataFim||'')+(t.revogadoData?' · revogado em '+dataBR(t.revogadoData):'')+' · saldo anterior R$ '+fmtBRL(t.saldo||0)+'</div>'+
+    '<button class="btn mini sec" onclick="verTermoRevogado(\''+t.id+'\')">👁 Ver registro</button>'+
     '<button class="btn mini red" onclick="excluirTermo(\''+t.id+'\')">🗑 Excluir</button></div>';
   });
   h+='</div></details>';
@@ -4200,6 +4213,102 @@ function atualizarFipe(force){
 
 </script>
 <script>
+function _contratosVigentesDoCarro(st,pk,ignorarId){
+ var out=[];
+ Object.keys((st&&st.contratos)||{}).forEach(function(cid){
+  var ct=st.contratos[cid];
+  if(!ct||cid===ignorarId)return;
+  if(ct.carro===pk&&ct.status==='vigente'&&(ct.tipo||'locacao')==='locacao')out.push(cid);
+ });
+ return out;
+}
+function _termosAtivosDoContrato(st,id){
+ return Object.keys((st&&st.termos)||{}).map(function(k){return st.termos[k]}).filter(function(t){
+  return t&&t.contratoId===id&&t.status!=='revogado';
+ });
+}
+function reativarContrato(id){
+ var ct=S.contratos&&S.contratos[id];if(!ct){toast('Contrato não encontrado');return}
+ var c=S.carros&&S.carros[ct.carro];if(!c){toast('Carro do contrato não encontrado');return}
+ if((ct.tipo||'locacao')!=='locacao'){toast('Este registro não é contrato de locação');return}
+ if(ct.status==='vigente'&&c.contratoVigenteId===id){toast('Este contrato já está vigente');return}
+ if(ct.transferidoParaCarro){toast('⛔ Contrato transferido para outro carro. Use o fluxo de transferência para corrigir esse vínculo.');return}
+ if(c.contratoVigenteId&&c.contratoVigenteId!==id){
+  var outro=S.contratos[c.contratoVigenteId];
+  toast('⛔ Este carro já possui outro contrato vinculado'+(outro&&outro.locatario?' com '+primNome(outro.locatario.nome):'')+'.');return
+ }
+ var ativos=_contratosVigentesDoCarro(S,ct.carro,id);
+ if(ativos.length){toast('⛔ Existe outro contrato vigente neste carro. Nada foi alterado.');return}
+ var termos=_termosAtivosDoContrato(S,id);
+ var msg='O contrato de '+primNome(ct.locatario&&ct.locatario.nome)+' voltará para CONTRATO VIGENTE deste carro. Datas, valores e documentos do contrato serão preservados.';
+ if(termos.length)msg+=' '+termos.length+' termo'+(termos.length>1?'s':'')+' de devolução vinculado'+(termos.length>1?'s':'')+' será'+(termos.length>1?'ão':'')+' marcado'+(termos.length>1?'s':'')+' como REVOGADO, sem apagar os dados.';
+ ask('Reativar este contrato?',msg,'Reativar contrato',function(){_reativarContratoCommit(id)});
+}
+function _reativarContratoCommit(id){
+ if(!REF||!_gotCloud||!_connOk){toast('⛔ Para reativar contrato, aguarde o indicador verde de sincronização.');return}
+ var ts=Date.now(),dia=hoje(),erro='',pk='',revogados=0;
+ var local;try{local=normState(JSON.parse(JSON.stringify(S)))}catch(e){toast('⛔ Não consegui preparar a reativação');return}
+ REF.transaction(function(cur){
+  var base;
+  if(cur&&_estadoEstruturalValido(cur)){
+   base=normState(cur);mergeColecoes(base,local);base=normState(base);
+  }else base=normState(JSON.parse(JSON.stringify(local)));
+  var ct=base.contratos&&base.contratos[id];
+  if(!ct){erro='Contrato não existe mais na nuvem';return}
+  pk=ct.carro;
+  var c=base.carros&&base.carros[pk];
+  if(!c){erro='Carro do contrato não existe mais';return}
+  if((ct.tipo||'locacao')!=='locacao'){erro='Registro não é contrato de locação';return}
+  if(ct.transferidoParaCarro){erro='Contrato já foi transferido para outro carro';return}
+  if(c.contratoVigenteId&&c.contratoVigenteId!==id){erro='Este carro já possui outro contrato vinculado';return}
+  var ativos=_contratosVigentesDoCarro(base,pk,id);
+  if(ativos.length){erro='Existe outro contrato vigente neste carro';return}
+  /* Reabre o contrato sem alterar período, valores, documentos ou quilometragem. */
+  ct.status='vigente';
+  ct.encerradoEm='';
+  ct.reativadoEm=ts;
+  ct.reativadoData=dia;
+  ct.editadoEm=ts;
+  if(!ct.criadoEm)ct.criadoEm=ts;
+  /* Restaura o vínculo operacional do carro. */
+  c.contratoVigenteId=id;
+  c.motorista=(ct.locatario&&ct.locatario.nome)||c.motorista||'';
+  c.status='ativo';
+  if(Number(ct.semanal)>0)c.semanalPadrao=Number(ct.semanal);
+  if(Number(ct.caucao)>0)c.caucaoPadrao=Number(ct.caucao);
+  var cm=_garanteCampoAt(c);
+  ['contratoVigenteId','motorista','status','semanalPadrao','caucaoPadrao'].forEach(function(k){cm[k]=ts});
+  c.editadoEm=ts;
+  /* Um termo que encerrou este contrato deixa de ser documento válido.
+     Ele é preservado, mas marcado como revogado para não poder ser confundido com um encerramento real. */
+  revogados=0;
+  Object.keys(base.termos||{}).forEach(function(tid){
+   var t=base.termos[tid];
+   if(!t||t.contratoId!==id||t.status==='revogado')return;
+   t.status='revogado';
+   t.revogadoEm=ts;
+   t.revogadoData=dia;
+   t.revogadoMotivo='Contrato reativado';
+   t.editadoEm=ts;
+   revogados++;
+  });
+  base.rev=Math.max(Number(base.rev)||0,ts);base.dev=DEV;
+  return base;
+ },function(err,committed,snap){
+  if(err){toast('⚠️ Falha ao reativar: '+((err&&err.message)||err));return}
+  if(!committed){toast('⛔ Reativação cancelada'+(erro?': '+erro:' por conflito de dados'));return}
+  try{
+   if(snap&&snap.val()){
+    S=normState(snap.val());
+    localStorage.setItem('gestao_cache',JSON.stringify(S));
+    _guardarPontoSeguroCloud(S);
+   }
+  }catch(e){}
+  render();
+  if(pk)ficha(pk);
+  toast('✅ Contrato reativado como vigente'+(revogados?' · '+revogados+' termo'+(revogados>1?'s':'')+' revogado'+(revogados>1?'s':''):''));
+ },false);
+}
 function excluirContrato(id){
  var x=S.contratos[id];if(!x)return;
  ask('Excluir contrato de '+primNome(x.locatario.nome)+'?','Sai dos contratos anteriores deste carro e os arquivos dele saem da nuvem. O contrato vigente não é afetado.','Excluir',function(){
@@ -4980,6 +5089,14 @@ function verTermo(id){
  },function(){
   window._termoPdfViewBusy=false;
  });
+}
+function verTermoRevogado(id){
+ var t=S.termos&&S.termos[id];if(!t){toast('Termo não encontrado');return}
+ if(t.status!=='revogado'){verTermo(id);return}
+ openSheet('<h3>Termo revogado — '+esc(primNome(t.motorista||''))+'</h3>'+
+  '<div class="filestat" style="margin:6px 0 10px;border-color:rgba(196,75,75,.25);background:#fff3f3"><b style="color:#b33">DOCUMENTO REVOGADO — NÃO ENVIAR AO MOTORISTA</b><br><span class="sub">Este termo foi invalidado porque o contrato relacionado voltou a ficar vigente'+(t.revogadoData?' em '+esc(dataBR(t.revogadoData)):'')+'.</span></div>'+
+  '<pre style="white-space:pre-wrap;background:var(--card2);border-radius:10px;padding:12px;font-size:12.5px;line-height:1.45;max-height:58vh;overflow:auto">'+esc(t.texto||'')+'</pre>'+
+  '<button class="btn sec" onclick="closeSheet(2)">Fechar</button>',2);
 }
 function copiarTermo(id){
  var t=S.termos[id];if(!t)return;
