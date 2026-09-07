@@ -1023,7 +1023,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=147; var APP_DATE='04/09/2026';
+var APP_VER=148; var APP_DATE='07/09/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -1339,6 +1339,8 @@ function normManut(m){
   return{titulo:b.titulo||'Mecânico',nome:nm,valor:v,servicos:sv,dataIni:b.dataIni||'',dataFim:b.dataFim||'',pendenteFinanceiro:!!b.pendenteFinanceiro};
  });
  m.totalPecas=Number(m.totalPecas)||0;m.totalMO=Number(m.totalMO)||0;m.total=Number(m.total)||0;
+ /* v148: atribuição financeira opcional por manutenção. Vazio preserva a regra legada da frota do carro. */
+ m.frotaFechamento=(m.frotaFechamento==='hudson'||m.frotaFechamento==='fabio')?m.frotaFechamento:'';
  m.texto=m.texto||'';m.criadoEm=m.criadoEm||0;m.editadoEm=Number(m.editadoEm)||0;
  return m;
 }
@@ -4319,12 +4321,12 @@ function excluirContrato(id){
 }
 </script><script>
 /* ===================== NOVA MANUTENÇÃO ===================== */
-var MP=[],MB=[]; /* linhas de peças e blocos de mão de obra (rascunho); datas vazias herdam os padrões da manutenção */
+var MP=[],MB=[],MFROTA='',MFROTA_PK=''; /* peças/blocos + responsável financeiro em compra e venda */
 var RASC_K='gestao_rascunho_manut';
 function mRasc(){ /* rascunho contra fechamento do app */
  try{
   var g=function(id){var e=document.getElementById(id);return e?e.value:''};
-  localStorage.setItem(RASC_K,JSON.stringify({carro:g('mCarro'),mot:g('mMotorista'),ini:g('mIni'),fim:g('mFim'),odo:g('mOdo'),pdat:g('mPecasData'),MP:MP,MB:MB,em:Date.now()}));
+  localStorage.setItem(RASC_K,JSON.stringify({carro:g('mCarro'),mot:g('mMotorista'),ini:g('mIni'),fim:g('mFim'),odo:g('mOdo'),pdat:g('mPecasData'),frota:MFROTA,MP:MP,MB:MB,em:Date.now()}));
  }catch(e){}
 }
 function mRascLimpa(){try{localStorage.removeItem(RASC_K)}catch(e){}}
@@ -5717,13 +5719,43 @@ function vObs(){
  h+='</div>';
  return h;
 }
+function contratoVendaVigenteDoCarro(pk){
+ var ach=null;
+ Object.keys(S.contratos||{}).some(function(k){var x=S.contratos[k];if(x&&x.carro===pk&&x.tipo==='venda'&&x.status==='vigente'){ach=x;return true}return false});
+ return ach;
+}
+function _frotaPadraoCarro(pk){var c=S.carros&&S.carros[pk];return (c&&(c.meuCarro||c.status==='pessoal'))?'hudson':'fabio'}
+function _frotaFinanceiraManut(m){
+ if(m&&m.frotaFechamento==='hudson')return 'hudson';
+ if(m&&m.frotaFechamento==='fabio')return 'fabio';
+ return _frotaPadraoCarro(m&&m.carro||'');
+}
+function _rotuloFrotaFinanceira(v){return v==='hudson'?'Frota Hudson':'Frota Fábio'}
+function mFrotaFinanceiraEscolher(v){MFROTA=(v==='hudson'||v==='fabio')?v:'';mRasc();mAtualizaSteps()}
+function mFrotaFinanceiraUI(pk,forcarValor){
+ var box=document.getElementById('mFrotaFinanceiraBox');if(!box)return;
+ var c=S.carros&&S.carros[pk],venda=pk&&contratoVendaVigenteDoCarro(pk);
+ if(!c||!venda){box.style.display='none';box.innerHTML='';MFROTA='';MFROTA_PK=pk||'';return}
+ if(MFROTA_PK!==pk){MFROTA_PK=pk;MFROTA=''}
+ if(forcarValor==='hudson'||forcarValor==='fabio')MFROTA=forcarValor;
+ var pad=_frotaPadraoCarro(pk),compr=(venda.locatario&&venda.locatario.nome)||c.motorista||'comprador';
+ box.style.display='block';
+ box.innerHTML='<div class="v102panelHead"><span>💰</span><div><b>Quem vai acertar esta manutenção?</b><small>Compra e venda · '+esc(primNome(compr))+'</small></div></div>'+ 
+  '<div class="sub" style="margin:0 0 9px">O carro continua cadastrado como '+_rotuloFrotaFinanceira(pad)+'. Aqui você escolhe apenas em qual frota ESTE gasto entra no fechamento de fornecedores. Isso não muda o proprietário nem o contrato.</div>'+ 
+  '<label>Responsável pelo adiantamento / fechamento</label><select id="mFrotaFechamento" onchange="mFrotaFinanceiraEscolher(this.value)">'+
+   '<option value=""'+(!MFROTA?' selected':'')+'>— escolha obrigatória —</option>'+ 
+   '<option value="fabio"'+(MFROTA==='fabio'?' selected':'')+'>Frota Fábio</option>'+ 
+   '<option value="hudson"'+(MFROTA==='hudson'?' selected':'')+'>Frota Hudson</option>'+ 
+  '</select>'+ 
+  '<div class="v102info" style="margin-top:8px">Exemplo: PWL é Frota Fábio, mas se Hudson adiantar a manutenção ao Vinícius ou fornecedor, escolha <b>Frota Hudson</b>. O comprador continua responsável por devolver esse valor fora deste fechamento.</div>';
+}
 function vManut(){
  var rasc=null;try{rasc=JSON.parse(localStorage.getItem(RASC_K)||'null')}catch(e){}
  if(rasc&&(rasc.MP||[]).concat(rasc.MB||[]).some(function(x){return (x.valor||x.desc||x.servicos||'').toString().trim()})){
-  MP=rasc.MP||[];MB=rasc.MB||[];
+  MP=rasc.MP||[];MB=rasc.MB||[];MFROTA=(rasc.frota==='hudson'||rasc.frota==='fabio')?rasc.frota:'';MFROTA_PK=rasc.carro||'';
   setTimeout(function(){
    var s=function(id,v){var e=document.getElementById(id);if(e&&v)e.value=v};
-   s('mCarro',rasc.carro);if(rasc.carro)mPuxaCarro();
+   s('mCarro',rasc.carro);if(rasc.carro)mPuxaCarro(MFROTA);
    s('mMotorista',rasc.mot);s('mIni',rasc.ini);s('mFim',rasc.fim);s('mOdo',rasc.odo);s('mPecasData',rasc.pdat);
    toast('📝 Rascunho recuperado — nada se perdeu');
   },60);
@@ -5736,6 +5768,7 @@ function vManut(){
   '<div class="v100panel"><div class="v100panelHead"><div class="v100panelIcon">🚗</div><div class="grow"><div class="v100panelTitle">Veículo e serviço</div><div class="v100panelSub">Carro, motorista, período e quilometragem.</div></div></div>'+
    '<label>Carro</label><select id="mCarro" onchange="mPuxaCarro();mRasc();mAtualizaSteps()"><option value="">— selecione —</option>'+opcoesCarros()+'</select>'+
    '<div id="mCarroInfo" class="v100vehicle"></div>'+
+   '<div id="mFrotaFinanceiraBox" class="v102panel" style="display:none;margin-top:10px"></div>'+
    '<label>Motorista</label><input id="mMotorista" oninput="mRasc();mAtualizaSteps()" placeholder="sugere o atual ao escolher o carro">'+
    '<div class="grid2"><div><label>Data de início</label><input type="date" id="mIni" onchange="mRasc();mAtualizaSteps();mDesenha()" value="'+hoje()+'"></div>'+
    '<div><label>Data final</label><input type="date" id="mFim" onchange="mRasc();mDesenha()" value="'+hoje()+'"></div></div>'+
@@ -5755,14 +5788,15 @@ function opcoesCarros(sel){
  return carrosOrdenados().map(function(c){var pk=normPlaca(c.placa);
   return '<option value="'+pk+'"'+(pk===sel?' selected':'')+'>'+esc(tituloCarro(c))+' — '+esc(fmtPlaca(c.placa))+'</option>'}).join('');
 }
-function mPuxaCarro(){
+function mPuxaCarro(forcarFrota){
  var pk=document.getElementById('mCarro').value,c=S.carros[pk];
  var info=document.getElementById('mCarroInfo');
- if(!c){if(info){info.className='v100vehicle';info.innerHTML=''}return}
+ if(!c){if(info){info.className='v100vehicle';info.innerHTML=''}mFrotaFinanceiraUI('', '');return}
  var kk=c.kmUltima||c.kmAtual||0;
  if(info){info.className='v100vehicle show';info.innerHTML='<div class="v100vehicleTop"><div class="v100carBadge">🚗</div><div class="grow"><strong>'+esc(tituloCarro(c))+' · '+esc(fmtPlaca(c.placa))+'</strong><div class="sub">'+(c.motorista?'Motorista atual: '+esc(primNome(c.motorista)):'Sem motorista informado')+'</div></div></div><div class="v100vehicleMeta"><span class="v100miniChip">Último KM: '+fmtKm(kk)+' km</span><span class="v100miniChip">'+esc(c.status||'—')+'</span></div>'}
  if(c.motorista)document.getElementById('mMotorista').value=primNome(c.motorista);
  if(kk)document.getElementById('mOdo').placeholder=String(kk);
+ mFrotaFinanceiraUI(pk,forcarFrota);
  mAtualizaSteps();
 }
 function taGrow(el){if(!el)return;el.style.height='auto';el.style.height=(el.scrollHeight+2)+'px'}
@@ -5837,6 +5871,8 @@ function gerarManut(){
  var pk=document.getElementById('mCarro').value;
  if(!pk){toast('Escolha o carro');return}
  var carro=S.carros[pk];
+ var _cv=contratoVendaVigenteDoCarro(pk),_ff='';
+ if(_cv){_ff=MFROTA||((document.getElementById('mFrotaFechamento')||{value:''}).value||'');if(_ff!=='hudson'&&_ff!=='fabio'){toast('⚠️ Este carro tem compra e venda. Escolha Frota Fábio ou Frota Hudson para o fechamento desta manutenção.');return}}
  var mot=document.getElementById('mMotorista').value.trim();
  if(!mot){toast('Informe o motorista');return}
  var ini=document.getElementById('mIni').value,fim=document.getElementById('mFim').value;
@@ -5854,7 +5890,7 @@ function gerarManut(){
  var tp=0;pecas.forEach(function(p){tp+=p.valor});
  var tm=0;blocos.forEach(function(b){tm+=b.valor});
  var m=normManut({id:idNovo('mn'),carro:pk,motorista:mot,dataIni:ini,dataFim:fim||'',dataPecasPadrao:(document.getElementById('mPecasData')||{value:''}).value||'',odometro:odo,
-  pecas:pecas,blocos:blocos,totalPecas:tp,totalMO:tm,total:tp+tm,criadoEm:Date.now()});
+  frotaFechamento:_cv?_ff:'',pecas:pecas,blocos:blocos,totalPecas:tp,totalMO:tm,total:tp+tm,criadoEm:Date.now()});
  m.texto=buildManutTexto(m,carro);
  S.manutencoes[m.id]=m;_gestaoFormDirty=false;
  if(odo>0&&odo>=(Number(carro.kmUltima)||0)){carro.kmUltima=odo;carro.kmUltimaData=fim||ini}
@@ -5880,18 +5916,18 @@ function gerarManut(){
   '<div class="mono v105manutText" id="mTexto">'+esc(m.texto)+'</div>'+ 
   '<div class="v105savedActions"><button class="btn ok" onclick="copiarManut(\''+m.id+'\')">📋 Copiar texto</button><button class="btn sec" onclick="mNovaAposSalvar()">＋ Nova manutenção</button></div></div>';
  toast('✅ Gravado no histórico do '+carro.nome);
- MP=[];MB=[];
+ MP=[];MB=[];MFROTA='';MFROTA_PK='';
  setTimeout(function(){var e=document.getElementById('mSavedCard');if(e)try{e.scrollIntoView({behavior:'smooth',block:'center'})}catch(x){}},120);
 }
 function mNovaAposSalvar(){
- MP=[{valor:'',desc:'',loja:'',data:'',pendenteFinanceiro:false}];MB=[{titulo:'Mecânico',nome:'Vinícius',valor:'',servicos:'',dataIni:'',dataFim:'',pendenteFinanceiro:false}];mRascLimpa();
+ MP=[{valor:'',desc:'',loja:'',data:'',pendenteFinanceiro:false}];MB=[{titulo:'Mecânico',nome:'Vinícius',valor:'',servicos:'',dataIni:'',dataFim:'',pendenteFinanceiro:false}];MFROTA='';MFROTA_PK='';mRascLimpa();
  go(1);setTimeout(function(){window.scrollTo({top:0,behavior:'smooth'});var c=document.getElementById('mCarro');if(c)c.focus()},80);
 }
 function mAtualizaSteps(){
  var form=document.querySelector('.v100form');if(!form)return;
  var st=form.querySelectorAll('.v100steps.s4 .v100step');if(st.length!==4)return;
  var g=function(id){var e=document.getElementById(id);return e?String(e.value||'').trim():''};
- var a=!!(g('mCarro')&&g('mMotorista')&&g('mIni'));
+ var _pkStep=g('mCarro'),_cvStep=_pkStep&&contratoVendaVigenteDoCarro(_pkStep);var a=!!(_pkStep&&g('mMotorista')&&g('mIni')&&(!_cvStep||(MFROTA==='hudson'||MFROTA==='fabio')));
  var b=MP.some(function(p){return String(p.desc||'').trim()||parseBRL(p.valor)>0});
  var c=MB.some(function(x){return String(x.nome||'').trim()||String(x.servicos||'').trim()||parseBRL(x.valor)>0});
  var done=[a,b,c,false],cur=!a?0:(!b?1:(!c?2:3));
@@ -5928,7 +5964,8 @@ function editarManut(id){
   '<label>Motorista</label><input id="edMot" value="'+esc(m.motorista||'')+'">'+
   '<div class="grid2"><div><label>Data de início</label><input type="date" id="edIni" value="'+esc(m.dataIni||'')+'"></div>'+
   '<div><label>Data final</label><input type="date" id="edFim" value="'+esc(m.dataFim||'')+'"></div></div>'+
-  '<label>Odômetro (km)</label><input id="edOdo" inputmode="numeric" value="'+esc(m.odometro?String(m.odometro):'')+'"></div>'+
+  '<label>Odômetro (km)</label><input id="edOdo" inputmode="numeric" value="'+esc(m.odometro?String(m.odometro):'')+'">'+
+  (contratoVendaVigenteDoCarro(m.carro)?('<div class="v102info" style="margin-top:10px"><b>Fechamento desta manutenção</b><br>Este carro tem compra e venda. Escolha quem adiantou/pagará este lançamento ao fornecedor; isso não altera a frota física do carro.</div><label>Responsável financeiro</label><select id="edFrotaFechamento"><option value=""'+(!m.frotaFechamento?' selected':'')+'>Automático pela frota do carro ('+_rotuloFrotaFinanceira(_frotaPadraoCarro(m.carro))+') · legado</option><option value="fabio"'+(m.frotaFechamento==='fabio'?' selected':'')+'>Frota Fábio</option><option value="hudson"'+(m.frotaFechamento==='hudson'?' selected':'')+'>Frota Hudson</option></select>'):'')+'</div>'+
   '<div class="v102panel"><div class="v102panelHead"><span>🧩</span><div><b>Peças</b><small>Descrição, valor, fornecedor e competência financeira.</small></div></div>'+
   '<label>Data padrão das peças <span style="font-weight:400">(opcional)</span></label><input type="date" id="edPecasData" value="'+esc(m.dataPecasPadrao||'')+'"><div class="sub" style="margin:4px 0 10px">Peças sem data individual usam esta data; sem ela, continuam usando a data geral da manutenção.</div><div id="edPecas"></div>'+
   '<button class="btn mini sec v100add" onclick="EP.push({valor:\'\',desc:\'\',loja:\'\',data:\'\'});edDesenha()">＋ Adicionar peça</button></div>'+
@@ -5994,6 +6031,7 @@ function salvarEdicaoManut(){
  m.dataIni=document.getElementById('edIni').value||m.dataIni;
  m.dataFim=document.getElementById('edFim').value||'';
  m.dataPecasPadrao=(document.getElementById('edPecasData')||{value:''}).value||'';
+ var _eff=document.getElementById('edFrotaFechamento');if(_eff)m.frotaFechamento=(_eff.value==='hudson'||_eff.value==='fabio')?_eff.value:'';
  var odo=parseInt((document.getElementById('edOdo').value||'').replace(/\D/g,''),10)||0;
  if(odo)m.odometro=odo;
  m.pecas=pecas;m.blocos=blocos;m.totalPecas=tp;m.totalMO=tm;m.total=tp+tm;m.editadoEm=Date.now();
@@ -6026,6 +6064,7 @@ function verManut(id){
  var h='<div class="v102sheetHero"><div class="v102sheetIcon">🔧</div><div><div class="v102eyebrow">HISTÓRICO</div><h3>'+esc(tituloCarro(c))+'</h3><div class="sub">'+esc(fmtPlaca(c.placa))+' · '+esc(periodoTexto(m.dataIni,m.dataFim))+'</div></div></div>'+
   '<div class="v102maintTop"><div>'+plateHtml(c.placa)+'</div><div class="grow"><small>Motorista</small><strong>'+(m.motorista?esc(m.motorista):'—')+'</strong><small>Odômetro</small><strong>'+(m.odometro?fmtKm(m.odometro)+' km':'—')+'</strong></div></div>';
  if(m.origem==='whatsapp')h+='<div class="v102info">Este lançamento veio do histórico importado do WhatsApp.</div>';
+ if(m.frotaFechamento)h+='<div class="v102info"><b>Fechamento financeiro:</b> '+_rotuloFrotaFinanceira(m.frotaFechamento)+' · atribuição manual deste lançamento.</div>';
  if((m.pecas||[]).length){
   h+='<div class="v102panel"><div class="v102panelHead"><span>🧩</span><div><b>Peças</b><small>'+(m.totalPecas>0?'R$ '+fmtBRL(m.totalPecas):'Itens registrados')+'</small></div></div>';
   m.pecas.forEach(function(p){
@@ -6138,13 +6177,13 @@ function _itensFinanceirosManut(m,incluirPendentes){
   if(p&&p.pendenteFinanceiro&&!incluirPendentes)return;
   var v=Number(p.valor)||0;if(!v)return;
   var d=_dataPeca(m,p);
-  a.push({tipo:'peca',valor:v,fornecedor:p.loja||'',desc:p.desc||'Peça',data:d,ym:_mesData(d),mid:m.id||'',carro:m.carro||''});
+  a.push({tipo:'peca',valor:v,fornecedor:p.loja||'',desc:p.desc||'Peça',data:d,ym:_mesData(d),mid:m.id||'',carro:m.carro||'',frotaFechamento:m.frotaFechamento||''});
  });
  (m.blocos||[]).forEach(function(b){
   if(b&&b.pendenteFinanceiro&&!incluirPendentes)return;
   var v=Number(b.valor)||0;if(!v)return;
   var d=_dataBloco(m,b);
-  a.push({tipo:'mo',valor:v,fornecedor:b.nome||b.titulo||'',desc:b.titulo||'Mão de obra',data:d,ym:_mesData(d),mid:m.id||'',carro:m.carro||''});
+  a.push({tipo:'mo',valor:v,fornecedor:b.nome||b.titulo||'',desc:b.titulo||'Mão de obra',data:d,ym:_mesData(d),mid:m.id||'',carro:m.carro||'',frotaFechamento:m.frotaFechamento||''});
  });
  return a;
 }
@@ -6161,7 +6200,7 @@ function mesesComGasto(){
 /* Agrupa o mês por fornecedor -> carro -> itens. Separa frota x veículos pessoais. */
 function fechamentoDoMes(ym){
  var forn={};
- function add(nome,pk,desc,valor,tipo,dt,mid){
+ function add(nome,pk,desc,valor,tipo,dt,mid,frotaFechamento){
   nome=(nome||'').trim();if(!nome)nome='(sem fornecedor)';
   /* junta grafias diferentes do mesmo fornecedor: "Mega" e "mega" viram um só.
      A chave é sem acento/maiúscula; o nome exibido é o mais completo que aparecer. */
@@ -6170,10 +6209,11 @@ function fechamentoDoMes(ym){
   if(!f)f=forn[chave]={nome:nome,carros:{},total:0,totalFrota:0,totalPessoal:0};
   else if(nome.length>f.nome.length)f.nome=nome;
   var car=S.carros[pk];
-  /* Frota Hudson = carros marcados como dele (ou status pessoal, de antes) */
-  var pessoal=!!(car&&(car.meuCarro||car.status==='pessoal'));
-  var c=f.carros[pk]||(f.carros[pk]={pk:pk,pessoal:pessoal,itens:[],sub:0});
-  c.itens.push({desc:desc,valor:valor,tipo:tipo,data:dt||'',mid:mid||''});
+  /* v148: a manutenção pode ser adiantada por Hudson ou Fábio independentemente da frota física. */
+  var pessoal=frotaFechamento==='hudson'?true:(frotaFechamento==='fabio'?false:!!(car&&(car.meuCarro||car.status==='pessoal')));
+  var gk=pk+'|'+(pessoal?'H':'F');
+  var c=f.carros[gk]||(f.carros[gk]={pk:pk,pessoal:pessoal,itens:[],sub:0});
+  c.itens.push({desc:desc,valor:valor,tipo:tipo,data:dt||'',mid:mid||'',frotaFechamento:frotaFechamento||''});
   c.sub+=valor;f.total+=valor;
   if(pessoal)f.totalPessoal+=valor;else f.totalFrota+=valor;
  }
@@ -6181,7 +6221,7 @@ function fechamentoDoMes(ym){
   var m=S.manutencoes[k];
   _itensFinanceirosManut(m).forEach(function(it){
    if(it.ym!==ym)return;
-   add(it.fornecedor,m.carro,it.desc,it.valor,it.tipo,it.data,m.id);
+   add(it.fornecedor,m.carro,it.desc,it.valor,it.tipo,it.data,m.id,it.frotaFechamento);
   });
  });
  var lista=Object.keys(forn).map(function(n){return forn[n]}).sort(function(a,b){return b.total-a.total});
@@ -6198,16 +6238,16 @@ function textoFechamento(ym,nomeForn){
  var x='*FECHAMENTO DE FATURA — '+nomeForn.toUpperCase()+' '+_nomeMes(ym).toUpperCase().replace('/',' ')+'*\n\n';
  x+='*🚗 FROTA GUIMASCAR*\n\n';
  var pks=Object.keys(f.carros);
- pks.filter(function(pk){return !f.carros[pk].pessoal}).forEach(function(pk){
-  var c=f.carros[pk],car=S.carros[pk];
+ pks.filter(function(gk){return !f.carros[gk].pessoal}).forEach(function(gk){
+  var c=f.carros[gk],pk=c.pk,car=S.carros[pk];
   x+=(car?tituloCarro(car):pk)+' ('+fmtPlaca(pk).split('-')[0]+')\n';
   c.itens.forEach(function(i){x+='• R$ '+fmtBRL(i.valor)+' - '+i.desc+'\n'});
   x+='Subtotal: R$ '+fmtBRL(c.sub)+'\n\n';
  });
- var pess=pks.filter(function(pk){return f.carros[pk].pessoal});
+ var pess=pks.filter(function(gk){return f.carros[gk].pessoal});
  x+='*👤 VEÍCULOS SEPARADOS (HUDSON)*\n\n';
- pess.forEach(function(pk){
-  var c=f.carros[pk],car=S.carros[pk];
+ pess.forEach(function(gk){
+  var c=f.carros[gk],pk=c.pk,car=S.carros[pk];
   x+=(car?tituloCarro(car):pk)+' ('+fmtPlaca(pk).split('-')[0]+')\n';
   c.itens.forEach(function(i){x+='• R$ '+fmtBRL(i.valor)+' - '+i.desc+'\n'});
   x+='Subtotal: R$ '+fmtBRL(c.sub)+'\n\n';
@@ -6389,10 +6429,10 @@ function vHistorico(){
   if(!f.fornecedores.length)h+='<div class="sub" style="margin-top:6px">Sem gastos neste m\u00eas.</div>';
   f.fornecedores.forEach(function(fo){
    var det='';
-   Object.keys(fo.carros).forEach(function(pk){
-    var cc=fo.carros[pk],car=S.carros[pk];
+   Object.keys(fo.carros).forEach(function(gk){
+    var cc=fo.carros[gk],pk=cc.pk,car=S.carros[pk];
     det+='<div class="mvrow" style="opacity:.85"><b class="hplc">'+esc(fmtPlaca(pk))+'</b>'+
-      '<div class="grow">'+esc(car?tituloCarro(car):pk)+(cc.pessoal?' <span class="chip">Hudson</span>':'')+'</div>'+
+      '<div class="grow">'+esc(car?tituloCarro(car):pk)+' <span class="chip">'+(cc.pessoal?'Hudson':'Fábio')+'</span></div>'+
       '<div class="mvval">R$ '+fmtBRL(cc.sub)+'</div></div>';
     cc.itens.forEach(function(it){
      det+='<div class="sub" style="margin:0 0 2px 8px">'+(it.data?dataBR(it.data)+' \u00b7 ':'')+
