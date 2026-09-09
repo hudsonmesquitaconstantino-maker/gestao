@@ -1023,7 +1023,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=148; var APP_DATE='07/09/2026';
+var APP_VER=149; var APP_DATE='09/09/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -5667,12 +5667,31 @@ function obsEditar(id){
   '<p class="sub">Ajuste o texto (ex.: risque o que já foi feito e deixe só o que falta).</p>'+
   '<label>Texto da observação</label><textarea id="obsTxtEd" style="min-height:110px">'+esc(o.texto)+'</textarea>'+
   '<label>Para quando (opcional)</label><input type="date" id="obsQuandoEd" value="'+esc(o.quando||'')+'">'+
+  (o.quando?'<button type="button" class="btn sec" style="margin-top:8px" onclick="obsEditarSemData(\''+id+'\')">🗒 Remover data · deixar sem prazo</button>':
+             '<div class="sub" style="margin:7px 2px 0">🗒 Esta observação já está sem data.</div>')+
   '<button class="btn ok" onclick="obsEditarSalvar(\''+id+'\')">Salvar alteração</button>'+
   '<button class="btn sec" onclick="closeSheet(2)">Voltar sem mexer</button>',2);
 }
+function _obsEditarTextoAtual(){
+ var e=document.getElementById('obsTxtEd');
+ return (e&&e.value||'').trim();
+}
+function obsEditarSemData(id){
+ var o=S.observacoes[id];if(!o)return;
+ var tx=_obsEditarTextoAtual();
+ if(!tx){toast('O texto não pode ficar vazio — para apagar use o ✕');return}
+ /* Não dependemos do botão "Redefinir" do seletor nativo do iOS:
+    esta ação remove o prazo diretamente no dado da observação. */
+ o.texto=tx;
+ o.quando='';
+ o.editadoEm=Date.now();
+ save();closeSheet(2);render();
+ if(window._fichaPk)ficha(window._fichaPk);
+ toast('🗒 Data removida — observação ficou sem prazo');
+}
 function obsEditarSalvar(id){
  var o=S.observacoes[id];if(!o)return;
- var e=document.getElementById('obsTxtEd');var tx=(e&&e.value||'').trim();
+ var tx=_obsEditarTextoAtual();
  if(!tx){toast('O texto não pode ficar vazio — para apagar use o ✕');return}
  o.texto=tx;o.quando=(document.getElementById('obsQuandoEd')||{value:''}).value||'';o.editadoEm=Date.now();
  save();closeSheet(2);render();
