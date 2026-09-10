@@ -20,6 +20,9 @@ h1 b{color:var(--ac)}
 #verTag{font-size:10px;color:var(--tx2);margin:1px 0 0;letter-spacing:.2px}
 #syncDot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warn);margin-right:5px;vertical-align:1px}
 #syncDot.on{background:var(--ok)}
+#syncText{font-size:10px;color:var(--tx2);vertical-align:1px;font-weight:600}
+#syncText.ok{color:var(--ok)}
+#syncText.warn{color:var(--warn)}
 .hbtns{position:absolute;right:10px;top:calc(10px + env(safe-area-inset-top));display:flex;gap:8px}
 .hbtn{background:var(--card2);border:1px solid var(--bord);color:var(--tx);border-radius:10px;padding:7px 11px;font-size:15px}
 main{padding:12px 12px 8px;max-width:640px;margin:0 auto}
@@ -996,7 +999,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <body>
 <header>
 <h1><b>GuimasCar</b> Gestão</h1>
-<div id="verTag"><span id="syncDot"></span></div>
+<div id="verTag"><span id="syncDot"></span><span id="syncText">iniciando…</span> · v151</div>
 <div class="hbtns"><button class="hbtn" onclick="openCfg()">⚙️</button></div>
 </header>
 <main id="main"></main>
@@ -1023,7 +1026,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=150; var APP_DATE='09/09/2026';
+var APP_VER=151; var APP_DATE='10/09/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -1604,7 +1607,22 @@ var GSYNC={remoteLast:null,localDirty:false,pendingPush:false,pushInFlight:false
 var GDIRTY_KEY='gestao_dirty_v150';try{GSYNC.localDirty=localStorage.getItem(GDIRTY_KEY)==='1';GSYNC.pendingPush=GSYNC.localDirty}catch(e){}
 function _gSetDirty(v){GSYNC.localDirty=!!v;GSYNC.pendingPush=!!v;try{localStorage.setItem(GDIRTY_KEY,v?'1':'0')}catch(e){}_gRefreshSyncDot()}
 function _gSyncVerde(){return !!(REF&&_gotCloud&&_connOk&&!GSYNC.localDirty&&!GSYNC.pendingPush&&!GSYNC.pushInFlight&&GSYNC.remoteLast&&S&&_gBusinessSig(S)===_gBusinessSig(GSYNC.remoteLast))}
-function _gRefreshSyncDot(){try{var d=document.getElementById('syncDot');if(d)d.classList.toggle('on',_gSyncVerde())}catch(e){}}
+function _gRefreshSyncDot(){
+ try{
+  var d=document.getElementById('syncDot'),t=document.getElementById('syncText'),ok=_gSyncVerde(),txt='';
+  if(d)d.classList.toggle('on',ok);
+  if(!t)return;
+  t.classList.remove('ok','warn');
+  if(ok){txt='sincronizado';t.classList.add('ok')}
+  else if(!REF){txt='sem sync';t.classList.add('warn')}
+  else if(!_connOk){txt='offline/conectando';t.classList.add('warn')}
+  else if(!_gotCloud){txt='aguardando nuvem';t.classList.add('warn')}
+  else if(GSYNC.pushInFlight){txt='enviando…';t.classList.add('warn')}
+  else if(GSYNC.localDirty||GSYNC.pendingPush){txt='sincronizando…';t.classList.add('warn')}
+  else{txt='conciliando…';t.classList.add('warn')}
+  t.textContent=txt;
+ }catch(e){}
+}
 function _syncErroTransitorio(err){
  var s=String((err&&(err.code||err.message))||err||'').toLowerCase();
  return s.indexOf('disconnect')>=0||s.indexOf('network')>=0||s.indexOf('unavailable')>=0||s.indexOf('connection')>=0;
@@ -1791,6 +1809,66 @@ setInterval(function(){if(document.visibilityState==='visible'&&_connOk&&_gotClo
 var GPROBE_SENT='gestao_probe_sent_v150';
 function _gProbeStatus(t){try{var e=document.getElementById('syncProbeStatus');if(e)e.textContent=t}catch(x){}}
 function _gOnProbe(p){GSYNC.probeLast=(p&&typeof p==='object')?p:null;if(!p||!p.id)return;var sent='';try{sent=localStorage.getItem(GPROBE_SENT)||''}catch(e){}if(p.from===DEV&&p.id===sent&&p.ackBy&&p.ackBy!==DEV){_gProbeStatus('✅ TESTE COMPLETO: ida e volta confirmadas entre os dois iPhones.');toast('✅ Sincronização de ida e volta confirmada');return}if(p.from!==DEV&&!p.ackBy&&GSYNC.probeRef){var id=String(p.id);GSYNC.probeRef.transaction(function(cur){if(!cur||String(cur.id||'')!==id||cur.ackBy)return;cur.ackBy=DEV;cur.ackAt=Date.now();return cur},function(err,committed){if(!err&&committed)_gProbeStatus('✅ Teste recebido. Resposta automática enviada ao outro iPhone.')},false)}}
+
+/* ===== DIAGNÓSTICO DETALHADO DE CONVERGÊNCIA — v151 =====
+   SOMENTE LEITURA: lê o nó /gestao, compara o estado canônico local/nuvem e simula
+   em memória o mesmo merge usado pela transaction. Não chama save(), set(), update()
+   ou transaction() no estado operacional. */
+function _gDiagVal(v){
+ try{var x=JSON.stringify(v);return x&&x.length>420?x.slice(0,417)+'…':x}catch(e){return String(v)}
+}
+function _gDiffPaths151(a,b,lim){
+ lim=Math.max(20,Number(lim)||300);var out=[];
+ function walk(x,y,path){
+  if(out.length>=lim)return;
+  if(x===y)return;
+  var ax=Array.isArray(x),ay=Array.isArray(y),ox=x&&typeof x==='object'&&!ax,oy=y&&typeof y==='object'&&!ay;
+  if(ax&&ay){
+   var n=Math.max(x.length,y.length);for(var i=0;i<n&&out.length<lim;i++)walk(x[i],y[i],path+'['+i+']');return;
+  }
+  if(ox&&oy){
+   var ks={},k;Object.keys(x).forEach(function(z){ks[z]=1});Object.keys(y).forEach(function(z){ks[z]=1});
+   Object.keys(ks).sort().forEach(function(z){if(out.length<lim)walk(x[z],y[z],path?(path+'.'+z):z)});return;
+  }
+  out.push({path:path||'(raiz)',local:x===undefined?'__AUSENTE__':x,nuvem:y===undefined?'__AUSENTE__':y,localResumo:_gDiagVal(x),nuvemResumo:_gDiagVal(y)});
+ }
+ walk(a,b,'');return out;
+}
+function _gBaixarJson151(obj){
+ try{
+  var d=new Date(),pad=function(n){return('0'+n).slice(-2)},nome='diagnostico-gestao-v151-'+DEV.slice(0,10)+'-'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'-'+pad(d.getHours())+pad(d.getMinutes())+pad(d.getSeconds())+'.json';
+  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}));a.download=nome;document.body.appendChild(a);a.click();setTimeout(function(){try{URL.revokeObjectURL(a.href);document.body.removeChild(a)}catch(e){}},1000);return nome;
+ }catch(e){return ''}
+}
+function gDiagnosticoDetalhado151(){
+ var el=document.getElementById('syncDiag');
+ if(!REF){if(el)el.innerHTML='⚠️ Sem conexão com o banco.';return}
+ if(el)el.innerHTML='🔎 Lendo iPhone e nuvem sem gravar nada…';
+ REF.once('value').then(function(snap){
+  var raw=snap.val();if(!raw){if(el)el.innerHTML='☁️ Nuvem vazia para esta chave.';return}
+  var local=normState(JSON.parse(JSON.stringify(S||{}))),cloud=normState(JSON.parse(JSON.stringify(raw)));
+  var merge=normState(JSON.parse(JSON.stringify(cloud)));mergeColecoes(merge,local);merge=normState(merge);
+  var lc=_gCanon(local,true),cc=_gCanon(cloud,true),mc=_gCanon(merge,true);
+  var diffs=_gDiffPaths151(lc,cc,500),sigL=JSON.stringify(lc),sigC=JSON.stringify(cc),sigM=JSON.stringify(mc);
+  var integ=_integridadeLocal(),diag={
+   app:'GuimasCar Gestão',appVer:APP_VER,geradoEm:new Date().toISOString(),dev:DEV,familyHash:FAMHASH||'',somenteLeitura:true,
+   sync:{online:_connOk,gotCloud:_gotCloud,localDirty:GSYNC.localDirty,pendingPush:GSYNC.pendingPush,pushInFlight:GSYNC.pushInFlight,syncVerde:_gSyncVerde()},
+   integridadeLocal:integ,
+   contagens:{local:{carros:Object.keys(local.carros||{}).length,manutencoes:Object.keys(local.manutencoes||{}).length,contratos:Object.keys(local.contratos||{}).length,observacoes:Object.keys(local.observacoes||{}).length,termos:Object.keys(local.termos||{}).length,apagados:Object.keys(local.apagados||{}).length},nuvem:{carros:Object.keys(cloud.carros||{}).length,manutencoes:Object.keys(cloud.manutencoes||{}).length,contratos:Object.keys(cloud.contratos||{}).length,observacoes:Object.keys(cloud.observacoes||{}).length,termos:Object.keys(cloud.termos||{}).length,apagados:Object.keys(cloud.apagados||{}).length}},
+   comparacao:{localIgualNuvem:sigL===sigC,mergeIgualLocal:sigM===sigL,mergeIgualNuvem:sigM===sigC,mergeWouldWrite:sigM!==sigC,totalDiferencasCapturadas:diffs.length,limiteDiferencas:500},
+   diferencas:diffs,
+   localCompleto:local,nuvemCompleta:cloud,mergeSimulado:merge
+  };
+  var nome=_gBaixarJson151(diag),top=diffs.slice(0,8),html='🛡️ Integridade local: '+(integ.ok?'<b style="color:var(--ok)">OK</b>':'<b style="color:var(--red)">ATENÇÃO</b>')+
+   '<br>📱 Local = ☁️ nuvem: <b>'+(sigL===sigC?'SIM':'NÃO')+'</b>'+
+   '<br>🔀 Merge = local: <b>'+(sigM===sigL?'SIM':'NÃO')+'</b> · Merge = nuvem: <b>'+(sigM===sigC?'SIM':'NÃO')+'</b>'+
+   '<br>🧭 Diferenças capturadas: <b>'+diffs.length+'</b>';
+  if(top.length){html+='<br><br><b>Primeiros caminhos diferentes:</b>';top.forEach(function(x){html+='<br>• <code>'+esc(x.path)+'</code>'})}
+  html+='<br><br>✅ Diagnóstico somente leitura gerado'+(nome?' e baixado como <b>'+esc(nome)+'</b>.':' — o navegador bloqueou o download.')+'<br><span class="sub">Nenhum carro, manutenção, contrato, observação ou termo foi gravado por este diagnóstico.</span>';
+  if(el)el.innerHTML=html;
+ }).catch(function(e){if(el)el.innerHTML='⚠️ Falha ao ler a nuvem: '+esc((e&&e.message)||String(e))});
+}
+
 function gTestarNuvemNesteIphone(){if(!REF||!_connOk||!_gotCloud){toast('⚠️ Aguarde a conexão com a nuvem');return}var id='ackgest150_'+DEV.slice(0,6)+'_'+Date.now(),r;try{r=REF.parent.child('probeGestaoAckV150/'+DEV.slice(0,12))}catch(e){_gProbeStatus('❌ Não consegui abrir o nó técnico');return}_gProbeStatus('Testando escrita e leitura da nuvem neste iPhone…');var fim=false,t=setTimeout(function(){if(fim)return;fim=true;_gProbeStatus('❌ Teste sem confirmação após 8 segundos')},8000);r.set({id:id,from:DEV,at:Date.now()}).then(function(){return r.once('value')}).then(function(s){if(fim)return;fim=true;clearTimeout(t);var v=s.val();_gProbeStatus(v&&v.id===id?'✅ NUVEM CONFIRMADA: escrita + leitura + ACK funcionando neste iPhone.':'❌ A leitura voltou diferente do que foi gravado')}).catch(function(){if(fim)return;fim=true;clearTimeout(t);_gProbeStatus('❌ Falha no teste da nuvem')})}
 function gEnviarTesteSyncSeguro(){if(!REF||!GSYNC.probeRef||!_connOk||!_gotCloud){toast('⚠️ Aguarde a conexão com a nuvem');return}if(!_gSyncVerde()){toast('⚠️ Aguarde o indicador verde confirmado antes do teste');return}var id='gest150_'+DEV.slice(0,6)+'_'+Date.now(),payload={id:id,from:DEV,createdAt:Date.now()};try{localStorage.setItem(GPROBE_SENT,id)}catch(e){}_gProbeStatus('Teste enviado. Aguardando o outro iPhone receber e responder automaticamente…');try{GSYNC.probeRef.set(payload,function(err){if(err)_gProbeStatus('❌ Falha ao enviar o teste')})}catch(e){_gProbeStatus('❌ Falha ao iniciar o teste')}}
 function boot(){
@@ -6972,7 +7050,7 @@ function openCfg(){
   '<div class="v102setBlock"><b>Restaurar backup</b><p>A restauração soma o que estiver faltando. Se o backup contiver um registro que você havia excluído, a restauração manual traz esse registro de volta de propósito.</p><input type="file" id="bkpIn" accept=".json"><button class="btn sec" onclick="restaurarBackup()">♻️ Restaurar de um backup</button></div>'+
  '</div></details>'+
  '<details><summary><span class="v102setIcon">🔗</span><div><b>Conexão e sincronização</b><small>Estado deste iPhone e chave da família</small></div><i>⌄</i></summary><div class="v102settingsBody">'+
-  '<div class="v102setBlock"><div class="v102keyrow"><span>Chave atual</span><b>'+esc(key)+'</b></div><p>Proteções atuais: fila persistente, ACK real da nuvem, merge com túmulos, gravação transacional, timeout/retry, trava anti-apagão, reconexão/resync e verde somente com igualdade confirmada.</p><div class="filestat v102status" id="syncDiag">Verificando…</div><div class="filestat v102status" id="syncProbeStatus">Teste entre aparelhos: pronto para executar.</div><button class="btn sec" onclick="syncDiagRodar()">🛡️ Verificar integridade e sincronização</button><button class="btn sec" onclick="gTestarNuvemNesteIphone()">☁️ Testar nuvem neste iPhone</button><button class="btn sec" onclick="gEnviarTesteSyncSeguro()">🧪 Testar ida e volta entre iPhones</button><button class="btn sec" onclick="closeSheet();pedirChave()">🔑 Trocar chave da família</button></div>'+
+  '<div class="v102setBlock"><div class="v102keyrow"><span>Chave atual</span><b>'+esc(key)+'</b></div><p>Proteções atuais: fila persistente, ACK real da nuvem, merge com túmulos, gravação transacional, timeout/retry, trava anti-apagão, reconexão/resync e verde somente com igualdade confirmada.</p><div class="filestat v102status" id="syncDiag">Verificando…</div><div class="filestat v102status" id="syncProbeStatus">Teste entre aparelhos: pronto para executar.</div><button class="btn sec" onclick="syncDiagRodar()">🛡️ Verificar integridade e sincronização</button><button class="btn sec" onclick="gDiagnosticoDetalhado151()">🔎 Gerar diagnóstico detalhado v151</button><button class="btn sec" onclick="gTestarNuvemNesteIphone()">☁️ Testar nuvem neste iPhone</button><button class="btn sec" onclick="gEnviarTesteSyncSeguro()">🧪 Testar ida e volta entre iPhones</button><button class="btn sec" onclick="closeSheet();pedirChave()">🔑 Trocar chave da família</button></div>'+
  '</div></details></div>'+
  '<button class="btn sec" onclick="closeSheet()">Fechar</button>');
 }
