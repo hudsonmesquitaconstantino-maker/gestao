@@ -1026,7 +1026,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=151; var APP_DATE='10/09/2026';
+var APP_VER=152; var APP_DATE='10/09/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -1636,18 +1636,34 @@ function _refSetSeguro(obj,motivo){
  _gSetDirty(true);
  if(!REF||!_gotCloud||!_connOk){_agendarRetrySync(900);return Promise.resolve(false)}
  if(GSYNC.pushInFlight){_agendarRetrySync(700);return Promise.resolve(false)}
- var local=normState(JSON.parse(JSON.stringify(obj))),c=_contaEstado(local),crit=['carros','manutencoes','contratos'];
- for(var i=0;i<crit.length;i++){var k=crit[i];if((_cloudGuard[k]||0)>=5&&c[k]===0){toast('⛔ Proteção v150: gravação destrutiva bloqueada ('+k+')');return Promise.resolve(false)}}
- GSYNC.pushInFlight=true;GSYNC.pendingPush=false;_gRefreshSyncDot();var token=++GSYNC.pushToken,finished=false;
+ var local;try{local=_gRecalcularEstadoDerivado(obj)}catch(e){local=normState(JSON.parse(JSON.stringify(obj)))}
+ var startSig=_gBusinessSig(local),c=_contaEstado(local),crit=['carros','manutencoes','contratos'];
+ for(var i=0;i<crit.length;i++){var k=crit[i];if((_cloudGuard[k]||0)>=5&&c[k]===0){toast('⛔ Proteção v152: gravação destrutiva bloqueada ('+k+')');return Promise.resolve(false)}}
+ GSYNC.pushInFlight=true;GSYNC.pendingPush=false;_gRefreshSyncDot();var token=++GSYNC.pushToken,finished=false,txDesired=null;
  clearTimeout(GSYNC.pushWatch);GSYNC.pushWatch=setTimeout(function(){if(finished||token!==GSYNC.pushToken)return;finished=true;GSYNC.pushInFlight=false;GSYNC.pendingPush=true;_gSetDirty(true);_registrarErroRuntime('sync-timeout','ACK da nuvem excedeu 10s · '+String(motivo||''));_agendarRetrySync(1200)},10000);
  return new Promise(function(resolve){
-  try{REF.transaction(function(cur){var junto=local,remoto=null;if(cur&&_estadoEstruturalValido(cur)){remoto=normState(cur);junto=remoto;mergeColecoes(junto,local);junto=normState(junto);var cc=_contaEstado(remoto),jc=_contaEstado(junto);for(var j=0;j<crit.length;j++){var kk=crit[j];if((cc[kk]||0)>=5&&jc[kk]===0)return}if(_gBusinessSig(junto)===_gBusinessSig(remoto))return}junto.rev=Math.max(Number(junto.rev)||0,Number(local.rev)||0,Number(cur&&cur.rev)||0,Date.now());junto.dev=DEV;return junto},function(err,committed,snap){
-   if(finished||token!==GSYNC.pushToken)return;finished=true;clearTimeout(GSYNC.pushWatch);GSYNC.pushInFlight=false;
-   if(err){GSYNC.pendingPush=true;_gSetDirty(true);if(_syncErroTransitorio(err)){_syncTransientCount++;_registrarErroRuntime('sync-transitorio',(err&&err.message)||err);_agendarRetrySync(Math.min(8000,900+_syncTransientCount*700));resolve(false);return}toast('⚠️ Falha ao sincronizar: '+((err&&err.message)||err));_agendarRetrySync(1800);resolve(false);return}
-   var cloud=null;try{if(snap&&snap.val()){cloud=normState(snap.val());GSYNC.remoteLast=cloud;_guardarPontoSeguroCloud(cloud)}}catch(e){}
-   if(!committed){if(cloud&&S&&_gBusinessSig(S)===_gBusinessSig(cloud)){_syncRetryPending=false;GSYNC.pendingPush=false;_gSetDirty(false);_gRefreshSyncDot();resolve(true);return}GSYNC.pendingPush=true;_gSetDirty(true);_agendarRetrySync(1000);resolve(false);return}
-   _syncTransientCount=0;if(cloud&&S&&_gBusinessSig(S)===_gBusinessSig(cloud)){_syncRetryPending=false;GSYNC.pendingPush=false;_gSetDirty(false)}else{GSYNC.pendingPush=true;_gSetDirty(true);setTimeout(resync,250)}_gRefreshSyncDot();resolve(true)
-  },false)}catch(e){if(!finished){finished=true;clearTimeout(GSYNC.pushWatch);GSYNC.pushInFlight=false;GSYNC.pendingPush=true;_gSetDirty(true);_agendarRetrySync(1500)}resolve(false)}
+  try{REF.transaction(function(cur){
+    var junto=local,remoto=null;
+    if(cur&&_estadoEstruturalValido(cur)){
+      remoto=normState(cur);junto=normState(JSON.parse(JSON.stringify(remoto)));mergeColecoes(junto,local);junto=_gRecalcularEstadoDerivado(junto);txDesired=junto;
+      var cc=_contaEstado(remoto),jc=_contaEstado(junto);for(var j=0;j<crit.length;j++){var kk=crit[j];if((cc[kk]||0)>=5&&jc[kk]===0)return}
+      /* No-op só quando a NUVEM JÁ contém exatamente o estado final recalculado. */
+      if(_gBusinessSig(junto)===_gBusinessSig(remoto))return;
+    }else txDesired=junto;
+    junto.rev=Math.max(Number(junto.rev)||0,Number(local.rev)||0,Number(cur&&cur.rev)||0,Date.now());junto.dev=DEV;return junto;
+   },function(err,committed,snap){
+    if(finished||token!==GSYNC.pushToken)return;finished=true;clearTimeout(GSYNC.pushWatch);GSYNC.pushInFlight=false;
+    if(err){GSYNC.pendingPush=true;_gSetDirty(true);if(_syncErroTransitorio(err)){_syncTransientCount++;_registrarErroRuntime('sync-transitorio',(err&&err.message)||err);_agendarRetrySync(Math.min(8000,900+_syncTransientCount*700));resolve(false);return}toast('⚠️ Falha ao sincronizar: '+((err&&err.message)||err));_agendarRetrySync(1800);resolve(false);return}
+    var cloud=null;try{if(snap&&snap.val()){cloud=normState(snap.val());GSYNC.remoteLast=cloud;_guardarPontoSeguroCloud(cloud)}}catch(e){}
+    if(!committed){
+      if(cloud&&txDesired&&_gBusinessSig(cloud)===_gBusinessSig(txDesired)&&_gAdotarAckSeSeguro(cloud,startSig,txDesired)){_syncTransientCount=0;resolve(true);return}
+      GSYNC.pendingPush=true;_gSetDirty(true);_agendarRetrySync(1000);resolve(false);return;
+    }
+    _syncTransientCount=0;
+    if(cloud&&txDesired&&_gBusinessSig(cloud)===_gBusinessSig(txDesired)&&_gAdotarAckSeSeguro(cloud,startSig,txDesired)){resolve(true);return}
+    /* Houve mudança local enquanto o ACK estava em voo: nunca a descarta. */
+    GSYNC.pendingPush=true;_gSetDirty(true);setTimeout(resync,250);_agendarRetrySync(700);resolve(true);
+   },false)}catch(e){if(!finished){finished=true;clearTimeout(GSYNC.pushWatch);GSYNC.pushInFlight=false;GSYNC.pendingPush=true;_gSetDirty(true);_agendarRetrySync(1500)}resolve(false)}
  });
 }
 function _integridadeLocal(){
@@ -1713,7 +1729,7 @@ function conectar(chave){
  famHash(chave).then(function(h){
   if(seq!==_connectSeq)return;
   FAMHASH=h;
-  REF=DB.ref('familias/'+h+'/gestao');DOCSREF=DB.ref('familias/'+h+'/gestaoDocs');GSYNC.probeRef=DB.ref('familias/'+h+'/probeGestaoV150');_refLigada=REF;try{GSYNC.probeRef.on('value',function(s){_gOnProbe(s&&s.val?s.val():null)},function(){})}catch(e){};
+  REF=DB.ref('familias/'+h+'/gestao');DOCSREF=DB.ref('familias/'+h+'/gestaoDocs');GSYNC.probeRef=DB.ref('familias/'+h+'/probeGestaoV152');_refLigada=REF;try{GSYNC.probeRef.on('value',function(s){_gOnProbe(s&&s.val?s.val():null)},function(){})}catch(e){};
   _refValorCb=function(snap){if(seq===_connectSeq)aplicarSnapshot(snap.val())};
   _refErroCb=function(err){if(seq===_connectSeq)toast('⚠️ Sem acesso ao banco: '+err.message)};
   REF.on('value',_refValorCb,_refErroCb);
@@ -1726,6 +1742,25 @@ var _snapPendente=null,_snapEspera=null;
    internos não pode reconstruir a tela nem a ficha. */
 function _gCanon(x,root){if(Array.isArray(x)){var a=x.map(function(v){return _gCanon(v,false)});a.sort(function(u,v){var A=JSON.stringify(u),B=JSON.stringify(v);return A<B?-1:(A>B?1:0)});return a}if(x&&typeof x==='object'){var o={};Object.keys(x).sort().forEach(function(k){if((root&&(k==='rev'||k==='dev'))||k==='editadoEm'||k==='_campoAt'||k==='fipeAtualizadoEm'||k==='restauradoEm')return;var v=_gCanon(x[k],false);if(Array.isArray(v)&&v.length===0)return;if(v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).length===0)return;o[k]=v});return o}return x}
 function _gBusinessSig(x){return JSON.stringify(_gCanon(x||{},true))}
+/* v152: campos derivados (histórico por componente e próximas trocas) não pertencem
+   a um iPhone. Eles são reconstruídos deterministicamente a partir das manutenções
+   depois do merge. Isso impede o loop local!=nuvem causado por um derivado antigo
+   ganhar por timestamp mesmo quando o histórico bruto já era idêntico. */
+function _gRecalcularEstadoDerivado(x){
+ var antigo=S,c;try{c=normState(JSON.parse(JSON.stringify(x||{})))}catch(e){return x}
+ try{S=c;recalcTudoSilencioso(true);return normState(c)}catch(e){return c}finally{S=antigo}
+}
+function _gAdotarAckSeSeguro(cloud,startSig,desired){
+ if(!cloud||!S)return false;var cur;try{cur=_gRecalcularEstadoDerivado(S)}catch(e){return false}
+ var cs=_gBusinessSig(cur),ds=desired?_gBusinessSig(desired):'';
+ /* Se o usuário não mudou nada enquanto a transaction estava em voo, o ACK pode
+    substituir o cache local. Se mudou, mantemos dirty e fazemos novo merge. */
+ if(cs!==startSig&&(!ds||cs!==ds))return false;
+ S=normState(JSON.parse(JSON.stringify(cloud)));
+ try{localStorage.setItem('gestao_cache',JSON.stringify(S))}catch(e){}
+ GSYNC.remoteLast=normState(JSON.parse(JSON.stringify(cloud)));_syncRetryPending=false;GSYNC.pendingPush=false;_gSetDirty(false);_gRefreshSyncDot();
+ return true;
+}
 function _filaSnapshot(v){
  _snapPendente=_snapPendente?function(){var r=normState(_snapPendente),n=normState(v);var base=(n.rev>=(r.rev||0))?n:r,extra=(base===n)?r:n;mergeColecoes(base,extra);return base}():v;
  if(_snapEspera)return;_snapEspera=setInterval(function(){if(!digitando()){clearInterval(_snapEspera);_snapEspera=null;var x=_snapPendente;_snapPendente=null;if(x)aplicarSnapshot(x)}},700);
@@ -1806,7 +1841,7 @@ function vigiarConexao(){
  },25000);
 }
 setInterval(function(){if(document.visibilityState==='visible'&&_connOk&&_gotCloud&&(GSYNC.localDirty||GSYNC.pendingPush)&&!GSYNC.pushInFlight)_agendarRetrySync(100)},5000);
-var GPROBE_SENT='gestao_probe_sent_v150';
+var GPROBE_SENT='gestao_probe_sent_v152';
 function _gProbeStatus(t){try{var e=document.getElementById('syncProbeStatus');if(e)e.textContent=t}catch(x){}}
 function _gOnProbe(p){GSYNC.probeLast=(p&&typeof p==='object')?p:null;if(!p||!p.id)return;var sent='';try{sent=localStorage.getItem(GPROBE_SENT)||''}catch(e){}if(p.from===DEV&&p.id===sent&&p.ackBy&&p.ackBy!==DEV){_gProbeStatus('✅ TESTE COMPLETO: ida e volta confirmadas entre os dois iPhones.');toast('✅ Sincronização de ida e volta confirmada');return}if(p.from!==DEV&&!p.ackBy&&GSYNC.probeRef){var id=String(p.id);GSYNC.probeRef.transaction(function(cur){if(!cur||String(cur.id||'')!==id||cur.ackBy)return;cur.ackBy=DEV;cur.ackAt=Date.now();return cur},function(err,committed){if(!err&&committed)_gProbeStatus('✅ Teste recebido. Resposta automática enviada ao outro iPhone.')},false)}}
 
@@ -1869,13 +1904,19 @@ function gDiagnosticoDetalhado151(){
  }).catch(function(e){if(el)el.innerHTML='⚠️ Falha ao ler a nuvem: '+esc((e&&e.message)||String(e))});
 }
 
-function gTestarNuvemNesteIphone(){if(!REF||!_connOk||!_gotCloud){toast('⚠️ Aguarde a conexão com a nuvem');return}var id='ackgest150_'+DEV.slice(0,6)+'_'+Date.now(),r;try{r=REF.parent.child('probeGestaoAckV150/'+DEV.slice(0,12))}catch(e){_gProbeStatus('❌ Não consegui abrir o nó técnico');return}_gProbeStatus('Testando escrita e leitura da nuvem neste iPhone…');var fim=false,t=setTimeout(function(){if(fim)return;fim=true;_gProbeStatus('❌ Teste sem confirmação após 8 segundos')},8000);r.set({id:id,from:DEV,at:Date.now()}).then(function(){return r.once('value')}).then(function(s){if(fim)return;fim=true;clearTimeout(t);var v=s.val();_gProbeStatus(v&&v.id===id?'✅ NUVEM CONFIRMADA: escrita + leitura + ACK funcionando neste iPhone.':'❌ A leitura voltou diferente do que foi gravado')}).catch(function(){if(fim)return;fim=true;clearTimeout(t);_gProbeStatus('❌ Falha no teste da nuvem')})}
-function gEnviarTesteSyncSeguro(){if(!REF||!GSYNC.probeRef||!_connOk||!_gotCloud){toast('⚠️ Aguarde a conexão com a nuvem');return}if(!_gSyncVerde()){toast('⚠️ Aguarde o indicador verde confirmado antes do teste');return}var id='gest150_'+DEV.slice(0,6)+'_'+Date.now(),payload={id:id,from:DEV,createdAt:Date.now()};try{localStorage.setItem(GPROBE_SENT,id)}catch(e){}_gProbeStatus('Teste enviado. Aguardando o outro iPhone receber e responder automaticamente…');try{GSYNC.probeRef.set(payload,function(err){if(err)_gProbeStatus('❌ Falha ao enviar o teste')})}catch(e){_gProbeStatus('❌ Falha ao iniciar o teste')}}
+function gTestarNuvemNesteIphone(){if(!REF||!_connOk||!_gotCloud){toast('⚠️ Aguarde a conexão com a nuvem');return}var id='ackgest152_'+DEV.slice(0,6)+'_'+Date.now(),r;try{r=REF.parent.child('probeGestaoAckV152/'+DEV.slice(0,12))}catch(e){_gProbeStatus('❌ Não consegui abrir o nó técnico');return}_gProbeStatus('Testando escrita e leitura da nuvem neste iPhone…');var fim=false,t=setTimeout(function(){if(fim)return;fim=true;_gProbeStatus('❌ Teste sem confirmação após 8 segundos')},8000);r.set({id:id,from:DEV,at:Date.now()}).then(function(){return r.once('value')}).then(function(s){if(fim)return;fim=true;clearTimeout(t);var v=s.val();_gProbeStatus(v&&v.id===id?'✅ NUVEM CONFIRMADA: escrita + leitura + ACK funcionando neste iPhone.':'❌ A leitura voltou diferente do que foi gravado')}).catch(function(){if(fim)return;fim=true;clearTimeout(t);_gProbeStatus('❌ Falha no teste da nuvem')})}
+function gEnviarTesteSyncSeguro(){if(!REF||!GSYNC.probeRef||!_connOk||!_gotCloud){toast('⚠️ Aguarde a conexão com a nuvem');return}if(!_gSyncVerde()){toast('⚠️ Aguarde o indicador verde confirmado antes do teste');return}var id='gest152_'+DEV.slice(0,6)+'_'+Date.now(),payload={id:id,from:DEV,createdAt:Date.now()};try{localStorage.setItem(GPROBE_SENT,id)}catch(e){}_gProbeStatus('Teste enviado. Aguardando o outro iPhone receber e responder automaticamente…');try{GSYNC.probeRef.set(payload,function(err){if(err)_gProbeStatus('❌ Falha ao enviar o teste')})}catch(e){_gProbeStatus('❌ Falha ao iniciar o teste')}}
+function _backupPreV152(){
+ if(APP_VER!==152||!S)return;var mark='gestao_pre_v152_backup_ok';try{if(localStorage.getItem(mark)==='1')return}catch(e){}
+ var pac={app:'gestao',verOrigem:151,criadoEm:Date.now(),dados:S};
+ try{localStorage.setItem('gestao_backup_pre_v152',JSON.stringify(pac));localStorage.setItem(mark,'1');return}catch(e){}
+ try{if(window.idbSet)idbSet('__sistema__/backup-pre-v152',pac).then(function(ok){if(ok)try{localStorage.setItem(mark,'1')}catch(e){}})}catch(e){}
+}
 function boot(){
  firebase.initializeApp(firebaseConfig);
  DB=firebase.database();
  firebase.auth().signInAnonymously().catch(function(e){toast('⚠️ Auth falhou: '+e.message)});
- try{var c=localStorage.getItem('gestao_cache');if(c){S=normState(JSON.parse(c));render()}}catch(e){}
+ try{var c=localStorage.getItem('gestao_cache');if(c){S=normState(JSON.parse(c));_backupPreV152();render()}}catch(e){}
  var chave=localStorage.getItem('gestao_famkey');
  if(chave)conectar(chave);else pedirChave();
 }
@@ -1955,7 +1996,7 @@ function render(){
 }
 function carrosOrdenados(){
  return Object.keys(S.carros).map(function(k){return S.carros[k]}).sort(function(a,b){
-  var st={ativo:0,parado:1,pessoal:2};
+  var st={ativo:0,venda:1,parado:2,pessoal:3};
   return (st[a.status]-st[b.status])||a.nome.localeCompare(b.nome);
  });
 }
@@ -2055,7 +2096,7 @@ function vFrota(){
  h+='<button class="btn ok" onclick="formCarro()">➕ ADICIONAR CARRO NOVO</button>';
  carrosOrdenados().forEach(function(c){
   var pk=normPlaca(c.placa);
-  var st=c.status==='ativo'?'<span class="chip ok">alugado</span>':(c.status==='pessoal'?'<span class="chip warn">pessoal</span>':'<span class="chip red">parado</span>');
+  var st=c.status==='ativo'?'<span class="chip ok">alugado</span>':(c.status==='venda'?'<span class="chip warn">compra e venda</span>':(c.status==='pessoal'?'<span class="chip warn">pessoal</span>':'<span class="chip red">parado</span>'));
   var al=alertasCarro(c);
   var chips=al.map(function(a){return '<span class="chip '+(a.n==='red'?'red':'warn')+'">'+a.t.split('—')[0].split(':')[0].trim()+'</span>'}).join('');
   var db=semAcento(fmtPlaca(c.placa)+' '+c.placa+' '+tituloCarro(c)+' '+c.nome+' '+(c.motorista||''));
@@ -2333,7 +2374,7 @@ function ficha(pk){window._fichaPk=pk;
  var mans=Object.keys(S.manutencoes).map(function(k){return S.manutencoes[k]})
   .filter(function(m){return m.carro===pk}).sort(function(a,b){return (b.dataIni||'').localeCompare(a.dataIni)||b.criadoEm-a.criadoEm});
  var _kmq=c.kmUltima||c.kmAtual||0,_pendq=alertasCarro(c).length,_proxq=resumoProximoServico(c);
- var _stq=c.status==='ativo'?'<span class="chip ok">alugado</span>':(c.status==='pessoal'?'<span class="chip warn">pessoal</span>':'<span class="chip red">parado</span>');
+ var _stq=c.status==='ativo'?'<span class="chip ok">alugado</span>':(c.status==='venda'?'<span class="chip warn">compra e venda</span>':(c.status==='pessoal'?'<span class="chip warn">pessoal</span>':'<span class="chip red">parado</span>'));
  var h='<div class="v99hero"><div class="row v99heroTop">'+plateHtml(c.placa)+'<div class="grow"><h3>'+esc(tituloCarro(c))+'</h3>'+
   '<div class="sub">'+esc(c.modeloCRLV||'')+'</div><div class="v99heroMeta">'+_stq+'<span class="v99driver">'+(c.motorista?'👤 '+esc(primNome(c.motorista)):'sem motorista')+'</span></div></div></div>'+
   '<div class="v99metrics">'+
@@ -2384,8 +2425,8 @@ function ficha(pk){window._fichaPk=pk;
    h+='<div class="kv"><b>⛓ Corrente de comando</b><span>'+
      (_ucmd&&(_ucmd.km||_ucmd.data)?((_ucmd.km?fmtKm(_ucmd.km)+' km':'')+(_ucmd.km&&_ucmd.data?' · ':'')+(_ucmd.data?dataBR(_ucmd.data):'')):'—')+'</span></div>';
   }
-  var COMPS=[['vela','🔥 Vela'],['cabos','🔥 Cabos de vela'],['embreagem','⚙️ Embreagem'],['bateria','🔋 Bateria'],['alternador','⚡ Alternador'],['arranque','🔑 Arranque'],['freios','🛑 Freios (pastilha)'],['ventoinha','❄️ Ventoinha'],['radiador','🌡 Radiador'],['caixaDir','🎯 Caixa de direção'],['bombaAgua','💧 Bomba d\'água'],['motor','🔩 Motor (cabeçote/bloco)'],['correia','⚙️ Correia dentada (última)']];
-  h+='<details class="v99details"><summary class="v99summary"><span>🧰 Últimas trocas</span><span>componentes ›</span></summary><div class="v99detailbody"><div class="sect">Componentes <span class="x" style="display:inline;padding:0 6px" onclick="editarTrocas(\''+pk+'\')">✎</span></div>';
+  var COMPS=[['vela','🔥 Vela'],['cabos','🔥 Cabos de vela'],['embreagem','⚙️ Embreagem'],['bateria','🔋 Bateria'],['alternador','⚡ Alternador'],['arranque','🔑 Arranque'],['freios','🛑 Freios (pastilha)'],['ventoinha','❄️ Ventoinha'],['radiador','🌡 Radiador'],['caixaDir','🎯 Caixa de direção'],['bombaAgua','💧 Bomba d\'água'],['motor','🔩 Motor (cabeçote/bloco)']];
+  h+='<details class="v99details"><summary class="v99summary"><span>🧰 Histórico por componente</span><span>componentes ›</span></summary><div class="v99detailbody"><div class="sect">Componentes <span class="x" style="display:inline;padding:0 6px" onclick="editarTrocas(\''+pk+'\')">✎</span></div>';
   COMPS.forEach(function(par){
    if(par[0]==='correia'&&!c.temCorreia)return;
    var u=(c.ultTrocas||{})[par[0]];
@@ -2787,8 +2828,22 @@ function salvarVenda(pk,ctId){
   saldo:parseBRL(g('vd_saldo')),parcela:parseBRL(g('vd_parc')),nParcelas:parseInt(g('vd_n').replace(/\D/g,''),10)||0,
   ultima:parseBRL(g('vd_ult')),seguroMensal:parseBRL(g('vd_seg')),seguroDia:parseInt(g('vd_segd').replace(/\D/g,''),10)||0,
   assinadoEm:g('vd_ass'),obs:g('vd_obs')};
+ var _novaVenda=!ctId;
  S.contratos[ct.id]=normContrato(ct);
- var c=S.carros[pk];if(c)c.emVenda=true;_touchCarro(c,['emVenda']); /* carro em venda para de gerar alerta de manutenção */
+ var c=S.carros[pk];
+ if(c){
+  /* v152: contratos antigos permanecem como estão. Somente uma NOVA compra e venda
+     criada daqui para frente encerra a locação vigente do mesmo carro. */
+  if(_novaVenda){
+   var _locId=c.contratoVigenteId||'',_loc=_locId&&S.contratos[_locId];
+   if(_loc&&(_loc.tipo||'locacao')==='locacao'&&_loc.status==='vigente'){
+    _loc.status='encerrado';_loc.encerradoEm=ct.inicio||hoje();_loc.encerradoPorVenda=ct.id;_touchContrato(_loc);
+   }
+   c.contratoVigenteId='';c.motorista=(ct.locatario&&ct.locatario.nome)||c.motorista||'';c.status='venda';
+   _touchCarro(c,['emVenda','contratoVigenteId','motorista','status']);
+  }else _touchCarro(c,['emVenda']);
+  c.emVenda=true;
+ }
  save();closeSheet(2);ficha(pk);toast('✅ Compra e venda salva');
 }
 /* Semeia os dois contratos de compra e venda já existentes (dados lidos dos Word enviados).
@@ -2873,7 +2928,7 @@ function _ctVigenteDoCarro(pk){
  var id=c.contratoVigenteId||'',ct=id&&S.contratos&&S.contratos[id];
  return (ct&&ct.tipo!=='venda'&&ct.status==='vigente')?ct:null;
 }
-function _carroOcupadoTransfer(pk){var c=S&&S.carros&&S.carros[pk];if(!c)return true;return !!(_ctVigenteDoCarro(pk)||(c.status==='ativo'&&String(c.motorista||'').trim()))}
+function _carroOcupadoTransfer(pk){var c=S&&S.carros&&S.carros[pk];if(!c)return true;return !!(_ctVigenteDoCarro(pk)||((c.status==='ativo'||c.status==='venda')&&String(c.motorista||'').trim()))}
 function _opcoesDestinoTransfer(origPk){
  var ks=Object.keys(S.carros||{}).sort(function(a,b){
   var ca=S.carros[a]||{},cb=S.carros[b]||{};
@@ -3090,7 +3145,7 @@ function editarMotorista(pk){
  var c=S.carros[pk];
  openSheet('<h3>Motorista atual</h3><p class="sub">'+esc(c.nome)+' '+esc(fmtPlaca(c.placa))+'</p>'+
  '<label>Nome</label><input id="motIn" value="'+esc(c.motorista)+'">'+
- '<label>Status do carro</label><select id="stIn"><option value="ativo"'+(c.status==='ativo'?' selected':'')+'>Alugado</option><option value="parado"'+(c.status==='parado'?' selected':'')+'>Parado</option><option value="pessoal"'+(c.status==='pessoal'?' selected':'')+'>Pessoal</option></select>'+
+ '<label>Status do carro</label><select id="stIn"><option value="ativo"'+(c.status==='ativo'?' selected':'')+'>Alugado</option><option value="venda"'+(c.status==='venda'?' selected':'')+'>Compra e venda</option><option value="parado"'+(c.status==='parado'?' selected':'')+'>Parado</option><option value="pessoal"'+(c.status==='pessoal'?' selected':'')+'>Pessoal</option></select>'+
  '<button class="btn" onclick="salvarMotorista(\''+pk+'\')">Salvar</button><button class="btn sec" onclick="closeSheet(2)">Voltar</button>',2);
 }
 function salvarMotorista(pk){
@@ -3327,20 +3382,10 @@ function pegarDoc(path,pk,tipo){ /* cache local, mas a nuvem vence quando tem ve
   return DOCSREF.child(path).once('value').then(function(s){
    var v=s.val();
    if(v&&v.b64){idbSet(path,v);return v}
-   if(!pk||!tipo)return v;
-   /* autocorreção: procura o arquivo deste carro na nuvem (contrato pode estar sob outro id) */
-   return DOCSREF.child(pk+'/ct').once('value').then(function(s2){
-    var todos=s2.val()||{},achado=null,achId=null;
-    Object.keys(todos).forEach(function(cid){
-     var n=todos[cid]||{};
-     if(!achado&&n[tipo]&&n[tipo].b64){achado=n[tipo];achId=cid}
-    });
-    if(achado){
-     idbSet(path,achado);
-     DOCSREF.child(path).set(achado).catch(function(){}); /* conserta o endereço p/ próxima vez */
-    }
-    return achado;
-   });
+   /* v152: documento de contrato é identificado pelo CAMINHO EXATO. Nunca procura
+      "qualquer PDF/Word" de outro contrato do mesmo carro, pois isso poderia associar
+      o motorista errado ao contrato solicitado. */
+   return null;
   });
  });
 }
@@ -5238,107 +5283,132 @@ function _posRodas(l){
 function detectarComponentes(m){
  var out={comps:{},proxOleo:0,proxCorreia:0};
  var linhas=[];
- /* servicos pode vir como LISTA ou como texto com quebras. Antes, String(lista) grudava
-    tudo com vírgula e o bloco inteiro virava UMA linha — as palavras de um serviço
-    contaminavam as regras de outro. Cada serviço tem que ser uma linha isolada. */
+ /* v152 — regras fechadas com a operação real da frota.
+    Cada linha mantém a origem (serviço x peça), porque uma peça comprada/lançada é
+    evidência forte de substituição, enquanto uma descrição de serviço pode ser só
+    inspeção/limpeza/reparo. */
  (m.blocos||[]).forEach(function(b){
-  var sv=b&&b.servicos;
-  var arr=Array.isArray(sv)?sv:String(sv||'').split('\n');
-  arr.forEach(function(s){s=String(s||'').trim();if(s)linhas.push(s)});
+  var sv=b&&b.servicos,arr=Array.isArray(sv)?sv:String(sv||'').split('\n');
+  arr.forEach(function(x){x=String(x||'').trim();if(x)linhas.push({raw:x,tipo:'servico'})});
  });
- (m.pecas||[]).forEach(function(p){if(p&&p.desc)String(p.desc).split('\n').forEach(function(s){s=s.trim();if(s)linhas.push(s)})});
- linhas.forEach(function(raw){
-  var l=semAcento(raw);
-  /* Normaliza a pontuação que o teclado do iPhone usa: apóstrofo curvo (’ ‘ ´ `),
-     aspas e travessões. Sem isso, "bomba d’água" não casa com o padrão d'agua. */
-  l=l.replace(/[\u2018\u2019\u02bc\u00b4\u0060]/g,"'").replace(/[\u201c\u201d]/g,'"')
-     .replace(/[\u2013\u2014]/g,'-').replace(/\u00a0/g,' ');
-  var odoM=Number(m.odometro)||0;
-  var prox=lerProxKm(l);
-  /* guarda de sanidade: a próxima troca tem que ser DEPOIS do km da própria manutenção */
+ (m.pecas||[]).forEach(function(p){if(p&&p.desc)String(p.desc).split('\n').forEach(function(x){x=x.trim();if(x)linhas.push({raw:x,tipo:'peca'})})});
+
+ var oleoTroca=false,filtroOleoTroca=false,proxOleoCand=0;
+ var correiaTroca=false,proxCorreiaCand=0,correnteTroca=false;
+ var pneuPos={},pneuServPos={},pneuPecaPos={},amortPos={},molaPos={};
+ function normLinha(raw){return semAcento(String(raw||''))
+   .replace(/[\u2018\u2019\u02bc\u00b4\u0060]/g,"'").replace(/[\u201c\u201d]/g,'"')
+   .replace(/[\u2013\u2014]/g,'-').replace(/\u00a0/g,' ')}
+ function ehSub(l,tipo){
+  if(tipo==='peca')return true;
+  return /troc|substitu|instal|coloc|reposic|\bnovo\b|\bnova\b|montou|montagem|aplicou/.test(l);
+ }
+ function ehInterv(l,tipo){
+  if(tipo==='peca')return true;
+  return /troc|substitu|instal|coloc|reposic|\bnovo\b|\bnova\b|repar|revis|retific|desmont|montag|sold|tirou|retirou|trocar|refez|recondicion/.test(l);
+ }
+ function soInspecao(l){return /verific|testou|teste|diagnost|inspec/.test(l)&&!/repar|revis|troc|substitu|desmont|montag|retific|sold|tirou|retirou/.test(l)}
+ function addPos(obj,ps){ps.forEach(function(p){obj[p]=1})}
+
+ linhas.forEach(function(it){
+  var raw=it.raw,l=normLinha(raw),tipo=it.tipo,odoM=Number(m.odometro)||0,prox=lerProxKm(l);
   if(prox&&odoM&&(prox<=odoM||prox-odoM>200000))prox=0;
-  var troca=_ehTroca(l);
-  /* CABOS DE VELA: só quando a linha tem "cabo" E "vela" juntos (jogo de cabo de vela).
-     NUNCA marca em "cabo do freio de mão", "cabo de embreagem", "cabo do acelerador". */
-  if(troca&&/cabo/.test(l)&&/vela/.test(l))out.comps.cabos=true;
-  /* VELA (ignição): tem "vela" mas NÃO é linha de cabo. */
-  /* VELA: a mesma linha pode trazer os dois ("jogo de cabo de vela E jogo de vela").
-     Removo a expressão "cabo de vela" e vejo se ainda sobra "vela" — se sobrar,
-     houve troca de vela também. */
-  var _semCabo=l.replace(/cabos?\s+de\s+vela/g,' ');
-  if(troca&&/\bvela/.test(_semCabo))out.comps.vela=true;
-  /* EMBREAGEM: kit/disco/platô. Um kit pode legitimamente vir escrito
-     "kit de embreagem com atuador hidráulico"; nesse caso o atuador NÃO pode anular
-     a troca do conjunto. Já atuador/cabo/cilindro/rolamento isolados não contam. */
-  var _embPrimaria=/kit\s+(?:de\s+)?embreagem|jogo.*embreagem|disco.*(?:embreagem|plato)|embreagem.*(?:kit|disco|plato)/.test(l);
-  var _embDireta=/troc.*embreagem|embreagem.*(?:nova|completa)/.test(l);
-  if(troca&&/embreagem/.test(l)&&!/compressor|ar\s*-?\s*condicionado/.test(l)&&
-     (_embPrimaria||(_embDireta&&!/cabo|atuador|cilindro|pedal|fluido|rolamento/.test(l))))out.comps.embreagem=true;
-  /* BATERIA: a bateria em si — não terminal/polo/borne/cabo nem simples recarga. */
-  if(troca&&/bateria/.test(l)&&!/terminal|polo|\bcabo|suporte|base|carga|recarg|\bborn(?:e)?\b|negativ|positiv/.test(l))out.comps.bateria=true;
-  /* ALTERNADOR: alternador completo/remanufaturado conta direto. Reparo interno
-     isolado não muda a data de "última troca", mas uma reconstrução que substitui
-     ESTATOR + ROTOR no mesmo serviço equivale ao conjunto refeito e é reconhecida
-     ao final da leitura da manutenção. */
-  if(troca&&/alternador/.test(l)&&/estator/.test(l))out._altEstator=true;
-  if(troca&&/alternador/.test(l)&&/rotor/.test(l))out._altRotor=true;
-  if(troca&&/alternador/.test(l)&&!/correia|polia|regulador|escova|rolamento|reparo|retific|estator|rotor/.test(l))out.comps.alternador=true;
-  if(troca&&/arranque|motor de partida/.test(l)&&!/rele|bendix|chave|bucha|rolamento|reparo|retific|solenoide/.test(l))out.comps.arranque=true;
-  /* FREIOS = pastilha OU disco de freio (normalmente trocam juntos). Nunca "freio de mão", "cabo do freio", "fluido/óleo de freio". */
-  if(troca&&(/pastilha/.test(l)||(/disco/.test(l)&&/freio/.test(l))))out.comps.freios=true;
-  if(troca&&/ventoinha|eletroventilador/.test(l)&&!/rele|resistencia|sensor|chicote/.test(l))out.comps.ventoinha=true;
-  /* RADIADOR: o radiador em si — exclui mangueira/tampa/aditivo/válvula/sensor/reservatório. */
-  if(troca&&/radiador/.test(l)&&!/mangueira|tampa|aditivo|valvula|sensor|reservatorio|limpez|ventoinha|eletroventilador/.test(l))out.comps.radiador=true;
-  /* BOMBA D'ÁGUA: a bomba do sistema de arrefecimento. Não confundir com bomba de
-     combustível, bomba de óleo, bomba de direção, nem com reservatório de água. */
-  if(troca&&/bomba/.test(l)&&/(d\s*'?\s*agua|de\s+agua|dagua)/.test(l)&&!/combustivel|oleo|direcao|reservatorio/.test(l))out.comps.bombaAgua=true;
-  /* MOTOR: serviço no cabeçote ou no bloco — retífica, junta do cabeçote, motor novo.
-     NÃO conta "motor de partida", "óleo do motor", "coxim/calço do motor",
-     "filtro de ar do motor" nem "bomba d'água do motor". */
-  var _retMotor=/retific/.test(l)&&/motor|cabecote|bloco|virabrequim|pistao|biela|bronzina/.test(l);
-  if(troca&&(/cabecote/.test(l)||_retMotor||/bloco\s+do\s+motor/.test(l)||
-     (/motor/.test(l)&&/(troca|substitu)/.test(l)&&/(novo|completo|parcial|retificad)/.test(l)))
-     &&!/motor de partida|arranque|coxim|calco|oleo do motor|filtro/.test(l))out.comps.motor=true;
-  /* PNEUS: exclui estepe, calibragem, alinhamento/balanceamento e conserto/remendo. */
-  if(troca&&/\bpneu/.test(l)&&!/estepe|calibr|alinham|balancea|conserto|remendo|reparo|furo/.test(l)){
-   _posRodas(l).forEach(function(p){out.comps['pneu'+p]=true});
+  var sub=ehSub(l,tipo),interv=ehInterv(l,tipo);
+
+  /* ÓLEO PROGRAMADO: só confirma quando a MESMA manutenção comprova óleo do motor
+     e filtro de óleo. Completar óleo, cárter, cebolinha, vazamento ou filtro isolado
+     não alteram a última troca programada. */
+  var oleoOutro=/caixa|cambio|direcao|freio|diferencial|hidraulic|transmiss/.test(l)||/\bgl-?\s*[0-9]\b|\b(?:75|80|85|140)\s*w\s*\d{2}\b|\boleo\s*90\b/.test(l);
+  var linhaFiltroOleo=/filtro\s+(?:de\s+)?oleo/.test(l);
+  var linhaOleoMotor=/\boleo/.test(l)&&!oleoOutro&&(/oleo\s+(?:do\s+)?motor/.test(l)||/\b\d+\s*litros?\b/.test(l)||/\b\d{1,2}\s*w\s*-?\s*\d{2}\b/.test(l)||/lubrificante/.test(l)||/troca(?:r|do|dos|da|de)?\s+(?:d[eo]s?\s+)?oleo/.test(l));
+  if(linhaFiltroOleo&&sub)filtroOleoTroca=true;
+  if(linhaOleoMotor&&sub&&!/complet|complement|nivel|vazamento|cebolinha|sensor|pressao/.test(l))oleoTroca=true;
+  if(prox&&linhaOleoMotor)proxOleoCand=prox;
+
+  /* CORREIA DENTADA PROGRAMADA: kit/correia em si. Capa, suporte, retentor,
+     parafuso e polia da capa não são troca do kit. */
+  if(/correia\s+dentada/.test(l)){
+   var acess=/\bcapa\b|suporte|protec|retentor|parafus|polia/.test(l)&&!/\bkit\b/.test(l);
+   var direta=/\bkit\b.*correia\s+dentada|correia\s+dentada.*\bkit\b/.test(l)||(!acess&&sub&&/correia\s+dentada/.test(l));
+   if(direta){correiaTroca=true;if(prox)proxCorreiaCand=prox}
   }
-  /* MOLAS: mesma lógica das outras peças de suspensão, por posição. */
-  if(troca&&/\bmola/.test(l)&&!/bucha|batente|coxim|calco/.test(l)){
-   _posRodas(l).forEach(function(p){out.comps['mola'+p]=true});
+  /* CORRENTE DE COMANDO: kit completo ou parcial conta; tampa/lateral/tensor isolado não. */
+  if(/corrente\s+(?:de\s+)?comando/.test(l)||/kit.*corrente/.test(l)){
+   if((/\bkit\b/.test(l)&&tipo==='peca')||(/\bkit\b/.test(l)&&sub)||(/troc|substitu|instal/.test(l)&&/corrente\s+(?:de\s+)?comando/.test(l)&&!/tampa|lateral|guia|tensor/.test(l)))correnteTroca=true;
   }
-  /* AMORTECEDORES: só o amortecedor em si — a peça grande.
-     Pela convenção dele, quando é o kit (batente/coxim de cima, que troca toda hora)
-     a linha SEMPRE traz a palavra "kit". Então "kit amortecedor" NÃO entra aqui. */
-  if(troca&&/amortecedor/.test(l)&&!/\bkit\b|batente|coifa|coxim|torre|reparo/.test(l)){
-   _posRodas(l).forEach(function(p){out.comps['amort'+p]=true});
+
+  /* VELA / CABOS: troca do jogo/conjunto. A frase "cabo de vela" não pode marcar vela. */
+  if(/cabos?\s+(?:de\s+)?vela/.test(l)&&sub)out.comps.cabos=true;
+  var semCabo=l.replace(/cabos?\s+(?:de\s+)?vela/g,' ');
+  if(/\bvelas?\b/.test(semCabo)&&sub&&(/jogo|\b[23468]\s*velas?\b/.test(l)||tipo==='peca'||/troc|substitu/.test(l)))out.comps.vela=true;
+
+  /* EMBREAGEM: kit/conjunto, não atuador/cabo/rolamento isolado. */
+  if(/embreagem/.test(l)&&!/compressor|ar\s*-?\s*condicionado/.test(l)){
+   var kitEmb=/kit\s+(?:de\s+)?embreagem|jogo.*embreagem|embreagem.*(?:kit|completa)|disco.*(?:embreagem|plato)|plato.*embreagem/.test(l);
+   if(sub&&kitEmb)out.comps.embreagem=true;
   }
-  /* CORRENTE DE COMANDO: nos motores que usam corrente no lugar de correia.
-     Conta kit de corrente, corrente de comando, tensor/guia da corrente. */
-  if(troca&&/corrente\s+(de\s+)?comando|kit.*corrente|corrente.*comando/.test(l)&&!/correia/.test(l))out.comps.comando=true;
-  /* CAIXA DE DIREÇÃO: a caixa/setor em si (troca ou remanufaturada), NÃO o óleo
-     da caixa, nem ponteira, braço axial ou terminal, que são peças vizinhas. */
-  if(troca&&/caixa\s+de\s+direcao|setor\s+de\s+direcao/.test(l)&&!/oleo|fluido|ponteira|terminal|braco|coifa/.test(l))out.comps.caixaDir=true;
-  if(/correia\s+dentada/.test(l)){if(troca)out.comps.correia=true;if(prox)out.proxCorreia=prox;}
-  /* ÓLEO DO MOTOR — exige PROVA POSITIVA de que o óleo em si foi trocado.
-     Lista de peças proibidas nunca fecha (sempre aparece uma nova: cebolinha, tomada,
-     bulbo...). Então só conta se houver: "troca do óleo", "N litros", viscosidade
-     (5w30/10w40...) ou "lubrificante". Assim "Filtro de óleo do motor", "Cebolinha de
-     óleo" e "Tomada da cebolinha de óleo" NÃO são troca de óleo. */
-  var temOleo=/\boleo/.test(l);
-  var oleoOutro=/caixa|cambio|direcao|freio|diferencial|hidraulic|transmiss/.test(l)
-   ||/\bgl-?\s*[0-9]\b|\b(?:75|80|85|140)\s*w\s*\d{2}\b|\boleo\s*90\b/.test(l); /* óleo de engrenagem */
-  var provaOleo=/troca(?:r|do|dos|da|de)?\s+(?:d[eo]s?\s+)?oleo|\b\d+\s*litros?\b|\b\d{1,2}\s*w\s*-?\s*\d{2}\b|lubrificante/.test(l);
-  if(temOleo&&!oleoOutro&&provaOleo){
-   if(troca){out.comps.oleo=true;out.linhaOleo=raw}
-   if(prox)out.proxOleo=prox;
+  /* BATERIA: bateria completa, não borne/terminal/cabo/recarga. */
+  if(/bateria/.test(l)&&sub&&!/terminal|polo|\bcabo|suporte|base|carga|recarg|\bborn(?:e)?\b|negativ|positiv/.test(l))out.comps.bateria=true;
+
+  /* ALTERNADOR: último serviço NO CONJUNTO. Conta alternador completo, polia,
+     regulador, rolamento, rotor, estator, escovas, revisão/reparo e desmontagem/montagem.
+     Não conta correia nem chicote/fiação externa e nem mera inspeção. */
+  if(/alternador/.test(l)&&!/correia\s+(?:do\s+)?alternador|chicote|fiacao|\bcabo\b/.test(l)&&!soInspecao(l)){
+   if(interv||/polia|regulador|rolamento|rotor|estator|escova|porta.?escova/.test(l))out.comps.alternador=true;
   }
-  /* "Próxima troca com X km" escrita numa linha separada, sem a palavra óleo */
-  if(prox&&!temOleo&&!/correia/.test(l))out._proxSolto=prox;
+  /* ARRANQUE: último serviço dentro do motor de partida. Bendix/automático/induzido/
+     porta-escova/bucha/rolamento contam; chicote, cabo, relé e chave externos não. */
+  if(/arranque|motor\s+de\s+partida|bendix/.test(l)&&!/chicote|fiacao|\bcabo\b|\brele\b|chave\s+de\s+ignicao/.test(l)&&!soInspecao(l)){
+   if(interv||/bendix|automatico|solenoide|induzido|porta.?escova|bucha|rolamento|gatilho/.test(l))out.comps.arranque=true;
+  }
+
+  /* FREIOS: este campo é PASTILHA. Disco sozinho não entra. Qualquer intervenção
+     material na pastilha (troca, lixamento/ajuste/reparo) conta; inspeção simples não. */
+  if(/pastilha/.test(l)&&!soInspecao(l)&&(tipo==='peca'||/troc|substitu|instal|coloc|lix|ajust|repar|limp/.test(l)))out.comps.freios=true;
+
+  /* Ventoinha/radiador/bomba d'água = substituição do componente completo. */
+  if(/ventoinha|eletroventilador/.test(l)&&sub&&!/rele|resistencia|sensor|chicote|fiacao|reparo|conserto/.test(l))out.comps.ventoinha=true;
+  if(/radiador/.test(l)&&sub&&!/mangueira|tampa|aditivo|valvula|sensor|reservatorio|limpez|ventoinha|eletroventilador|suporte/.test(l))out.comps.radiador=true;
+  if(/bomba/.test(l)&&/(d\s*'?\s*agua|de\s+agua|dagua)/.test(l)&&sub&&!/combustivel|oleo|direcao|reservatorio|reparo/.test(l))out.comps.bombaAgua=true;
+
+  /* CAIXA DE DIREÇÃO: qualquer intervenção na própria caixa/setor. Peças periféricas
+     (ponteira, axial, terminal, bomba, coifa) e troca de fluido não contam sozinhas. */
+  if(/caixa\s+de\s+direcao|setor\s+de\s+direcao/.test(l)&&!/oleo|fluido|ponteira|terminal|braco\s+axial|bomba\s+de\s+direcao|coifa/.test(l)&&!soInspecao(l)){
+   if(interv||tipo==='peca'||/remanufatur|vedador/.test(l))out.comps.caixaDir=true;
+  }
+
+  /* MOTOR = cabeçote/bloco. Conta desmontagem/montagem, retífica, junta do cabeçote,
+     brunimento, pistões/bronzinas etc. Não conta periféricos do motor. */
+  var motorAlvo=/cabecote|bloco\s+(?:do\s+)?motor|retific.*(?:motor|cabecote|bloco)|brunimento\s+do\s+bloco|pistao|bronzina|virabrequim|biela/.test(l);
+  if(motorAlvo&&!/motor\s+de\s+partida|arranque|coxim|calco|oleo\s+do\s+motor|filtro\s+de\s+ar|bomba\s+d'?agua/.test(l)&&!soInspecao(l)){
+   if(interv||tipo==='peca'||/retific|brunimento|polimento/.test(l))out.comps.motor=true;
+  }
+
+  /* PNEUS: somente substituição. Remendo/macarrão/vulcanização e serviços de roda não contam. */
+  if(/\bpneu/.test(l)&&sub&&!/estepe|calibr|alinham|balancea|rodizio|conserto|remendo|reparo|furo|macarrao|vulcaniz|cogumelo/.test(l)){
+   var ps=_posRodas(l);if(ps.length){addPos(pneuPos,ps);if(tipo==='servico')addPos(pneuServPos,ps);else addPos(pneuPecaPos,ps)}
+  }
+  /* MOLAS: somente substituição. Encapar/calço/mangueira não contam. */
+  if(/\bmola/.test(l)&&sub&&!/bucha|batente|coxim|calco|encap|mangueira|base/.test(l))addPos(molaPos,_posRodas(l));
+  /* AMORTECEDOR: somente amortecedor completo. Kit/coifa/coxim/pressurização/reparo/solda não contam. */
+  if(/amortecedor/.test(l)&&sub&&!/\bkit\b|batente|coifa|coxim|torre|reparo|pressur|solda|soldou|orelha|recondicion/.test(l))addPos(amortPos,_posRodas(l));
  });
- if(out._altEstator&&out._altRotor)out.comps.alternador=true;
- delete out._altEstator;delete out._altRotor;
- if(out.comps.oleo&&!out.proxOleo&&out._proxSolto)out.proxOleo=out._proxSolto;
+
+ if(oleoTroca&&filtroOleoTroca){out.comps.oleo=true;out.proxOleo=proxOleoCand||0}
+ if(correiaTroca){out.comps.correia=true;out.proxCorreia=proxCorreiaCand||0}
+ if(correnteTroca)out.comps.comando=true;
+
+ /* Pneus: várias posições explícitas na mesma manutenção são válidas (ex.: trocou
+    DE + DD + TE). Só tratamos como ambíguo quando SERVIÇO e PEÇA dão posições
+    completamente incompatíveis — caso histórico do LSY: serviço diz traseiros e a
+    descrição da peça diz dianteiros. Nesse caso preservamos a manutenção, mas não
+    inventamos em qual roda foi instalada. */
+ var _sp=Object.keys(pneuServPos),_pp=Object.keys(pneuPecaPos),_ambPneu=false;
+ if(_sp.length&&_pp.length){var _inter=_sp.some(function(x){return !!pneuPecaPos[x]});if(!_inter)_ambPneu=true}
+ if(!_ambPneu)Object.keys(pneuPos).forEach(function(p){out.comps['pneu'+p]=true});
+ else out.ambPneuPos=true;
+ Object.keys(amortPos).forEach(function(p){out.comps['amort'+p]=true});
+ Object.keys(molaPos).forEach(function(p){out.comps['mola'+p]=true});
  return out;
 }
 /* v134 — uma NOVA troca registrada torna obsoleto o alvo manual da troca anterior.
@@ -5538,7 +5608,8 @@ function recomputarCompsAposAlteracao(pk,comps,midAlterado){
    gravado antigo continue aparecendo na tela. */
 function recalcTudoSilencioso(semSalvar){
  if(!window.S||!S.carros||!S.manutencoes)return 0;
- var rest=restaurarTrocasLegado107()+migrarProvenienciaTrocas108(),mud=0;
+ var _mig152=0;if(!S.migRegrasComponentes152){S.migRegrasComponentes152=true;_mig152=1}
+ var rest=restaurarTrocasLegado107()+migrarProvenienciaTrocas108()+_mig152,mud=0;
  Object.keys(S.carros).forEach(function(pk){
   var c=S.carros[pk];if(!c)return;
   var a=Number(c.proxOleoKm)||0,b=Number(c.proxCorreiaKm)||0;
@@ -5562,7 +5633,7 @@ function auditarUltimasTrocas108(){
    }else if(x.src==='auto'){unv++;lin.push('<b>'+esc(fmtPlaca(pk))+'</b> · '+esc(nomeComp(comp))+' — automático antigo sem mid; preservado para não perder histórico')}
   });
  });
- var h='<b>Auditoria das Últimas trocas</b><br>✅ automáticos rastreáveis: '+trace+' · ✍️ manuais: '+man+' · 🗂 legados v97: '+leg;
+ var h='<b>Auditoria do histórico por componente</b><br>✅ automáticos rastreáveis: '+trace+' · ✍️ manuais: '+man+' · 🗂 legados v97: '+leg;
  h+='<br>⚠️ automáticos antigos sem origem: '+unv+' · ❌ automáticos com origem inválida: '+quebr;
  if(lin.length)h+='<br><br>'+lin.join('<br>');else h+='<br><br>✅ Nenhuma inconsistência rastreável encontrada.';
  if(st)st.innerHTML=h;return {traceaveis:trace,manuais:man,legados:leg,naoRastreaveis:unv,invalidos:quebr};
@@ -5630,7 +5701,7 @@ function recalcTodosCarros(){
 }
 function recalcTrocasUI(pk){
  var c=S.carros[pk];if(!c)return;
- ask('Recalcular componentes do histórico?','Vou varrer todas as manutenções do '+c.nome+' e atualizar as "Últimas trocas" quando houver uma troca mais nova comprovada. O que já existe não será apagado só por não aparecer no histórico estruturado. Ajustes manuais vencem o mesmo evento; uma manutenção comprovadamente posterior pela data pode substituí-los.','Recalcular',function(){
+ ask('Recalcular componentes do histórico?','Vou varrer todas as manutenções do '+c.nome+' e atualizar o histórico por componente quando houver um evento mais novo comprovado. O que já existe não será apagado só por não aparecer no histórico estruturado. Ajustes manuais vencem o mesmo evento; uma manutenção comprovadamente posterior pela data pode substituí-los.','Recalcular',function(){
   var r=recalcTrocasCarro(pk);save();ficha(pk);
   if(r&&r.atualizados&&r.atualizados.length)toast('✅ '+r.atualizados.length+' componente(s) atualizado(s) pelo histórico');
   else toast('✅ Histórico conferido — nenhum dado válido foi apagado');
@@ -5638,8 +5709,8 @@ function recalcTrocasUI(pk){
 }
 function editarTrocas(pk){
  var c=S.carros[pk];if(!c)return;var u=c.ultTrocas||{};
- var h='<h3>✏️ Últimas trocas — '+esc(tituloCarro(c))+'</h3>'+
-  '<p class="sub">Ajuste na mão a km e a data da última troca de cada componente. Deixe os dois vazios para limpar o item. O que você salvar aqui vira <b>manual</b>. Ele vence automáticos do mesmo evento; uma manutenção comprovadamente posterior pela data pode substituí-lo.</p>';
+ var h='<h3>✏️ Histórico por componente — '+esc(tituloCarro(c))+'</h3>'+
+  '<p class="sub">Ajuste manualmente a km e a data do último evento relevante de cada componente. Para vela, cabos, embreagem, bateria, ventoinha, radiador, bomba d\'água, pneus, amortecedores e molas, o evento é a troca. Para alternador, arranque, caixa de direção e motor, também contam intervenções internas conforme as regras da frota. Deixe os dois vazios para limpar o item.</p>';
  COMPS_LST.forEach(function(par){
   if(par[0]==='correia'&&!c.temCorreia)return;
   var v=u[par[0]]||{};
@@ -5662,7 +5733,7 @@ function salvarTrocas(pk){
   if(!km&&!dt)delete c.ultTrocas[par[0]];
   else c.ultTrocas[par[0]]={km:km,data:dt,src:'manual',editadoEm:Date.now()};
  });
- save();closeSheet(2);ficha(pk);toast('✅ Últimas trocas atualizadas');
+ save();closeSheet(2);ficha(pk);toast('✅ Histórico por componente atualizado');
 }
 
 /* ===================== OBSERVAÇÕES / PENDÊNCIAS ===================== */
