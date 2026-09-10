@@ -999,7 +999,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <body>
 <header>
 <h1><b>GuimasCar</b> Gestão</h1>
-<div id="verTag"><span id="syncDot"></span><span id="syncText">iniciando…</span> · v151</div>
+<div id="verTag"><span id="syncDot"></span><span id="syncText">iniciando…</span> · v152</div>
 <div class="hbtns"><button class="hbtn" onclick="openCfg()">⚙️</button></div>
 </header>
 <main id="main"></main>
@@ -1871,7 +1871,7 @@ function _gDiffPaths151(a,b,lim){
 }
 function _gBaixarJson151(obj){
  try{
-  var d=new Date(),pad=function(n){return('0'+n).slice(-2)},nome='diagnostico-gestao-v151-'+DEV.slice(0,10)+'-'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'-'+pad(d.getHours())+pad(d.getMinutes())+pad(d.getSeconds())+'.json';
+  var d=new Date(),pad=function(n){return('0'+n).slice(-2)},nome='diagnostico-gestao-v152-'+DEV.slice(0,10)+'-'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'-'+pad(d.getHours())+pad(d.getMinutes())+pad(d.getSeconds())+'.json';
   var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}));a.download=nome;document.body.appendChild(a);a.click();setTimeout(function(){try{URL.revokeObjectURL(a.href);document.body.removeChild(a)}catch(e){}},1000);return nome;
  }catch(e){return ''}
 }
@@ -7121,7 +7121,7 @@ function openCfg(){
   '<div class="v102setBlock"><b>Restaurar backup</b><p>A restauração soma o que estiver faltando. Se o backup contiver um registro que você havia excluído, a restauração manual traz esse registro de volta de propósito.</p><input type="file" id="bkpIn" accept=".json"><button class="btn sec" onclick="restaurarBackup()">♻️ Restaurar de um backup</button></div>'+
  '</div></details>'+
  '<details><summary><span class="v102setIcon">🔗</span><div><b>Conexão e sincronização</b><small>Estado deste iPhone e chave da família</small></div><i>⌄</i></summary><div class="v102settingsBody">'+
-  '<div class="v102setBlock"><div class="v102keyrow"><span>Chave atual</span><b>'+esc(key)+'</b></div><p>Proteções atuais: fila persistente, ACK real da nuvem, merge com túmulos, gravação transacional, timeout/retry, trava anti-apagão, reconexão/resync e verde somente com igualdade confirmada.</p><div class="filestat v102status" id="syncDiag">Verificando…</div><div class="filestat v102status" id="syncProbeStatus">Teste entre aparelhos: pronto para executar.</div><button class="btn sec" onclick="syncDiagRodar()">🛡️ Verificar integridade e sincronização</button><button class="btn sec" onclick="gDiagnosticoDetalhado151()">🔎 Gerar diagnóstico detalhado v151</button><button class="btn sec" onclick="gTestarNuvemNesteIphone()">☁️ Testar nuvem neste iPhone</button><button class="btn sec" onclick="gEnviarTesteSyncSeguro()">🧪 Testar ida e volta entre iPhones</button><button class="btn sec" onclick="closeSheet();pedirChave()">🔑 Trocar chave da família</button></div>'+
+  '<div class="v102setBlock"><div class="v102keyrow"><span>Chave atual</span><b>'+esc(key)+'</b></div><p>Proteções atuais: fila persistente, ACK real da nuvem, merge com túmulos, gravação transacional, timeout/retry, trava anti-apagão, reconexão/resync e verde somente com igualdade confirmada.</p><div class="filestat v102status" id="syncDiag">Verificando…</div><div class="filestat v102status" id="syncProbeStatus">Teste entre aparelhos: pronto para executar.</div><button class="btn sec" onclick="syncDiagRodar()">🛡️ Verificar integridade e sincronização</button><button class="btn sec" onclick="gDiagnosticoDetalhado151()">🔎 Gerar diagnóstico detalhado v152</button><button class="btn sec" onclick="gTestarNuvemNesteIphone()">☁️ Testar nuvem neste iPhone</button><button class="btn sec" onclick="gEnviarTesteSyncSeguro()">🧪 Testar ida e volta entre iPhones</button><button class="btn sec" onclick="closeSheet();pedirChave()">🔑 Trocar chave da família</button></div>'+
  '</div></details></div>'+
  '<button class="btn sec" onclick="closeSheet()">Fechar</button>');
 }
