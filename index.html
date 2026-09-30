@@ -1026,7 +1026,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=152; var APP_DATE='10/09/2026';
+var APP_VER=153; var APP_DATE='30/09/2026';
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
 
 var LOCADORES={
@@ -5878,7 +5878,7 @@ function contratoVendaVigenteDoCarro(pk){
  Object.keys(S.contratos||{}).some(function(k){var x=S.contratos[k];if(x&&x.carro===pk&&x.tipo==='venda'&&x.status==='vigente'){ach=x;return true}return false});
  return ach;
 }
-function _frotaPadraoCarro(pk){var c=S.carros&&S.carros[pk];return (c&&(c.meuCarro||c.status==='pessoal'))?'hudson':'fabio'}
+function _frotaPadraoCarro(pk){var c=S.carros&&S.carros[pk];return (c&&c.meuCarro)?'hudson':'fabio'}
 function _frotaFinanceiraManut(m){
  if(m&&m.frotaFechamento==='hudson')return 'hudson';
  if(m&&m.frotaFechamento==='fabio')return 'fabio';
@@ -6364,7 +6364,7 @@ function fechamentoDoMes(ym){
   else if(nome.length>f.nome.length)f.nome=nome;
   var car=S.carros[pk];
   /* v148: a manutenção pode ser adiantada por Hudson ou Fábio independentemente da frota física. */
-  var pessoal=frotaFechamento==='hudson'?true:(frotaFechamento==='fabio'?false:!!(car&&(car.meuCarro||car.status==='pessoal')));
+  var pessoal=frotaFechamento==='hudson'?true:(frotaFechamento==='fabio'?false:!!(car&&car.meuCarro));
   var gk=pk+'|'+(pessoal?'H':'F');
   var c=f.carros[gk]||(f.carros[gk]={pk:pk,pessoal:pessoal,itens:[],sub:0});
   c.itens.push({desc:desc,valor:valor,tipo:tipo,data:dt||'',mid:mid||'',frotaFechamento:frotaFechamento||''});
