@@ -1026,7 +1026,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=154; var APP_DATE='30/09/2026';
+var APP_VER=155; var APP_DATE='30/09/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -5017,9 +5017,28 @@ function _tpdfCalc(t){
  var raw=cota+ti+td-tc;
  return {pecas:pec,blocos:blo,integrais:inte,debitos:deb,creditos:cre,totalPecas:tp,totalMO:tmob,totalManut:tm,cota:cota,totalIntegrais:ti,totalDebitos:td,totalCreditos:tc,saldo:Math.abs(raw),aDevolver:raw<0};
 }
-function _tpdfBuild(doc,t,carro){
+function _tpdfEscala(t,carro){
+ /* v155: se o termo não cabe numa folha, reduz o termo inteiro na proporção exata para caber em UMA página
+    (mesmo layout, apenas menor). Termo que já cabe continua idêntico (escala 1). Limite 0,70: abaixo disso
+    a letra ficaria pequena demais, então usa 0,70 e continua em mais páginas. */
+ try{
+  var J=window.jspdf&&window.jspdf.jsPDF;if(!J)return 1;
+  var MIN=0.7,s=1;
+  for(var i=0;i<6;i++){
+   var d=new J({orientation:'portrait',unit:'mm',format:[210/s,4000],compress:true,putOnlyUsedFonts:true});
+   var h=_tpdfBuild(d,t,carro,{medir:true,escala:s});
+   if(h<=297/s-8)return s;
+   var ns=297/(h+8);if(ns<=MIN)return MIN;
+   s=Math.min(s,ns)*0.997;
+  }
+  return Math.max(MIN,s);
+ }catch(e){return 1}
+}
+function _tpdfBuild(doc,t,carro,_o){
+ _o=_o||{};var ESC=_o.escala||(_o.medir?1:_tpdfEscala(t,carro));
  var C={navy:[5,37,82],teal:[0,157,158],gold:[242,169,0],text:[28,35,45],muted:[103,113,124],grid:[218,225,231],pale:[235,248,247],paleGold:[255,247,229],green:[8,129,76],red:[184,57,52],white:[255,255,255],soft:[247,249,251]};
- var PW=210,PH=297,M=9,W=192,BOT=289,y=0,pageNo=1,calc=_tpdfCalc(t);
+ var PW=210/ESC,PH=297/ESC,M=9,W=PW-18,BOT=_o.medir?1e6:PH-8,y=0,pageNo=1,calc=_tpdfCalc(t);
+ if(ESC!==1&&!_o.medir){doc.addPage([PW,PH],'portrait');doc.deletePage(1);doc.setPage(1)}
  function col(a){doc.setTextColor(a[0],a[1],a[2])}
  function fill(a){doc.setFillColor(a[0],a[1],a[2])}
  function line(a){doc.setDrawColor(a[0],a[1],a[2])}
@@ -5061,12 +5080,12 @@ function _tpdfBuild(doc,t,carro){
  function footerAll(){
   var n=doc.getNumberOfPages();
   for(var i=1;i<=n;i++){
-   doc.setPage(i);line(C.grid);doc.line(M,292,PW-M,292);font(5.8,'normal',C.muted);
-   doc.text('GuimasCar · Termo de devolução · '+fmtPlaca(carro.placa),M,295);
-   doc.text('Página '+i+' de '+n,PW-M,295,{align:'right'});
+   doc.setPage(i);line(C.grid);doc.line(M,PH-5,PW-M,PH-5);font(5.8,'normal',C.muted);
+   doc.text('GuimasCar · Termo de devolução · '+fmtPlaca(carro.placa),M,PH-2);
+   doc.text('Página '+i+' de '+n,PW-M,PH-2,{align:'right'});
   }
  }
- function newPage(){doc.addPage();pageNo++;header(true)}
+ function newPage(){doc.addPage([PW,PH],'portrait');pageNo++;header(true)}
  function ensure(h){if(y+h>BOT){newPage();return true}return false}
  function sec(title,teal){ensure(8);fill(teal?C.teal:C.navy);doc.roundedRect(M,y,W,6.3,1.1,1.1,'F');font(9.3,'bold',C.white);doc.text(_tpdfSafe(title),M+3,y+4.5);y+=7.3}
  function subheadTwo(){
@@ -5079,7 +5098,6 @@ function _tpdfBuild(doc,t,carro){
   while(li<parts.length||ri<serv.length){
    subheadTwo();
    var start=y,ly=y,ry=y,maxY=BOT-11;
-   line(C.grid);doc.line(M+half,start,M+half,maxY);
    while(li<parts.length){
     var p=parts[li],desc=_tpdfSafe(p.desc||''),shop=_tpdfSafe(p.loja||'');
     var descLines=split(desc,55,7.0,'normal'),rh=Math.max(5.3,descLines.length*3.05+1.6);
@@ -5099,6 +5117,7 @@ function _tpdfBuild(doc,t,carro){
     if(all.length){font(6.8,'normal',C.text);doc.text(all,rightX+5,ry+7,{lineHeightFactor:1.0});}
     line(C.grid);doc.line(rightX,ry+rh,rightX+rightW,ry+rh);ry+=rh;ri++;
    }
+   line(C.grid);doc.line(M+half,start,M+half,Math.max(ly,ry));
    y=Math.max(ly,ry)+1.8;
    if(li<parts.length||ri<serv.length){newPage();sec('1. MANUTENÇÃO CORRETIVA - CONTINUAÇÃO');}
   }
@@ -5162,7 +5181,7 @@ function _tpdfBuild(doc,t,carro){
   function box(i,label,val){var x=M+i*(cw+gap);if(i){line(C.grid);doc.line(x-gap/2,y+2,x-gap/2,y+11)}font(6.1,'bold',C.muted);doc.text(label.toUpperCase(),x+cw/2,y+4,{align:'center'});font(i===2?6.3:8.2,i===2?'normal':'bold',i===2?C.text:C.navy);var vl=split(val,cw-6,i===2?6.3:8.2,i===2?'normal':'bold');doc.text(vl,x+cw/2,y+8,{align:'center',lineHeightFactor:1.0})}
   box(0,'Data programada',dataBR(dataDepositoTermo(t.dataFim)));box(1,'Método de pagamento','Transferência via PIX');box(2,'Observação','Enviar chave PIX e nome do titular para programação.');y+=16;
  }
- header(false);maintenance();costs();balance();schedule();footerAll();
+ header(false);maintenance();costs();balance();schedule();if(_o.medir)return y;footerAll();
  doc.setProperties({title:'Termo de Devolução - '+fmtPlaca(carro.placa),subject:'Termo de devolução e acerto de contas',author:'GuimasCar',creator:'GuimasCar Gestão'});
  return doc;
 }
