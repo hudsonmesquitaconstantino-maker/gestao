@@ -999,7 +999,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <body>
 <header>
 <h1><b>GuimasCar</b> Gestão</h1>
-<div id="verTag"><span id="syncDot"></span><span id="syncText">iniciando…</span> · <span id="verNum">v155</span></div>
+<div id="verTag"><span id="syncDot"></span><span id="syncText">iniciando…</span> · <span id="verNum">v156</span></div>
 <div class="hbtns"><button class="hbtn" onclick="openCfg()">⚙️</button></div>
 </header>
 <main id="main"></main>
@@ -1026,7 +1026,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=155; var APP_DATE='30/09/2026';
+var APP_VER=156; var APP_DATE='30/09/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -1549,6 +1549,9 @@ function _garanteCampoAt(c){if(!c)return {};if(!c._campoAt||typeof c._campoAt!==
 function _campoAtCarro(c,k){var m=c&&c._campoAt;if(m&&typeof m==='object')return Number(m[k])||Number(m._all)||Number(m._legacy)||0;return Number(c&&c.editadoEm)||0}
 function _touchCarro(c,campos){if(!c)return;var n=Date.now(),m=_garanteCampoAt(c);c.editadoEm=n;if(campos&&campos.length){campos.forEach(function(k){m[k]=n})}else m._all=n}
 function _valorCarroDet(v){try{return JSON.stringify(v)}catch(e){return String(v)}}
+/* v156: quilometragem digitada à mão na ficha. Se mudou o km e a data nem foi tocada, a data vira hoje;
+   e carimba a edição para ela vencer, na mesma data, o valor antigo que está na nuvem. */
+function _kmUltimaManual(c,antes,dataMexida){if(!c||!antes)return;var km=Number(antes.kmUltima||0)!==Number(c.kmUltima||0),dt=String(antes.kmUltimaData||'')!==String(c.kmUltimaData||'');if(km&&!dt&&!dataMexida)c.kmUltimaData=hoje();if(km||dt)_garanteCampoAt(c).kmUltima=Date.now()}
 function _touchContrato(c){if(c){var n=Date.now();if(!c.criadoEm)c.criadoEm=n;c.editadoEm=n}}
 
 /* Une dois registros do MESMO carro, preferindo o dado mais recente/completo.
@@ -1565,7 +1568,10 @@ function mergeCarro(a,b){
  ['gnvRequalif','gnvValidade'].forEach(function(k){if(b[k]&&(!a[k]||String(b[k])>String(a[k]))){a[k]=b[k];mud=true}});
  ['chassi','renavam','ano','cor','combustivel','potencia','proprietario','modeloCRLV','temCrlv','temGnvDoc','codigoRadio'].forEach(function(k){if((a[k]===undefined||a[k]===''||a[k]===0||a[k]===false)&&b[k]){a[k]=b[k];mud=true}});
  if(b.ultTrocas){a.ultTrocas=a.ultTrocas||{};Object.keys(b.ultTrocas).forEach(function(comp){var tb=b.ultTrocas[comp],ta=a.ultTrocas[comp];if(!tb)return;var vence=_trocaPreferida108(ta,tb);if(vence===tb&&vence!==ta){a.ultTrocas[comp]=tb;mud=true}})}
- if(b.kmUltimaData&&(!a.kmUltimaData||String(b.kmUltimaData)>String(a.kmUltimaData))){a.kmUltima=b.kmUltima;a.kmUltimaData=b.kmUltimaData;mud=true}
+ /* v156: última quilometragem — vence a DATA mais nova; na mesma data vence o registro feito por último
+    (carimbo _campoAt.kmUltima); empate total: maior km. O carimbo viaja junto com o valor vencedor. */
+ var _kda=String(a.kmUltimaData||''),_kdb=String(b.kmUltimaData||''),_kta=Number(ma.kmUltima)||0,_ktb=Number(mb.kmUltima)||0;
+ if(_kdb&&(_kdb>_kda||(_kdb===_kda&&(_ktb>_kta||(_ktb===_kta&&(Number(b.kmUltima)||0)>(Number(a.kmUltima)||0)))))){if(Number(a.kmUltima)!==Number(b.kmUltima)||_kda!==_kdb){a.kmUltima=b.kmUltima;a.kmUltimaData=b.kmUltimaData;mud=true}if(_ktb)ma.kmUltima=_ktb;else delete ma.kmUltima}
  var fa=Number(a.fipeAtualizadoEm)||0,fb=Number(b.fipeAtualizadoEm)||0;if(fb>fa||(fb===fa&&String(b.fipeMes||'')>String(a.fipeMes||''))){['fipeM','fipeMo','fipeA','valorRef','fipeMes'].forEach(function(k){if(b[k]!==undefined)a[k]=b[k]});a.fipeAtualizadoEm=fb;mud=true}
  if(Number(b.restauradoEm)>Number(a.restauradoEm)){a.restauradoEm=Number(b.restauradoEm);mud=true}
  return mud;
@@ -3280,7 +3286,7 @@ function formCarro(pk){
  '<div class="v102info" id="fc_sincInfo">'+(novo?'Analisando os dados do veículo…':(c.sincronismoOrigem==='auto'&&c.sincronismoRegra?'Identificado automaticamente na inclusão do carro.':'Configuração existente preservada.'))+'</div></div>'+
  '<div class="v102panel"><div class="v102panelHead"><span>🧭</span><div><b>Uso e quilometragem</b><small>Situação operacional da frota</small></div></div>'+
  '<div class="grid2">'+f('KM de quando alugou','kmAtual',c.kmAtual||'')+f('Última quilometragem','kmUltima',c.kmUltima||'')+'</div>'+
- '<label>Data em que viu essa quilometragem</label><input type="date" id="e_kmUltimaData" value="'+esc(c.kmUltimaData||'')+'">'+
+ '<label>Data em que viu essa quilometragem</label><input type="date" id="e_kmUltimaData" onchange="this.dataset.mexeu=1" value="'+esc(c.kmUltimaData||'')+'">'+
  '<label>Frota do veículo</label><select id="fc_meuCarro">'+opcoesSel(['Frota Fábio','Frota Hudson'],c.meuCarro?'Frota Hudson':'Frota Fábio')+'</select>'+
  '<label>Situação do veículo</label><select id="fc_emVenda">'+opcoesSel(['Na frota (normal)','Em processo de venda ao motorista'],c.emVenda?'Em processo de venda ao motorista':'Na frota (normal)')+'</select>'+
  '<div class="v102info">Em processo de venda, o carro continua cadastrado, mas deixa de gerar os alertas operacionais previstos para a frota normal.</div></div>'+
@@ -3318,7 +3324,7 @@ function salvarCarro(pk){
  c.cor=g('cor');c.potencia=g('potencia');c.combustivel=g('combustivel');
  if(novo){var _tipoNovo=sincModo==='auto'?sincDet.tipo:sincModo;c.temCorreia=_tipoNovo==='correia';c.sincronismoOrigem=sincModo==='auto'?'auto':'manual';c.sincronismoRegra=sincModo==='auto'?(sincDet.regra||''):'';c.sincronismoConfirmadoEm=Date.now()}
  else if(sincModo==='correia'||sincModo==='corrente'){c.temCorreia=sincModo==='correia';if(c.temCorreia!==_temCorreiaAntes){c.sincronismoOrigem='manual';c.sincronismoRegra='';c.sincronismoConfirmadoEm=Date.now()}}
- c.kmAtual=parseInt(g('kmAtual').replace(/\D/g,''),10)||0;c.kmUltima=parseInt(g('kmUltima').replace(/\D/g,''),10)||c.kmAtual;c.kmUltimaData=(document.getElementById('e_kmUltimaData')||{value:''}).value||c.kmUltimaData||'';c.exercicioCRLV=g('exercicioCRLV');c.gnvExercicio=g('gnvExercicio');c.codigoRadio=g('codigoRadio');
+ c.kmAtual=parseInt(g('kmAtual').replace(/\D/g,''),10)||0;c.kmUltima=parseInt(g('kmUltima').replace(/\D/g,''),10)||c.kmAtual;c.kmUltimaData=(document.getElementById('e_kmUltimaData')||{value:''}).value||c.kmUltimaData||'';_kmUltimaManual(c,antesCarro,!!(document.getElementById('e_kmUltimaData')||{dataset:{}}).dataset.mexeu);c.exercicioCRLV=g('exercicioCRLV');c.gnvExercicio=g('gnvExercicio');c.codigoRadio=g('codigoRadio');
  c.emVenda=((document.getElementById('fc_emVenda')||{value:''}).value||'').indexOf('venda')>=0;
  c.meuCarro=/hudson/i.test(semAcento((document.getElementById('fc_meuCarro')||{value:''}).value||''));
  c.gnvRequalif=(document.getElementById('e_gnvRequalif')||{value:''}).value;c.procLeilao=(document.getElementById('fc_procLeilao')||{value:'Não'}).value;c.procFinanciado=(document.getElementById('fc_procFinanciado')||{value:'Não'}).value;c.procObs=g('procObs');
@@ -4909,7 +4915,7 @@ function gerarTermo(){
  if(fechaContratoAtual){
   ct.status='encerrado';ct.encerradoEm=fim;_touchContrato(ct);
   c.contratoVigenteId='';c.motorista='';c.status='parado';_touchCarro(c,['contratoVigenteId','motorista','status']);
-  if(odo&&odo>(c.kmUltima||0)){c.kmUltima=odo;c.kmUltimaData=fim}
+  if(odo&&odo>(c.kmUltima||0)){c.kmUltima=odo;c.kmUltimaData=fim;_garanteCampoAt(c).kmUltima=Date.now()}
  }
  save();tRascLimpa();
  closeSheet(2);ficha(pk);render();
@@ -6068,7 +6074,7 @@ function gerarManut(){
   frotaFechamento:_cv?_ff:'',pecas:pecas,blocos:blocos,totalPecas:tp,totalMO:tm,total:tp+tm,criadoEm:Date.now()});
  m.texto=buildManutTexto(m,carro);
  S.manutencoes[m.id]=m;_gestaoFormDirty=false;
- if(odo>0&&odo>=(Number(carro.kmUltima)||0)){carro.kmUltima=odo;carro.kmUltimaData=fim||ini}
+ if(odo>0&&odo>=(Number(carro.kmUltima)||0)){carro.kmUltima=odo;carro.kmUltimaData=fim||ini;_garanteCampoAt(carro).kmUltima=Date.now()}
  var _detNova=detectarComponentes(m);
  var _libNova=_liberarProximaManualPorNovaTroca(carro,_detNova);
  var _marc=aplicarDeteccao(m,carro);
@@ -6213,7 +6219,7 @@ function salvarEdicaoManut(){
  m=normManut(m);
  if(carro){
   m.texto=buildManutTexto(m,carro);
-  if(m.odometro>(carro.kmUltima||0)){carro.kmUltima=m.odometro;carro.kmUltimaData=m.dataFim||m.dataIni}
+  if(m.odometro>(carro.kmUltima||0)){carro.kmUltima=m.odometro;carro.kmUltimaData=m.dataFim||m.dataIni;_garanteCampoAt(carro).kmUltima=Date.now()}
  }
  S.manutencoes[_edMid]=m;
  if(carro){
