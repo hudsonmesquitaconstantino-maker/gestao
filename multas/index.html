@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Multas da Frota</title>
 <meta name="app" content="guimas-multas">
 <meta name="theme-color" content="#F2F3F5">
@@ -28,15 +28,16 @@
   --ease:cubic-bezier(.32,.72,0,1);
 }
 *{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;touch-action:manipulation}
+body{overflow-x:hidden;-webkit-tap-highlight-color:transparent}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 -apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',Inter,Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
-.wrap{max-width:980px;margin:0 auto;padding:0 16px 90px}
+.wrap{max-width:980px;margin:0 auto;padding:0 max(16px,env(safe-area-inset-right)) calc(90px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
 
 /* topo */
 header{padding-top:env(safe-area-inset-top);position:sticky;top:0;z-index:30;background:rgba(242,243,245,.88);backdrop-filter:saturate(1.6) blur(14px);-webkit-backdrop-filter:saturate(1.6) blur(14px);border-bottom:1px solid var(--line)}
-.hd{max-width:980px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:8px}
+.hd{max-width:980px;margin:0 auto;padding:12px max(16px,env(safe-area-inset-right)) 8px max(16px,env(safe-area-inset-left));display:flex;align-items:center;gap:8px}
 .logo{width:38px;height:38px;border-radius:10px;background:var(--ink);color:#fff;display:grid;place-items:center;font:700 19px var(--num);flex:none}
 .brand{flex:1;min-width:0}
 .brand h1{margin:0;font-size:19px;font-weight:700;letter-spacing:-.01em}
@@ -160,6 +161,13 @@ select{border:1px solid var(--line);background:var(--card);border-radius:10px;pa
 .add .mi{width:170px}
 .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
 @media(max-width:640px){
+  input,select,textarea{font-size:16px!important}
+  .nm{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.25}
+  .filtros{flex-wrap:nowrap;overflow-x:auto;margin-left:-16px;margin-right:-16px;padding:0 16px 2px;scrollbar-width:none}
+  .filtros::-webkit-scrollbar{display:none}
+  .fchip{flex:none}
+  .tools select,.dtools select{flex:1}
+  .cp,.wa,.conf{font-size:12.5px}
   .fine{grid-template-columns:auto minmax(0,1fr) auto}
   .fine .obs{grid-column:1/-1;order:5}
   .head{gap:10px;padding:12px 12px 10px}
@@ -172,6 +180,49 @@ select{border:1px solid var(--line);background:var(--card);border-radius:10px;pa
   .lbl-long{display:none}
 }
 @media(min-width:641px){.lbl-short{display:none}}
+
+/* abas */
+.tabs{max-width:980px;margin:0 auto;padding:0 max(16px,env(safe-area-inset-right)) 10px max(16px,env(safe-area-inset-left))}
+.seg{display:flex;background:#E4E6EA;border-radius:11px;padding:3px;gap:3px}
+.seg button{flex:1;border:0;background:transparent;border-radius:9px;padding:7px 10px;font-weight:650;font-size:14px;color:var(--mut);transition:all .25s var(--ease)}
+.seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(16,24,40,.12)}
+.seg button .n{font-family:var(--num);font-size:15px;margin-left:5px;color:var(--red)}
+#pgDebitos{display:none}
+body.deb #pgMultas{display:none} body.deb #pgDebitos{display:block} body.deb #btnCopiarTudo{display:none}
+/* débitos */
+.dsec{margin-top:4px}
+.dsec h4{margin:12px 0 6px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}
+.drow{display:grid;grid-template-columns:118px minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #EEF0F3}
+.drow:last-child{border-bottom:0}
+.drow .tp{font-weight:700;font-size:14px}
+.drow .det{font-size:13px;color:var(--mut)}
+.drow .rt{display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.st-ok,.st-pend,.st-aviso,.st-sem{display:inline-block;font-size:11px;font-weight:800;padding:2px 7px;border-radius:5px;margin-right:6px;vertical-align:1px}
+.st-ok{background:var(--green-s);color:var(--green)} .st-pend{background:var(--red-s);color:var(--red)}
+.st-aviso{background:var(--amber-s);color:var(--amber)} .st-sem{background:var(--soft);color:var(--mut)}
+.dl{display:grid;grid-template-columns:110px 132px 150px minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid #EEF0F3}
+.dl .tp{font-weight:700;font-size:13.5px}
+.dl input[type=date]{border:1px solid var(--line);border-radius:8px;padding:6px 7px;background:#fff;min-width:0;width:100%}
+.dl .pg{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mut)}
+.dl.pago .tp{color:var(--green)}
+.hist{margin-top:10px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.hist summary{cursor:pointer;padding:10px 12px;font-weight:650;font-size:14px;list-style:none;display:flex;justify-content:space-between}
+.hist summary::-webkit-details-marker{display:none}
+.hy{padding:0 12px 10px}
+.hy h5{margin:10px 0 4px;font-size:13px;display:flex;justify-content:space-between}
+.hy h5 b{font-family:var(--num);font-size:16px}
+.hi{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;color:#30343B}
+.hi span:last-child{font-family:var(--num);font-size:15px;font-weight:600}
+.dtools{display:flex;gap:8px;margin:12px 0 8px;flex-wrap:wrap}
+.nd{font-family:var(--num);font-size:20px;font-weight:700;line-height:1;white-space:nowrap}
+.nd.red{color:var(--red)} .nd.grn{color:var(--green)}
+@media(max-width:640px){
+  .drow{grid-template-columns:1fr auto}
+  .drow .det{grid-column:1/-1;order:3}
+  .dl{grid-template-columns:1fr 1fr}
+  .dl .tp{grid-column:1/-1}
+  .dl .fa{grid-column:1/-1;justify-content:flex-end}
+}
 
 /* janelas */
 dialog{border:0;border-radius:18px;padding:0;width:min(580px,calc(100vw - 32px));max-height:calc(100vh - 48px);box-shadow:0 24px 70px rgba(16,24,40,.25);color:var(--ink)}
@@ -228,9 +279,11 @@ footer{color:var(--mut);font-size:12.5px;text-align:center;margin-top:24px;line-
       </div>
     </div>
   </div>
+  <nav class="tabs"><div class="seg" id="seg"><button data-aba="multas" class="on">Multas<span class="n" id="segM"></span></button><button data-aba="debitos">Débitos<span class="n" id="segD"></span></button></div></nav>
 </header>
 
 <main class="wrap">
+ <div id="pgMultas">
   <section class="stats" id="stats"></section>
   <div id="avisos"></div>
   <section class="consulta" id="consulta"></section>
@@ -255,7 +308,24 @@ footer{color:var(--mut);font-size:12.5px;text-align:center;margin-top:24px;line-
     <button class="fchip" data-f="fabio">Frota Fábio</button>
   </div>
   <section id="list"></section>
-  <footer>Dados salvos na nuvem (mesma chave do Gestão) e neste aparelho. Abre igual no computador e no iPhone.<br>Valores-base do CTB (art. 258): leve R$ 88,38 · média R$ 130,16 · grave R$ 195,23 · gravíssima R$ 293,47 (algumas têm multiplicador).<br><span style="opacity:.6">Multas v1</span></footer>
+ </div>
+ <div id="pgDebitos">
+  <section class="stats" id="dStats"></section>
+  <div class="dtools">
+    <label class="search"><span aria-hidden="true">⌕</span><input id="dq" placeholder="Buscar carro ou placa…" autocomplete="off"></label>
+    <select id="dAno" aria-label="Ano"></select>
+    <select id="dOrdem" aria-label="Ordenar"><option value="nome">Nome A–Z</option><option value="final">Final de placa (0–9)</option><option value="aberto">Maior valor em aberto</option></select>
+  </div>
+  <div class="filtros" id="dFiltros">
+    <button class="fchip on" data-f="todos">Todos</button>
+    <button class="fchip" data-f="pend">Com pendência</button>
+    <button class="fchip" data-f="aberto">Valor em aberto</button>
+    <button class="fchip" data-f="gnv">GNV</button>
+    <button class="fchip" data-f="ok">Em dia</button>
+  </div>
+  <section id="dList"></section>
+ </div>
+  <footer>Dados salvos na nuvem (mesma chave do Gestão) e neste aparelho. Abre igual no computador e no iPhone.<br>Valores-base do CTB (art. 258): leve R$ 88,38 · média R$ 130,16 · grave R$ 195,23 · gravíssima R$ 293,47 (algumas têm multiplicador).<br><span style="opacity:.6">Multas e Débitos v2</span></footer>
 </main>
 
 <dialog id="dlg"><div class="dlg-in"></div></dialog>
@@ -718,6 +788,7 @@ const soDig = s => String(s||'').replace(/\D/g,'');
 const cmpData = (a,b) => a.data < b.data ? 1 : a.data > b.data ? -1 : 0; // mais recente primeiro
 const finalPlaca = p => { const d = normPlaca(p).match(/(\d)$/); return d ? +d[1] : 99; };
 const cmpNome = (a,b) => a.nome.localeCompare(b.nome,'pt',{sensitivity:'base',numeric:true}) || normPlaca(a.placa).localeCompare(normPlaca(b.placa));
+const cmpDeb = (a, b) => (b.ano - a.ano) || (a.venc || '9').localeCompare(b.venc || '9') || String(a.tipo).localeCompare(String(b.tipo));
 const plural = n => n===1 ? 'Multa' : 'Multas';
 
 function parseValor(s){
@@ -733,7 +804,7 @@ function parseValor(s){
 function novoVeiculo(nomeRaw){
   let n = String(nomeRaw||'').trim(), d = false;
   const m = n.match(/^\*(.+)\*$/); if(m){ n = m[1].trim(); d = true; }
-  return {id:uid(), nome:n, destaque:d, renavam:'', docTipo:'CPF', doc:'', placa:'', frota:'fabio', multas:[], pagas:[], conferido:null};
+  return {id:uid(), nome:n, destaque:d, renavam:'', docTipo:'CPF', doc:'', placa:'', frota:'fabio', multas:[], pagas:[], debitos:[], conferido:null};
 }
 
 /* Lê o texto no formato do grupo do WhatsApp */
@@ -780,7 +851,7 @@ function semente(){
 function load(){
   try{
     const r = localStorage.getItem(KEY);
-    if(r){ const d = JSON.parse(r); if(d && Array.isArray(d.veiculos)){ S = Object.assign(S, d); S.tomb = S.tomb || {}; S.tombV = S.tombV || {}; return true; } }
+    if(r){ const d = JSON.parse(r); if(d && Array.isArray(d.veiculos)){ S = Object.assign(S, d); S.tomb = S.tomb || {}; S.tombV = S.tombV || {}; S.veiculos.forEach(v => { v.debitos = v.debitos || []; }); return true; } }
   }catch(e){ storageOk = false; }
   return false;
 }
@@ -801,10 +872,11 @@ function desfazer(){
 /* ---------- carimbo por item (carro e multa), lixeira com data ---------- */
 let _prev = {v:{}, f:{}};
 const hashV = v => JSON.stringify([v.nome, !!v.destaque, v.renavam, v.docTipo, v.doc, v.placa, v.frota, v.conferido || null, v.copiadoEm || null, v.pos]);
-const hashF = m => JSON.stringify([m.data, m.valor ?? null, m.obs || '', m.pagaEm || null, !!m.auto]);
+const hashF = m => m.tipo ? JSON.stringify(['d', m.tipo, +m.ano, m.valor ?? null, m.venc || '', m.pagoEm || '', m.obs || '']) : JSON.stringify([m.data, m.valor ?? null, m.obs || '', m.pagaEm || null, !!m.auto]);
+const itensDe = v => [...v.multas, ...v.pagas, ...(v.debitos || [])];
 function fotografar(){
   _prev = {v:{}, f:{}};
-  S.veiculos.forEach(v => { _prev.v[v.id] = hashV(v); [...v.multas, ...v.pagas].forEach(m => _prev.f[m.id] = hashF(m)); });
+  S.veiculos.forEach(v => { _prev.v[v.id] = hashV(v); itensDe(v).forEach(m => _prev.f[m.id] = hashF(m)); });
 }
 function carimbar(){
   const agora = Date.now(); S.tomb = S.tomb || {}; S.tombV = S.tombV || {};
@@ -815,7 +887,8 @@ function carimbar(){
     if(v.pos == null) v.pos = ++maxPos;
     if(_prev.v[v.id] !== hashV(v) || !v.rev) v.rev = agora;
     delete S.tombV[v.id];
-    [...v.multas, ...v.pagas].forEach(m => {
+    v.debitos = v.debitos || [];
+    itensDe(v).forEach(m => {
       vistosF[m.id] = 1;
       if(_prev.f[m.id] !== hashF(m) || !m.rev) m.rev = agora;
       delete S.tomb[m.id];
@@ -831,12 +904,13 @@ function carimbar(){
 
 /* ---------- união item a item (nenhum aparelho apaga dado do outro) ---------- */
 const normF = m => ({...m, valor: m.valor == null ? null : +m.valor, obs: m.obs || '', rev: m.rev || 0});
+const normD = d => ({...d, ano: +d.ano || 0, valor: d.valor == null ? null : +d.valor, venc: d.venc || '', pagoEm: d.pagoEm || '', obs: d.obs || '', rev: d.rev || 0});
 const lista0 = x => (Array.isArray(x) ? x : Object.values(x || {})).filter(Boolean);
 function doRemoto(r){
   if(!r || !r.veiculos) return null;
   return {
     veiculos: Object.values(r.veiculos).filter(Boolean).map(v => ({...v, destaque: !!v.destaque, conferido: v.conferido || null, copiadoEm: v.copiadoEm || null,
-      multas: lista0(v.multas).map(normF), pagas: lista0(v.pagas).map(normF), rev: v.rev || 0})),
+      multas: lista0(v.multas).map(normF), pagas: lista0(v.pagas).map(normF), debitos: lista0(v.debitos).map(normD), rev: v.rev || 0})),
     tomb: r.tomb || {}, tombV: r.tombV || {}
   };
 }
@@ -850,7 +924,7 @@ function mesclarEstado(a, b){
     let ent = mapa.get(v.id);
     if(!ent){ ent = {meta: v, fines: new Map()}; mapa.set(v.id, ent); }
     else if((v.rev || 0) > (ent.meta.rev || 0)) ent.meta = v;
-    for(const m of [...(v.multas || []), ...(v.pagas || [])]){
+    for(const m of [...(v.multas || []), ...(v.pagas || []), ...(v.debitos || [])]){
       const e = ent.fines.get(m.id);
       if(!e || (m.rev || 0) > (e.rev || 0)) ent.fines.set(m.id, m);
     }
@@ -859,14 +933,15 @@ function mesclarEstado(a, b){
   for(const [id, ent] of mapa){
     if(tombV[id] && tombV[id] >= (ent.meta.rev || 0)) continue;
     delete tombV[id];
-    const v = {...ent.meta, multas: [], pagas: []};
+    const v = {...ent.meta, multas: [], pagas: [], debitos: []};
     for(const [fid, m] of ent.fines){
       if(tomb[fid] && tomb[fid] >= (m.rev || 0)) continue;
       delete tomb[fid];
-      (m.pagaEm ? v.pagas : v.multas).push({...m});
+      (m.tipo ? v.debitos : m.pagaEm ? v.pagas : v.multas).push({...m});
     }
     v.multas.sort(cmpData);
     v.pagas.sort((x, y) => (y.pagaEm || '').localeCompare(x.pagaEm || '') || cmpData(x, y));
+    v.debitos.sort(cmpDeb);
     out.push(v);
   }
   out.sort((x, y) => (x.pos ?? 0) - (y.pos ?? 0));
@@ -878,7 +953,8 @@ function estavel(x){
   return JSON.stringify(x ?? null);
 }
 function canon(st){
-  return estavel({v: st.veiculos.map(v => ({...v, multas: [...v.multas].sort((a, b) => a.id < b.id ? -1 : 1), pagas: [...v.pagas].sort((a, b) => a.id < b.id ? -1 : 1)})).sort((a, b) => a.id < b.id ? -1 : 1), t: st.tomb, tv: st.tombV});
+  const pid = (a, b) => a.id < b.id ? -1 : 1;
+  return estavel({v: st.veiculos.map(v => ({...v, multas: [...v.multas].sort(pid), pagas: [...v.pagas].sort(pid), debitos: [...(v.debitos || [])].sort(pid)})).sort(pid), t: st.tomb, tv: st.tombV});
 }
 function paraRemoto(st){
   const veiculos = {};
@@ -888,6 +964,7 @@ function paraRemoto(st){
 
 /* ---------- nuvem (Firebase, mesma chave do Gestão) ---------- */
 const firebaseConfig = {apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
+let GREF = null, GEST = {idx: null, lidoEm: 0, erro: ''};
 let DB = null, REF = null, sinc = 'off', envioT = null, renderPendente = false, recebeuNuvem = false;
 function famHash(key){
   return crypto.subtle.digest('SHA-256', new TextEncoder().encode('guimas:' + key))
@@ -902,6 +979,12 @@ async function conectar(chave){
   recebeuNuvem = false; setSync('env');
   const h = await famHash(chave);
   REF = DB.ref('familias/' + h + '/multas');
+  if(GREF) GREF.off();
+  GREF = DB.ref('familias/' + h + '/gestao/carros');   // SÓ LEITURA: este app nunca grava no Gestão
+  GREF.on('value', sg => {
+    const idx = {}; Object.values(sg.val() || {}).forEach(c => { if(c && c.placa) idx[normPlaca(c.placa)] = c; });
+    GEST = {idx, lidoEm: Date.now(), erro: ''}; renderDeb();
+  }, err => { GEST.erro = err.message; renderDeb(); });
   REF.on('value', snap => aoReceber(snap.val()), err => { setSync('err'); toast('Nuvem recusou a leitura: ' + err.message); });
 }
 function aoReceber(r){
@@ -912,7 +995,7 @@ function aoReceber(r){
   const mudouLocal = canon(m) !== canon(estadoLocal());
   S.veiculos = m.veiculos; S.tomb = m.tomb; S.tombV = m.tombV;
   gravarLocal(); fotografar();
-  if(mudouLocal){ if(digitandoNaLista()) renderPendente = true; else render(); }
+  if(mudouLocal){ if(digitandoNaLista() || digitandoEm('#dList')) renderPendente = true; else render(); }
   if(canon(m) !== canon(rem)) agendarEnvio(); else setSync('ok');
 }
 function agendarEnvio(ms=600){
@@ -1091,10 +1174,10 @@ function renderMeta(){
 function render(){
   const l = lista();
   $('#list').innerHTML = l.length ? l.map(cardHTML).join('') : `<div class="vazio-lista">Nenhum carro neste filtro.</div>`;
-  renderStats(); renderConsulta(); renderAvisos(); renderMeta();
+  renderStats(); renderConsulta(); renderAvisos(); renderMeta(); renderSeg(); renderDeb();
   $$('#filtros .fchip').forEach(b => b.classList.toggle('on', b.dataset.f === filtro));
 }
-function renderLeve(){ renderStats(); renderConsulta(); }
+function renderLeve(){ renderStats(); renderConsulta(); renderSeg(); }
 
 /* ---------- utilidades de interface ---------- */
 async function copiar(txt, msg){
@@ -1355,7 +1438,7 @@ $('#arqBackup').onchange = async e => {
     const j = JSON.parse(await f.text()), d = j.dados || j;
     if(!Array.isArray(d.veiculos)) throw 0;
     confirmar(`Restaurar o backup <b>${esc(f.name)}</b> (${d.veiculos.length} carros)? A lista atual será trocada por ele.`, 'Restaurar', () => {
-      snap(); S.veiculos = d.veiculos.map(v => ({...v, multas: v.multas || [], pagas: v.pagas || []})); if(d.prefValores != null) S.prefValores = d.prefValores;
+      snap(); S.veiculos = d.veiculos.map(v => ({...v, multas: v.multas || [], pagas: v.pagas || [], debitos: v.debitos || []})); if(d.prefValores != null) S.prefValores = d.prefValores;
       abertos.clear(); save(); render(); toast('Backup restaurado e enviado à nuvem', true);
     });
   }catch(err){ toast('Esse arquivo não é um backup válido'); }
@@ -1364,6 +1447,219 @@ $('#dlg').addEventListener('click', e => { if(e.target.id === 'dlg' || e.target.
 document.addEventListener('keydown', e => {
   if(e.key === '/' && !e.target.closest('input,textarea,select')){ e.preventDefault(); $('#q').focus(); }
 });
+
+/* ---------- DÉBITOS (IPVA, GRT, vistoria e reteste do GNV) ---------- */
+const TIPO_NOME = {ipva:'IPVA', grt:'GRT', vistoria:'Vistoria GNV', reteste:'Reteste GNV', outro:'Outro'};
+let aba = 'multas', anoRef = new Date().getFullYear(), dFiltro = 'todos', dBusca = '', dOrdem = 'nome', dAbertos = new Set(), dAnim = null;
+try{ aba = localStorage.getItem('multas_aba') === 'debitos' ? 'debitos' : 'multas'; }catch(e){}
+const semAc = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
+const gCarro = v => GEST.idx ? (GEST.idx[normPlaca(v.placa)] || null) : null;
+const ehGNV = g => !!g && (/gnv/i.test(semAc(g.combustivel)) || !!g.gnvExercicio || !!g.gnvRequalif);
+const diasAte = iso => Math.round((new Date(iso + 'T12:00:00') - new Date(isoHoje() + 'T12:00:00')) / 864e5);
+const debDoAno = (v, tipo) => (v.debitos || []).filter(d => +d.ano === anoRef && (!tipo || d.tipo === tipo));
+
+/* Situação automática do ano, tirada do Gestão. CRLV do ano = IPVA e GRT do ano quitados (R$ 0). */
+function situacao(v){
+  const g = gCarro(v), Y = anoRef, out = [];
+  const ex = g ? parseInt(g.exercicioCRLV, 10) || 0 : 0;
+  ['ipva','grt'].forEach(tipo => {
+    let st, det;
+    if(!GEST.idx){ st = 'sem'; det = 'aguardando dados do Gestão'; }
+    else if(!g){ st = 'sem'; det = 'placa não encontrada no Gestão'; }
+    else if(ex >= Y){ st = 'ok'; det = `CRLV ${ex} — nada a pagar em ${Y}`; }
+    else { st = 'pend'; det = ex ? `CRLV ${ex} — falta o de ${Y}` : 'CRLV sem exercício no Gestão'; }
+    out.push({tipo, st, det});
+  });
+  if(ehGNV(g)){
+    const gx = parseInt(g.gnvExercicio, 10) || 0;
+    out.push({tipo:'vistoria', st: gx >= Y ? 'ok' : gx ? 'pend' : 'sem', det: gx ? (gx >= Y ? `vistoria ${gx} em dia` : `última ${gx} — falta ${Y}`) : 'sem exercício no Gestão'});
+    if(g.gnvRequalif){
+      const d = diasAte(g.gnvRequalif);
+      out.push({tipo:'reteste', st: d < 0 ? 'pend' : d <= 90 ? 'aviso' : 'ok', det: d < 0 ? `venceu em ${br(g.gnvRequalif)}` : `próximo em ${br(g.gnvRequalif)}` + (d <= 90 ? ` (${d} dias)` : '')});
+    } else out.push({tipo:'reteste', st:'sem', det:'sem data no Gestão'});
+  }
+  // lançamentos do ano mandam no status da linha
+  out.forEach(r => {
+    const ls = debDoAno(v, r.tipo); r.ls = ls;
+    if(ls.length){
+      const tot = ls.reduce((s, d) => s + (d.valor || 0), 0), pagos = ls.filter(d => d.pagoEm).length;
+      r.total = tot;
+      if(pagos === ls.length){ r.st = 'ok'; r.det = `pago ${money(tot)}` + (ls.length > 1 ? ` (${ls.length} parcelas)` : ''); }
+      else { r.st = 'pend'; r.det = `${money(ls.filter(d => !d.pagoEm).reduce((s, d) => s + (d.valor || 0), 0))} em aberto · ${pagos} de ${ls.length} pagos`; }
+    }
+  });
+  return out;
+}
+function resumoDeb(v){
+  const sit = situacao(v);
+  const aberto = (v.debitos || []).filter(d => !d.pagoEm).reduce((s, d) => s + (d.valor || 0), 0);
+  const pend = sit.filter(r => r.st === 'pend').length + debDoAno(v, 'outro').filter(d => !d.pagoEm).length;
+  const aviso = sit.filter(r => r.st === 'aviso').length;
+  return {sit, aberto, pend, aviso, gnv: ehGNV(gCarro(v))};
+}
+function historico(v){
+  const it = [];
+  (v.debitos || []).filter(d => d.pagoEm && d.valor).forEach(d => it.push({data: d.pagoEm, txt: `${TIPO_NOME[d.tipo] || d.tipo} ${d.ano}${d.obs ? ' · ' + d.obs : ''}`, valor: d.valor}));
+  v.pagas.filter(m => m.pagaEm && m.valor).forEach(m => it.push({data: m.pagaEm, txt: `Multa de ${br(m.data)}`, valor: m.valor}));
+  it.sort((a, b) => b.data.localeCompare(a.data));
+  const anos = {};
+  it.forEach(x => { const y = x.data.slice(0, 4); (anos[y] = anos[y] || []).push(x); });
+  return anos;
+}
+function dLista(){
+  let l = S.veiculos.slice();
+  const q = dBusca.trim().toLowerCase();
+  if(q){ const qp = normPlaca(q); l = l.filter(v => v.nome.toLowerCase().includes(q) || (qp && normPlaca(v.placa).includes(qp))); }
+  const f = {pend: v => resumoDeb(v).pend > 0, aberto: v => resumoDeb(v).aberto > 0, gnv: v => resumoDeb(v).gnv, ok: v => { const r = resumoDeb(v); return !r.pend && !r.aberto; }}[dFiltro];
+  if(f) l = l.filter(f);
+  const s = {nome: cmpNome, final: (a, b) => finalPlaca(a.placa) - finalPlaca(b.placa) || cmpNome(a, b), aberto: (a, b) => resumoDeb(b).aberto - resumoDeb(a).aberto || cmpNome(a, b)}[dOrdem];
+  return l.sort(s);
+}
+function dNumsHTML(v){
+  const r = resumoDeb(v);
+  if(r.aberto > 0) return `<div class="nums"><div class="nd red">${money(r.aberto)}</div><div class="miss" style="color:var(--red)">em aberto</div>${r.pend ? `<div class="miss">${r.pend} pendência${r.pend > 1 ? 's' : ''}</div>` : ''}</div>`;
+  if(r.pend) return `<div class="nums"><div class="nd red">${r.pend}</div><div class="miss" style="color:var(--red)">pendência${r.pend > 1 ? 's' : ''} ${anoRef}</div></div>`;
+  if(!GEST.idx) return `<div class="nums"><div class="miss" style="color:var(--mut)">aguardando Gestão</div></div>`;
+  return `<div class="nums"><div class="nd grn">✓</div><div class="miss" style="color:var(--green)">em dia ${anoRef}${r.aviso ? ' · ' + r.aviso + ' aviso' : ''}</div></div>`;
+}
+function dBodyHTML(v){
+  const r = resumoDeb(v), Y = anoRef;
+  const ST = {ok:'✓ Em dia', pend:'Pendente', aviso:'Atenção', sem:'Sem dado'};
+  const linhas = r.sit.map(x => `<div class="drow" data-tipo="${x.tipo}">
+      <div class="tp">${TIPO_NOME[x.tipo]}</div>
+      <div class="rt">${x.ls.length ? `<b class="val">${money(x.total)}</b>` : x.st === 'ok' ? '<b class="val" style="color:var(--green)">R$ 0,00</b>'
+        : x.st === 'pend' || x.st === 'aviso' ? `<label class="mi" style="width:120px"><span>R$</span><input class="dq-valor" inputmode="decimal" placeholder="valor"></label><button class="btn sm pri" data-dact="quick">Lançar</button>` : ''}</div>
+      <div class="det"><span class="st-${x.st}">${ST[x.st]}</span>${esc(x.det)}</div>
+    </div>`).join('');
+  const ls = debDoAno(v);
+  const lanc = ls.map(d => `<div class="dl${d.pagoEm ? ' pago' : ''}" data-did="${d.id}">
+      <span class="tp">${TIPO_NOME[d.tipo] || d.tipo}${d.obs ? `<small style="display:block;color:var(--mut);font-weight:500">${esc(d.obs)}</small>` : ''}</span>
+      <label class="mi${d.valor == null ? ' vazio' : ''}"><span>R$</span><input data-dact="valor" inputmode="decimal" value="${num2(d.valor)}" placeholder="0,00"></label>
+      <label class="pg">Venc.<input type="date" data-dact="venc" value="${esc(d.venc)}"></label>
+      <label class="pg">${d.pagoEm ? 'Pago' : 'Pago em'}<input type="date" data-dact="pagoEm" value="${esc(d.pagoEm)}"></label>
+      <div class="fa">${d.pagoEm ? '' : '<button class="btn sm grn" data-dact="pagar">✓ Pago hoje</button>'}<button class="btn sm ghost x" data-dact="del" title="Excluir lançamento">✕</button></div>
+    </div>`).join('');
+  const anos = historico(v), ys = Object.keys(anos).sort().reverse();
+  const totalHist = ys.reduce((s, y) => s + anos[y].reduce((a, x) => a + x.valor, 0), 0);
+  const g = gCarro(v);
+  return `<div class="body${dAnim === v.id ? ' anim' : ''}">
+    ${g ? `<p class="hint" style="margin:0 0 4px;font-size:12px;color:var(--mut)">Do Gestão: CRLV ${esc(g.exercicioCRLV || '—')}${ehGNV(g) ? ` · vistoria GNV ${esc(g.gnvExercicio || '—')} · reteste ${g.gnvRequalif ? br(g.gnvRequalif) : '—'}` : ' · sem GNV'}</p>` : ''}
+    <div class="dsec"><h4>Situação ${Y}</h4>${linhas}</div>
+    <div class="dsec"><h4>Lançamentos ${Y}</h4>${lanc || '<p class="hint" style="margin:4px 0;font-size:13px;color:var(--mut)">Nenhum lançamento neste ano.</p>'}</div>
+    <div class="add">
+      <select class="da-tipo">${Object.entries(TIPO_NOME).map(([k, n]) => `<option value="${k}">${n}</option>`).join('')}</select>
+      <label class="mi"><span>R$</span><input class="da-valor" inputmode="decimal" placeholder="valor"></label>
+      <label class="pg" style="display:flex;gap:6px;align-items:center;font-size:12px;color:var(--mut)">Venc.<input type="date" class="da-venc" style="border:1px solid var(--line);border-radius:8px;padding:6px 7px"></label>
+      <input class="obs da-obs" placeholder="Obs. (ex.: cota 1/3)" style="flex:1;min-width:140px">
+      <button class="btn pri" data-dact="add">＋ Lançar débito ${Y}</button>
+    </div>
+    <details class="hist"${ys.length ? '' : ''}><summary><span>Histórico de despesas do carro</span><span class="val">${money(totalHist)}</span></summary>
+      <div class="hy">${ys.length ? ys.map(y => `<h5><span>${y}</span><b>${money(anos[y].reduce((a, x) => a + x.valor, 0))}</b></h5>` +
+        anos[y].map(x => `<div class="hi"><span>${br(x.data)} · ${esc(x.txt)}</span><span>${money(x.valor)}</span></div>`).join('')).join('')
+        : '<p class="hint" style="font-size:13px;color:var(--mut)">Ainda sem pagamentos com valor. Débitos pagos e multas baixadas entram aqui pela data do pagamento.</p>'}</div>
+    </details>
+  </div>`;
+}
+function dCardHTML(v){
+  const op = dAbertos.has(v.id), r = resumoDeb(v);
+  return `<article class="car${op ? ' open' : ''}" data-id="${v.id}">
+    <div class="head" data-dact="toggle">
+      <div class="plate"><i>BRASIL</i><b>${esc(v.placa || '—')}</b></div>
+      <div><div class="nm">${esc(v.nome)}</div>
+        <div class="sub">${dOrdem === 'final' && finalPlaca(v.placa) < 10 ? `<span class="tg fin">Final ${finalPlaca(v.placa)}</span>` : ''}<span class="tg ${v.frota}">${v.frota === 'hudson' ? 'Frota Hudson' : 'Frota Fábio'}</span>${r.gnv ? '<span class="tg">GNV</span>' : ''}</div></div>
+      ${dNumsHTML(v)}
+      <span class="chev" aria-hidden="true">›</span>
+    </div>
+    ${op ? dBodyHTML(v) : ''}
+  </article>`;
+}
+function dRefresh(v){ const el = $(`#dList .car[data-id="${v.id}"]`); if(el) el.outerHTML = dCardHTML(v); dAnim = null; }
+function renderDebStats(){
+  let aberto = 0, nAberto = 0, pend = 0, pagoAno = 0;
+  const Y = String(anoRef);
+  S.veiculos.forEach(v => {
+    (v.debitos || []).forEach(d => { if(!d.pagoEm){ aberto += d.valor || 0; nAberto++; } else if(d.pagoEm.slice(0, 4) === Y) pagoAno += d.valor || 0; });
+    v.pagas.forEach(m => { if((m.pagaEm || '').slice(0, 4) === Y) pagoAno += m.valor || 0; });
+    if(resumoDeb(v).pend) pend++;
+  });
+  const nG = GEST.idx ? Object.keys(GEST.idx).length : 0;
+  $('#dStats').innerHTML = `
+    <div class="st red"><div class="k">Débitos em aberto</div><div class="n">${money(aberto)}</div><div class="d">${nAberto} ${nAberto === 1 ? 'lançamento' : 'lançamentos'}</div></div>
+    <button class="st amb" data-f="pend"><div class="k">Carros com pendência ${anoRef}</div><div class="n">${GEST.idx ? pend : '—'}</div><div class="d">de ${S.veiculos.length} carros</div></button>
+    <div class="st grn"><div class="k">Pago em ${anoRef}</div><div class="n">${money(pagoAno)}</div><div class="d">débitos + multas baixadas</div></div>
+    <div class="st"><div class="k">Dados do Gestão</div><div class="n" style="font-size:22px">${GEST.erro ? 'Erro' : GEST.idx ? nG + ' carros' : '—'}</div><div class="d">${GEST.erro ? esc(GEST.erro) : GEST.idx ? 'lido ' + new Date(GEST.lidoEm).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}) + ' · só leitura' : 'conecte a chave da nuvem'}</div></div>`;
+}
+function renderSeg(){
+  const nM = S.veiculos.reduce((s, v) => s + v.multas.length, 0);
+  const nD = GEST.idx ? S.veiculos.filter(v => resumoDeb(v).pend || resumoDeb(v).aberto).length : 0;
+  const m = $('#segM'), d = $('#segD'); if(m) m.textContent = nM || ''; if(d) d.textContent = nD || '';
+  $$('#seg button').forEach(b => b.classList.toggle('on', b.dataset.aba === aba));
+  document.body.classList.toggle('deb', aba === 'debitos');
+  const h = $('.brand h1'); if(h) h.textContent = aba === 'debitos' ? 'Débitos da Frota' : 'Multas da Frota';
+}
+function renderDeb(){
+  renderSeg();
+  if(aba !== 'debitos' || !$('#dList')) return;
+  if(digitandoEm('#dList')){ renderPendente = true; return; }
+  renderDebStats();
+  const sel = $('#dAno');
+  if(!sel.options.length){ const y = new Date().getFullYear(); sel.innerHTML = [y + 1, y, y - 1, y - 2].map(a => `<option value="${a}"${a === anoRef ? ' selected' : ''}>${a}</option>`).join(''); }
+  const l = dLista();
+  $('#dList').innerHTML = l.length ? l.map(dCardHTML).join('') : '<div class="vazio-lista">Nenhum carro neste filtro.</div>';
+  $$('#dFiltros .fchip').forEach(b => b.classList.toggle('on', b.dataset.f === dFiltro));
+}
+const digitandoEm = sel => { const a = document.activeElement; return !!(a && a.closest && a.closest(sel) && a.matches('input,textarea,select')); };
+function achaDeb(el){
+  const card = el.closest('.car'), v = card && achar(card.dataset.id); if(!v) return {};
+  const row = el.closest('[data-did]'), d = row ? (v.debitos || []).find(x => x.id === row.dataset.did) : null;
+  return {card, v, d};
+}
+$('#dList').addEventListener('click', e => {
+  const b = e.target.closest('[data-dact]'); if(!b) return;
+  const act = b.dataset.dact; if(['valor','venc','pagoEm'].includes(act)) return;
+  const {card, v, d} = achaDeb(b); if(!v) return;
+  if(act === 'toggle'){ if(dAbertos.has(v.id)) dAbertos.delete(v.id); else { dAbertos.add(v.id); dAnim = v.id; } dRefresh(v); return; }
+  if(act === 'quick'){
+    const row = b.closest('.drow'), val = parseValor(row.querySelector('.dq-valor').value);
+    if(val == null){ toast('Digite o valor'); row.querySelector('.dq-valor').focus(); return; }
+    v.debitos.push({id: uid(), tipo: row.dataset.tipo, ano: anoRef, valor: val, venc: '', pagoEm: '', obs: ''});
+    v.debitos.sort(cmpDeb); save(); dRefresh(v); renderDebStats(); renderSeg(); toast(`${TIPO_NOME[row.dataset.tipo]} ${anoRef} lançado`); return;
+  }
+  if(act === 'add'){
+    const val = parseValor(card.querySelector('.da-valor').value), tipo = card.querySelector('.da-tipo').value;
+    v.debitos.push({id: uid(), tipo, ano: anoRef, valor: val, venc: card.querySelector('.da-venc').value || '', pagoEm: '', obs: card.querySelector('.da-obs').value.trim()});
+    v.debitos.sort(cmpDeb); save(); dRefresh(v); renderDebStats(); renderSeg(); toast(`${TIPO_NOME[tipo]} ${anoRef} lançado`); return;
+  }
+  if(!d) return;
+  if(act === 'pagar'){ d.pagoEm = isoHoje(); save(); dRefresh(v); renderDebStats(); renderSeg(); toast(`${TIPO_NOME[d.tipo]} marcado como pago`); }
+  if(act === 'del'){ snap(); v.debitos = v.debitos.filter(x => x !== d); save(); dRefresh(v); renderDebStats(); renderSeg(); toast('Lançamento excluído', true); }
+});
+$('#dList').addEventListener('change', e => {
+  const t = e.target, act = t.dataset.dact; if(!['valor','venc','pagoEm'].includes(act)) return;
+  const {card, v, d} = achaDeb(t); if(!d) return;
+  if(act === 'valor'){ d.valor = parseValor(t.value); t.value = num2(d.valor); t.closest('.mi').classList.toggle('vazio', d.valor == null); }
+  else d[act] = t.value || '';
+  save(); card.querySelector('.nums').outerHTML = dNumsHTML(v); renderDebStats(); renderSeg();
+  if(act === 'pagoEm') { const row = t.closest('.dl'); row.classList.toggle('pago', !!d.pagoEm); }
+});
+$('#dList').addEventListener('focusout', () => setTimeout(() => { if(renderPendente && !digitandoEm('#dList') && !digitandoNaLista()){ renderPendente = false; render(); } }, 150));
+$('#dList').addEventListener('keydown', e => {
+  if(e.key !== 'Enter') return;
+  if(e.target.matches('.dq-valor')){ e.preventDefault(); e.target.closest('.drow').querySelector('[data-dact=quick]').click(); }
+  else if(e.target.matches('.da-valor,.da-obs')){ e.preventDefault(); e.target.closest('.car').querySelector('[data-dact=add]').click(); }
+});
+$('#seg').addEventListener('click', e => {
+  const b = e.target.closest('[data-aba]'); if(!b || b.dataset.aba === aba) return;
+  aba = b.dataset.aba; try{ localStorage.setItem('multas_aba', aba); }catch(err){}
+  window.scrollTo(0, 0); renderSeg(); renderDeb();
+});
+$('#dStats').addEventListener('click', e => { const b = e.target.closest('[data-f]'); if(b){ dFiltro = b.dataset.f; renderDeb(); } });
+$('#dFiltros').addEventListener('click', e => { const b = e.target.closest('[data-f]'); if(b){ dFiltro = b.dataset.f; renderDeb(); } });
+$('#dq').addEventListener('input', e => { dBusca = e.target.value; renderDeb(); });
+$('#dAno').addEventListener('change', e => { anoRef = +e.target.value; renderDeb(); });
+$('#dOrdem').addEventListener('change', e => { dOrdem = e.target.value; renderDeb(); });
+/* iPhone: sem zoom de pinça nem de duplo toque */
+['gesturestart','gesturechange','gestureend'].forEach(t => document.addEventListener(t, e => e.preventDefault(), {passive: false}));
 
 /* ---------- início ---------- */
 if(!load()){ S.veiculos = semente(); gravarLocal(); }
