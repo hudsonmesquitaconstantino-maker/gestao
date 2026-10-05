@@ -1026,7 +1026,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=157; var APP_DATE='05/10/2026';
+var APP_VER=158; var APP_DATE='05/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -1044,7 +1044,17 @@ var MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto
 /* ---------- formatação ---------- */
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function fmtBRL(n){n=Number(n)||0;return n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}
-function parseBRL(s){if(typeof s==='number')return s;s=String(s||'').replace(/[R$\s]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(s);return isNaN(n)?0:n}
+function _numBR(s){
+ /* v158: "150.50" digitado com ponto virava 15050 (o ponto era apagado como milhar). Agora:
+    com vírgula → padrão BR (1.234,56); só pontos em grupos de 3 → milhar (1.700); senão o
+    ponto é a casa decimal (150.50). */
+ s=String(s==null?'':s).replace(/[R$\s\u00a0]/g,'');if(!s)return 0;
+ if(s.indexOf(',')>=0)s=s.replace(/\./g,'').replace(',','.');
+ else if(/^-?\d{1,3}(\.\d{3})+$/.test(s))s=s.replace(/\./g,'');
+ var n=parseFloat(s);return isNaN(n)?0:n;
+}
+function _r2(v){v=Number(v)||0;return Math.round(v*100+(v>=0?1e-7:-1e-7))/100}
+function parseBRL(s){if(typeof s==='number')return isFinite(s)?s:0;return _numBR(s)}
 function fmtKm(n){n=parseInt(n,10)||0;return n.toLocaleString('pt-BR')}
 function hoje(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)}
 function dataBR(iso){if(!iso)return'';var p=iso.split('-');return p[2]+'/'+p[1]+'/'+p[0]}
@@ -1333,9 +1343,9 @@ function montaEndereco(pref){
 function normManut(m){
  m=m||{};m.id=m.id||'';m.carro=m.carro||'';m.motorista=m.motorista||'';
  m.dataIni=m.dataIni||'';m.dataFim=m.dataFim||'';m.dataPecasPadrao=m.dataPecasPadrao||'';m.odometro=Number(m.odometro)||0;
- m.pecas=toArr(m.pecas).map(function(p){p=p||{};return{valor:Number(p.valor)||0,desc:p.desc||'',loja:p.loja||'',data:p.data||'',pendenteFinanceiro:!!p.pendenteFinanceiro}});
+ m.pecas=toArr(m.pecas).map(function(p){p=p||{};return{valor:_r2(p.valor),desc:p.desc||'',loja:p.loja||'',data:p.data||'',pendenteFinanceiro:!!p.pendenteFinanceiro}});
  m.blocos=toArr(m.blocos).map(function(b){
-  b=b||{};var v=Number(b.valor)||0,nm=b.nome||'';
+  b=b||{};var v=_r2(b.valor),nm=b.nome||'';
   if(!v){var mm=String(nm).match(/R\$\s*([\d\.\,]+)/);if(mm){v=parseBRL(mm[1]);nm=nm.replace(/\s*[—\-–]?\s*R\$\s*[\d\.\,]+\s*$/,'').trim()}}
   /* v126: histórico legado às vezes guardava serviços como uma string com quebras.
      toArr(string) devolvia [], apagando o texto na normalização. Preserva os dois formatos. */
@@ -1344,6 +1354,12 @@ function normManut(m){
   return{titulo:b.titulo||'Mecânico',nome:nm,valor:v,servicos:sv,dataIni:b.dataIni||'',dataFim:b.dataFim||'',pendenteFinanceiro:!!b.pendenteFinanceiro};
  });
  m.totalPecas=Number(m.totalPecas)||0;m.totalMO=Number(m.totalMO)||0;m.total=Number(m.total)||0;
+ /* v158: em manutenção lançada no app o total é SEMPRE a soma dos itens (antes só com o botão
+    "Corrigir totais"). Registro importado do WhatsApp mantém o total histórico original. */
+ if(m.origem!=='whatsapp'&&(m.pecas.length||m.blocos.length)){
+  var _tp=0,_tm=0;m.pecas.forEach(function(p){_tp+=p.valor});m.blocos.forEach(function(b){_tm+=b.valor});
+  m.totalPecas=_r2(_tp);m.totalMO=_r2(_tm);m.total=_r2(_tp+_tm);
+ }
  /* v148: atribuição financeira opcional por manutenção. Vazio preserva a regra legada da frota do carro. */
  m.frotaFechamento=(m.frotaFechamento==='hudson'||m.frotaFechamento==='fabio')?m.frotaFechamento:'';
  m.texto=m.texto||'';m.criadoEm=m.criadoEm||0;m.editadoEm=Number(m.editadoEm)||0;
@@ -1351,8 +1367,8 @@ function normManut(m){
 }
 function normState(s){
  s=s||{};s.rev=s.rev||0;s.dev=s.dev||'';
- s.carros=s.carros||{};s.contratos=s.contratos||{};s.manutencoes=s.manutencoes||{};s.observacoes=s.observacoes||{};s.termos=s.termos||{};s.apagados=s.apagados||{};
- Object.keys(s.apagados).forEach(function(id){['manutencoes','contratos','observacoes','termos'].forEach(function(c){var x=s[c]&&s[c][id];if(x&&_tombVence(s.apagados,id,x))delete s[c][id]});if(id.indexOf('car_')===0)delete s.carros[id.slice(4)];});
+ s.carros=s.carros||{};s.contratos=s.contratos||{};s.manutencoes=s.manutencoes||{};s.observacoes=s.observacoes||{};s.termos=s.termos||{};s.apagados=s.apagados||{};s.faturas=s.faturas||{};
+ Object.keys(s.apagados).forEach(function(id){['manutencoes','contratos','observacoes','termos','faturas'].forEach(function(c){var x=s[c]&&s[c][id];if(x&&_tombVence(s.apagados,id,x))delete s[c][id]});if(id.indexOf('car_')===0)delete s.carros[id.slice(4)];});
  Object.keys(s.carros).forEach(function(k){
   var c=s.carros[k]||{};
   if(c.proprietario)c.proprietario=String(c.proprietario).replace(/\s*\((mãe|avó|empresa do amigo)\)/g,'');
@@ -1584,7 +1600,7 @@ function _carroApagado(apagados,pk,obj){
 }
 function mergeColecoes(base,extra){
  var add=0;base.apagados=base.apagados||{};var ea=(extra&&extra.apagados)||{};Object.keys(ea).forEach(function(k){if(!base.apagados[k]||Number(ea[k])>Number(base.apagados[k]))base.apagados[k]=ea[k]});
- ['manutencoes','contratos','observacoes','termos'].forEach(function(c){base[c]=base[c]||{};var e=(extra&&extra[c])||{},ks={};Object.keys(base[c]).concat(Object.keys(e)).forEach(function(k){ks[k]=1});Object.keys(ks).forEach(function(k){var a=base[c][k],b=e[k],best=_regMaisNovo(a,b),tm=Number(base.apagados[k])||0;if(best&&tm&&Number(best.restauradoEm)>tm)delete base.apagados[k];if(best&&_tombVence(base.apagados,k,best)){if(base[c][k]){delete base[c][k];add++}return}if(best&&base[c][k]!==best){base[c][k]=best;add++}})});
+ ['manutencoes','contratos','observacoes','termos','faturas'].forEach(function(c){base[c]=base[c]||{};var e=(extra&&extra[c])||{},ks={};Object.keys(base[c]).concat(Object.keys(e)).forEach(function(k){ks[k]=1});Object.keys(ks).forEach(function(k){var a=base[c][k],b=e[k],best=_regMaisNovo(a,b),tm=Number(base.apagados[k])||0;if(best&&tm&&Number(best.restauradoEm)>tm)delete base.apagados[k];if(best&&_tombVence(base.apagados,k,best)){if(base[c][k]){delete base[c][k];add++}return}if(best&&base[c][k]!==best){base[c][k]=best;add++}})});
  base.carros=base.carros||{};var ec=(extra&&extra.carros)||{};Object.keys(ec).forEach(function(pk){var cand=ec[pk],t=Math.max(Number(base.apagados['car_'+normPlaca(pk)])||0,Number(base.apagados[normPlaca(pk)])||0);if(t&&Number(cand&&cand.restauradoEm)>t){delete base.apagados['car_'+normPlaca(pk)];delete base.apagados[normPlaca(pk)]}if(_carroApagado(base.apagados,pk,cand))return;if(!base.carros[pk]){base.carros[pk]=cand;add++;return}if(mergeCarro(base.carros[pk],cand))add++});
  Object.keys(base.apagados).forEach(function(k){var pk=k.indexOf('car_')===0?k.slice(4):k;if(_carroApagado(base.apagados,pk,base.carros[pk])&&base.carros[pk])delete base.carros[pk]});return add;
 }
@@ -4794,8 +4810,7 @@ function tNum(v){
     "21.41", o ponto era apagado como se fosse separador de milhar e o valor
     virava 2141 — era isso que inflava a mão de obra na tela e na edição. */
  if(typeof v==='number')return isFinite(v)?v:0;
- v=String(v==null?'':v).replace(/\./g,'').replace(',','.');
- var n=parseFloat(v);return isNaN(n)?0:n;
+ return _numBR(v);
 }
 function tDesenha(){
  var hp=TP.map(function(p,i){return '<div class="prow">'+
@@ -6073,17 +6088,17 @@ function gerarManut(){
  if(_blocoDataRuim){toast('⚠️ Há um serviço com data final anterior ao início');return}
  var odo=parseInt(document.getElementById('mOdo').value.replace(/\D/g,''),10)||0;
  var _pData=(document.getElementById('mPecasData')||{value:''}).value||fim||ini||hoje();
- var pecas=MP.filter(function(p){return p.desc.trim()||parseBRL(p.valor)>0}).map(function(p){return{valor:parseBRL(p.valor),desc:p.desc.trim(),loja:p.loja.trim(),data:p.data||_pData,pendenteFinanceiro:!!p.pendenteFinanceiro}});
+ var pecas=MP.filter(function(p){return p.desc.trim()||parseBRL(p.valor)>0}).map(function(p){return{valor:_r2(parseBRL(p.valor)),desc:p.desc.trim(),loja:p.loja.trim(),data:p.data||_pData,pendenteFinanceiro:!!p.pendenteFinanceiro}});
  var blocos=MB.filter(function(b){return b.nome.trim()||b.servicos.trim()||parseBRL(b.valor)>0}).map(function(b){
   var _bi=b.dataIni||ini||hoje(),_bf=b.dataFim||fim||_bi;
-  return{titulo:(b.titulo||'Mecânico').trim(),nome:b.nome.trim(),valor:parseBRL(b.valor),servicos:b.servicos.split('\n').map(function(s){return s.trim()}).filter(Boolean),dataIni:_bi,dataFim:_bf,pendenteFinanceiro:!!b.pendenteFinanceiro};
+  return{titulo:(b.titulo||'Mecânico').trim(),nome:b.nome.trim(),valor:_r2(parseBRL(b.valor)),servicos:b.servicos.split('\n').map(function(s){return s.trim()}).filter(Boolean),dataIni:_bi,dataFim:_bf,pendenteFinanceiro:!!b.pendenteFinanceiro};
  });
  var tp=0;pecas.forEach(function(p){tp+=p.valor});
  var tm=0;blocos.forEach(function(b){tm+=b.valor});
  var m=normManut({id:idNovo('mn'),carro:pk,motorista:mot,dataIni:ini,dataFim:fim||'',dataPecasPadrao:(document.getElementById('mPecasData')||{value:''}).value||'',odometro:odo,
   frotaFechamento:_cv?_ff:'',pecas:pecas,blocos:blocos,totalPecas:tp,totalMO:tm,total:tp+tm,criadoEm:Date.now()});
  m.texto=buildManutTexto(m,carro);
- S.manutencoes[m.id]=m;_gestaoFormDirty=false;
+ S.manutencoes[m.id]=m;_gestaoFormDirty=false;_avisoFaturaPaga(m);
  if(odo>0&&odo>=(Number(carro.kmUltima)||0)){carro.kmUltima=odo;carro.kmUltimaData=fim||ini;_garanteCampoAt(carro).kmUltima=Date.now()}
  var _detNova=detectarComponentes(m);
  var _libNova=_liberarProximaManualPorNovaTroca(carro,_detNova);
@@ -6212,9 +6227,9 @@ function salvarEdicaoManut(){
  if(!ordemDatasOk(_edi,_edf)){toast('⚠️ A data final não pode ser anterior à data de início');return}
  var _ebDataRuim=EB.some(function(b){return b&&b.dataIni&&b.dataFim&&!ordemDatasOk(b.dataIni,b.dataFim)});
  if(_ebDataRuim){toast('⚠️ Há um serviço com data final anterior ao início');return}
- var pecas=EP.filter(function(p){return p.desc.trim()||parseBRL(p.valor)>0}).map(function(p){return{valor:parseBRL(p.valor),desc:p.desc.trim(),loja:p.loja.trim(),data:p.data||'',pendenteFinanceiro:!!p.pendenteFinanceiro}});
+ var pecas=EP.filter(function(p){return p.desc.trim()||parseBRL(p.valor)>0}).map(function(p){return{valor:_r2(parseBRL(p.valor)),desc:p.desc.trim(),loja:p.loja.trim(),data:p.data||'',pendenteFinanceiro:!!p.pendenteFinanceiro}});
  var blocos=EB.filter(function(b){return b.nome.trim()||b.servicos.trim()||parseBRL(b.valor)>0}).map(function(b){
-  return{titulo:(b.titulo||'Mecânico').trim(),nome:b.nome.trim(),valor:parseBRL(b.valor),servicos:b.servicos.split('\n').map(function(s){return s.trim()}).filter(Boolean),dataIni:b.dataIni||'',dataFim:b.dataFim||'',pendenteFinanceiro:!!b.pendenteFinanceiro};
+  return{titulo:(b.titulo||'Mecânico').trim(),nome:b.nome.trim(),valor:_r2(parseBRL(b.valor)),servicos:b.servicos.split('\n').map(function(s){return s.trim()}).filter(Boolean),dataIni:b.dataIni||'',dataFim:b.dataFim||'',pendenteFinanceiro:!!b.pendenteFinanceiro};
  });
  var tp=0;pecas.forEach(function(p){tp+=p.valor});
  var tm=0;blocos.forEach(function(b){tm+=b.valor});
@@ -6231,7 +6246,7 @@ function salvarEdicaoManut(){
   m.texto=buildManutTexto(m,carro);
   if(m.odometro>(carro.kmUltima||0)){carro.kmUltima=m.odometro;carro.kmUltimaData=m.dataFim||m.dataIni;_garanteCampoAt(carro).kmUltima=Date.now()}
  }
- S.manutencoes[_edMid]=m;
+ S.manutencoes[_edMid]=m;_avisoFaturaPaga(m);
  if(carro){
   var _newD=detectarComponentes(m),_sumiu=_oldComps.filter(function(comp){return !_newD.comps[comp]});
   var _mudouEvt=(Number(m.odometro)||0)!==_oldOdo||(_dtManut(m)||'')!==_oldDt;
@@ -6290,7 +6305,7 @@ function excluirManut(id){
  var m=S.manutencoes[id];if(!m)return;
  var _comps=Object.keys(detectarComponentes(m).comps||{});
  ask('Excluir manutenção?','R$ '+fmtBRL(m.total)+' de '+periodoTexto(m.dataIni,m.dataFim)+' sai do histórico e do total do carro.','Excluir',function(){
-  var _pk=m&&m.carro;S.apagados[id]=Date.now();delete S.manutencoes[id];
+  var _pk=m&&m.carro;S.apagados[id]=Date.now();delete S.manutencoes[id];_avisoFaturaPaga(m);
   if(_pk&&S.carros[_pk]){
    try{recomputarCompsAposAlteracao(_pk,_comps,id);recalcTrocasCarro(_pk)}catch(e){}
   }
@@ -6366,13 +6381,13 @@ function _itensFinanceirosManut(m,incluirPendentes){
  var a=[];m=m||{};
  (m.pecas||[]).forEach(function(p){
   if(p&&p.pendenteFinanceiro&&!incluirPendentes)return;
-  var v=Number(p.valor)||0;if(!v)return;
+  var v=_r2(p.valor);if(!v)return;
   var d=_dataPeca(m,p);
   a.push({tipo:'peca',valor:v,fornecedor:p.loja||'',desc:p.desc||'Peça',data:d,ym:_mesData(d),mid:m.id||'',carro:m.carro||'',frotaFechamento:m.frotaFechamento||''});
  });
  (m.blocos||[]).forEach(function(b){
   if(b&&b.pendenteFinanceiro&&!incluirPendentes)return;
-  var v=Number(b.valor)||0;if(!v)return;
+  var v=_r2(b.valor);if(!v)return;
   var d=_dataBloco(m,b);
   a.push({tipo:'mo',valor:v,fornecedor:b.nome||b.titulo||'',desc:b.titulo||'Mão de obra',data:d,ym:_mesData(d),mid:m.id||'',carro:m.carro||'',frotaFechamento:m.frotaFechamento||''});
  });
@@ -6405,8 +6420,8 @@ function fechamentoDoMes(ym){
   var gk=pk+'|'+(pessoal?'H':'F');
   var c=f.carros[gk]||(f.carros[gk]={pk:pk,pessoal:pessoal,itens:[],sub:0});
   c.itens.push({desc:desc,valor:valor,tipo:tipo,data:dt||'',mid:mid||'',frotaFechamento:frotaFechamento||''});
-  c.sub+=valor;f.total+=valor;
-  if(pessoal)f.totalPessoal+=valor;else f.totalFrota+=valor;
+  c.sub=_r2(c.sub+valor);f.total=_r2(f.total+valor);
+  if(pessoal)f.totalPessoal=_r2(f.totalPessoal+valor);else f.totalFrota=_r2(f.totalFrota+valor);
  }
  Object.keys(S.manutencoes||{}).forEach(function(k){
   var m=S.manutencoes[k];
@@ -6416,9 +6431,9 @@ function fechamentoDoMes(ym){
   });
  });
  var lista=Object.keys(forn).map(function(n){return forn[n]}).sort(function(a,b){return b.total-a.total});
- var total=lista.reduce(function(s,f){return s+f.total},0);
- var totalFrota=lista.reduce(function(s,f){return s+f.totalFrota},0);
- var totalPessoal=lista.reduce(function(s,f){return s+f.totalPessoal},0);
+ var total=_r2(lista.reduce(function(s,f){return s+f.total},0));
+ var totalFrota=_r2(lista.reduce(function(s,f){return s+f.totalFrota},0));
+ var totalPessoal=_r2(lista.reduce(function(s,f){return s+f.totalPessoal},0));
  return {ym:ym,fornecedores:lista,total:total,totalFrota:totalFrota,totalPessoal:totalPessoal};
 }
 /* Texto no mesmo padrão que vocês mandam no grupo do fornecedor. */
@@ -6436,7 +6451,7 @@ function textoFechamento(ym,nomeForn){
   x+='Subtotal: R$ '+fmtBRL(c.sub)+'\n\n';
  });
  var pess=pks.filter(function(gk){return f.carros[gk].pessoal});
- x+='*👤 VEÍCULOS SEPARADOS (HUDSON)*\n\n';
+ if(pess.length)x+='*👤 VEÍCULOS SEPARADOS (HUDSON)*\n\n';
  pess.forEach(function(gk){
   var c=f.carros[gk],pk=c.pk,car=S.carros[pk];
   x+=(car?tituloCarro(car):pk)+' ('+fmtPlaca(pk).split('-')[0]+')\n';
@@ -6456,24 +6471,31 @@ function textoFechamento(ym,nomeForn){
    2) soma dos fornecedores do mês x soma das manutenções do mês
    3) lista o que está sem fornecedor (fica de fora das faturas) */
 function conferirContas(ym){
- var r={ym:ym,divergentes:[],legadas:[],semForn:[],somaItens:0,somaManut:0,somaFornecedores:0,manutencoes:0};
+ /* v158: checagens que de fato cruzam caminhos diferentes (antes "soma pela competência"
+    era a mesma conta dos itens e nunca acusava nada). */
+ var r={ym:ym,divergentes:[],legadas:[],semForn:[],pendentes:[],duplicadas:[],semItens:[],semData:[],faturasMudaram:[],somaItens:0,somaManut:0,somaFornecedores:0,manutencoes:0};
+ var vistos={};
  Object.keys(S.manutencoes||{}).forEach(function(k){
   var m=S.manutencoes[k],todos=_itensFinanceirosManut(m,true),mesItens=_itensFinanceirosManut(m).filter(function(it){return it.ym===ym});
+  todos.forEach(function(it){if(!it.ym)r.semData.push({id:k,carro:m.carro,valor:it.valor,desc:it.desc})});
+  (m.pecas||[]).forEach(function(p){if(!p||!p.pendenteFinanceiro)return;var v=_r2(p.valor),d=_dataPeca(m,p);if(v&&_mesData(d)===ym)r.pendentes.push({id:k,carro:m.carro,data:d,valor:v,desc:p.desc||'Peça',fornecedor:p.loja||''})});
+  (m.blocos||[]).forEach(function(bl){if(!bl||!bl.pendenteFinanceiro)return;var v=_r2(bl.valor),d=_dataBloco(m,bl);if(v&&_mesData(d)===ym)r.pendentes.push({id:k,carro:m.carro,data:d,valor:v,desc:bl.titulo||'Mão de obra',fornecedor:bl.nome||bl.titulo||''})});
+  if(!todos.length&&Number(m.total)&&_mesDe(m)===ym)r.semItens.push({id:k,carro:m.carro,data:_dataLegadaManut(m),valor:_r2(m.total)});
   if(!mesItens.length)return;
   r.manutencoes++;
   var itens=0,semF=0;
   mesItens.forEach(function(it){
-   itens+=Number(it.valor)||0;
-   if((Number(it.valor)||0)>0&&!String(it.fornecedor||'').trim())semF+=Number(it.valor)||0;
+   itens=_r2(itens+it.valor);
+   if(it.valor>0&&!String(it.fornecedor||'').trim())semF=_r2(semF+it.valor);
+   var ch=[m.carro,it.data,it.valor.toFixed(2),semAcento(it.fornecedor).replace(/[^a-z0-9]/g,''),semAcento(it.desc).replace(/[^a-z0-9]/g,'')].join('|');
+   if(vistos[ch]&&vistos[ch].id!==k)r.duplicadas.push({id:k,outro:vistos[ch].id,carro:m.carro,data:it.data,valor:it.valor,desc:it.desc,fornecedor:it.fornecedor});
+   else vistos[ch]={id:k};
   });
-  var grav=Number(m.total)||0,totalItens=0;
-  todos.forEach(function(it){totalItens+=Number(it.valor)||0});
-  r.somaItens+=itens;r.somaManut+=itens;
+  var grav=_r2(m.total),totalItens=0;
+  todos.forEach(function(it){totalItens=_r2(totalItens+it.valor)});
+  r.somaItens=_r2(r.somaItens+itens);
   if(Math.abs(totalItens-grav)>0.005){
-   var _dg={id:k,carro:m.carro,data:m.dataFim||m.dataIni||'',itens:totalItens,gravado:grav,dif:grav-totalItens};
-   /* Importações antigas do WhatsApp podem ter rateios/linhas que não reconstroem
-      o total original. Não tratamos isso como erro autocorrigível: preservar o total
-      histórico é mais seguro do que reescrever o passado. */
+   var _dg={id:k,carro:m.carro,data:m.dataFim||m.dataIni||'',itens:totalItens,gravado:grav,dif:_r2(grav-totalItens)};
    if(m.origem==='whatsapp')r.legadas.push(_dg);else r.divergentes.push(_dg);
   }
   if(semF>0.005){
@@ -6483,6 +6505,8 @@ function conferirContas(ym){
  });
  var f=fechamentoDoMes(ym);
  r.somaFornecedores=f.total;
+ var pc=totaisGastoPorCarro('mes',ym);r.somaManut=_r2(Object.keys(pc).reduce(function(s,k){return s+pc[k]},0));
+ r.faturasMudaram=faturasAlteradas([ym]);
  return r;
 }
 function corrigirTotaisDoMes(ym){
@@ -6502,35 +6526,95 @@ function corrigirTotaisDoMes(ym){
 
 function htmlConferencia(ym){
  var r=conferirContas(ym);
- var ok=(Math.abs(r.somaItens-r.somaManut)<0.005)&&(Math.abs(r.somaItens-r.somaFornecedores)<0.005)&&!r.divergentes.length&&!r.semForn.length;
+ var semItensTot=_r2(r.semItens.reduce(function(s,x){return s+x.valor},0));
+ var ok=(Math.abs(r.somaItens-r.somaFornecedores)<0.005)&&(Math.abs(r.somaManut-semItensTot-r.somaFornecedores)<0.005)&&!r.divergentes.length&&!r.semForn.length&&!r.semData.length&&!r.duplicadas.length&&!r.faturasMudaram.length;
  var h='<div class="sect">🧮 Conferência das contas</div>';
  h+='<div class="kv"><b>Manutenções no mês</b><span>'+r.manutencoes+'</span>'+
     '<b>Soma dos itens</b><span>R$ '+fmtBRL(r.somaItens)+'</span>'+
     '<b>Soma dos fornecedores</b><span>R$ '+fmtBRL(r.somaFornecedores)+'</span>'+
-    '<b>Soma pela competência</b><span>R$ '+fmtBRL(r.somaManut)+'</span></div>';
- if(ok)h+='<div class="sub" style="color:var(--ok)">✅ Fecha certo: cada centavo deste mês está na competência e no fornecedor corretos.</div>';
- else h+='<div class="sub" style="color:var(--warn)">⚠ Os números não fecham — veja abaixo.</div>';
+    '<b>Soma por carro</b><span>R$ '+fmtBRL(r.somaManut)+'</span></div>';
+ if(ok)h+='<div class="sub" style="color:var(--ok)">✅ Fecha certo: itens, fornecedores e carros batem centavo por centavo.</div>';
+ else h+='<div class="sub" style="color:var(--warn)">⚠ Confira os pontos abaixo antes de pagar.</div>';
+ function lin(t,id){return '<div class="sub'+(id?' tap':'')+'" style="margin-left:8px"'+(id?' onclick="verManut(\''+id+'\')"':'')+'>'+t+(id?' (toque para abrir)':'')+'</div>'}
+ if(r.faturasMudaram.length){
+  h+='<div class="sub" style="color:var(--bad,#b42318);margin-top:6px"><b>Fatura já paga mudou depois do pagamento:</b></div>';
+  r.faturasMudaram.forEach(function(x){h+=lin(esc(x.nome)+' — paga R$ '+fmtBRL(x.pago)+' em '+dataBR(x.pagoEm)+' · hoje soma R$ '+fmtBRL(x.agora)+' <b>('+(x.dif>0?'+':'')+fmtBRL(x.dif)+')</b>')});
+ }
+ if(r.duplicadas.length){
+  h+='<div class="sub" style="color:var(--warn);margin-top:6px">Possível lançamento em dobro (mesmo carro, data, valor, fornecedor e descrição em manutenções diferentes):</div>';
+  r.duplicadas.slice(0,20).forEach(function(d){h+=lin((d.data?dataBR(d.data)+' · ':'')+esc(fmtPlaca(d.carro))+' — '+esc(String(d.desc).slice(0,40))+' · '+esc(d.fornecedor||'')+' · R$ '+fmtBRL(d.valor),d.id)});
+ }
+ if(r.pendentes.length){
+  var tp=_r2(r.pendentes.reduce(function(s,x){return s+x.valor},0));
+  h+='<div class="sub" style="margin-top:6px">R$ '+fmtBRL(tp)+' marcados como <b>Pendente</b> — fora deste fechamento até virarem "Pago / contabilizar":</div>';
+  r.pendentes.slice(0,20).forEach(function(x){h+=lin((x.data?dataBR(x.data)+' · ':'')+esc(fmtPlaca(x.carro))+' — '+esc(String(x.desc).slice(0,40))+' · '+esc(x.fornecedor||'sem fornecedor')+' · R$ '+fmtBRL(x.valor),x.id)});
+ }
+ if(r.semItens.length){
+  h+='<div class="sub" style="margin-top:6px">R$ '+fmtBRL(semItensTot)+' em registro(s) antigo(s) só com total, sem itens — contam no carro, mas não em fornecedor:</div>';
+  r.semItens.slice(0,10).forEach(function(x){h+=lin((x.data?dataBR(x.data)+' · ':'')+esc(fmtPlaca(x.carro))+' — R$ '+fmtBRL(x.valor),x.id)});
+ }
+ if(r.semData.length){
+  h+='<div class="sub" style="color:var(--warn);margin-top:6px">'+r.semData.length+' item(ns) sem data — não entram em mês nenhum:</div>';
+  r.semData.slice(0,10).forEach(function(x){h+=lin(esc(fmtPlaca(x.carro))+' — '+esc(String(x.desc).slice(0,40))+' · R$ '+fmtBRL(x.valor),x.id)});
+ }
  if(r.legadas.length){
   h+='<div class="sub" style="margin-top:6px">'+r.legadas.length+' registro(s) histórico(s) importado(s) possuem detalhamento diferente do total original. O Gestão preserva o total fechado e NÃO altera esses registros automaticamente.</div>';
  }
  if(r.divergentes.length){
-  h+='<div class="sub" style="color:var(--warn);margin-top:6px">'+r.divergentes.length+' manutenção(ões) atuais com total gravado diferente da soma dos itens:</div>';
-  r.divergentes.slice(0,20).forEach(function(d){
-   h+='<div class="sub" style="margin-left:8px">'+(d.data?dataBR(d.data)+' · ':'')+esc(fmtPlaca(d.carro))+
-      ' — itens R$ '+fmtBRL(d.itens)+' · gravado R$ '+fmtBRL(d.gravado)+
-      ' <b style="color:var(--warn)">('+(d.dif>0?'+':'')+fmtBRL(d.dif)+')</b></div>';
-  });
-  h+='<button class="btn mini sec" onclick="corrigirTotaisDoMes(\''+ym+'\')">🔧 Corrigir totais deste mês</button>';
+  h+='<div class="sub" style="color:var(--warn);margin-top:6px">'+r.divergentes.length+' manutenção(ões) com total diferente da soma dos itens:</div>';
+  r.divergentes.slice(0,20).forEach(function(d){h+=lin((d.data?dataBR(d.data)+' · ':'')+esc(fmtPlaca(d.carro))+' — itens R$ '+fmtBRL(d.itens)+' · gravado R$ '+fmtBRL(d.gravado),d.id)});
  }
  if(r.semForn.length){
-  var t=0;r.semForn.forEach(function(x){t+=x.valor});
-  h+='<div class="sub" style="color:var(--warn);margin-top:6px">R$ '+fmtBRL(t)+' sem fornecedor preenchido — não entra em fatura nenhuma:</div>';
-  r.semForn.slice(0,20).forEach(function(x){
-   h+='<div class="sub tap" style="margin-left:8px" onclick="verManut(\''+x.id+'\')">'+(x.data?dataBR(x.data)+' · ':'')+
-      esc(fmtPlaca(x.carro))+' — R$ '+fmtBRL(x.valor)+' (toque para abrir)</div>';
-  });
+  var t=_r2(r.semForn.reduce(function(s,x){return s+x.valor},0));
+  h+='<div class="sub" style="color:var(--warn);margin-top:6px">R$ '+fmtBRL(t)+' sem fornecedor preenchido — aparece como "(sem fornecedor)" e não vai para a fatura de ninguém:</div>';
+  r.semForn.slice(0,20).forEach(function(x){h+=lin((x.data?dataBR(x.data)+' · ':'')+esc(fmtPlaca(x.carro))+' — R$ '+fmtBRL(x.valor),x.id)});
  }
  return h;
+}
+/* ===== v158: FATURA PAGA — trava o valor pago e avisa se mudar depois ===== */
+function _fatChave(nome){return semAcento(String(nome||'').trim()||'(sem fornecedor)').replace(/[^a-z0-9]/g,'')}
+function _fatAssin(fo){var a=[];Object.keys(fo.carros).forEach(function(gk){fo.carros[gk].itens.forEach(function(i){a.push((i.mid||'')+'|'+_r2(i.valor).toFixed(2)+'|'+(i.data||''))})});return a.sort().join(';')}
+function faturaPaga(ym,nome){var ch=_fatChave(nome),best=null;Object.keys(S.faturas||{}).forEach(function(k){var x=S.faturas[k];if(x&&x.ym===ym&&x.chave===ch&&(!best||(Number(x.criadoEm)||0)>(Number(best.criadoEm)||0)))best=x});return best}
+function faturasAlteradas(yms){
+ var out=[];
+ (yms||[]).forEach(function(ym){
+  var f=fechamentoDoMes(ym),porCh={};f.fornecedores.forEach(function(fo){porCh[_fatChave(fo.nome)]=fo});
+  var feitas={};
+  Object.keys(S.faturas||{}).forEach(function(k){var x=S.faturas[k];if(!x||x.ym!==ym||feitas[x.chave])return;feitas[x.chave]=1;var p=faturaPaga(ym,x.nome);
+   var fo=porCh[p.chave],agora=fo?fo.total:0,mud=Math.abs(agora-(Number(p.total)||0))>0.005||(fo?_fatAssin(fo):'')!==String(p.assin||'');
+   if(mud)out.push({ym:ym,nome:p.nome,pago:_r2(p.total),agora:agora,dif:_r2(agora-(Number(p.total)||0)),pagoEm:p.pagoEm});
+  });
+ });
+ return out;
+}
+function marcarFaturaPaga(ym,nome){
+ var fo=fechamentoDoMes(ym).fornecedores.filter(function(x){return x.nome===nome})[0];if(!fo)return;
+ var n=Date.now(),id='fat_'+ym.replace('-','')+'_'+_fatChave(nome)+'_'+n;
+ S.faturas=S.faturas||{};
+ S.faturas[id]={id:id,ym:ym,chave:_fatChave(nome),nome:nome,total:fo.total,totalFrota:fo.totalFrota,totalPessoal:fo.totalPessoal,assin:_fatAssin(fo),pagoEm:hoje(),criadoEm:n,editadoEm:n};
+ save();render();toast('✅ Fatura '+nome+' paga: R$ '+fmtBRL(fo.total)+' — se algo mudar depois, o Gestão avisa');
+}
+function desmarcarFaturaPaga(ym,nome){
+ ask('Desmarcar fatura paga?','A fatura de '+nome+' ('+_nomeMes(ym)+') volta a ficar em aberto.','Desmarcar',function(){
+  var ch=_fatChave(nome),n=Date.now();Object.keys(S.faturas||{}).forEach(function(k){var x=S.faturas[k];if(x&&x.ym===ym&&x.chave===ch){S.apagados[k]=n;delete S.faturas[k]}});
+  save();render();toast('Fatura desmarcada');
+ });
+}
+function htmlFaturaStatus(ym,fo){
+ window._fatRef=window._fatRef||[];var i=window._fatRef.push([ym,fo.nome])-1;
+ var p=faturaPaga(ym,fo.nome);
+ if(!p)return '<span class="chip tap" onclick="marcarFaturaPaga(window._fatRef['+i+'][0],window._fatRef['+i+'][1])">✅ marcar como paga</span>';
+ var mud=Math.abs(fo.total-(Number(p.total)||0))>0.005||_fatAssin(fo)!==String(p.assin||'');
+ return (mud?'<div class="sub" style="color:var(--bad,#b42318);margin:4px 0"><b>⚠ Paga em '+dataBR(p.pagoEm)+' por R$ '+fmtBRL(p.total)+' — hoje soma R$ '+fmtBRL(fo.total)+' ('+(fo.total-p.total>0?'+':'')+fmtBRL(_r2(fo.total-p.total))+')</b></div>'
+   :'<span class="chip" style="color:var(--ok)">✓ paga em '+dataBR(p.pagoEm)+'</span>')+
+  ' <span class="chip tap" onclick="desmarcarFaturaPaga(window._fatRef['+i+'][0],window._fatRef['+i+'][1])">desmarcar</span>'+
+  (mud?' <span class="chip tap" onclick="marcarFaturaPaga(window._fatRef['+i+'][0],window._fatRef['+i+'][1])">✅ marcar de novo com o valor atual</span>':'');
+}
+function _avisoFaturaPaga(m){
+ try{var yms={};_itensFinanceirosManut(m,true).forEach(function(it){if(it.ym)yms[it.ym]=1});
+  var alt=faturasAlteradas(Object.keys(yms));
+  if(alt.length)setTimeout(function(){toast('⚠ Mexeu em fatura já paga: '+alt.map(function(x){return x.nome+' '+_nomeMes(x.ym)+' ('+(x.dif>0?'+':'')+fmtBRL(x.dif)+')'}).join(' · '))},1200);
+ }catch(e){}
 }
 
 function copiarFechamento(ym,nome){
@@ -6634,7 +6718,7 @@ function vHistorico(){
      '<div class="mvrow"><b class="grow">'+esc(fo.nome)+'</b><div class="mvval">R$ '+fmtBRL(fo.total)+'</div></div>'+
      '<div class="sub" style="margin:-2px 0 6px">Frota F\u00e1bio R$ '+fmtBRL(fo.totalFrota)+' \u00b7 Frota Hudson R$ '+fmtBRL(fo.totalPessoal)+
      ' \u00b7 toque para ver os itens</div></summary>'+det+
-     '<div style="margin:4px 0 10px"><span class="chip tap" onclick="copiarFechamento(\''+ym+'\',\''+esc(fo.nome).replace(/'/g,"\\\\'")+'\')">\ud83d\udccb copiar fatura</span></div>'+
+     '<div style="margin:4px 0 10px">'+htmlFaturaStatus(ym,fo)+' <span class="chip tap" onclick="copiarFechamento(\''+ym+'\',\''+esc(fo.nome).replace(/'/g,"\\\\'")+'\')">\ud83d\udccb copiar fatura</span></div>'+
      '</details>';
   });
   h+='<div class="kv" style="margin-top:8px">'+
@@ -7198,7 +7282,7 @@ function aplicarBackup(pac){
 }
 function mesclarBackupColecoes(d,ts){
  var add=0;ts=ts||Date.now();
- ['manutencoes','contratos','observacoes','termos'].forEach(function(c){
+ ['manutencoes','contratos','observacoes','termos','faturas'].forEach(function(c){
   S[c]=S[c]||{};var e=d[c]||{};
   Object.keys(e).forEach(function(k){if(!S[c][k]){var x=JSON.parse(JSON.stringify(e[k]));x.restauradoEm=ts;x.editadoEm=ts;delete S.apagados[k];S[c][k]=x;add++}});
  });
