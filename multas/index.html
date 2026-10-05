@@ -325,7 +325,7 @@ footer{color:var(--mut);font-size:12.5px;text-align:center;margin-top:24px;line-
   </div>
   <section id="dList"></section>
  </div>
-  <footer>Dados salvos na nuvem (mesma chave do Gestão) e neste aparelho. Abre igual no computador e no iPhone.<br>Valores-base do CTB (art. 258): leve R$ 88,38 · média R$ 130,16 · grave R$ 195,23 · gravíssima R$ 293,47 (algumas têm multiplicador).<br><span style="opacity:.6">Multas e Débitos v3</span></footer>
+  <footer>Dados salvos na nuvem (mesma chave do Gestão) e neste aparelho. Abre igual no computador e no iPhone.<br>Valores-base do CTB (art. 258): leve R$ 88,38 · média R$ 130,16 · grave R$ 195,23 · gravíssima R$ 293,47 (algumas têm multiplicador).<br><span style="opacity:.6">Multas e Débitos v4</span></footer>
 </main>
 
 <dialog id="dlg"><div class="dlg-in"></div></dialog>
@@ -872,7 +872,7 @@ function desfazer(){
 /* ---------- carimbo por item (carro e multa), lixeira com data ---------- */
 let _prev = {v:{}, f:{}};
 const hashV = v => JSON.stringify([v.nome, !!v.destaque, v.renavam, v.docTipo, v.doc, v.placa, v.frota, v.conferido || null, v.copiadoEm || null, v.pos]);
-const hashF = m => m.tipo ? JSON.stringify(['d', m.tipo, +m.ano, m.valor ?? null, m.venc || '', m.pagoEm || '', m.obs || '']) : JSON.stringify([m.data, m.valor ?? null, m.obs || '', m.pagaEm || null, !!m.auto]);
+const hashF = m => m.tipo ? JSON.stringify(['d', m.tipo, +m.ano, m.valor ?? null, m.venc || '', m.pagoEm || '', m.obs || '', m.ref ?? null, !!m.auto]) : JSON.stringify([m.data, m.valor ?? null, m.obs || '', m.pagaEm || null, !!m.auto]);
 const itensDe = v => [...v.multas, ...v.pagas, ...(v.debitos || [])];
 function fotografar(){
   _prev = {v:{}, f:{}};
@@ -911,14 +911,16 @@ function doRemoto(r){
   return {
     veiculos: Object.values(r.veiculos).filter(Boolean).map(v => ({...v, destaque: !!v.destaque, conferido: v.conferido || null, copiadoEm: v.copiadoEm || null,
       multas: lista0(v.multas).map(normF), pagas: lista0(v.pagas).map(normF), debitos: lista0(v.debitos).map(normD), rev: v.rev || 0})),
-    tomb: r.tomb || {}, tombV: r.tombV || {}
+    tomb: r.tomb || {}, tombV: r.tombV || {}, saidas: r.saidas || {}
   };
 }
-const estadoLocal = () => ({veiculos: S.veiculos, tomb: S.tomb || {}, tombV: S.tombV || {}});
+const estadoLocal = () => ({veiculos: S.veiculos, tomb: S.tomb || {}, tombV: S.tombV || {}, saidas: S.saidas || {}});
 function mesclarEstado(a, b){
   const tomb = {...(a.tomb || {})}, tombV = {...(a.tombV || {})};
   for(const k in (b.tomb || {})) tomb[k] = Math.max(tomb[k] || 0, b.tomb[k]);
   for(const k in (b.tombV || {})) tombV[k] = Math.max(tombV[k] || 0, b.tombV[k]);
+  const saidas = {};
+  [a.saidas || {}, b.saidas || {}].forEach(m => { for(const k in m){ const x = saidas[k] || {}; saidas[k] = {saiu: Math.max(x.saiu || 0, m[k].saiu || 0), voltou: Math.max(x.voltou || 0, m[k].voltou || 0)}; } });
   const mapa = new Map();
   for(const v of [...a.veiculos, ...b.veiculos]){
     let ent = mapa.get(v.id);
@@ -945,7 +947,7 @@ function mesclarEstado(a, b){
     out.push(v);
   }
   out.sort((x, y) => (x.pos ?? 0) - (y.pos ?? 0));
-  return {veiculos: out, tomb, tombV};
+  return {veiculos: out, tomb, tombV, saidas};
 }
 function estavel(x){
   if(Array.isArray(x)) return '[' + x.map(estavel).join(',') + ']';
@@ -954,12 +956,12 @@ function estavel(x){
 }
 function canon(st){
   const pid = (a, b) => a.id < b.id ? -1 : 1;
-  return estavel({v: st.veiculos.map(v => ({...v, multas: [...v.multas].sort(pid), pagas: [...v.pagas].sort(pid), debitos: [...(v.debitos || [])].sort(pid)})).sort(pid), t: st.tomb, tv: st.tombV});
+  return estavel({v: st.veiculos.map(v => ({...v, multas: [...v.multas].sort(pid), pagas: [...v.pagas].sort(pid), debitos: [...(v.debitos || [])].sort(pid)})).sort(pid), t: st.tomb, tv: st.tombV, sd: st.saidas || {}});
 }
 function paraRemoto(st){
   const veiculos = {};
   st.veiculos.forEach(v => { veiculos[v.id] = JSON.parse(JSON.stringify(v)); });
-  return {versao: 1, em: Date.now(), veiculos, tomb: st.tomb, tombV: st.tombV};
+  return {versao: 1, em: Date.now(), veiculos, tomb: st.tomb, tombV: st.tombV, saidas: st.saidas || {}};
 }
 
 /* ---------- nuvem (Firebase, mesma chave do Gestão) ---------- */
@@ -993,7 +995,7 @@ function aoReceber(r){
   if(!rem){ if(S.veiculos.length) agendarEnvio(0); else setSync('ok'); return; }
   const m = mesclarEstado(estadoLocal(), rem);
   const mudouLocal = canon(m) !== canon(estadoLocal());
-  S.veiculos = m.veiculos; S.tomb = m.tomb; S.tombV = m.tombV;
+  S.veiculos = m.veiculos; S.tomb = m.tomb; S.tombV = m.tombV; S.saidas = m.saidas;
   gravarLocal(); fotografar();
   if(mudouLocal){ if(digitandoNaLista() || digitandoEm('#dList')) renderPendente = true; else render(); }
   if(canon(m) !== canon(rem)) agendarEnvio(); else setSync('ok');
@@ -1006,8 +1008,8 @@ function agendarEnvio(ms=600){
 }
 function enviar(){
   if(!REF) return;
-  const local = {veiculos: JSON.parse(JSON.stringify(S.veiculos)), tomb: {...(S.tomb || {})}, tombV: {...(S.tombV || {})}};
-  REF.transaction(cur => paraRemoto(mesclarEstado(local, doRemoto(cur) || {veiculos: [], tomb: {}, tombV: {}})),
+  const local = {veiculos: JSON.parse(JSON.stringify(S.veiculos)), tomb: {...(S.tomb || {})}, tombV: {...(S.tombV || {})}, saidas: JSON.parse(JSON.stringify(S.saidas || {}))};
+  REF.transaction(cur => paraRemoto(mesclarEstado(local, doRemoto(cur) || {veiculos: [], tomb: {}, tombV: {}, saidas: {}})),
     (err, ok) => { if(err){ setSync('err'); } else if(ok){ setSync('ok'); } }, false);
 }
 const digitandoNaLista = () => { const a = document.activeElement; return !!(a && a.closest && a.closest('#list') && a.matches('input,textarea,select')); };
@@ -1150,7 +1152,7 @@ function renderConsulta(){
   const N = S.veiculos.length, ok = S.veiculos.filter(confHoje).length, pct = N ? Math.round(ok/N*100) : 0;
   const fim = N && ok === N;
   $('#consulta').innerHTML = `
-    <div class="t"><b>${fim ? 'Consulta de hoje concluída ✓' : 'Consulta de hoje'}</b>
+    <div class="t"><b>${fim ? 'Consulta de hoje concluída ✓' : new Date().getDay() === 1 ? 'Segunda-feira: dia de consulta' : 'Consulta de hoje'}</b>
       <small>${ok} de ${N} carros conferidos · ${br(isoHoje())}</small>
       <div class="bar"><i style="width:${pct}%"></i></div></div>
     ${fim ? `<button class="btn pri" data-c="copiar">⧉ Enviar para o grupo</button>`
@@ -1232,7 +1234,7 @@ function modalCopiar(){
     const b = e.target.closest('[data-cv]'); if(!b) return;
     const v = achar(b.closest('li').dataset.id); if(!v) return;
     copiar(textoVeiculo(v, S.prefValores), `${v.nome} copiado — cole no grupo`);
-    v.copiadoEm = isoHoje(); save(false); refreshCard(v); pinta();
+    v.copiadoEm = isoHoje(); v.conferido = isoHoje(); save(false); refreshCard(v); renderConsulta(); pinta();
   };
   $('#cvVal', c).onchange = () => { S.prefValores = $('#cvVal', c).checked; save(false); };
   $('#cvSo', c).onchange = pinta;
@@ -1348,10 +1350,10 @@ $('#list').addEventListener('click', e => {
       if(confHoje(v) && S.veiculos.every(confHoje)) toast('Todos os carros conferidos ✓');
       break;
     case 'pagar': {
-      snap(); const [m] = v.multas.splice(iM, 1); v.pagas.unshift({...m, pagaEm:isoHoje()});
+      v.conferido = isoHoje(); snap(); const [m] = v.multas.splice(iM, 1); v.pagas.unshift({...m, pagaEm:isoHoje()});
       save(); refreshCard(v); renderLeve(); toast(`Multa de ${br(m.data)} baixada como paga`, true); break; }
     case 'delm': {
-      snap(); const [m] = v.multas.splice(iM, 1);
+      v.conferido = isoHoje(); snap(); const [m] = v.multas.splice(iM, 1);
       save(); refreshCard(v); renderLeve(); toast(`Multa de ${br(m.data)} excluída`, true); break; }
     case 'chip': {
       const val = parseFloat(b.dataset.v);
@@ -1365,13 +1367,13 @@ $('#list').addEventListener('click', e => {
     case 'add': {
       const dI = card.querySelector('.ad-data'), vI = card.querySelector('.ad-valor');
       if(!dI.value){ toast('Escolha a data da multa'); dI.focus(); break; }
-      const m = {id:uid(), data:dI.value, valor:parseValor(vI.value), obs:''};
+      const m = {id:uid(), data:dI.value, valor:parseValor(vI.value), obs:''}; v.conferido = isoHoje();
       v.multas.push(m); v.multas.sort(cmpData); save(); refreshCard(v); renderLeve();
       const nc = $(`.car[data-id="${v.id}"] .ad-data`); if(nc) nc.focus();
       toast(`Multa de ${br(m.data)} adicionada`); break; }
     case 'cpcar':
       copiar(textoVeiculo(v, S.prefValores), `${v.nome} copiado — cole no grupo`);
-      v.copiadoEm = isoHoje(); save(false); refreshCard(v); break;
+      v.copiadoEm = isoHoje(); v.conferido = isoHoje(); save(false); refreshCard(v); renderConsulta(); break;
     case 'hist': modalHist(v); break;
     case 'edit': modalCarro(v); break;
     case 'delcar':
@@ -1386,7 +1388,9 @@ $('#list').addEventListener('change', e => {
   if(!m) return;
   if(act === 'valor'){ m.valor = parseValor(t.value); t.value = num2(m.valor); t.closest('.mi').classList.toggle('vazio', m.valor == null); }
   else m.obs = t.value.trim();
-  save(); card.querySelector('.nums').outerHTML = numsHTML(v); renderStats();
+  const jaConf = confHoje(v); v.conferido = isoHoje();
+  save(); card.querySelector('.nums').outerHTML = numsHTML(v); renderStats(); renderConsulta();
+  if(!jaConf){ const sub = card.querySelector('.sub'); if(sub && !sub.querySelector('.tg.ok')) sub.insertAdjacentHTML('beforeend', '<span class="tg ok">✓ conferido hoje</span>'); const cb = card.querySelector('.conf'); if(cb){ cb.classList.add('on'); cb.textContent = '✓ Conferido'; } card.classList.add('ok'); }
 });
 $('#list').addEventListener('focusout', () => setTimeout(() => { if(renderPendente && !digitandoNaLista()){ renderPendente = false; render(); } }, 150));
 $('#list').addEventListener('focusin', e => { if(e.target.matches('[data-act=valor]')) ultimoValorInput = e.target; });
@@ -1466,36 +1470,82 @@ function nomeDoGestao(c){
 function noGestao(v){
   if(!GEST.idx) return true;
   if(GEST.idx[normPlaca(v.placa)]) return true;
-  const r = soDig(v.renavam); return !!r && Object.values(GEST.idx).some(g => soDig(g.renavam) === r);
+  const r = +soDig(v.renavam); return !!r && Object.values(GEST.idx).some(g => +soDig(g.renavam) === r);
+}
+function refAtual(g, tipo){
+  if(!g) return null;
+  if(tipo === 'ipva' || tipo === 'grt') return parseInt(g.exercicioCRLV, 10) || 0;
+  if(tipo === 'vistoria') return parseInt(g.gnvExercicio, 10) || 0;
+  if(tipo === 'reteste') return g.gnvRequalif || '';
+  return null;
+}
+/* Débito lançado enquanto pendente é baixado sozinho quando o Gestão mostra o documento novo */
+function baixaAutomatica(v, g){
+  let n = 0;
+  (v.debitos || []).forEach(d => {
+    if(d.pagoEm || d.ref == null || !g) return;
+    const agora = refAtual(g, d.tipo);
+    let quitou = false;
+    if(d.tipo === 'ipva' || d.tipo === 'grt' || d.tipo === 'vistoria') quitou = agora >= d.ano && agora > d.ref;
+    else if(d.tipo === 'reteste') quitou = !!agora && String(agora) > String(d.ref);
+    if(quitou){ d.pagoEm = isoHoje(); d.auto = true; n++; }
+  });
+  return n;
 }
 function sincronizarComGestao(){
   if(!GEST.idx || !recebeuNuvem) return;
+  const agora = Date.now(), nG = Object.keys(GEST.idx).length;
+  S.saidas = S.saidas || {}; S.tombV = S.tombV || {};
   const porPlaca = {}, porRen = {};
-  S.veiculos.forEach(v => { porPlaca[normPlaca(v.placa)] = v; if(soDig(v.renavam)) porRen[soDig(v.renavam)] = v; });
+  S.veiculos.forEach(v => { porPlaca[normPlaca(v.placa)] = v; if(soDig(v.renavam)) porRen[+soDig(v.renavam)] = v; });
   const docDoDono = {};
   S.veiculos.forEach(v => { const g = GEST.idx[normPlaca(v.placa)]; if(g && g.proprietario && v.doc) docDoDono[donoKey(g.proprietario)] = {docTipo: v.docTipo, doc: v.doc}; });
-  const novos = []; let mudou = false;
+  const novos = [], saiu = []; let mudou = false, baixas = 0;
+  // 1) carro que saiu do Gestão sai daqui (trava: Gestão com 5+ carros e no máximo 40% da lista de uma vez)
+  const fora = S.veiculos.filter(v => !noGestao(v));
+  GEST.alerta = '';
+  if(fora.length){
+    if(nG >= 5 && fora.length <= Math.max(3, Math.ceil(S.veiculos.length * 0.4))){
+      fora.forEach(v => { const pk = normPlaca(v.placa); S.saidas[pk] = {...(S.saidas[pk] || {}), saiu: agora}; saiu.push(v.nome); });
+      S.veiculos = S.veiculos.filter(v => !fora.includes(v)); mudou = true;
+    } else GEST.alerta = `${fora.length} carros não aparecem no Gestão — não removi por segurança`;
+  }
+  // 2) carro novo (ou que voltou) no Gestão entra aqui
   for(const [pk, g] of Object.entries(GEST.idx)){
-    const v = porPlaca[pk] || (soDig(g.renavam) && porRen[soDig(g.renavam)]);
+    const v = porPlaca[pk] || (soDig(g.renavam) && porRen[+soDig(g.renavam)]);
     const frota = g.meuCarro ? 'hudson' : 'fabio';
-    if(!v){
-      const id = 'g' + pk;
-      if((S.tombV || {})[id] || S.veiculos.some(x => x.id === id)) continue;
+    if(!v || fora.includes(v)){
+      const id = 'g' + pk, sd = S.saidas[pk];
+      if(S.veiculos.some(x => x.id === id)) continue;
+      const voltou = sd && (sd.saiu || 0) > (sd.voltou || 0);
+      if(S.tombV[id] && !voltou) continue;          // apagado à mão aqui: não volta
+      if(voltou) S.saidas[pk] = {...sd, voltou: agora};
+      delete S.tombV[id];
       const dono = docDoDono[donoKey(g.proprietario)] || {docTipo: 'CPF', doc: ''};
-      const nv = {...novoVeiculo(nomeDoGestao(g)), id, placa: fmtPlaca(g.placa), renavam: String(g.renavam || ''), docTipo: dono.docTipo, doc: dono.doc, frota};
+      const nv = {...novoVeiculo(nomeDoGestao(g)), id, placa: fmtPlaca(g.placa), renavam: g.renavam ? soDig(g.renavam).padStart(11, '0') : '', docTipo: dono.docTipo, doc: dono.doc, frota};
       S.veiculos.push(nv); novos.push(nv.nome); mudou = true; continue;
     }
-    if(!v.renavam && g.renavam){ v.renavam = String(g.renavam); mudou = true; }
+    // 3) dados que mandam no Gestão: Renavam, frota, CPF/CNPJ do mesmo dono
+    if(g.renavam && +soDig(g.renavam) !== +soDig(v.renavam)){ v.renavam = soDig(g.renavam).padStart(11, '0'); mudou = true; }
     if(!v.doc && g.proprietario && docDoDono[donoKey(g.proprietario)]){ Object.assign(v, docDoDono[donoKey(g.proprietario)]); mudou = true; }
     if(v.frota !== frota){ v.frota = frota; mudou = true; }
+    // 4) débitos quitados pelo documento novo
+    const b = baixaAutomatica(v, g); if(b){ baixas += b; mudou = true; }
   }
   if(mudou){
     save(); render();
-    if(novos.length) toast(novos.length === 1 ? `Carro novo do Gestão: ${novos[0]}` : `${novos.length} carros novos vieram do Gestão`);
+    const msg = [];
+    if(novos.length) msg.push(novos.length === 1 ? `entrou: ${novos[0]}` : `${novos.length} carros entraram`);
+    if(saiu.length) msg.push(saiu.length === 1 ? `saiu: ${saiu[0]}` : `${saiu.length} carros saíram`);
+    if(baixas) msg.push(`${baixas} débito${baixas > 1 ? 's' : ''} baixado${baixas > 1 ? 's' : ''} pelo Gestão`);
+    if(msg.length) toast('Gestão → ' + msg.join(' · '));
   }
 }
 
 /* ---------- DÉBITOS (IPVA, GRT, vistoria e reteste do GNV) ---------- */
+/* Prazo do licenciamento por final de placa (DETRAN-RJ). Ano sem calendário publicado fica sem prazo. */
+const LIC = {2026: {0:'2026-07-31',1:'2026-07-31',2:'2026-07-31',3:'2026-08-31',4:'2026-08-31',5:'2026-08-31',6:'2026-09-30',7:'2026-09-30',8:'2026-09-30',9:'2026-09-30'}};
+const prazoLic = (v, ano) => (LIC[ano] || {})[finalPlaca(v.placa)] || '';
 const TIPO_NOME = {ipva:'IPVA', grt:'GRT', vistoria:'Vistoria GNV', reteste:'Reteste GNV', outro:'Outro'};
 let aba = 'multas', anoRef = new Date().getFullYear(), dFiltro = 'todos', dBusca = '', dOrdem = 'nome', dAbertos = new Set(), dAnim = null;
 try{ aba = localStorage.getItem('multas_aba') === 'debitos' ? 'debitos' : 'multas'; }catch(e){}
@@ -1514,7 +1564,11 @@ function situacao(v){
     if(!GEST.idx){ st = 'sem'; det = 'aguardando dados do Gestão'; }
     else if(!g){ st = 'sem'; det = 'placa não encontrada no Gestão'; }
     else if(ex >= Y){ st = 'ok'; det = `CRLV ${ex} — nada a pagar em ${Y}`; }
-    else { st = 'pend'; det = ex ? `CRLV ${ex} — falta o de ${Y}` : 'CRLV sem exercício no Gestão'; }
+    else {
+      st = 'pend'; det = ex ? `CRLV ${ex} — falta o de ${Y}` : 'CRLV sem exercício no Gestão';
+      const pz = prazoLic(v, Y);
+      if(pz) det += diasAte(pz) < 0 ? ` · prazo venceu em ${br(pz)} (final ${finalPlaca(v.placa)})` : ` · prazo ${br(pz)} (final ${finalPlaca(v.placa)})`;
+    }
     out.push({tipo, st, det});
   });
   if(ehGNV(g)){
@@ -1580,7 +1634,7 @@ function dBodyHTML(v){
     </div>`).join('');
   const ls = debDoAno(v);
   const lanc = ls.map(d => `<div class="dl${d.pagoEm ? ' pago' : ''}" data-did="${d.id}">
-      <span class="tp">${TIPO_NOME[d.tipo] || d.tipo}${d.obs ? `<small style="display:block;color:var(--mut);font-weight:500">${esc(d.obs)}</small>` : ''}</span>
+      <span class="tp">${TIPO_NOME[d.tipo] || d.tipo}${d.obs ? `<small style="display:block;color:var(--mut);font-weight:500">${esc(d.obs)}</small>` : ''}${d.auto ? '<small style="display:block;color:var(--green);font-weight:600">baixado pelo Gestão</small>' : ''}</span>
       <label class="mi${d.valor == null ? ' vazio' : ''}"><span>R$</span><input data-dact="valor" inputmode="decimal" value="${num2(d.valor)}" placeholder="0,00"></label>
       <label class="pg">Venc.<input type="date" data-dact="venc" value="${esc(d.venc)}"></label>
       <label class="pg">${d.pagoEm ? 'Pago' : 'Pago em'}<input type="date" data-dact="pagoEm" value="${esc(d.pagoEm)}"></label>
@@ -1634,7 +1688,7 @@ function renderDebStats(){
     <div class="st red"><div class="k">Débitos em aberto</div><div class="n">${money(aberto)}</div><div class="d">${nAberto} ${nAberto === 1 ? 'lançamento' : 'lançamentos'}</div></div>
     <button class="st amb" data-f="pend"><div class="k">Carros com pendência ${anoRef}</div><div class="n">${GEST.idx ? pend : '—'}</div><div class="d">de ${S.veiculos.length} carros</div></button>
     <div class="st grn"><div class="k">Pago em ${anoRef}</div><div class="n">${money(pagoAno)}</div><div class="d">débitos + multas baixadas</div></div>
-    <div class="st"><div class="k">Dados do Gestão</div><div class="n" style="font-size:22px">${GEST.erro ? 'Erro' : GEST.idx ? nG + ' carros' : '—'}</div><div class="d">${GEST.erro ? esc(GEST.erro) : GEST.idx ? 'lido ' + new Date(GEST.lidoEm).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}) + ' · só leitura' : 'conecte a chave da nuvem'}</div></div>`;
+    <div class="st"><div class="k">Dados do Gestão</div><div class="n" style="font-size:22px">${GEST.erro ? 'Erro' : GEST.idx ? nG + ' carros' : '—'}</div><div class="d">${GEST.alerta ? '⚠ ' + esc(GEST.alerta) + ' · ' : ''}${GEST.erro ? esc(GEST.erro) : GEST.idx ? 'lido ' + new Date(GEST.lidoEm).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}) + ' · só leitura' : 'conecte a chave da nuvem'}</div></div>`;
 }
 function renderSeg(){
   const nM = S.veiculos.reduce((s, v) => s + v.multas.length, 0);
@@ -1669,12 +1723,13 @@ $('#dList').addEventListener('click', e => {
   if(act === 'quick'){
     const row = b.closest('.drow'), val = parseValor(row.querySelector('.dq-valor').value);
     if(val == null){ toast('Digite o valor'); row.querySelector('.dq-valor').focus(); return; }
-    v.debitos.push({id: uid(), tipo: row.dataset.tipo, ano: anoRef, valor: val, venc: '', pagoEm: '', obs: ''});
+    const tp = row.dataset.tipo;
+    v.debitos.push({id: uid(), tipo: tp, ano: anoRef, valor: val, venc: tp === 'grt' ? prazoLic(v, anoRef) : '', pagoEm: '', obs: '', ref: refAtual(gCarro(v), tp)});
     v.debitos.sort(cmpDeb); save(); dRefresh(v); renderDebStats(); renderSeg(); toast(`${TIPO_NOME[row.dataset.tipo]} ${anoRef} lançado`); return;
   }
   if(act === 'add'){
     const val = parseValor(card.querySelector('.da-valor').value), tipo = card.querySelector('.da-tipo').value;
-    v.debitos.push({id: uid(), tipo, ano: anoRef, valor: val, venc: card.querySelector('.da-venc').value || '', pagoEm: '', obs: card.querySelector('.da-obs').value.trim()});
+    v.debitos.push({id: uid(), tipo, ano: anoRef, valor: val, venc: card.querySelector('.da-venc').value || (tipo === 'grt' ? prazoLic(v, anoRef) : ''), pagoEm: '', obs: card.querySelector('.da-obs').value.trim(), ref: refAtual(gCarro(v), tipo)});
     v.debitos.sort(cmpDeb); save(); dRefresh(v); renderDebStats(); renderSeg(); toast(`${TIPO_NOME[tipo]} ${anoRef} lançado`); return;
   }
   if(!d) return;
