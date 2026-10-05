@@ -1,0 +1,1402 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Multas da Frota</title>
+<meta name="app" content="guimas-multas">
+<meta name="theme-color" content="#F2F3F5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Multas">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icone-180.png">
+<link rel="icon" type="image/png" href="icone-192.png">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F2F3F5;--card:#fff;--ink:#16181D;--mut:#6B7280;--line:#E3E5E9;--soft:#F6F7F9;
+  --amber:#C77A16;--amber-s:#FBF1E3;--green:#2E7D5B;--green-s:#E6F2EC;
+  --red:#B42318;--red-s:#FDECEA;--blue:#1E4BA0;
+  --num:'Barlow Condensed',-apple-system,'Segoe UI',sans-serif;
+  --ease:cubic-bezier(.32,.72,0,1);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 -apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',Inter,Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+.wrap{max-width:980px;margin:0 auto;padding:0 16px 90px}
+
+/* topo */
+header{padding-top:env(safe-area-inset-top);position:sticky;top:0;z-index:30;background:rgba(242,243,245,.88);backdrop-filter:saturate(1.6) blur(14px);-webkit-backdrop-filter:saturate(1.6) blur(14px);border-bottom:1px solid var(--line)}
+.hd{max-width:980px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:8px}
+.logo{width:38px;height:38px;border-radius:10px;background:var(--ink);color:#fff;display:grid;place-items:center;font:700 19px var(--num);flex:none}
+.brand{flex:1;min-width:0}
+.brand h1{margin:0;font-size:19px;font-weight:700;letter-spacing:-.01em}
+.brand p{margin:1px 0 0;color:var(--mut);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#A0A6B0;margin-right:5px;vertical-align:1px}
+.dot.ok{background:var(--green)}.dot.env{background:var(--amber)}.dot.err{background:var(--red)}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 13px;font-weight:600;font-size:14px;transition:transform .2s var(--ease),background .2s,border-color .2s;white-space:nowrap}
+.btn:hover{border-color:#cdd1d8}
+.btn:active{transform:scale(.96)}
+.btn.pri{background:var(--amber);border-color:var(--amber);color:#fff}
+.btn.pri:hover{background:#B56E12}
+.btn.grn{background:var(--green);border-color:var(--green);color:#fff}
+.btn.ghost{background:transparent;border-color:transparent}
+.btn.ghost:hover{background:var(--soft)}
+.btn.danger{color:var(--red)}
+.btn.sm{padding:5px 10px;font-size:13px;border-radius:8px}
+.menuwrap{position:relative}
+.menu{position:absolute;right:0;top:calc(100% + 6px);background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 14px 40px rgba(16,24,40,.14);padding:6px;min-width:250px;display:none;z-index:40}
+.menu.on{display:block;animation:pop .22s var(--ease)}
+.menu button{display:block;width:100%;text-align:left;border:0;background:none;padding:9px 11px;border-radius:8px;font-size:14px}
+.menu button:hover{background:var(--soft)}
+.menu hr{border:0;border-top:1px solid var(--line);margin:5px 4px}
+@keyframes pop{from{opacity:0;transform:translateY(-4px) scale(.98)}to{opacity:1;transform:none}}
+
+/* números do topo */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0 10px}
+.st{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;text-align:left}
+.st .k{font-size:12px;color:var(--mut);font-weight:600}
+.st .n{font-family:var(--num);font-size:30px;font-weight:700;line-height:1.05;margin-top:4px}
+.st .d{font-size:12px;color:var(--mut);margin-top:2px}
+button.st{cursor:pointer;transition:transform .2s var(--ease)}
+button.st:active{transform:scale(.97)}
+.st.red .n{color:var(--red)} .st.amb .n{color:var(--amber)} .st.grn .n{color:var(--green)}
+@media(max-width:720px){.stats{grid-template-columns:1fr 1fr}.st .n{font-size:26px}}
+
+.aviso{display:flex;align-items:center;gap:10px;background:var(--amber-s);border:1px solid #F1D8B3;color:#7A4B0C;border-radius:12px;padding:9px 12px;font-size:13.5px;margin-bottom:10px}
+.aviso span{flex:1}
+.aviso.red{background:var(--red-s);border-color:#F6C9C3;color:var(--red)}
+
+.consulta{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.consulta .t{flex:1;min-width:210px}
+.consulta .t b{font-size:14.5px}
+.consulta .t small{color:var(--mut);font-size:12.5px;display:block}
+.bar{height:6px;background:#ECEEF1;border-radius:99px;overflow:hidden;margin-top:7px}
+.bar i{display:block;height:100%;background:var(--green);border-radius:99px;transition:width .5s var(--ease)}
+
+.tools{display:flex;gap:8px;margin:12px 0 8px;flex-wrap:wrap}
+.search{flex:1;min-width:200px;display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:0 12px}
+.search input{border:0;outline:0;background:transparent;width:100%;padding:9px 0}
+.search:focus-within{border-color:var(--amber);box-shadow:0 0 0 3px rgba(199,122,22,.15)}
+select{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 10px;font-weight:600;font-size:14px}
+.filtros{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.fchip{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:5px 12px;font-size:13px;font-weight:600;color:var(--mut);transition:all .2s var(--ease)}
+.fchip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* cartão do carro */
+.car{background:var(--card);border:1px solid var(--line);border-radius:16px;margin-bottom:10px;overflow:hidden;scroll-margin-top:84px;transition:box-shadow .3s var(--ease),border-color .3s}
+.car.open{box-shadow:0 10px 30px rgba(16,24,40,.08);border-color:#D6D9DF}
+.car.ok{box-shadow:inset 4px 0 0 var(--green)}
+.car.ok.open{box-shadow:inset 4px 0 0 var(--green),0 10px 30px rgba(16,24,40,.08)}
+.head{display:grid;grid-template-columns:auto minmax(0,1fr) auto 16px;gap:12px;align-items:center;padding:12px 14px 10px;cursor:pointer;user-select:none}
+.plate{width:92px;border:1.5px solid #1b1d22;border-radius:6px;overflow:hidden;background:#fff;text-align:center}
+.plate i{display:block;background:var(--blue);color:#fff;font:700 7px/10px -apple-system,'Segoe UI',sans-serif;letter-spacing:.22em;font-style:normal}
+.plate b{display:block;font-family:var(--num);font-size:15.5px;font-weight:700;letter-spacing:.06em;padding:1px 2px 2px;white-space:nowrap}
+.nm{font-weight:650;font-size:15.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nm .bold{display:inline-block;margin-left:6px;font-size:10.5px;font-weight:700;color:var(--mut);border:1px solid var(--line);border-radius:4px;padding:0 4px;vertical-align:2px}
+.sub{display:flex;gap:6px;margin-top:4px;flex-wrap:wrap}
+.tg{font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px;background:var(--soft);color:var(--mut)}
+.tg.hudson{background:var(--amber-s);color:var(--amber)}
+.tg.ok{background:var(--green-s);color:var(--green)}
+.tg.fin{background:#E8EEF9;color:var(--blue)}
+.nums{text-align:right;min-width:80px}
+.cnt{white-space:nowrap}
+.cnt b{font-family:var(--num);font-size:25px;font-weight:700;line-height:1}
+.cnt span{font-size:12px;color:var(--mut);margin-left:4px}
+.cnt.has b{color:var(--red)}
+.cnt.zero b{color:var(--green)}
+.val{font-family:var(--num);font-size:16.5px;font-weight:600;white-space:nowrap}
+.miss{font-size:11px;color:var(--amber);font-weight:700;white-space:nowrap}
+.chev{color:#A0A6B0;font-size:22px;line-height:1;transition:transform .35s var(--ease);text-align:center}
+.car.open .chev{transform:rotate(90deg)}
+.quick{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 12px;align-items:center}
+.cp{border:1px dashed #CDD1D8;background:var(--soft);border-radius:8px;padding:4px 9px;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;transition:all .2s var(--ease)}
+.cp small{color:var(--mut);font-weight:600;margin-right:5px;font-size:11px}
+.cp:after{content:'⧉';color:#9AA0AA;margin-left:6px}
+.cp:hover{border-color:var(--amber);background:var(--amber-s)}
+.cp:active{transform:scale(.96)}
+.conf{margin-left:auto;border:1px solid var(--line);background:#fff;border-radius:8px;padding:4px 11px;font-size:13px;font-weight:700;color:var(--mut);transition:all .2s var(--ease)}
+.conf.on{background:var(--green-s);color:var(--green);border-color:#BFE0CF}
+.conf:active{transform:scale(.96)}
+.wa{margin-left:auto;border:1px solid #BFE0CF;background:var(--green-s);color:var(--green);border-radius:8px;padding:4px 11px;font-size:13px;font-weight:700;transition:all .2s var(--ease)}
+.wa.on{background:#fff;color:var(--mut);border-color:var(--line)}
+.wa:active{transform:scale(.96)}
+.wa + .conf{margin-left:0}
+.cvprog{margin:8px 0 6px;font-size:13px}
+.hl .pl{font-family:var(--num);font-weight:700;font-size:15px;border:1px solid #1b1d22;border-radius:4px;padding:0 5px;margin-right:4px}
+.hl li.feito{opacity:.6}
+
+.body{border-top:1px dashed var(--line);padding:12px 14px 14px;background:#FCFCFD}
+.body.anim{animation:open .3s var(--ease)}
+.mi input::placeholder{color:#C3C7CE;font-weight:500}
+@keyframes open{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px;font-size:12px;color:var(--mut)}
+.chip{border:1px solid var(--line);background:#fff;border-radius:7px;padding:3px 8px;font-size:12px;font-weight:600;color:var(--ink)}
+.chip b{font-family:var(--num);font-size:14px;margin-left:3px}
+.chip:hover{border-color:var(--amber)}
+.fine{display:grid;grid-template-columns:100px 132px minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid #EEF0F3}
+.fine:last-child{border-bottom:0}
+.fd{font-family:var(--num);font-size:18px;font-weight:600;letter-spacing:.02em}
+.mi{display:flex;align-items:center;border:1px solid var(--line);border-radius:8px;background:#fff;padding:0 8px;min-width:0}
+.mi span{color:var(--mut);font-size:13px;margin-right:4px}
+.mi input{border:0;outline:0;width:100%;min-width:0;padding:7px 0;background:transparent;font-variant-numeric:tabular-nums;font-weight:600}
+.mi.vazio{border-color:#EFCF9F;background:#FFFBF4}
+.obs{border:1px solid var(--line);border-radius:8px;padding:7px 9px;background:#fff;min-width:0;width:100%;font-size:14px}
+.mi:focus-within,.obs:focus,.f input:focus,.f select:focus,textarea:focus,input[type=date]:focus{outline:none;border-color:var(--amber);box-shadow:0 0 0 3px rgba(199,122,22,.15)}
+.fa{display:flex;gap:4px}
+.x{color:var(--mut)}
+.empty{color:var(--green);font-weight:600;margin:6px 0;font-size:14px}
+.add{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;padding:10px;background:#fff;border:1px dashed #D9DCE2;border-radius:12px;align-items:center}
+.add input[type=date]{border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:#fff}
+.add .mi{width:170px}
+.acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+@media(max-width:640px){
+  .fine{grid-template-columns:auto minmax(0,1fr) auto}
+  .fine .obs{grid-column:1/-1;order:5}
+  .head{gap:10px;padding:12px 12px 10px}
+  .plate{width:84px}.plate b{font-size:14.5px}
+  .quick{padding:0 12px 12px}
+  .conf,.wa{margin-left:0}
+  .add .mi{flex:1;width:auto}
+  .add .btn{width:100%}
+  .brand h1{font-size:17px}
+  .lbl-long{display:none}
+}
+@media(min-width:641px){.lbl-short{display:none}}
+
+/* janelas */
+dialog{border:0;border-radius:18px;padding:0;width:min(580px,calc(100vw - 32px));max-height:calc(100vh - 48px);box-shadow:0 24px 70px rgba(16,24,40,.25);color:var(--ink)}
+dialog[open]{animation:sheet .35s var(--ease)}
+@keyframes sheet{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+dialog::backdrop{background:rgba(15,17,21,.38);backdrop-filter:blur(3px)}
+.dlg-in{padding:18px 18px 16px}
+.dlg-in h2{margin:0 0 4px;font-size:18px}
+.dlg-in .hint{color:var(--mut);font-size:13px;margin:0 0 12px}
+.f{display:grid;gap:4px;margin-bottom:10px}
+.f label{font-size:12.5px;font-weight:600;color:var(--mut)}
+.f input,.f select{border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:#fff;width:100%}
+.f2{display:grid;grid-template-columns:120px 1fr;gap:8px}
+.ck{display:flex;gap:8px;align-items:center;font-size:14px;margin:6px 0}
+textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;resize:vertical;background:var(--soft)}
+.row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px}
+.hl{list-style:none;margin:0;padding:0;max-height:52vh;overflow:auto}
+.hl li{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+.hl li b{font-family:var(--num);font-size:17px}
+.hl li small{color:var(--mut);display:block;font-size:12px}
+.radio{display:grid;gap:6px;margin:10px 0}
+.radio label{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:9px 10px;font-size:13.5px;cursor:pointer}
+.radio label:has(input:checked){border-color:var(--amber);background:var(--amber-s)}
+.radio small{display:block;color:var(--mut)}
+
+#toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,30px);background:#16181D;color:#fff;padding:10px 14px;border-radius:12px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:all .35s var(--ease);z-index:60;display:flex;gap:12px;align-items:center;max-width:calc(100vw - 32px)}
+#toast.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+#toast button{background:none;border:0;color:#F5B65A;font-weight:700;padding:0}
+.vazio-lista{text-align:center;color:var(--mut);padding:40px 0}
+footer{color:var(--mut);font-size:12.5px;text-align:center;margin-top:24px;line-height:1.6}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <div class="hd">
+    <div class="logo">GC</div>
+    <div class="brand"><h1>Multas da Frota</h1><p id="meta">—</p></div>
+    <button class="btn pri" id="btnCopiarTudo">⧉ <span class="lbl-long">Enviar para o grupo</span><span class="lbl-short">Grupo</span></button>
+    <div class="menuwrap">
+      <button class="btn" id="btnMenu" aria-haspopup="true">Mais ▾</button>
+      <div class="menu" id="menu">
+        <button data-m="novo">＋ Novo carro</button>
+        <button data-m="resumo">⧉ Copiar resumo de valores</button>
+        <button data-m="importar">⇣ Importar texto do WhatsApp</button>
+        <hr>
+        <button data-m="backup">⬇ Fazer backup (arquivo)</button>
+        <button data-m="restaurar">⬆ Restaurar backup</button>
+        <button data-m="chave">🔑 Chave da nuvem</button>
+        <button data-m="limparhist">🗑 Limpar histórico de pagas</button>
+        <hr>
+        <button data-m="abrir">Abrir todos os cartões</button>
+        <button data-m="fechar">Fechar todos os cartões</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="stats" id="stats"></section>
+  <div id="avisos"></div>
+  <section class="consulta" id="consulta"></section>
+  <div class="tools">
+    <label class="search"><span aria-hidden="true">⌕</span><input id="q" placeholder="Buscar por carro, placa ou Renavam…" autocomplete="off"></label>
+    <select id="ordem" aria-label="Ordenar">
+      <option value="nome" selected>Nome A–Z</option>
+      <option value="original">Ordem do grupo</option>
+      <option value="qtd">Mais multas</option>
+      <option value="valor">Maior valor</option>
+      <option value="recente">Multa mais recente</option>
+      <option value="final">Final de placa (0–9)</option>
+    </select>
+  </div>
+  <div class="filtros" id="filtros">
+    <button class="fchip on" data-f="todos">Todos</button>
+    <button class="fchip" data-f="com">Com multa</button>
+    <button class="fchip" data-f="sem">Sem multa</button>
+    <button class="fchip" data-f="valor">Falta valor</button>
+    <button class="fchip" data-f="pend">Falta conferir hoje</button>
+    <button class="fchip" data-f="hudson">Frota Hudson</button>
+    <button class="fchip" data-f="fabio">Frota Fábio</button>
+  </div>
+  <section id="list"></section>
+  <footer>Dados salvos na nuvem (mesma chave do Gestão) e neste aparelho. Abre igual no computador e no iPhone.<br>Valores-base do CTB (art. 258): leve R$ 88,38 · média R$ 130,16 · grave R$ 195,23 · gravíssima R$ 293,47 (algumas têm multiplicador).<br><span style="opacity:.6">Multas v1</span></footer>
+</main>
+
+<dialog id="dlg"><div class="dlg-in"></div></dialog>
+<input type="file" id="arqBackup" accept=".json,application/json" hidden>
+<div id="toast" role="status"></div>
+
+<script>
+const SEED = `Logan Branco 2017
+
+Renavam - 01114798506
+CPF - 168.821.197-75
+Placa - LSY-7B47
+
+(3 Multas)
+
+10/02/2026
+13/01/2026
+24/05/2024
+Cobalt Branco 2015
+
+Renavam - 01012563054
+CPF - 444.875.767-68
+Placa - OYZ-9079
+
+(0 Multas)
+Mobi Prata 2021
+
+Renavam - 01246775325
+CPF - 168.821.197-75
+Placa - RGB-3E35
+
+(0 Multas)
+*Grand Siena Vermelho 2014*
+
+Renavam - 00564673056
+CPF - 090.386.617-03
+Placa - LQW-3I44
+
+(2 Multas)
+
+21/05/2024
+16/10/2023
+*Logan Branco Dynamique 2017*
+
+Renavam - 01101536036
+CPF - 168.821.197-75
+Placa - KYI-8I20
+
+(4 Multas)
+
+12/02/2025
+12/02/2025
+11/02/2025
+04/02/2025
+Onix Cinza 2019
+
+Renavam - 01195314407
+CPF - 168.821.197-75
+Placa - QUB-5B64
+
+(0 Multas)
+Grand Siena Branco Essence 2016
+
+Renavam - 01076312761
+CPF - 090.386.617-03
+Placa - LSK-2B23
+
+(4 Multas)
+
+10/12/2025
+06/12/2025
+23/10/2025
+22/10/2025
+Hilux Prata 2020
+
+Renavam - 01239098992
+CPF - 168.821.197-75
+Placa - DVS-7C98
+
+(4 Multas)
+
+05/04/2026
+05/04/2026
+28/01/2026
+30/03/2025
+Argo Branco 2018
+
+Renavam - 01143184880
+CPF - 168.821.197-75
+Placa - QEK-3D83
+
+(4 Multas)
+
+18/05/2026
+06/03/2026
+25/02/2026
+05/12/2025
+Grand Siena Branco 2019
+
+Renavam - 01196886293
+CPF - 075.351.417-65
+Placa - LMX-7B24
+
+(12 Multas)
+
+02/07/2026
+06/05/2026
+06/05/2026
+06/05/2026
+06/05/2026
+21/03/2026
+12/02/2026
+09/01/2026
+16/10/2025
+13/09/2025
+28/07/2024
+28/07/2024
+Ka Sedan Prata 2015
+
+Renavam - 01037135790
+CPF - 168.821.197-75
+Placa - AZH-5D13
+
+(0 Multas)
+Logan Branco 2016
+
+Renavam - 01075259875
+CPF - 168.821.197-75
+Placa - GBV-3B96
+
+(4 Multas)
+
+30/06/2026
+17/03/2026
+20/11/2025
+05/10/2025
+Fiesta Preto 2014
+
+Renavam - 00591403021
+CPF - 090.386.617-03
+Placa - LQZ-6C72
+
+(22 Multas)
+
+20/02/2026
+14/02/2026
+09/02/2026
+07/02/2026
+01/02/2026
+24/01/2026
+07/12/2025
+02/09/2025
+01/09/2025
+09/07/2025
+09/07/2025
+12/04/2025
+06/04/2025
+28/03/2025
+22/03/2025
+25/02/2025
+25/08/2024
+08/05/2024
+06/05/2024
+28/11/2023
+04/08/2023
+28/06/2021
+Cobalt Prata 2019
+
+Renavam - 01176506843
+CPF - 168.821.197-75
+Placa - IYZ-7E28
+
+(2 Multas)
+
+04/07/2026
+16/12/2025
+Cronos Prata 2019
+
+Renavam - 01208477690
+CPF - 168.821.197-75
+Placa - LUO-2B58
+
+(4 Multas)
+
+07/02/2026
+05/02/2026
+05/02/2026
+03/02/2026
+Song Plus 2027
+
+Renavam - 01504788130
+CPF - 168.821.197-75
+Placa - TUW-5A58
+
+(0 Multas)
+Sandero Prata 2017
+
+Renavam - 01101551175
+CPF - 168.821.197-75
+Placa - PYO-4A55
+
+(8 Multas)
+
+10/07/2026
+18/03/2026
+25/10/2025
+17/12/2024
+17/12/2024
+14/11/2024
+19/05/2024
+30/04/2024
+Mobi Branco 2019
+
+Renavam - 01187906287
+CPF - 168.821.197-75
+Placa - LUH-7G30
+
+(0 Multas)
+Logan Preto 2019
+
+Renavam - 01183446508
+CPF - 168.821.197-75
+Placa - QQF-8J26
+
+(11 Multas)
+
+25/07/2026
+10/07/2026
+25/05/2026
+30/04/2026
+20/03/2026
+26/09/2025
+28/12/2024
+28/12/2024
+23/12/2024
+17/11/2024
+03/09/2024
+
+Ka Sedan Prata 2018
+
+Renavam - 01121281025
+CPF - 168.821.197-75
+Placa - PZT-OF79
+
+(7 Multas)
+
+01/08/2026
+09/01/2026
+24/12/2025
+23/12/2025
+19/11/2025
+15/11/2025
+13/11/2025
+
+Voyage Branco 2020
+
+Renavam - 01195334394
+CPF - 075.351.417-65
+Placa - QUB-5G52
+
+(5 Multas)
+
+06/01/2026
+28/12/2025
+14/12/2025
+08/12/2025
+08/12/2025
+
+*Logan Prata 2016*
+
+Renavam - 01058800687
+CPF - 168.821.197-75
+Placa - PWL-8H97
+
+(1 Multa)
+
+24/09/2024
+
+Grand siena Branco 2019
+
+Renavam - 01198091697
+CNPJ - 22.116.637/0001-80
+Placa - LMY-2A63
+
+(18 Multas)
+
+08/08/2026
+24/07/2026
+23/05/2026
+12/02/2025
+19/01/2025
+19/01/2025
+19/01/2025
+24/12/2024
+09/12/2024
+29/11/2024
+25/11/2024
+20/11/2024
+01/11/2024
+30/10/2024
+09/10/2024
+03/10/2024
+11/08/2024
+07/07/2024
+
+Uno Branca 2018
+
+Renavam - 01123010690
+CPF - 168.821.197-75
+Placa - IXY-2H87
+
+(8 Multas)
+
+02/09/2026
+24/08/2026
+16/08/2026
+05/07/2026
+07/04/2026
+11/01/2026
+15/12/2025
+12/12/2025
+
+Versa Preto 2014
+
+Renavam - 00551426829
+CPF - 090.386.617-03
+Placa - FHP-4B47
+
+(2 Multas)
+
+15/08/2026
+04/08/2021
+
+Argo Prata 2023
+
+Renavam - 01320244715
+CPF - 168.821.197-75
+Placa - RUK-6I75
+
+(4 Multas)
+
+27/08/2026
+24/08/2026
+18/12/2025
+05/11/2025
+
+Logan 2016 Prata
+
+Renavam - 01082370557
+CPF - 168.821.197-75
+Placa - PXO-9780
+
+(3 Multas)
+
+23/08/2026
+22/12/2024
+31/08/2024
+
+Logan Branco 2017
+
+Renavam - 01112199273
+CPF - 075.351.417-65
+Placa - KXJ-8F38
+
+(13 Multas)
+
+03/09/2026
+31/08/2026
+10/04/2026
+08/04/2026
+03/04/2026
+02/04/2026
+08/02/2026
+07/01/2026
+06/01/2026
+20/12/2025
+26/10/2025
+11/09/2025
+25/04/2025
+
+Mobi Branco 2020
+
+Renavam - 01235959888
+CPF - 168.821.197-75
+Placa - RJZ-1B66
+
+(8 Multas)
+
+18/09/2026
+04/09/2026
+31/08/2026
+28/07/2026
+18/07/2026
+17/07/2026
+04/06/2026
+19/06/2021
+
+Uno Prata 2018
+
+Renavam - 01129195055
+CPF - 168.821.197-75
+Placa - QMW-8H90
+
+(4 Multas)
+
+05/09/2026
+04/09/2026
+01/12/2024
+01/12/2024
+
+Argo Prata 2023
+
+Renavam - 01333018417
+CPF - 168.821.197-75
+Placa - RVX-9H52
+
+(10 Multas)
+
+27/09/2026
+03/09/2026
+16/07/2026
+17/06/2026
+19/03/2026
+04/01/2026
+04/01/2026
+02/01/2026
+30/12/2025
+07/08/2025
+
+Sandero Prata 2015
+
+Renavam - 01028269215
+CPF - 168.821.197-75
+Placa - PVC-8G42
+
+(3 Multas)
+
+08/09/2026
+03/09/2026
+04/11/2025`;
+
+const KEY = 'guimas_multas_v1';
+const HUDSON = new Set(['LQZ6C72','OYZ9079','RJZ1B66','QUB5B64']);
+const ATALHOS = [['Leve',88.38],['Média',130.16],['Grave',195.23],['Gravíssima',293.47],['Gravíss. ×3',880.41]];
+
+let S = {veiculos:[], atualizadoEm:null, ultimoBackup:null, prefValores:false};
+let animarId = null;
+let abertos = new Set(), filtro = 'todos', busca = '', ordem = 'nome', undoSnap = null, ultimoValorInput = null, storageOk = true;
+
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const isoHoje = () => { const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+const br = iso => { if(!iso) return ''; const [y,m,d] = iso.split('-'); return d+'/'+m+'/'+y; };
+const money = n => (n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const num2 = n => n==null ? '' : n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const normPlaca = p => String(p||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+const soDig = s => String(s||'').replace(/\D/g,'');
+const cmpData = (a,b) => a.data < b.data ? 1 : a.data > b.data ? -1 : 0; // mais recente primeiro
+const finalPlaca = p => { const d = normPlaca(p).match(/(\d)$/); return d ? +d[1] : 99; };
+const cmpNome = (a,b) => a.nome.localeCompare(b.nome,'pt',{sensitivity:'base',numeric:true}) || normPlaca(a.placa).localeCompare(normPlaca(b.placa));
+const plural = n => n===1 ? 'Multa' : 'Multas';
+
+function parseValor(s){
+  if(s==null) return null;
+  s = String(s).replace(/[^\d,.]/g,'');
+  if(!s) return null;
+  if(s.includes(',')) s = s.replace(/\./g,'').replace(',','.');
+  else if(!/\.\d{1,2}$/.test(s)) s = s.replace(/\./g,'');
+  const n = parseFloat(s);
+  return isFinite(n) ? Math.round(n*100)/100 : null;
+}
+
+function novoVeiculo(nomeRaw){
+  let n = String(nomeRaw||'').trim(), d = false;
+  const m = n.match(/^\*(.+)\*$/); if(m){ n = m[1].trim(); d = true; }
+  return {id:uid(), nome:n, destaque:d, renavam:'', docTipo:'CPF', doc:'', placa:'', frota:'fabio', multas:[], pagas:[], conferido:null};
+}
+
+/* Lê o texto no formato do grupo do WhatsApp */
+function parseTexto(txt){
+  const out = []; let cur = null, nome = null;
+  for(const raw of String(txt).split(/\r?\n/)){
+    const l = raw.replace(/[\u200e\u200f\u200b]/g,'').trim();
+    if(!l) continue;
+    let m;
+    if((m = l.match(/^\*?renavam\*?\s*[-–—:]\s*(.+)$/i))){
+      cur = novoVeiculo(nome || 'Carro sem nome'); cur.renavam = m[1].trim(); out.push(cur); nome = null; continue;
+    }
+    if(cur && (m = l.match(/^\*?(cpf|cnpj)\*?\s*[-–—:]\s*(.+)$/i))){ cur.docTipo = m[1].toUpperCase(); cur.doc = m[2].trim(); continue; }
+    if(cur && (m = l.match(/^\*?placa\*?\s*[-–—:]\s*(.+)$/i))){
+      cur.placa = m[1].trim().toUpperCase(); cur.frota = HUDSON.has(normPlaca(cur.placa)) ? 'hudson' : 'fabio'; continue;
+    }
+    if(/^\(\s*\d+\s*multas?\s*\)$/i.test(l) || /^\*?total\b/i.test(l)) continue;
+    if((m = l.match(/^(\d{2})\/(\d{2})\/(\d{4})(.*)$/))){
+      if(!cur) continue;
+      const resto = m[4] || ''; let valor = null, obs = '';
+      const mo = resto.match(/\(([^)]*)\)\s*$/); if(mo) obs = mo[1].trim();
+      const semObs = mo ? resto.slice(0, mo.index) : resto;
+      const mv = semObs.match(/(\d[\d.]*,\d{2}|\d+(?:\.\d{1,2})?)/); if(mv) valor = parseValor(mv[1]);
+      cur.multas.push({id:uid(), data:`${m[3]}-${m[2]}-${m[1]}`, valor, obs});
+      continue;
+    }
+    nome = l;
+  }
+  out.forEach(v => v.multas.sort(cmpData));
+  return out;
+}
+/* Semente com ids fixos: dois aparelhos que semeiam geram os MESMOS ids (não duplica nada) */
+function semente(){
+  const out = parseTexto(SEED);
+  out.forEach((v, i) => {
+    v.id = 's' + soDig(v.renavam); v.pos = i; v.rev = 1;
+    const cont = {};
+    v.multas.forEach(m => { const k = cont[m.data] = (cont[m.data] || 0) + 1; m.id = v.id + '-' + m.data + '-' + k; m.rev = 1; });
+  });
+  return out;
+}
+
+/* ---------- armazenamento local ---------- */
+function load(){
+  try{
+    const r = localStorage.getItem(KEY);
+    if(r){ const d = JSON.parse(r); if(d && Array.isArray(d.veiculos)){ S = Object.assign(S, d); S.tomb = S.tomb || {}; S.tombV = S.tombV || {}; return true; } }
+  }catch(e){ storageOk = false; }
+  return false;
+}
+function gravarLocal(){
+  try{ localStorage.setItem(KEY, JSON.stringify(S)); storageOk = true; }catch(e){ storageOk = false; }
+}
+/* Toda mudança local passa por aqui: carimba o que mudou, grava e manda para a nuvem */
+function save(marca=true){
+  if(marca) S.atualizadoEm = new Date().toISOString();
+  carimbar(); gravarLocal(); renderMeta(); agendarEnvio();
+}
+function snap(){ undoSnap = JSON.stringify(S.veiculos); }
+function desfazer(){
+  if(!undoSnap) return;
+  S.veiculos = JSON.parse(undoSnap); undoSnap = null; save(); render(); toast('Desfeito');
+}
+
+/* ---------- carimbo por item (carro e multa), lixeira com data ---------- */
+let _prev = {v:{}, f:{}};
+const hashV = v => JSON.stringify([v.nome, !!v.destaque, v.renavam, v.docTipo, v.doc, v.placa, v.frota, v.conferido || null, v.copiadoEm || null, v.pos]);
+const hashF = m => JSON.stringify([m.data, m.valor ?? null, m.obs || '', m.pagaEm || null, !!m.auto]);
+function fotografar(){
+  _prev = {v:{}, f:{}};
+  S.veiculos.forEach(v => { _prev.v[v.id] = hashV(v); [...v.multas, ...v.pagas].forEach(m => _prev.f[m.id] = hashF(m)); });
+}
+function carimbar(){
+  const agora = Date.now(); S.tomb = S.tomb || {}; S.tombV = S.tombV || {};
+  let maxPos = S.veiculos.reduce((a, v) => Math.max(a, v.pos ?? -1), -1);
+  const vistosV = {}, vistosF = {};
+  S.veiculos.forEach(v => {
+    vistosV[v.id] = 1;
+    if(v.pos == null) v.pos = ++maxPos;
+    if(_prev.v[v.id] !== hashV(v) || !v.rev) v.rev = agora;
+    delete S.tombV[v.id];
+    [...v.multas, ...v.pagas].forEach(m => {
+      vistosF[m.id] = 1;
+      if(_prev.f[m.id] !== hashF(m) || !m.rev) m.rev = agora;
+      delete S.tomb[m.id];
+    });
+  });
+  for(const id in _prev.v) if(!vistosV[id]) S.tombV[id] = agora;
+  for(const id in _prev.f) if(!vistosF[id]) S.tomb[id] = agora;
+  const limite = agora - 400*864e5;   // lixeira com mais de ~13 meses é descartada
+  for(const k in S.tomb) if(S.tomb[k] < limite) delete S.tomb[k];
+  for(const k in S.tombV) if(S.tombV[k] < limite) delete S.tombV[k];
+  fotografar();
+}
+
+/* ---------- união item a item (nenhum aparelho apaga dado do outro) ---------- */
+const normF = m => ({...m, valor: m.valor == null ? null : +m.valor, obs: m.obs || '', rev: m.rev || 0});
+const lista0 = x => (Array.isArray(x) ? x : Object.values(x || {})).filter(Boolean);
+function doRemoto(r){
+  if(!r || !r.veiculos) return null;
+  return {
+    veiculos: Object.values(r.veiculos).filter(Boolean).map(v => ({...v, destaque: !!v.destaque, conferido: v.conferido || null, copiadoEm: v.copiadoEm || null,
+      multas: lista0(v.multas).map(normF), pagas: lista0(v.pagas).map(normF), rev: v.rev || 0})),
+    tomb: r.tomb || {}, tombV: r.tombV || {}
+  };
+}
+const estadoLocal = () => ({veiculos: S.veiculos, tomb: S.tomb || {}, tombV: S.tombV || {}});
+function mesclarEstado(a, b){
+  const tomb = {...(a.tomb || {})}, tombV = {...(a.tombV || {})};
+  for(const k in (b.tomb || {})) tomb[k] = Math.max(tomb[k] || 0, b.tomb[k]);
+  for(const k in (b.tombV || {})) tombV[k] = Math.max(tombV[k] || 0, b.tombV[k]);
+  const mapa = new Map();
+  for(const v of [...a.veiculos, ...b.veiculos]){
+    let ent = mapa.get(v.id);
+    if(!ent){ ent = {meta: v, fines: new Map()}; mapa.set(v.id, ent); }
+    else if((v.rev || 0) > (ent.meta.rev || 0)) ent.meta = v;
+    for(const m of [...(v.multas || []), ...(v.pagas || [])]){
+      const e = ent.fines.get(m.id);
+      if(!e || (m.rev || 0) > (e.rev || 0)) ent.fines.set(m.id, m);
+    }
+  }
+  const out = [];
+  for(const [id, ent] of mapa){
+    if(tombV[id] && tombV[id] >= (ent.meta.rev || 0)) continue;
+    delete tombV[id];
+    const v = {...ent.meta, multas: [], pagas: []};
+    for(const [fid, m] of ent.fines){
+      if(tomb[fid] && tomb[fid] >= (m.rev || 0)) continue;
+      delete tomb[fid];
+      (m.pagaEm ? v.pagas : v.multas).push({...m});
+    }
+    v.multas.sort(cmpData);
+    v.pagas.sort((x, y) => (y.pagaEm || '').localeCompare(x.pagaEm || '') || cmpData(x, y));
+    out.push(v);
+  }
+  out.sort((x, y) => (x.pos ?? 0) - (y.pos ?? 0));
+  return {veiculos: out, tomb, tombV};
+}
+function estavel(x){
+  if(Array.isArray(x)) return '[' + x.map(estavel).join(',') + ']';
+  if(x && typeof x === 'object') return '{' + Object.keys(x).filter(k => x[k] !== undefined && x[k] !== null).sort().map(k => JSON.stringify(k) + ':' + estavel(x[k])).join(',') + '}';
+  return JSON.stringify(x ?? null);
+}
+function canon(st){
+  return estavel({v: st.veiculos.map(v => ({...v, multas: [...v.multas].sort((a, b) => a.id < b.id ? -1 : 1), pagas: [...v.pagas].sort((a, b) => a.id < b.id ? -1 : 1)})).sort((a, b) => a.id < b.id ? -1 : 1), t: st.tomb, tv: st.tombV});
+}
+function paraRemoto(st){
+  const veiculos = {};
+  st.veiculos.forEach(v => { veiculos[v.id] = JSON.parse(JSON.stringify(v)); });
+  return {versao: 1, em: Date.now(), veiculos, tomb: st.tomb, tombV: st.tombV};
+}
+
+/* ---------- nuvem (Firebase, mesma chave do Gestão) ---------- */
+const firebaseConfig = {apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
+let DB = null, REF = null, sinc = 'off', envioT = null, renderPendente = false, recebeuNuvem = false;
+function famHash(key){
+  return crypto.subtle.digest('SHA-256', new TextEncoder().encode('guimas:' + key))
+    .then(buf => Array.prototype.map.call(new Uint8Array(buf), b => ('0' + b.toString(16)).slice(-2)).join(''));
+}
+function chaveSalva(){ try{ return localStorage.getItem('multas_famkey') || ''; }catch(e){ return ''; } }
+function setSync(st){ sinc = st; renderMeta(); }
+async function conectar(chave){
+  if(!DB) return;
+  try{ localStorage.setItem('multas_famkey', chave); }catch(e){}
+  if(REF){ REF.off(); REF = null; }
+  recebeuNuvem = false; setSync('env');
+  const h = await famHash(chave);
+  REF = DB.ref('familias/' + h + '/multas');
+  REF.on('value', snap => aoReceber(snap.val()), err => { setSync('err'); toast('Nuvem recusou a leitura: ' + err.message); });
+}
+function aoReceber(r){
+  recebeuNuvem = true;
+  const rem = doRemoto(r);
+  if(!rem){ if(S.veiculos.length) agendarEnvio(0); else setSync('ok'); return; }
+  const m = mesclarEstado(estadoLocal(), rem);
+  const mudouLocal = canon(m) !== canon(estadoLocal());
+  S.veiculos = m.veiculos; S.tomb = m.tomb; S.tombV = m.tombV;
+  gravarLocal(); fotografar();
+  if(mudouLocal){ if(digitandoNaLista()) renderPendente = true; else render(); }
+  if(canon(m) !== canon(rem)) agendarEnvio(); else setSync('ok');
+}
+function agendarEnvio(ms=600){
+  if(!REF) return;
+  clearTimeout(envioT); setSync('env');
+  envioT = setTimeout(enviar, ms);
+}
+function enviar(){
+  if(!REF) return;
+  const local = {veiculos: JSON.parse(JSON.stringify(S.veiculos)), tomb: {...(S.tomb || {})}, tombV: {...(S.tombV || {})}};
+  REF.transaction(cur => paraRemoto(mesclarEstado(local, doRemoto(cur) || {veiculos: [], tomb: {}, tombV: {}})),
+    (err, ok) => { if(err){ setSync('err'); } else if(ok){ setSync('ok'); } }, false);
+}
+const digitandoNaLista = () => { const a = document.activeElement; return !!(a && a.closest && a.closest('#list') && a.matches('input,textarea,select')); };
+function pedirChave(obrigatorio){
+  let sugestao = chaveSalva();
+  try{ if(!sugestao) sugestao = localStorage.getItem('gestao_famkey') || ''; }catch(e){}
+  const c = modal(`<h2>Chave da nuvem</h2>
+    <p class="hint">Use a <b>mesma chave do app Gestão</b>. Assim as multas ficam iguais no computador e no iPhone.</p>
+    <div class="f"><label>Chave</label><input id="chIn" value="${esc(sugestao)}" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+    <div class="row">${obrigatorio ? '' : '<button class="btn" data-close>Cancelar</button>'}<button class="btn pri" id="chOk">Conectar</button></div>`);
+  $('#chOk', c).onclick = () => {
+    const k = $('#chIn', c).value.trim();
+    if(!k){ toast('Digite a chave'); return; }
+    fechar(); conectar(k); toast('Conectando à nuvem…');
+  };
+  setTimeout(() => $('#chIn', c).focus(), 50);
+}
+
+/* ---------- textos para o WhatsApp ---------- */
+function tot(v){ let val=0, sem=0; for(const m of v.multas){ if(m.valor==null) sem++; else val += m.valor; } return {n:v.multas.length, val, sem}; }
+function textoVeiculo(v, comValores){
+  const t = tot(v);
+  let s = `${v.destaque ? '*'+v.nome+'*' : v.nome}\n\nRenavam - ${v.renavam}\n${v.docTipo} - ${v.doc}\nPlaca - ${v.placa}\n\n(${t.n} ${plural(t.n)})`;
+  if(t.n){
+    s += '\n\n' + v.multas.map(m => {
+      let l = br(m.data);
+      if(comValores && m.valor!=null) l += ' - ' + money(m.valor);
+      if(comValores && m.obs) l += ' (' + m.obs + ')';
+      return l;
+    }).join('\n');
+    if(comValores && t.val > 0) s += `\n\nTotal: ${money(t.val)}` + (t.sem ? ` (+${t.sem} sem valor)` : '');
+  }
+  return s;
+}
+function textoTudo(comValores, soComMulta){
+  return S.veiculos.filter(v => !soComMulta || v.multas.length).map(v => textoVeiculo(v, comValores)).join('\n\n\n');
+}
+function textoResumo(){
+  let n=0, val=0, sem=0, h=0, f=0;
+  S.veiculos.forEach(v => { const t = tot(v); n+=t.n; val+=t.val; sem+=t.sem; if(v.frota==='hudson') h+=t.val; else f+=t.val; });
+  const linhas = S.veiculos.filter(v => v.multas.length).sort((a,b) => tot(b).val - tot(a).val || b.multas.length - a.multas.length)
+    .map(v => { const t = tot(v); return `${v.nome} (${v.placa}) — ${t.n} ${plural(t.n).toLowerCase()} · ${money(t.val)}${t.sem ? ` (+${t.sem} sem valor)` : ''}`; });
+  return `*Multas em aberto — ${br(isoHoje())}*\n\nTotal: ${n} multas · ${money(val)}\nFrota Hudson: ${money(h)}\nFrota Fábio: ${money(f)}` +
+    (sem ? `\n(${sem} multas ainda sem valor lançado)` : '') + `\n\n` + linhas.join('\n');
+}
+
+/* ---------- renderização ---------- */
+const confHoje = v => v.conferido === isoHoje();
+const copiadoHoje = v => v.copiadoEm === isoHoje();
+function lista(){
+  let l = S.veiculos.slice();
+  const q = busca.trim().toLowerCase();
+  if(q){
+    const qp = normPlaca(q), qd = soDig(q);
+    l = l.filter(v => v.nome.toLowerCase().includes(q) || (qp && normPlaca(v.placa).includes(qp)) || (qd.length >= 3 && (soDig(v.renavam).includes(qd) || soDig(v.doc).includes(qd))));
+  }
+  const f = {com:v=>v.multas.length>0, sem:v=>!v.multas.length, valor:v=>tot(v).sem>0, hudson:v=>v.frota==='hudson', fabio:v=>v.frota!=='hudson', pend:v=>!confHoje(v)}[filtro];
+  if(f) l = l.filter(f);
+  return ordenar(l);
+}
+function ordenar(l){
+  const ult = v => (v.multas[0] && v.multas[0].data) || '';
+  const s = {qtd:(a,b)=>b.multas.length-a.multas.length, valor:(a,b)=>tot(b).val-tot(a).val, recente:(a,b)=>ult(b).localeCompare(ult(a)), nome:cmpNome, final:(a,b)=>finalPlaca(a.placa)-finalPlaca(b.placa) || cmpNome(a,b)}[ordem];
+  if(s) l.sort(s);
+  return l;
+}
+
+function numsHTML(v){
+  const t = tot(v);
+  return `<div class="nums"><div class="cnt ${t.n ? 'has' : 'zero'}"><b>${t.n}</b><span>${t.n===1 ? 'multa' : 'multas'}</span></div>` +
+    (t.n ? `<div class="val">${t.val ? money(t.val) : 'R$ —'}</div>` : '') +
+    (t.n && t.sem ? `<div class="miss">${t.sem} sem valor</div>` : '') + `</div>`;
+}
+
+function bodyHTML(v){
+  const rows = v.multas.map(m => `
+    <div class="fine" data-fid="${m.id}">
+      <span class="fd">${br(m.data)}</span>
+      <label class="mi${m.valor==null ? ' vazio' : ''}"><span>R$</span><input data-act="valor" inputmode="decimal" value="${num2(m.valor)}" placeholder="0,00" aria-label="Valor da multa de ${br(m.data)}"></label>
+      <input class="obs" data-act="obs" value="${esc(m.obs)}" placeholder="Infração / observação (opcional)">
+      <div class="fa"><button class="btn sm grn" data-act="pagar" title="Marcar como paga — vai para o histórico">✓ Paga</button><button class="btn sm ghost x" data-act="delm" title="Excluir (lançada errado)">✕</button></div>
+    </div>`).join('');
+  const anim = animarId === v.id; animarId = null;
+  return `<div class="body${anim ? ' anim' : ''}">
+    ${v.multas.length ? `<div class="chips"><span>Valor rápido:</span>${ATALHOS.map(([n,val]) => `<button class="chip" data-act="chip" data-v="${val}">${n}<b>${num2(val)}</b></button>`).join('')}</div>` : ''}
+    <div class="fines">${rows || '<p class="empty">Nenhuma multa em aberto ✓</p>'}</div>
+    <div class="add">
+      <input type="date" class="ad-data" max="${isoHoje()}" aria-label="Data da nova multa">
+      <label class="mi"><span>R$</span><input class="ad-valor" inputmode="decimal" placeholder="valor (opcional)"></label>
+      <button class="btn pri" data-act="add">＋ Adicionar multa</button>
+    </div>
+    <div class="acts">
+      <button class="btn sm" data-act="hist">Histórico de pagas (${v.pagas.length})</button>
+      <button class="btn sm" data-act="edit">Editar dados</button>
+      <button class="btn sm ghost danger" data-act="delcar">Excluir carro</button>
+    </div>
+  </div>`;
+}
+
+function cardHTML(v){
+  const op = abertos.has(v.id), ok = confHoje(v);
+  return `<article class="car${op ? ' open' : ''}${ok ? ' ok' : ''}" data-id="${v.id}">
+    <div class="head" data-act="toggle">
+      <div class="plate"><i>BRASIL</i><b>${esc(v.placa || '—')}</b></div>
+      <div><div class="nm">${esc(v.nome)}${v.destaque ? '<span class="bold" title="Sai em negrito no WhatsApp">*negrito*</span>' : ''}</div>
+        <div class="sub">${ordem==='final' && finalPlaca(v.placa) < 10 ? `<span class="tg fin">Final ${finalPlaca(v.placa)}</span>` : ''}<span class="tg ${v.frota}">${v.frota==='hudson' ? 'Frota Hudson' : 'Frota Fábio'}</span>${ok ? '<span class="tg ok">✓ conferido hoje</span>' : ''}</div></div>
+      ${numsHTML(v)}
+      <span class="chev" aria-hidden="true">›</span>
+    </div>
+    <div class="quick">
+      <button class="cp" data-act="cp" data-v="${esc(v.renavam)}" title="Copiar Renavam"><small>Renavam</small>${esc(v.renavam)}</button>
+      <button class="cp" data-act="cp" data-v="${esc(v.doc)}" title="Copiar ${esc(v.docTipo)}"><small>${esc(v.docTipo)}</small>${esc(v.doc)}</button>
+      <button class="cp" data-act="cp" data-v="${esc(v.placa)}" title="Copiar placa"><small>Placa</small>${esc(v.placa)}</button>
+      <button class="wa${copiadoHoje(v) ? ' on' : ''}" data-act="cpcar" title="Copiar a mensagem deste carro para o grupo">${copiadoHoje(v) ? '✓ Copiado' : '⧉ WhatsApp'}</button>
+      <button class="conf${ok ? ' on' : ''}" data-act="conf">${ok ? '✓ Conferido' : 'Marcar conferido'}</button>
+    </div>
+    ${op ? bodyHTML(v) : ''}
+  </article>`;
+}
+
+function refreshCard(v){ const el = $(`.car[data-id="${v.id}"]`); if(el) el.outerHTML = cardHTML(v); }
+
+function renderStats(){
+  let n=0, val=0, sem=0, com=0, pago=0, qPago=0, h=0, f=0;
+  const mesAtual = isoHoje().slice(0,7);
+  const nomeMes = new Date().toLocaleDateString('pt-BR',{month:'long'});
+  S.veiculos.forEach(v => {
+    const t = tot(v); n+=t.n; val+=t.val; sem+=t.sem; if(t.n) com++;
+    if(v.frota==='hudson') h+=t.val; else f+=t.val;
+    v.pagas.forEach(m => { if((m.pagaEm||'').slice(0,7) === mesAtual){ pago += m.valor||0; qPago++; } });
+  });
+  $('#stats').innerHTML = `
+    <button class="st red" data-f="com"><div class="k">Multas em aberto</div><div class="n">${n}</div><div class="d">em ${com} de ${S.veiculos.length} carros</div></button>
+    <div class="st"><div class="k">Valor lançado</div><div class="n">${money(val)}</div><div class="d">Hudson ${money(h)} · Fábio ${money(f)}</div></div>
+    <button class="st amb" data-f="valor"><div class="k">Falta lançar valor</div><div class="n">${sem}</div><div class="d">${sem===1 ? 'multa sem valor' : 'multas sem valor'}</div></button>
+    <div class="st grn"><div class="k">Baixadas em ${nomeMes}</div><div class="n">${money(pago)}</div><div class="d">${qPago} ${qPago===1 ? 'multa' : 'multas'} · zera todo mês</div></div>`;
+}
+
+function renderConsulta(){
+  const N = S.veiculos.length, ok = S.veiculos.filter(confHoje).length, pct = N ? Math.round(ok/N*100) : 0;
+  const fim = N && ok === N;
+  $('#consulta').innerHTML = `
+    <div class="t"><b>${fim ? 'Consulta de hoje concluída ✓' : 'Consulta de hoje'}</b>
+      <small>${ok} de ${N} carros conferidos · ${br(isoHoje())}</small>
+      <div class="bar"><i style="width:${pct}%"></i></div></div>
+    ${fim ? `<button class="btn pri" data-c="copiar">⧉ Enviar para o grupo</button>`
+          : `<button class="btn grn" data-c="proximo">Próximo a conferir →</button>`}
+    ${ok ? `<button class="btn ghost sm" data-c="zerar">Desmarcar todos</button>` : ''}`;
+}
+
+function renderAvisos(){
+  let h = '';
+  if(!storageOk) h += `<div class="aviso red"><span>Este navegador não está deixando salvar. Abra o arquivo no Chrome ou no Edge e faça backups.</span></div>`;
+  const dias = S.ultimoBackup ? (Date.now() - new Date(S.ultimoBackup).getTime())/864e5 : Infinity;
+  if(sinc !== 'ok' && recebeuNuvem === false && S.veiculos.length && dias > 7 && !chaveSalva()) h += `<div class="aviso"><span>${S.ultimoBackup ? `Último backup há ${Math.floor(dias)} dias.` : 'Você ainda não fez nenhum backup.'} Se o histórico do navegador for limpo, os dados se perdem.</span><button class="btn sm" data-m="backup">Fazer backup</button></div>`;
+  $('#avisos').innerHTML = h;
+}
+
+function renderMeta(){
+  const d = S.atualizadoEm ? new Date(S.atualizadoEm) : null;
+  const st = {ok:['ok','nuvem em dia'], env:['env','sincronizando…'], err:['err','sem nuvem — salvo só aqui'], off:['','offline — salvo só aqui']}[sinc] || ['',''];
+  $('#meta').innerHTML = `<span class="dot ${st[0]}"></span>${st[1]} · ${S.veiculos.length} carros` + (d ? ` · ${d.toLocaleDateString('pt-BR')} ${d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}` : '');
+}
+
+function render(){
+  const l = lista();
+  $('#list').innerHTML = l.length ? l.map(cardHTML).join('') : `<div class="vazio-lista">Nenhum carro neste filtro.</div>`;
+  renderStats(); renderConsulta(); renderAvisos(); renderMeta();
+  $$('#filtros .fchip').forEach(b => b.classList.toggle('on', b.dataset.f === filtro));
+}
+function renderLeve(){ renderStats(); renderConsulta(); }
+
+/* ---------- utilidades de interface ---------- */
+async function copiar(txt, msg){
+  let ok = false;
+  try{ await navigator.clipboard.writeText(txt); ok = true; }catch(e){}
+  if(!ok){
+    const t = document.createElement('textarea'); t.value = txt; t.style.cssText = 'position:fixed;opacity:0;top:0';
+    document.body.appendChild(t); t.select(); try{ ok = document.execCommand('copy'); }catch(e){} t.remove();
+  }
+  toast(ok ? (msg || 'Copiado') : 'Não consegui copiar — selecione e copie manualmente');
+}
+let tt;
+function toast(msg, comDesfazer){
+  const el = $('#toast');
+  el.innerHTML = `<span>${esc(msg)}</span>` + (comDesfazer ? '<button id="undoBtn">Desfazer</button>' : '');
+  el.classList.add('on'); clearTimeout(tt);
+  tt = setTimeout(() => el.classList.remove('on'), comDesfazer ? 6500 : 2200);
+}
+function modal(html){ const d = $('#dlg'); d.querySelector('.dlg-in').onclick = null; d.querySelector('.dlg-in').innerHTML = html; if(!d.open) d.showModal(); return d.querySelector('.dlg-in'); }
+function fechar(){ $('#dlg').close(); }
+function confirmar(msg, botao, cb){
+  const c = modal(`<h2>Confirmar</h2><p class="hint" style="font-size:14px">${msg}</p><div class="row"><button class="btn" data-close>Cancelar</button><button class="btn pri" id="okConf">${botao}</button></div>`);
+  $('#okConf', c).onclick = () => { fechar(); cb(); };
+}
+function achar(id){ return S.veiculos.find(x => x.id === id); }
+function abrirEIr(v){
+  if(!lista().includes(v)){ filtro = 'todos'; busca = ''; $('#q').value = ''; }
+  abertos.add(v.id); render();
+  const el = $(`.car[data-id="${v.id}"]`); if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+/* ---------- janelas ---------- */
+function modalCopiar(){
+  const c = modal(`<h2>Enviar para o grupo</h2>
+    <p class="hint">Uma mensagem por carro: clique em Copiar, cole no WhatsApp e volte para o próximo. Os já copiados hoje ficam marcados.</p>
+    <label class="ck"><input type="checkbox" id="cvVal" ${S.prefValores ? 'checked' : ''}> Incluir valores e total de cada carro</label>
+    <label class="ck"><input type="checkbox" id="cvSo"> Só os carros que têm multa</label>
+    <div class="cvprog"><b id="cvProg"></b><div class="bar"><i id="cvBar"></i></div></div>
+    <ul class="hl" id="cvList"></ul>
+    <div class="row"><button class="btn ghost sm" id="cvZera">Desmarcar copiados</button><button class="btn" id="cvRes">Copiar resumo de valores</button><button class="btn pri" data-close>Concluir</button></div>`);
+  const pinta = () => {
+    const l = ordenar(S.veiculos.slice()).filter(v => !$('#cvSo', c).checked || v.multas.length);
+    const feitos = l.filter(copiadoHoje).length;
+    $('#cvProg', c).textContent = `${feitos} de ${l.length} copiados hoje`;
+    $('#cvBar', c).style.width = (l.length ? Math.round(feitos / l.length * 100) : 0) + '%';
+    $('#cvList', c).innerHTML = l.map(v => { const ok = copiadoHoje(v), t = tot(v);
+      return `<li data-id="${v.id}" class="${ok ? 'feito' : ''}"><div><span class="pl">${esc(v.placa)}</span> ${esc(v.nome)}<small>${t.n} ${t.n===1 ? 'multa' : 'multas'}${t.val ? ' · ' + money(t.val) : ''}</small></div>
+        <button class="btn sm ${ok ? '' : 'pri'}" data-cv>${ok ? '✓ Copiado' : '⧉ Copiar'}</button></li>`; }).join('');
+  };
+  c.onclick = e => {
+    const b = e.target.closest('[data-cv]'); if(!b) return;
+    const v = achar(b.closest('li').dataset.id); if(!v) return;
+    copiar(textoVeiculo(v, S.prefValores), `${v.nome} copiado — cole no grupo`);
+    v.copiadoEm = isoHoje(); save(false); refreshCard(v); pinta();
+  };
+  $('#cvVal', c).onchange = () => { S.prefValores = $('#cvVal', c).checked; save(false); };
+  $('#cvSo', c).onchange = pinta;
+  $('#cvZera', c).onclick = () => { S.veiculos.forEach(v => v.copiadoEm = null); save(false); render(); pinta(); };
+  $('#cvRes', c).onclick = () => copiar(textoResumo(), 'Resumo copiado');
+  pinta();
+}
+
+function modalCarro(v){
+  const novo = !v; v = v || {nome:'', destaque:false, renavam:'', docTipo:'CPF', doc:'', placa:'', frota:'fabio'};
+  const c = modal(`<h2>${novo ? 'Novo carro' : 'Editar carro'}</h2>
+    <p class="hint">${novo ? 'Ele entra no fim da lista do grupo.' : 'As multas não mudam.'}</p>
+    <div class="f"><label>Nome (como aparece no grupo)</label><input id="eNome" value="${esc(v.nome)}" placeholder="Ex.: Logan Branco 2017"></div>
+    <label class="ck"><input type="checkbox" id="eDest" ${v.destaque ? 'checked' : ''}> Nome em <b>negrito</b> no WhatsApp (*asteriscos*)</label>
+    <div class="f"><label>Renavam</label><input id="eRen" value="${esc(v.renavam)}" inputmode="numeric"></div>
+    <div class="f"><label>Documento do proprietário</label><div class="f2">
+      <select id="eTipo"><option ${v.docTipo==='CPF' ? 'selected' : ''}>CPF</option><option ${v.docTipo==='CNPJ' ? 'selected' : ''}>CNPJ</option></select>
+      <input id="eDoc" value="${esc(v.doc)}"></div></div>
+    <div class="f"><label>Placa</label><input id="ePla" value="${esc(v.placa)}" placeholder="ABC-1D23" style="text-transform:uppercase"></div>
+    <div class="f"><label>Frota</label><select id="eFro"><option value="fabio" ${v.frota!=='hudson' ? 'selected' : ''}>Frota Fábio</option><option value="hudson" ${v.frota==='hudson' ? 'selected' : ''}>Frota Hudson</option></select></div>
+    <div class="row"><button class="btn" data-close>Cancelar</button><button class="btn pri" id="eOk">${novo ? 'Adicionar carro' : 'Salvar'}</button></div>`);
+  $('#eOk', c).onclick = () => {
+    const nome = $('#eNome', c).value.trim(), placa = $('#ePla', c).value.trim().toUpperCase();
+    if(!nome || !placa){ toast('Preencha pelo menos nome e placa'); return; }
+    const alvo = novo ? novoVeiculo(nome) : achar(v.id);
+    Object.assign(alvo, {nome, destaque:$('#eDest', c).checked, renavam:$('#eRen', c).value.trim(), docTipo:$('#eTipo', c).value, doc:$('#eDoc', c).value.trim(), placa, frota:$('#eFro', c).value});
+    if(novo){ S.veiculos.push(alvo); }
+    save(); fechar(); if(novo) abrirEIr(alvo); else render();
+    toast(novo ? 'Carro adicionado' : 'Dados salvos');
+  };
+  setTimeout(() => $('#eNome', c).focus(), 50);
+}
+
+function modalHist(v){
+  const pinta = () => {
+    const tot = v.pagas.reduce((s,m) => s + (m.valor||0), 0);
+    const c = modal(`<h2>Histórico de pagas</h2><p class="hint">${esc(v.nome)} · ${esc(v.placa)} · ${v.pagas.length} ${v.pagas.length===1 ? 'multa' : 'multas'} · ${money(tot)}</p>
+      ${v.pagas.length ? `<ul class="hl">${v.pagas.map(m => `<li data-pid="${m.id}"><div><b>${br(m.data)}</b> ${m.valor!=null ? '· ' + money(m.valor) : ''}<small>baixada em ${br(m.pagaEm)}${m.auto ? ' (sumiu da consulta)' : ''}${m.obs ? ' · ' + esc(m.obs) : ''}</small></div>
+        <div class="fa"><button class="btn sm" data-h="volta">↩ Voltar p/ aberto</button><button class="btn sm ghost x" data-h="apaga" title="Apagar do histórico">✕</button></div></li>`).join('')}</ul>`
+        : '<p class="hint">Nenhuma multa baixada ainda.</p>'}
+      <div class="row">${v.pagas.length ? '<button class="btn ghost sm danger" data-h="limpa">Limpar histórico deste carro</button>' : ''}<button class="btn" data-close>Fechar</button></div>`);
+    c.onclick = e => {
+      if(e.target.closest('[data-h=limpa]')){ snap(); v.pagas = []; save(); refreshCard(v); renderLeve(); toast('Histórico do carro limpo', true); pinta(); return; }
+      const b = e.target.closest('[data-h]'); if(!b) return;
+      const id = b.closest('li').dataset.pid, i = v.pagas.findIndex(m => m.id === id); if(i < 0) return;
+      const [m] = v.pagas.splice(i, 1);
+      if(b.dataset.h === 'volta'){ delete m.pagaEm; delete m.auto; v.multas.push(m); v.multas.sort(cmpData); toast('Multa voltou para em aberto'); }
+      else toast('Apagada do histórico');
+      save(); refreshCard(v); renderLeve(); pinta();
+    };
+  };
+  pinta();
+}
+
+function modalImportar(){
+  const c = modal(`<h2>Importar texto do WhatsApp</h2>
+    <p class="hint">Cole a lista no mesmo padrão do grupo (nome, Renavam, CPF/CNPJ, Placa, datas). Pode ter valor na linha da data, ex.: <code>10/02/2026 - R$ 195,23</code>.</p>
+    <textarea id="imTxt" rows="10" placeholder="Cole aqui…"></textarea>
+    <div class="radio">
+      <label><input type="radio" name="imM" value="mesclar" checked><span><b>Atualizar o que já existe</b><small>Acha o carro pelo Renavam/placa, mantém os valores já lançados e manda para o histórico as multas que não aparecem mais.</small></span></label>
+      <label><input type="radio" name="imM" value="substituir"><span><b>Substituir tudo</b><small>Apaga a lista atual e fica só com o texto colado.</small></span></label>
+    </div>
+    <div class="row"><button class="btn" data-close>Cancelar</button><button class="btn pri" id="imOk">Importar</button></div>`);
+  $('#imOk', c).onclick = () => {
+    const novos = parseTexto($('#imTxt', c).value);
+    if(!novos.length){ toast('Não achei nenhum carro nesse texto'); return; }
+    snap();
+    const modo = c.querySelector('input[name=imM]:checked').value;
+    if(modo === 'substituir'){ S.veiculos = novos; abertos.clear(); save(); fechar(); render(); toast(`${novos.length} carros importados`, true); return; }
+    let at = 0, nv = 0, pg = 0;
+    for(const n of novos){
+      const ex = S.veiculos.find(v => (n.renavam && soDig(v.renavam) === soDig(n.renavam)) || (n.placa && normPlaca(v.placa) === normPlaca(n.placa)));
+      if(!ex){ S.veiculos.push(n); nv++; continue; }
+      at++;
+      const sobra = [...ex.multas];
+      ex.multas = n.multas.map(m => {
+        const i = sobra.findIndex(o => o.data === m.data);
+        if(i >= 0){ const o = sobra.splice(i,1)[0]; return {...o, valor: m.valor ?? o.valor, obs: m.obs || o.obs}; }
+        return m;
+      });
+      sobra.forEach(o => { ex.pagas.unshift({...o, pagaEm:isoHoje(), auto:true}); pg++; });
+      Object.assign(ex, {nome:n.nome, destaque:n.destaque, renavam:n.renavam || ex.renavam, docTipo:n.docTipo, doc:n.doc || ex.doc, placa:n.placa || ex.placa});
+    }
+    save(); fechar(); render();
+    toast(`${at} atualizados · ${nv} novos · ${pg} foram p/ histórico`, true);
+  };
+  setTimeout(() => $('#imTxt', c).focus(), 50);
+}
+
+function fazerBackup(){
+  const blob = new Blob([JSON.stringify({app:'guimas-multas', versao:1, em:new Date().toISOString(), dados:S}, null, 1)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `multas-backup-${isoHoje()}.json`;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+  S.ultimoBackup = new Date().toISOString(); save(false); renderAvisos(); toast('Backup baixado — guarde o arquivo');
+}
+
+/* ---------- eventos ---------- */
+$('#list').addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if(!b) return;
+  const act = b.dataset.act; if(act === 'valor' || act === 'obs') return;
+  const card = b.closest('.car'), v = card && achar(card.dataset.id); if(!v) return;
+  const fid = b.closest('.fine') && b.closest('.fine').dataset.fid;
+  const iM = fid ? v.multas.findIndex(m => m.id === fid) : -1;
+  switch(act){
+    case 'toggle':
+      if(abertos.has(v.id)) abertos.delete(v.id); else { abertos.add(v.id); animarId = v.id; }
+      refreshCard(v); break;
+    case 'cp':
+      if(b.dataset.v) copiar(b.dataset.v, 'Copiado: ' + b.dataset.v); break;
+    case 'conf':
+      v.conferido = confHoje(v) ? null : isoHoje(); save();
+      if(filtro === 'pend') render(); else { refreshCard(v); renderConsulta(); }
+      if(confHoje(v) && S.veiculos.every(confHoje)) toast('Todos os carros conferidos ✓');
+      break;
+    case 'pagar': {
+      snap(); const [m] = v.multas.splice(iM, 1); v.pagas.unshift({...m, pagaEm:isoHoje()});
+      save(); refreshCard(v); renderLeve(); toast(`Multa de ${br(m.data)} baixada como paga`, true); break; }
+    case 'delm': {
+      snap(); const [m] = v.multas.splice(iM, 1);
+      save(); refreshCard(v); renderLeve(); toast(`Multa de ${br(m.data)} excluída`, true); break; }
+    case 'chip': {
+      const val = parseFloat(b.dataset.v);
+      const alvo = (ultimoValorInput && card.contains(ultimoValorInput)) ? ultimoValorInput : card.querySelector('.fine [data-act=valor]');
+      if(!alvo) break;
+      alvo.value = num2(val); alvo.dispatchEvent(new Event('change', {bubbles:true}));
+      const linhas = $$('.fine [data-act=valor]', card), i = linhas.indexOf(alvo);
+      const prox = linhas.slice(i+1).find(x => !x.value) || linhas[i+1];
+      if(prox){ prox.focus(); ultimoValorInput = prox; }
+      break; }
+    case 'add': {
+      const dI = card.querySelector('.ad-data'), vI = card.querySelector('.ad-valor');
+      if(!dI.value){ toast('Escolha a data da multa'); dI.focus(); break; }
+      const m = {id:uid(), data:dI.value, valor:parseValor(vI.value), obs:''};
+      v.multas.push(m); v.multas.sort(cmpData); save(); refreshCard(v); renderLeve();
+      const nc = $(`.car[data-id="${v.id}"] .ad-data`); if(nc) nc.focus();
+      toast(`Multa de ${br(m.data)} adicionada`); break; }
+    case 'cpcar':
+      copiar(textoVeiculo(v, S.prefValores), `${v.nome} copiado — cole no grupo`);
+      v.copiadoEm = isoHoje(); save(false); refreshCard(v); break;
+    case 'hist': modalHist(v); break;
+    case 'edit': modalCarro(v); break;
+    case 'delcar':
+      confirmar(`Excluir <b>${esc(v.nome)} · ${esc(v.placa)}</b> e todas as multas dele?`, 'Excluir carro', () => {
+        snap(); S.veiculos = S.veiculos.filter(x => x !== v); save(); render(); toast('Carro excluído', true);
+      }); break;
+  }
+});
+$('#list').addEventListener('change', e => {
+  const t = e.target, act = t.dataset.act; if(act !== 'valor' && act !== 'obs') return;
+  const card = t.closest('.car'), v = achar(card.dataset.id), m = v && v.multas.find(x => x.id === t.closest('.fine').dataset.fid);
+  if(!m) return;
+  if(act === 'valor'){ m.valor = parseValor(t.value); t.value = num2(m.valor); t.closest('.mi').classList.toggle('vazio', m.valor == null); }
+  else m.obs = t.value.trim();
+  save(); card.querySelector('.nums').outerHTML = numsHTML(v); renderStats();
+});
+$('#list').addEventListener('focusout', () => setTimeout(() => { if(renderPendente && !digitandoNaLista()){ renderPendente = false; render(); } }, 150));
+$('#list').addEventListener('focusin', e => { if(e.target.matches('[data-act=valor]')) ultimoValorInput = e.target; });
+$('#list').addEventListener('keydown', e => {
+  if(e.key !== 'Enter') return;
+  const t = e.target;
+  if(t.matches('.ad-data, .ad-valor')){ e.preventDefault(); t.closest('.car').querySelector('[data-act=add]').click(); }
+  else if(t.matches('[data-act=valor]')){
+    e.preventDefault(); const linhas = $$('.fine [data-act=valor]', t.closest('.car')), i = linhas.indexOf(t);
+    t.blur(); if(linhas[i+1]) linhas[i+1].focus();
+  }
+});
+
+$('#consulta').addEventListener('click', e => {
+  const c = e.target.closest('[data-c]'); if(!c) return;
+  if(c.dataset.c === 'proximo'){
+    const v = lista().find(x => !confHoje(x)) || S.veiculos.find(x => !confHoje(x));
+    if(v){ abertos.clear(); abrirEIr(v); }
+  }
+  if(c.dataset.c === 'zerar') confirmar('Desmarcar o “conferido” de todos os carros?', 'Desmarcar', () => { S.veiculos.forEach(v => v.conferido = null); save(); render(); });
+  if(c.dataset.c === 'copiar') modalCopiar();
+});
+$('#stats').addEventListener('click', e => { const b = e.target.closest('[data-f]'); if(b){ filtro = b.dataset.f; render(); } });
+$('#filtros').addEventListener('click', e => { const b = e.target.closest('[data-f]'); if(b){ filtro = b.dataset.f; render(); } });
+$('#q').addEventListener('input', e => { busca = e.target.value; render(); });
+$('#ordem').addEventListener('change', e => { ordem = e.target.value; render(); });
+$('#btnCopiarTudo').onclick = modalCopiar;
+$('#btnMenu').onclick = e => { e.stopPropagation(); $('#menu').classList.toggle('on'); };
+document.addEventListener('click', e => {
+  if(!e.target.closest('.menuwrap')) $('#menu').classList.remove('on');
+  if(e.target.id === 'undoBtn'){ desfazer(); $('#toast').classList.remove('on'); }
+  const m = e.target.closest('[data-m]'); if(!m) return;
+  $('#menu').classList.remove('on');
+  ({ novo:() => modalCarro(null),
+     resumo:() => copiar(textoResumo(), 'Resumo de valores copiado'),
+     importar:modalImportar,
+     backup:fazerBackup,
+     restaurar:() => $('#arqBackup').click(),
+     chave:() => pedirChave(false),
+     limparhist:() => { const q = S.veiculos.reduce((s,v) => s + v.pagas.length, 0);
+       if(!q){ toast('O histórico já está vazio'); return; }
+       confirmar(`Apagar o histórico de <b>${q}</b> ${q===1 ? 'multa paga' : 'multas pagas'} de todos os carros? As multas em aberto não mudam.`, 'Limpar histórico', () => {
+         snap(); S.veiculos.forEach(v => v.pagas = []); save(); render(); toast('Histórico limpo', true); }); },
+     abrir:() => { lista().forEach(v => abertos.add(v.id)); render(); },
+     fechar:() => { abertos.clear(); render(); } })[m.dataset.m]();
+});
+$('#arqBackup').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if(!f) return;
+  try{
+    const j = JSON.parse(await f.text()), d = j.dados || j;
+    if(!Array.isArray(d.veiculos)) throw 0;
+    confirmar(`Restaurar o backup <b>${esc(f.name)}</b> (${d.veiculos.length} carros)? A lista atual será trocada por ele.`, 'Restaurar', () => {
+      snap(); S.veiculos = d.veiculos.map(v => ({...v, multas: v.multas || [], pagas: v.pagas || []})); if(d.prefValores != null) S.prefValores = d.prefValores;
+      abertos.clear(); save(); render(); toast('Backup restaurado e enviado à nuvem', true);
+    });
+  }catch(err){ toast('Esse arquivo não é um backup válido'); }
+};
+$('#dlg').addEventListener('click', e => { if(e.target.id === 'dlg' || e.target.closest('[data-close]')) fechar(); });
+document.addEventListener('keydown', e => {
+  if(e.key === '/' && !e.target.closest('input,textarea,select')){ e.preventDefault(); $('#q').focus(); }
+});
+
+/* ---------- início ---------- */
+if(!load()){ S.veiculos = semente(); gravarLocal(); }
+fotografar();
+render();
+(function iniciarNuvem(){
+  if(!window.firebase){ setSync('off'); return; }
+  try{ firebase.initializeApp(firebaseConfig); DB = firebase.database(); }catch(e){ setSync('err'); return; }
+  let iniciou = false;
+  firebase.auth().onAuthStateChanged(u => {
+    if(!u || iniciou) return; iniciou = true;
+    const k = chaveSalva();
+    if(k) conectar(k); else pedirChave(true);
+  });
+  firebase.auth().signInAnonymously().catch(e => { setSync('err'); toast('Falha ao entrar na nuvem: ' + e.message); });
+})();
+/* Service worker próprio (escopo /multas/), offline e atualização automática */
+if('serviceWorker' in navigator && location.protocol === 'https:'){
+  navigator.serviceWorker.register('sw.js', {scope: './', updateViaCache: 'none'}).catch(() => {});
+}
+/* Se a 1ª visita passou pelo service worker do Gestão, devolve ao Gestão a página dele no cache offline */
+(async () => {
+  try{
+    if(!('caches' in window) || location.protocol !== 'https:') return;
+    const url = new URL('../index.html', location.href).href;
+    for(const k of (await caches.keys()).filter(k => k.startsWith('guimas-gestao-shell-v'))){
+      const c = await caches.open(k), hit = await c.match(url);
+      if(hit && (await hit.clone().text()).includes('content="guimas-multas"')){
+        const r = await fetch(url, {cache: 'no-store'}); if(r.ok) await c.put(url, r);
+      }
+    }
+  }catch(e){}
+})();
+</script>
+</body>
+</html>
