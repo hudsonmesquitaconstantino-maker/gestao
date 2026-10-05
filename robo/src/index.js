@@ -164,7 +164,7 @@ async function lerOdometroCF(ctx, midia) {
       });
       const resp = out && (out.response !== undefined ? out.response : (out.choices && out.choices[0] && out.choices[0].message && out.choices[0].message.content));
       return interpretarResposta(typeof resp === 'string' ? resp : JSON.stringify(resp || {}));
-    } catch (e) { ultimoErro = `${m}: ${String(e.message || e).slice(0, 200)}`; }
+    } catch (e) { ultimoErro += `${m}: ${String(e.message || e).slice(0, 200)} | `; }
   }
   throw new Error('Workers AI: ' + ultimoErro);
 }
@@ -386,9 +386,10 @@ async function http(req, env, exec) {
     if (p[1] !== cod) return new Response('not found', { status: 404 });
     const J = o => new Response(JSON.stringify(o, null, 2), { headers: { 'content-type': 'application/json; charset=utf-8' } });
     if (p[2] === 'ler') {
-      const r = await fetch(url.searchParams.get('img'));
+      const r = await fetch(url.searchParams.get('img'), { headers: { 'user-agent': 'GuimasCarRoboKm/2.1 (teste de leitura)' } });
       const midia = { bytes: await r.arrayBuffer(), mime: r.headers.get('content-type') || 'image/jpeg' };
-      try { return J({ leitura: await lerOdometro(ctx, midia), bytes: midia.bytes.byteLength }); } catch (e) { return J({ erro: e.message }); }
+      const info = { http: r.status, tipo: midia.mime, bytes: midia.bytes.byteLength };
+      try { return J({ leitura: await lerOdometro(ctx, midia), ...info }); } catch (e) { return J({ erro: e.message, ...info }); }
     }
     if (p[2] === 'status') return J({ versao: VERSAO, status: await ctx.get('status'), config: await ctx.get('config'), temWA: !!env.WA_KEY, phone: env.PHONE_NUMBER_ID || '', waba: env.WABA_ID || '' });
   }
