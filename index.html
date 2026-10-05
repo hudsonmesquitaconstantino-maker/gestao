@@ -1026,7 +1026,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=160; var APP_DATE='05/10/2026';
+var APP_VER=161; var APP_DATE='05/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -1495,6 +1495,7 @@ function alertasCarro(c){
  /* carro em processo de venda ao motorista: a manutenção passa a ser do comprador,
     então ele não polui o painel com óleo/correia/CRLV/GNV atrasados. */
  if(c.emVenda)return a;
+ try{a=a.concat(_roboAlertas(c))}catch(e){}
  if(km&&c.proxOleoKm){var f=c.proxOleoKm-km;
   if(f<=0)a.push({n:'red',t:'🛢 Óleo VENCIDO — passou '+fmtKm(-f)+' km da troca ('+fmtKm(c.proxOleoKm)+')'});
   else if(f<=1500)a.push({n:'yel',t:'🛢 Óleo perto: faltam '+fmtKm(f)+' km ('+fmtKm(c.proxOleoKm)+')'});}
@@ -1563,6 +1564,30 @@ function _tombVence(apagados,id,obj){var t=Number(apagados&&apagados[id])||0;if(
 var CARRO_CAMPOS_EDIT=['nome','modeloCRLV','motor','motorCodigo','ano','chassi','renavam','cor','potencia','combustivel','proprietario','locadorId','codigoRadio','motorista','status','semanalPadrao','caucaoPadrao','proximasTrocas','contratoVigenteId','procLeilao','procFinanciado','procObs','emVenda','meuCarro','oleoTipo','oleoIntervalo','correiaIntervalo','proxOleoKm','proxOleoManual','temCorreia','proxCorreiaKm','proxCorreiaManual','sincronismoOrigem','sincronismoRegra','sincronismoConfirmadoEm'];
 function _garanteCampoAt(c){if(!c)return {};if(!c._campoAt||typeof c._campoAt!=='object'){c._campoAt={_legacy:Number(c.editadoEm)||0}}else if(c._campoAt._legacy===undefined)c._campoAt._legacy=Number(c.editadoEm)||0;return c._campoAt}
 function _campoAtCarro(c,k){var m=c&&c._campoAt;if(m&&typeof m==='object')return Number(m[k])||Number(m._all)||Number(m._legacy)||0;return Number(c&&c.editadoEm)||0}
+/* v161: robô do km (WhatsApp). Ele grava em familias/<h>/robo — o Gestão só LÊ e aplica
+   a leitura da foto do painel como última quilometragem, pela mesma regra de sempre:
+   vale o evento mais recente por data. Idempotente nos dois iPhones. */
+var ROBO=null,ROBOREF=null;
+function _roboLeitura(pk){var l=ROBO&&ROBO.leituras&&ROBO.leituras[pk];return (l&&Number(l.km)>0&&/^\d{4}-\d{2}-\d{2}$/.test(l.data||''))?l:null}
+function _aplicarRobo(){
+ if(!S||!_gotCloud||!ROBO||!ROBO.leituras)return 0;var mud=0;
+ Object.keys(ROBO.leituras).forEach(function(pk){var c=S.carros[pk],l=_roboLeitura(pk);if(!c||!l)return;
+  var dAt=c.kmUltimaData||'',km=Number(l.km);
+  if(l.data>dAt||(l.data===dAt&&km>(Number(c.kmUltima)||0))){c.kmUltima=km;c.kmUltimaData=l.data;_garanteCampoAt(c).kmUltima=Date.now();mud++}
+ });
+ if(mud){try{save()}catch(e){}try{if(TAB===0||TAB===3||TAB===4)keepScreenStill(render)}catch(e){}}
+ return mud;
+}
+setInterval(function(){try{_aplicarRobo()}catch(e){}},20000);
+function _roboAlertas(c){
+ var a=[];if(!ROBO||!ROBO.config||!ROBO.config.ativo||!S)return a;
+ var pk=Object.keys(S.carros).find(function(k){return S.carros[k]===c});if(!pk)return a;
+ var est=ROBO.estado||{},m=(est.motoristas||{})[pk],fo=(est.fones||{})[pk];
+ if(m&&m.aberto&&m.atrasado&&m.pedidoEm){var dias=Math.floor((Date.now()-m.pedidoEm)/864e5);
+  a.push({n:'red',t:'📸 Sem foto do painel há '+dias+' dias — cobrar '+(function(n){return n?n.charAt(0)+n.slice(1).toLowerCase():'o motorista'})(String(c.motorista||'').trim().split(/\s+/)[0])});}
+ if(fo&&!fo.envio&&c.status==='ativo')a.push({n:'yel',t:'📵 Robô do km: contrato sem telefone do motorista'});
+ return a;
+}
 function _touchCarro(c,campos){if(!c)return;var n=Date.now(),m=_garanteCampoAt(c);c.editadoEm=n;if(campos&&campos.length){campos.forEach(function(k){m[k]=n})}else m._all=n}
 function _valorCarroDet(v){try{return JSON.stringify(v)}catch(e){return String(v)}}
 /* v156: quilometragem digitada à mão na ficha. Se mudou o km e a data nem foi tocada, a data vira hoje;
@@ -1757,6 +1782,8 @@ function conectar(chave){
   _refValorCb=function(snap){if(seq===_connectSeq)aplicarSnapshot(snap.val())};
   _refErroCb=function(err){if(seq===_connectSeq)toast('⚠️ Sem acesso ao banco: '+err.message)};
   REF.on('value',_refValorCb,_refErroCb);
+  try{if(ROBOREF)ROBOREF.off()}catch(e){};ROBO=null;
+  ROBOREF=DB.ref('familias/'+h+'/robo');ROBOREF.on('value',function(s){if(seq!==_connectSeq)return;ROBO=s.val()||null;_aplicarRobo()},function(){});
   vigiarConexao();
  }).catch(function(e){if(seq===_connectSeq)toast('⚠️ Não consegui preparar a sincronização: '+e.message)});
 }
@@ -2417,7 +2444,7 @@ function ficha(pk){window._fichaPk=pk;
   '<b>Renavam</b><span>'+esc(c.renavam)+'</span>'+ 
   '<b>Código do rádio</b><span>'+esc(c.codigoRadio||'—')+'</span>'+ 
   '<b>KM de quando alugou</b><span>'+fmtKm(c.kmAtual)+' km <span style="color:var(--tx2)">(início do contrato)</span></span>'+ 
-  '<b>Última quilometragem</b><span>'+fmtKm(c.kmUltima||c.kmAtual)+' km'+(c.kmUltimaData?' <span style="color:var(--tx2)">· em '+dataBR(c.kmUltimaData)+'</span>':' <span style="color:var(--tx2)">(último registro)</span>')+'</span>'+ 
+  '<b>Última quilometragem</b><span>'+fmtKm(c.kmUltima||c.kmAtual)+' km'+(function(){var l=_roboLeitura(pk);return (l&&l.data===c.kmUltimaData&&Number(l.km)===Number(c.kmUltima))?' 📸':''})()+(c.kmUltimaData?' <span style="color:var(--tx2)">· em '+dataBR(c.kmUltimaData)+'</span>':' <span style="color:var(--tx2)">(último registro)</span>')+'</span>'+ 
   '<b>Proprietário</b><span>'+esc(c.proprietario)+'</span>'+ 
   '<b>Valor de referência</b><span>'+(c.valorRef?'R$ '+fmtBRL(c.valorRef):'—')+(c.fipeMes?' <span style="color:var(--ok);font-size:11px">FIPE '+esc(c.fipeMes)+'</span>':'')+'</span>'+ 
   '<b>Licenciamento (CRLV)</b><span>exercício '+esc(c.exercicioCRLV||'—')+'</span></div></div></details>';
