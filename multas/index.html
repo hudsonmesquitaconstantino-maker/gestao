@@ -157,6 +157,18 @@ select{border:1px solid var(--line);background:var(--card);border-radius:10px;pa
 .mi:focus-within,.obs:focus,.f input:focus,.f select:focus,textarea:focus,input[type=date]:focus{outline:none;border-color:var(--amber);box-shadow:0 0 0 3px rgba(199,122,22,.15)}
 .fa{display:flex;gap:4px}
 .x{color:var(--mut)}
+.btn.obr{color:var(--mut);padding:5px 8px}
+.btn.obr.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.docbox{border:1px solid #F1D8B3;background:#FFFBF4;border-radius:12px;padding:10px 12px;margin:6px 0 4px}
+.docbox .dh{display:flex;justify-content:space-between;align-items:baseline;font-weight:700;font-size:14px;margin-bottom:4px}
+.docbox .dh b{font-family:var(--num);font-size:22px;color:var(--red)}
+.docbox.ok .dh b{color:var(--green)}
+.docbox .li{display:flex;justify-content:space-between;font-size:13.5px;padding:2px 0;color:#30343B}
+.docbox .li span:last-child{font-family:var(--num);font-size:15.5px;font-weight:600}
+.docbox small{display:block;color:var(--mut);font-size:12px;margin-top:4px}
+.mres .li{display:flex;justify-content:space-between;font-size:13.5px;padding:3px 0;border-bottom:1px solid #EEF0F3}
+.mres .li:last-child{border-bottom:0}
+.mres .li span:last-child{font-family:var(--num);font-size:15.5px;font-weight:600}
 .empty{color:var(--green);font-weight:600;margin:6px 0;font-size:14px}
 .add{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;padding:10px;background:#fff;border:1px dashed #D9DCE2;border-radius:12px;align-items:center}
 .add input[type=date]{border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:#fff}
@@ -171,7 +183,10 @@ select{border:1px solid var(--line);background:var(--card);border-radius:10px;pa
   .tools select,.dtools select{flex:1}
   .cp,.wa,.conf{font-size:12.5px}
   .fine{grid-template-columns:auto minmax(0,1fr) auto}
-  .fine .obs{grid-column:1/-1;order:5}
+  .fine .mi{grid-column:2/4}
+  .fine .obs{grid-column:1/3}
+  .fine .fa{grid-column:3}
+  .btn.obr.on{font-size:12px}
   .head{gap:10px;padding:12px 12px 10px}
   .plate{width:84px}.plate b{font-size:14.5px}
   .quick{padding:0 12px 12px}
@@ -221,9 +236,10 @@ body.deb #pgMultas{display:none} body.deb #pgDebitos{display:block} body.deb #bt
 @media(max-width:640px){
   .drow{grid-template-columns:1fr auto}
   .drow .det{grid-column:1/-1;order:3}
-  .dl{grid-template-columns:1fr 1fr}
-  .dl .tp{grid-column:1/-1}
-  .dl .fa{grid-column:1/-1;justify-content:flex-end}
+  .dl{grid-template-columns:minmax(0,1fr)}
+  .dl .pg{display:grid;grid-template-columns:62px minmax(0,1fr);align-items:center}
+  .dl .pg input{min-width:0;width:100%}
+  .dl .fa{justify-content:flex-end}
 }
 
 /* janelas */
@@ -328,7 +344,7 @@ footer{color:var(--mut);font-size:12.5px;text-align:center;margin-top:24px;line-
   </div>
   <section id="dList"></section>
  </div>
-  <footer>Dados salvos na nuvem (mesma chave do Gestão) e neste aparelho. Abre igual no computador e no iPhone.<br>Valores-base do CTB (art. 258): leve R$ 88,38 · média R$ 130,16 · grave R$ 195,23 · gravíssima R$ 293,47 (algumas têm multiplicador).<br><span style="opacity:.6">Multas e Débitos v12</span></footer>
+  <footer>Dados salvos na nuvem (mesma chave do Gestão) e neste aparelho. Abre igual no computador e no iPhone.<br>Valores-base do CTB (art. 258): leve R$ 88,38 · média R$ 130,16 · grave R$ 195,23 · gravíssima R$ 293,47 (algumas têm multiplicador).<br><span style="opacity:.6">Multas e Débitos v13</span></footer>
 </main>
 
 <dialog id="dlg"><div class="dlg-in"></div></dialog>
@@ -875,7 +891,7 @@ function desfazer(){
 /* ---------- carimbo por item (carro e multa), lixeira com data ---------- */
 let _prev = {v:{}, f:{}};
 const hashV = v => JSON.stringify([v.nome, !!v.destaque, v.renavam, v.docTipo, v.doc, v.placa, v.frota, v.conferido || null, v.copiadoEm || null, v.pos, v.fipeIpva || null]);
-const hashF = m => m.tipo ? JSON.stringify(['d', m.tipo, +m.ano, m.valor ?? null, m.venc || '', m.pagoEm || '', m.obs || '', m.ref ?? null, !!m.auto]) : JSON.stringify([m.data, m.valor ?? null, m.obs || '', m.pagaEm || null, !!m.auto]);
+const hashF = m => m.tipo ? JSON.stringify(['d', m.tipo, +m.ano, m.valor ?? null, m.venc || '', m.pagoEm || '', m.obs || '', m.ref ?? null, !!m.auto]) : JSON.stringify([m.data, m.valor ?? null, m.obs || '', m.pagaEm || null, !!m.auto, !!m.obrig]);
 const itensDe = v => [...v.multas, ...v.pagas, ...(v.debitos || [])];
 function fotografar(){
   _prev = {v:{}, f:{}};
@@ -1098,7 +1114,7 @@ function bodyHTML(v){
       <span class="fd">${br(m.data)}</span>
       <label class="mi${m.valor==null ? ' vazio' : ''}"><span>R$</span><input data-act="valor" inputmode="decimal" value="${num2(m.valor)}" placeholder="0,00" aria-label="Valor da multa de ${br(m.data)}"></label>
       <input class="obs" data-act="obs" value="${esc(m.obs)}" placeholder="Infração / observação (opcional)">
-      <div class="fa"><button class="btn sm grn" data-act="pagar" title="Marcar como paga — vai para o histórico">✓ Paga</button><button class="btn sm ghost x" data-act="delm" title="Excluir (lançada errado)">✕</button></div>
+      <div class="fa"><button class="btn sm obr${m.obrig ? ' on' : ''}" data-act="obrig" title="Pagamento obrigatório para tirar o documento">🔒${m.obrig ? ' Obrig.' : ''}</button><button class="btn sm grn" data-act="pagar" title="Marcar como paga — vai para o histórico">✓ Paga</button><button class="btn sm ghost x" data-act="delm" title="Excluir (lançada errado)">✕</button></div>
     </div>`).join('');
   const anim = animarId === v.id; animarId = null;
   return `<div class="body${anim ? ' anim' : ''}">
@@ -1356,6 +1372,10 @@ $('#list').addEventListener('click', e => {
       if(filtro === 'pend') render(); else { refreshCard(v); renderConsulta(); }
       if(confHoje(v) && S.veiculos.every(confHoje)) toast('Todos os carros conferidos ✓');
       break;
+    case 'obrig': {
+      const m = v.multas[iM]; if(!m) break;
+      m.obrig = !m.obrig; v.conferido = isoHoje(); save(); refreshCard(v); renderLeve();
+      toast(m.obrig ? `Multa de ${br(m.data)}: obrigatória para o documento` : `Multa de ${br(m.data)}: não obrigatória`); break; }
     case 'pagar': {
       v.conferido = isoHoje(); snap(); const [m] = v.multas.splice(iM, 1); v.pagas.unshift({...m, pagaEm:isoHoje()});
       save(); refreshCard(v); renderLeve(); toast(`Multa de ${br(m.data)} baixada como paga`, true); break; }
@@ -1731,6 +1751,30 @@ function situacao(v){
   });
   return out;
 }
+/* Quanto o carro precisa para sair com o documento: IPVA + GRT (+ vistoria/outros do ano) + multas OBRIGATÓRIAS.
+   CRLV atrasado → documento do ano atual; CRLV em dia → previsão do próximo. */
+function paraDocumento(v){
+  const g = gCarro(v), Y = new Date().getFullYear(), ex = g ? parseInt(g.exercicioCRLV, 10) || 0 : 0;
+  const pend = !!g && ex < Y, T = g && ex >= Y ? Y + 1 : Y, itens = [];
+  if(g){
+    ['ipva', 'grt'].forEach(tp => {
+      const ls = (v.debitos || []).filter(d => d.tipo === tp && +d.ano === T);
+      const rot = TIPO_NOME[tp] + (tp === 'ipva' ? ' (estimado)' : '');
+      if(ls.length){ const ab = ls.filter(d => !d.pagoEm); if(ab.length) itens.push({nome: rot, valor: ab.reduce((a, d) => a + (d.valor || 0), 0), sem: ab.some(d => d.valor == null)}); }
+      else if(T > Y || pend){ const val = tp === 'grt' ? valorGRT(T) : ipvaEstimado(v, g, T).valor; itens.push({nome: rot + (T > Y ? ' — previsto' : ''), valor: val || 0, sem: val == null}); }
+    });
+    (v.debitos || []).filter(d => !d.pagoEm && +d.ano === T && d.tipo !== 'ipva' && d.tipo !== 'grt')
+      .forEach(d => itens.push({nome: TIPO_NOME[d.tipo] || d.tipo, valor: d.valor || 0, sem: d.valor == null}));
+  }
+  const ob = v.multas.filter(m => m.obrig);
+  if(ob.length) itens.push({nome: `Multas obrigatórias (${ob.length})`, valor: ob.reduce((a, m) => a + (m.valor || 0), 0), sem: ob.some(m => m.valor == null)});
+  return {T, pend, itens, total: itens.reduce((a, i) => a + i.valor, 0), sem: itens.some(i => i.sem)};
+}
+function resumoMultas(v){
+  const Y = String(new Date().getFullYear()), ab = v.multas, ob = ab.filter(m => m.obrig), pg = v.pagas.filter(m => (m.pagaEm || '').slice(0, 4) === Y);
+  const soma = l => l.reduce((a, m) => a + (m.valor || 0), 0);
+  return {n: ab.length, val: soma(ab), sem: ab.filter(m => m.valor == null).length, nOb: ob.length, valOb: soma(ob), nPg: pg.length, valPg: soma(pg), Y};
+}
 function resumoDeb(v){
   const sit = situacao(v);
   const aberto = (v.debitos || []).filter(d => !d.pagoEm).reduce((s, d) => s + (d.valor || 0), 0);
@@ -1757,7 +1801,8 @@ function dLista(){
   return l.sort(s);
 }
 function dNumsHTML(v){
-  const r = resumoDeb(v);
+  const r = resumoDeb(v), pd = paraDocumento(v);
+  if(pd.pend) return `<div class="nums"><div class="nd red">${money(pd.total)}</div><div class="miss" style="color:var(--red)">p/ documento ${pd.T}${pd.sem ? ' + itens sem valor' : ''}</div></div>`;
   if(r.aberto > 0) return `<div class="nums"><div class="nd red">${money(r.aberto)}</div><div class="miss" style="color:var(--red)">em aberto</div>${r.pend ? `<div class="miss">${r.pend} pendência${r.pend > 1 ? 's' : ''}</div>` : ''}</div>`;
   if(r.pend) return `<div class="nums"><div class="nd red">${r.pend}</div><div class="miss" style="color:var(--red)">pendência${r.pend > 1 ? 's' : ''} ${anoRef}</div></div>`;
   if(!GEST.idx) return `<div class="nums"><div class="miss" style="color:var(--mut)">aguardando Gestão</div></div>`;
@@ -1785,6 +1830,15 @@ function dBodyHTML(v){
   const g = gCarro(v);
   return `<div class="body${dAnim === v.id ? ' anim' : ''}">
     ${g ? `<p class="hint" style="margin:0 0 4px;font-size:12px;color:var(--mut)">Do Gestão: CRLV ${esc(g.exercicioCRLV || '—')}${ehGNV(g) ? ` · vistoria GNV ${esc(g.gnvExercicio || '—')} · reteste ${g.gnvRequalif ? br(g.gnvRequalif) : '—'}` : ' · sem GNV'}</p>` : ''}
+    ${(() => { const pd = paraDocumento(v), rm = resumoMultas(v);
+      return `<div class="docbox${pd.itens.length && pd.total === 0 && !pd.sem ? ' ok' : ''}"><div class="dh"><span>Para tirar o documento ${pd.T}</span><b>${money(pd.total)}</b></div>
+        ${pd.itens.length ? pd.itens.map(i => `<div class="li"><span>${esc(i.nome)}</span><span>${i.sem && !i.valor ? 'sem valor' : money(i.valor) + (i.sem ? ' +' : '')}</span></div>`).join('') : '<div class="li"><span>Nada pendente</span><span>R$ 0,00</span></div>'}
+        <small>${pd.pend ? `CRLV atrasado no Gestão. Multas entram só se marcadas com 🔒 (pagamento obrigatório).` : pd.T > new Date().getFullYear() ? `Previsão do próximo documento — o CRLV ${pd.T - 1} já está em dia. Só multas marcadas com 🔒 entram.` : 'Só multas marcadas com 🔒 entram.'}</small></div>
+      <div class="dsec mres"><h4>Multas</h4>
+        <div class="li"><span>Em aberto: ${rm.n}${rm.sem ? ` (${rm.sem} sem valor)` : ''}</span><span>${money(rm.val)}</span></div>
+        <div class="li"><span>🔒 Obrigatórias p/ documento: ${rm.nOb}</span><span>${money(rm.valOb)}</span></div>
+        <div class="li"><span>Pagas em ${rm.Y}: ${rm.nPg}</span><span>${money(rm.valPg)}</span></div>
+      </div>`; })()}
     <div class="dsec"><h4>Situação ${Y}</h4>${linhas}</div>
     <div class="dsec"><h4>Lançamentos ${Y}</h4>${lanc || '<p class="hint" style="margin:4px 0;font-size:13px;color:var(--mut)">Nenhum lançamento neste ano.</p>'}</div>
     <div class="add">
@@ -1829,8 +1883,10 @@ function renderDebStats(){
     if(resumoDeb(v).pend) pend++;
   });
   const nG = GEST.idx ? Object.keys(GEST.idx).length : 0;
+  let lic = 0, nLic = 0;
+  S.veiculos.forEach(v => { const pd = paraDocumento(v); if(pd.pend){ lic += pd.total; nLic++; } });
   $('#dStats').innerHTML = `
-    <div class="st red"><div class="k">Débitos em aberto</div><div class="n">${money(aberto)}</div><div class="d">${nAberto} ${nAberto === 1 ? 'lançamento' : 'lançamentos'}</div></div>
+    <div class="st red"><div class="k">Para licenciar a frota</div><div class="n">${money(lic)}</div><div class="d">${nLic} ${nLic === 1 ? 'carro com CRLV atrasado' : 'carros com CRLV atrasado'} · débitos em aberto ${money(aberto)}</div></div>
     <button class="st amb" data-f="pend"><div class="k">Carros com pendência ${anoRef}</div><div class="n">${GEST.idx ? pend : '—'}</div><div class="d">de ${S.veiculos.length} carros</div></button>
     <div class="st grn"><div class="k">Pago em ${anoRef}</div><div class="n">${money(pagoAno)}</div><div class="d">débitos + multas baixadas</div></div>
     <div class="st"><div class="k">Dados do Gestão</div><div class="n" style="font-size:22px">${GEST.erro ? 'Erro' : GEST.idx ? GEST_TOTAL + ' carros' : '—'}</div><div class="d">${GEST.erro ? esc(GEST.erro) : GEST.idx ? 'lido ' + new Date(GEST.lidoEm).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}) + ' · só leitura' : 'conecte a chave da nuvem'}</div></div>`;
