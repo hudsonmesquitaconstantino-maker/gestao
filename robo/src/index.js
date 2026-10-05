@@ -5,10 +5,11 @@
    SEGURANÇA: o robô só conhece a área isolada familias/<ROBO_ID>. Ele não tem a chave do Gestão,
    não lê contratos, CPFs nem financeiro. O Gestão exporta para lá só nome, telefone, carro, km e
    próximas trocas, e é o Gestão (não o robô) que aplica a leitura no carro.
-   Segredos (Cloudflare → Settings → Variables and Secrets): ROBO_ID, GEMINI_KEY, WA_KEY.
+   Segredos (Cloudflare → Settings → Variables and Secrets): ROBO_ID e WA_KEY (GEMINI_KEY é opcional:
+   sem ela, a foto é lida pela IA da própria Cloudflare).
    Este arquivo é público no GitHub: nada de segredo aqui. */
 
-const VERSAO = 'robo-km 2.0';
+const VERSAO = 'robo-km 2.1';
 const DIA = 864e5;
 
 /* ---------------- utilidades ---------------- */
@@ -150,7 +151,25 @@ function b64(buf) {
   for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
   return btoa(s);
 }
+/* Leitura pela IA da própria Cloudflare (Workers AI, plano grátis): sem conta nem chave extra. */
+const MODELOS_CF = ['@cf/meta/llama-4-scout-17b-16e-instruct', '@cf/mistralai/mistral-small-3.1-24b-instruct'];
+async function lerOdometroCF(ctx, midia) {
+  const url = `data:${midia.mime.split(';')[0]};base64,${b64(midia.bytes)}`;
+  let ultimoErro = '';
+  for (const m of [ctx.env.CF_MODEL, ...MODELOS_CF].filter(Boolean)) {
+    try {
+      const out = await ctx.env.AI.run(m, {
+        messages: [{ role: 'user', content: [{ type: 'text', text: PROMPT }, { type: 'image_url', image_url: { url } }] }],
+        max_tokens: 200, temperature: 0
+      });
+      const resp = out && (out.response !== undefined ? out.response : (out.choices && out.choices[0] && out.choices[0].message && out.choices[0].message.content));
+      return interpretarResposta(typeof resp === 'string' ? resp : JSON.stringify(resp || {}));
+    } catch (e) { ultimoErro = `${m}: ${String(e.message || e).slice(0, 200)}`; }
+  }
+  throw new Error('Workers AI: ' + ultimoErro);
+}
 async function lerOdometro(ctx, midia) {
+  if (!ctx.env.GEMINI_KEY && ctx.env.AI) return lerOdometroCF(ctx, midia);
   const modelos = [ctx.env.GEMINI_MODEL, 'gemini-flash-latest', 'gemini-flash-lite-latest'].filter(Boolean);
   const corpo = {
     contents: [{ parts: [{ text: PROMPT }, { inline_data: { mime_type: midia.mime.split(';')[0], data: b64(midia.bytes) } }] }],
@@ -359,6 +378,20 @@ async function http(req, env, exec) {
     }
   }
   if (url.pathname === '/') return new Response(VERSAO + ' · ok', { status: 200 });
+  /* diagnóstico: /adm/<código>/ler?img=URL testa a leitura de uma foto de painel (código = sha256('adm:'+ROBO_ID), 32 primeiros) */
+  const p = url.pathname.split('/').filter(Boolean);
+  if (p[0] === 'adm' && p.length >= 3) {
+    const ctx = new Ctx(env);
+    const cod = [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode('adm:' + env.ROBO_ID.trim())))].map(x => x.toString(16).padStart(2, '0')).join('').slice(0, 32);
+    if (p[1] !== cod) return new Response('not found', { status: 404 });
+    const J = o => new Response(JSON.stringify(o, null, 2), { headers: { 'content-type': 'application/json; charset=utf-8' } });
+    if (p[2] === 'ler') {
+      const r = await fetch(url.searchParams.get('img'));
+      const midia = { bytes: await r.arrayBuffer(), mime: r.headers.get('content-type') || 'image/jpeg' };
+      try { return J({ leitura: await lerOdometro(ctx, midia), bytes: midia.bytes.byteLength }); } catch (e) { return J({ erro: e.message }); }
+    }
+    if (p[2] === 'status') return J({ versao: VERSAO, status: await ctx.get('status'), config: await ctx.get('config'), temWA: !!env.WA_KEY, phone: env.PHONE_NUMBER_ID || '', waba: env.WABA_ID || '' });
+  }
   return new Response('not found', { status: 404 });
 }
 
@@ -376,4 +409,4 @@ export default {
 };
 
 /* exportado só para os testes locais */
-export const _t = { foneChave, foneEnvio, interpretarResposta, plausivel, textoResposta, ciclo, processarWebhook, Ctx, primeiroNome, fmtPlaca, saudacao, MODELO, textoPedidoLivre };
+export const _t = { lerOdometro, foneChave, foneEnvio, interpretarResposta, plausivel, textoResposta, ciclo, processarWebhook, Ctx, primeiroNome, fmtPlaca, saudacao, MODELO, textoPedidoLivre };
