@@ -395,6 +395,9 @@ async function http(req, env, exec) {
       const q = url.searchParams.get('q') || '';
       const F = ind => `https://olinda.bcb.gov.br/olinda/servico/Expectativas/versao/v1/odata/ExpectativasMercadoAnuais?$top=12&$format=json&$orderby=Data%20desc&$filter=Indicador%20eq%20'${ind}'%20and%20baseCalculo%20eq%200&$select=Indicador,Data,DataReferencia,Mediana,baseCalculo`;
       const pre = { selic: F('Selic'), ipca: F('IPCA'), cambio: F('C%C3%A2mbio'), pib: F('PIB%20Total') };
+      const rg = q.match(/^r(\d+)_(\d+)$/);
+      if (rg) { const br = d => d.toISOString().slice(0, 10).split('-').reverse().join('/'); const fim = new Date(), ini = new Date(Date.now() - Number(rg[2]) * 864e5);
+        pre[q] = `https://api.bcb.gov.br/dados/serie/bcdata.sgs.${rg[1]}/dados?formato=json&dataInicial=${br(ini)}&dataFinal=${br(fim)}`; }
       const m = q.match(/^sgs(\d+)_(\d+)$/);
       const alvo = new URL(pre[q] || (m ? `https://api.bcb.gov.br/dados/serie/bcdata.sgs.${m[1]}/dados/ultimos/${m[2]}?formato=json` : url.searchParams.get('u')));
       if (!/(^|\.)bcb\.gov\.br$/.test(alvo.hostname)) return new Response('domínio não permitido', { status: 400 });
