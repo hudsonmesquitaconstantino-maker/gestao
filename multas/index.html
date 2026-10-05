@@ -328,7 +328,7 @@ footer{color:var(--mut);font-size:12.5px;text-align:center;margin-top:24px;line-
   </div>
   <section id="dList"></section>
  </div>
-  <footer>Dados salvos na nuvem (mesma chave do Gestão) e neste aparelho. Abre igual no computador e no iPhone.<br>Valores-base do CTB (art. 258): leve R$ 88,38 · média R$ 130,16 · grave R$ 195,23 · gravíssima R$ 293,47 (algumas têm multiplicador).<br><span style="opacity:.6">Multas e Débitos v11</span></footer>
+  <footer>Dados salvos na nuvem (mesma chave do Gestão) e neste aparelho. Abre igual no computador e no iPhone.<br>Valores-base do CTB (art. 258): leve R$ 88,38 · média R$ 130,16 · grave R$ 195,23 · gravíssima R$ 293,47 (algumas têm multiplicador).<br><span style="opacity:.6">Multas e Débitos v12</span></footer>
 </main>
 
 <dialog id="dlg"><div class="dlg-in"></div></dialog>
@@ -1527,7 +1527,7 @@ function ipvaEstimado(v, g, ano){
   const base = fi[ano] || +g.valorRef || 0;
   if(!base) return {valor: null, obs: 'estimado · sem FIPE no Gestão'};
   const a = aliquotaIPVA(g), val = Math.round(base * a.aliq * 0.97 * 100) / 100;
-  return {valor: val, obs: `${jan ? 'calculado' : 'estimado'} · FIPE ${jan ? 'jan/' + ano : 'atual'} ${money(base)} × ${String(a.aliq * 100).replace('.', ',')}% (${a.tipo}) − 3% cota única`};
+  return {valor: val, obs: `estimado · FIPE ${jan ? 'jan/' + ano : 'atual'} ${money(base)} × ${String(a.aliq * 100).replace('.', ',')}% (${a.tipo}) − 3% cota única`};
 }
 /* FIPE de JANEIRO do ano, direto da tabela FIPE (mesmos códigos de marca/modelo/ano vinculados no Gestão).
    Roda sozinho uma vez por ano por carro; atualiza o IPVA ainda não pago. Se a FIPE estiver fora do ar, fica a estimativa. */

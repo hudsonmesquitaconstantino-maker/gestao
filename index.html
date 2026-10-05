@@ -1026,7 +1026,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=156; var APP_DATE='30/09/2026';
+var APP_VER=157; var APP_DATE='05/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -3693,14 +3693,24 @@ function b64ToUrl(b64,mime){
 }
 var _pedirCb=null;
 function pedirArquivo(path,accept,pk,flag){
+ /* v157: no iPhone um <input type=file> solto (fora da página) às vezes nunca dispara o
+    "change" — o arquivo era escolhido e nada acontecia. Agora o campo fica preso na página
+    enquanto o arquivo é escolhido, e o documento é LIDO na hora (força), com aviso do resultado. */
  var inp=document.createElement('input');inp.type='file';inp.accept=accept;
+ inp.style.cssText='position:fixed;left:-9999px;top:0;opacity:0;width:1px;height:1px';
+ document.body.appendChild(inp);
+ var tirar=function(){setTimeout(function(){if(inp.parentNode)inp.parentNode.removeChild(inp)},1000)};
  inp.onchange=function(){
-  if(!inp.files||!inp.files[0])return;
+  if(!inp.files||!inp.files[0]){tirar();return}
   var _f=inp.files[0];
   enviarArquivo(_f,path,function(){
-   if(pk){S.carros[pk][flag||'temCrlv']=true;save();ficha(pk)}
-   toast('✅ Documento salvo na nuvem');
-   if(pk){_docVarr.visto[pk+'/crlv']=0;_docVarr.visto[pk+'/gnv']=0;setTimeout(function(){varrerDocsAuto({pk:pk})},400)}
+   tirar();
+   if(pk){var c=S.carros[pk];c[flag||'temCrlv']=true;
+    if(/\/gnv$/.test(path))c.lidoGnv='';else if(/\/crlv$/.test(path)){c.lidoCrlv='';c.crlvSemTexto=false}
+    if(typeof _touchCarro==='function')_touchCarro(c,[flag||'temCrlv']);
+    save();ficha(pk)}
+   toast('✅ Documento salvo na nuvem — lendo…');
+   if(pk){_docVarr.visto[pk+'/crlv']=0;_docVarr.visto[pk+'/gnv']=0;setTimeout(function(){varrerDocsAuto({pk:pk,force:true})},400)}
   });
  };
  inp.click();
@@ -3850,7 +3860,7 @@ function _cap(s){s=String(s||'').toLowerCase();return s.charAt(0).toUpperCase()+
 /* Versão do LEITOR de documentos (CRLV/GNV). Aumente este número toda vez que a extração
    melhorar: os documentos já anexados são relidos automaticamente com a lógica nova,
    mesmo sem trocar o arquivo. */
-var LEITOR_VER=92;
+var LEITOR_VER=93;
 var _docVarr={rodando:false,visto:{}};
 /* Campos que o CRLV é capaz de preencher. Se algum estiver vazio e o carro TEM CRLV
    anexado, o documento é relido automaticamente — ignorando a marca de "já lido".
@@ -3875,7 +3885,7 @@ function _filaDocs(pkFiltro){
    var exercAtras=c.exercicioCRLV&&_anoAtual()&&parseInt(c.exercicioCRLV,10)<_anoAtual()&&!c.crlvSemTexto;
    fila.push({pk:pk,tipo:'crlv',campo:'lidoCrlv',incompleto:falta||exercAtras});
   }
-  if(c.temGnvDoc)fila.push({pk:pk,tipo:'gnv',campo:'lidoGnv',incompleto:!c.gnvExercicio||!c.gnvRequalif});
+  if(c.temGnvDoc)fila.push({pk:pk,tipo:'gnv',campo:'lidoGnv',incompleto:!c.gnvExercicio||!c.gnvRequalif||(_anoAtual()&&parseInt(c.gnvExercicio,10)<_anoAtual())});
  });
  return fila;
 }
@@ -7327,13 +7337,16 @@ function impRequalif(texto){
 /* Exercício da vistoria de GNV. O CSV do Denatran NÃO tem a palavra "exercício":
    o ano vem no número do CSV (…-66/2026) ou na data da inspeção. */
 function impExercGnv(texto){
+ /* v157: o laudo novo pode citar o CSV anterior (…/2025) junto do atual (…/2026). Antes valia o
+    PRIMEIRO número achado, e o exercício ficava preso no ano velho. Agora vale o MAIOR ano entre
+    os números de CSV e as datas de inspeção, nunca acima do ano atual. */
  var t=semAcento(String(texto||'')).toUpperCase().replace(/\s+/g,' ');
- var m=t.match(/CSV N[^0-9]{0,6}[\d\.\-]{6,}\/(20\d\d)/);
- if(m)return m[1];
- var m2=t.match(/(\d{2})\/(\d{2})\/(20\d\d)\s{0,3}DATA DA INSPECAO/);
- if(m2)return m2[3];
- var m3=t.match(/DATA DA INSPECAO[^0-9]{0,6}(\d{2})\/(\d{2})\/(20\d\d)/);
- if(m3)return m3[3];
+ var anos=[],m,lim=_anoAtual()||9999;
+ var r1=/CSV N[^0-9]{0,6}[\d\.\-]{6,}\/(20\d\d)/g;while((m=r1.exec(t)))anos.push(+m[1]);
+ var r2=/(\d{2})\/(\d{2})\/(20\d\d)\s{0,3}DATA DA INSPECAO/g;while((m=r2.exec(t)))anos.push(+m[3]);
+ var r3=/DATA DA INSPECAO[^0-9]{0,6}(\d{2})\/(\d{2})\/(20\d\d)/g;while((m=r3.exec(t)))anos.push(+m[3]);
+ anos=anos.filter(function(a){return a>=2000&&a<=lim});
+ if(anos.length)return String(Math.max.apply(null,anos));
  return impAnoExerc(texto);
 }
 function impInteligente(f,subir,stat,pular){
