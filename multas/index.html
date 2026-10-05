@@ -328,7 +328,7 @@ footer{color:var(--mut);font-size:12.5px;text-align:center;margin-top:24px;line-
   </div>
   <section id="dList"></section>
  </div>
-  <footer>Dados salvos na nuvem (mesma chave do Gestão) e neste aparelho. Abre igual no computador e no iPhone.<br>Valores-base do CTB (art. 258): leve R$ 88,38 · média R$ 130,16 · grave R$ 195,23 · gravíssima R$ 293,47 (algumas têm multiplicador).<br><span style="opacity:.6">Multas e Débitos v8</span></footer>
+  <footer>Dados salvos na nuvem (mesma chave do Gestão) e neste aparelho. Abre igual no computador e no iPhone.<br>Valores-base do CTB (art. 258): leve R$ 88,38 · média R$ 130,16 · grave R$ 195,23 · gravíssima R$ 293,47 (algumas têm multiplicador).<br><span style="opacity:.6">Multas e Débitos v9</span></footer>
 </main>
 
 <dialog id="dlg"><div class="dlg-in"></div></dialog>
@@ -1040,7 +1040,7 @@ function pedirChave(obrigatorio){
 function tot(v){ let val=0, sem=0; for(const m of v.multas){ if(m.valor==null) sem++; else val += m.valor; } return {n:v.multas.length, val, sem}; }
 function textoVeiculo(v, comValores){
   const t = tot(v);
-  let s = `${v.destaque ? '*'+v.nome+'*' : v.nome}\n\nRenavam - ${v.renavam}\n${v.docTipo} - ${v.doc}\nPlaca - ${v.placa}\n\n(${t.n} ${plural(t.n)})`;
+  let s = `${v.nome}\n\nRenavam - ${v.renavam}\n${v.docTipo} - ${v.doc}\nPlaca - ${v.placa}\n\n(${t.n} ${plural(t.n)})`;
   if(t.n){
     s += '\n\n' + v.multas.map(m => {
       let l = br(m.data);
@@ -1122,7 +1122,7 @@ function cardHTML(v){
   return `<article class="car${op ? ' open' : ''}${ok ? ' ok' : ''}" data-id="${v.id}">
     <div class="head" data-act="toggle">
       <div class="plate"><i>BRASIL</i><b>${esc(v.placa || '—')}</b></div>
-      <div><div class="nm">${esc(v.nome)}${v.destaque ? '<span class="bold" title="Sai em negrito no WhatsApp">*negrito*</span>' : ''}</div>
+      <div><div class="nm">${esc(v.nome)}</div>
         <div class="sub">${ordem==='final' && finalPlaca(v.placa) < 10 ? `<span class="tg fin">Final ${finalPlaca(v.placa)}</span>` : ''}<span class="tg ${v.frota}">${v.frota==='hudson' ? 'Frota Hudson' : 'Frota Fábio'}</span>${motoristaTag(v)}${ok ? '<span class="tg ok">✓ conferido hoje</span>' : ''}${!v.doc ? '<span class="tg hudson">falta CPF/CNPJ</span>' : ''}</div></div>
       ${numsHTML(v)}
       <span class="chev" aria-hidden="true">›</span>
@@ -1255,8 +1255,7 @@ function modalCarro(v){
   const novo = !v; v = v || {nome:'', destaque:false, renavam:'', docTipo:'CPF', doc:'', placa:'', frota:'fabio'};
   const c = modal(`<h2>${novo ? 'Novo carro' : 'Editar carro'}</h2>
     <p class="hint">${novo ? 'Ele entra no fim da lista do grupo.' : 'As multas não mudam.'}</p>
-    <div class="f"><label>Nome (como aparece no grupo)</label><input id="eNome" value="${esc(v.nome)}" placeholder="Ex.: Logan Branco 2017"></div>
-    <label class="ck"><input type="checkbox" id="eDest" ${v.destaque ? 'checked' : ''}> Nome em <b>negrito</b> no WhatsApp (*asteriscos*)</label>
+    <div class="f"><label>Nome (padrão: Modelo Cor Ano)</label><input id="eNome" value="${esc(v.nome)}" placeholder="Ex.: Logan Branco 2017"></div>
     <div class="f"><label>Renavam</label><input id="eRen" value="${esc(v.renavam)}" inputmode="numeric"></div>
     <div class="f"><label>Documento do proprietário</label><div class="f2">
       <select id="eTipo"><option ${v.docTipo==='CPF' ? 'selected' : ''}>CPF</option><option ${v.docTipo==='CNPJ' ? 'selected' : ''}>CNPJ</option></select>
@@ -1268,7 +1267,7 @@ function modalCarro(v){
     const nome = $('#eNome', c).value.trim(), placa = $('#ePla', c).value.trim().toUpperCase();
     if(!nome || !placa){ toast('Preencha pelo menos nome e placa'); return; }
     const alvo = novo ? novoVeiculo(nome) : achar(v.id);
-    Object.assign(alvo, {nome, destaque:$('#eDest', c).checked, renavam:$('#eRen', c).value.trim(), docTipo:$('#eTipo', c).value, doc:$('#eDoc', c).value.trim(), placa, frota:$('#eFro', c).value});
+    Object.assign(alvo, {nome: padronizarNome(nome, gCarro({placa})), destaque:false, renavam:$('#eRen', c).value.trim(), docTipo:$('#eTipo', c).value, doc:$('#eDoc', c).value.trim(), placa, frota:$('#eFro', c).value});
     if(novo){ S.veiculos.push(alvo); }
     save(); fechar(); if(novo) abrirEIr(alvo); else render();
     toast(novo ? 'Carro adicionado' : 'Dados salvos');
@@ -1473,6 +1472,24 @@ function motoristaTag(v){
   const n = String(g.motorista || '').trim().split(/\s+/)[0];
   return n ? `<span class="tg mot" title="${esc(g.motorista)}">${esc(capP(n))}</span>` : '<span class="tg par">Parado</span>';
 }
+/* PADRÃO DO NOME: Modelo + Cor + Ano (ex.: "Logan Branco 2017"). Versão/acabamento sai.
+   Cor e ano seguem o Gestão quando o carro está lá. */
+const CORES = {branco:'Branco',branca:'Branco',prata:'Prata',preto:'Preto',preta:'Preto',cinza:'Cinza',vermelho:'Vermelho',vermelha:'Vermelho',azul:'Azul',bege:'Bege',verde:'Verde',dourado:'Dourado',dourada:'Dourado',marrom:'Marrom',amarelo:'Amarelo',amarela:'Amarelo',grafite:'Grafite',vinho:'Vinho',laranja:'Laranja',roxo:'Roxo',roxa:'Roxo',rosa:'Rosa'};
+const SEGUNDA = new Set(['siena','sedan','plus','weekend','cross','tour','sport']);
+const capW = w => /\d/.test(w) ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+function padronizarNome(nome, g){
+  const ws = String(nome || '').replace(/\*/g, ' ').trim().split(/\s+/).filter(Boolean);
+  let cor = '', ano = ''; const mod = [];
+  ws.forEach(w => { const k = semAc(w).toLowerCase(); if(CORES[k]){ if(!cor) cor = CORES[k]; } else if(/^(19|20)\d{2}$/.test(w)){ if(!ano) ano = w; } else mod.push(w); });
+  let m = mod.length ? [capW(mod[0])] : [];
+  if(mod.length > 1 && (SEGUNDA.has(semAc(mod[1]).toLowerCase()) || semAc(mod[0]).toLowerCase() === 'grand')) m.push(capW(mod[1]));
+  if(g){
+    const gc = CORES[semAc(String(g.cor || '').trim().split(/\s+/)[0]).toLowerCase()]; if(gc) cor = gc;
+    const anos = String(g.ano || '').match(/(19|20)\d{2}/g) || []; if(anos.length && !anos.includes(ano)) ano = anos[anos.length - 1];
+    if(!m.length){ const gn = String(g.nome || g.modeloCRLV || '').trim().split(/\s+/); if(gn[0]) m = [capW(gn[0])]; }
+  }
+  return [m.join(' '), cor, ano].filter(Boolean).join(' ');
+}
 const fmtPlaca = p => { const n = normPlaca(p); return n.length === 7 ? n.slice(0, 3) + '-' + n.slice(3) : n; };
 const donoKey = p => semAc(p).toUpperCase().replace(/\s+/g, ' ').trim();
 function nomeDoGestao(c){
@@ -1548,6 +1565,11 @@ function sincronizarComGestao(){
     if(v.placa !== p){ ajustes.push(`${v.nome}: placa ${v.placa} → ${p}`); v.placa = p; mudou = true; }
     if(soDig(g.renavam)){ const r = soDig(g.renavam).padStart(11, '0'); if(soDig(v.renavam) !== r){ ajustes.push(`${v.nome}: Renavam ${v.renavam || '—'} → ${r}`); v.renavam = r; mudou = true; } }
   });
+  S.veiculos.forEach(v => {
+    const g = link.get(v) || null, nn = padronizarNome(v.nome, g);
+    if(nn && nn !== v.nome){ ajustes.push(`nome: ${v.nome} → ${nn}`); v.nome = nn; mudou = true; }
+    if(v.destaque){ v.destaque = false; mudou = true; }
+  });
   // 2) SÓ sai daqui o carro APAGADO no Gestão a partir de 05/10/2026 13:30 (carro antigo nunca sai)
   const fora = [];
   if(GAPAG){
@@ -1571,7 +1593,7 @@ function sincronizarComGestao(){
       if(voltou) S.saidas[pk] = {...sd, voltou: agora};
       delete S.tombV[id];
       const d0 = docDoDono[donoKey(g.proprietario)] || {docTipo: 'CPF', doc: ''};
-      const nv = {...novoVeiculo(nomeDoGestao(g)), id, placa: fmtPlaca(g.placa), renavam: soDig(g.renavam) ? soDig(g.renavam).padStart(11, '0') : '', docTipo: d0.docTipo, doc: d0.doc, frota};
+      const nv = {...novoVeiculo(padronizarNome(nomeDoGestao(g), g)), id, placa: fmtPlaca(g.placa), renavam: soDig(g.renavam) ? soDig(g.renavam).padStart(11, '0') : '', docTipo: d0.docTipo, doc: d0.doc, frota};
       S.veiculos.push(nv); novos.push(nv.nome); mudou = true; continue;
     }
     if(!v.doc && g.proprietario && docDoDono[donoKey(g.proprietario)]){ Object.assign(v, docDoDono[donoKey(g.proprietario)]); mudou = true; }
