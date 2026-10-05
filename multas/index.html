@@ -325,7 +325,7 @@ footer{color:var(--mut);font-size:12.5px;text-align:center;margin-top:24px;line-
   </div>
   <section id="dList"></section>
  </div>
-  <footer>Dados salvos na nuvem (mesma chave do Gestão) e neste aparelho. Abre igual no computador e no iPhone.<br>Valores-base do CTB (art. 258): leve R$ 88,38 · média R$ 130,16 · grave R$ 195,23 · gravíssima R$ 293,47 (algumas têm multiplicador).<br><span style="opacity:.6">Multas e Débitos v2</span></footer>
+  <footer>Dados salvos na nuvem (mesma chave do Gestão) e neste aparelho. Abre igual no computador e no iPhone.<br>Valores-base do CTB (art. 258): leve R$ 88,38 · média R$ 130,16 · grave R$ 195,23 · gravíssima R$ 293,47 (algumas têm multiplicador).<br><span style="opacity:.6">Multas e Débitos v3</span></footer>
 </main>
 
 <dialog id="dlg"><div class="dlg-in"></div></dialog>
@@ -983,7 +983,7 @@ async function conectar(chave){
   GREF = DB.ref('familias/' + h + '/gestao/carros');   // SÓ LEITURA: este app nunca grava no Gestão
   GREF.on('value', sg => {
     const idx = {}; Object.values(sg.val() || {}).forEach(c => { if(c && c.placa) idx[normPlaca(c.placa)] = c; });
-    GEST = {idx, lidoEm: Date.now(), erro: ''}; renderDeb();
+    GEST = {idx, lidoEm: Date.now(), erro: ''}; sincronizarComGestao(); renderDeb(); renderLeve();
   }, err => { GEST.erro = err.message; renderDeb(); });
   REF.on('value', snap => aoReceber(snap.val()), err => { setSync('err'); toast('Nuvem recusou a leitura: ' + err.message); });
 }
@@ -997,6 +997,7 @@ function aoReceber(r){
   gravarLocal(); fotografar();
   if(mudouLocal){ if(digitandoNaLista() || digitandoEm('#dList')) renderPendente = true; else render(); }
   if(canon(m) !== canon(rem)) agendarEnvio(); else setSync('ok');
+  sincronizarComGestao();
 }
 function agendarEnvio(ms=600){
   if(!REF) return;
@@ -1112,7 +1113,7 @@ function cardHTML(v){
     <div class="head" data-act="toggle">
       <div class="plate"><i>BRASIL</i><b>${esc(v.placa || '—')}</b></div>
       <div><div class="nm">${esc(v.nome)}${v.destaque ? '<span class="bold" title="Sai em negrito no WhatsApp">*negrito*</span>' : ''}</div>
-        <div class="sub">${ordem==='final' && finalPlaca(v.placa) < 10 ? `<span class="tg fin">Final ${finalPlaca(v.placa)}</span>` : ''}<span class="tg ${v.frota}">${v.frota==='hudson' ? 'Frota Hudson' : 'Frota Fábio'}</span>${ok ? '<span class="tg ok">✓ conferido hoje</span>' : ''}</div></div>
+        <div class="sub">${ordem==='final' && finalPlaca(v.placa) < 10 ? `<span class="tg fin">Final ${finalPlaca(v.placa)}</span>` : ''}<span class="tg ${v.frota}">${v.frota==='hudson' ? 'Frota Hudson' : 'Frota Fábio'}</span>${ok ? '<span class="tg ok">✓ conferido hoje</span>' : ''}${!v.doc ? '<span class="tg hudson">falta CPF/CNPJ</span>' : ''}${!noGestao(v) ? '<span class="tg">fora do Gestão</span>' : ''}</div></div>
       ${numsHTML(v)}
       <span class="chev" aria-hidden="true">›</span>
     </div>
@@ -1447,6 +1448,52 @@ $('#dlg').addEventListener('click', e => { if(e.target.id === 'dlg' || e.target.
 document.addEventListener('keydown', e => {
   if(e.key === '/' && !e.target.closest('input,textarea,select')){ e.preventDefault(); $('#q').focus(); }
 });
+
+/* ---------- AUTOMAÇÃO COM O GESTÃO ----------
+   Carro novo no Gestão entra aqui sozinho (id fixo 'g'+placa: dois aparelhos criam o MESMO carro).
+   CPF/CNPJ vem do dono: aprendido dos carros que já existem com o mesmo proprietário.
+   Frota segue o Gestão. Nada é gravado no Gestão. Carro apagado aqui não volta. */
+const capP = s => String(s || '').toLowerCase().replace(/(^|\s)\S/g, c => c.toUpperCase());
+const fmtPlaca = p => { const n = normPlaca(p); return n.length === 7 ? n.slice(0, 3) + '-' + n.slice(3) : n; };
+const donoKey = p => semAc(p).toUpperCase().replace(/\s+/g, ' ').trim();
+function nomeDoGestao(c){
+  const base = String(c.nome || c.modeloCRLV || 'Carro').trim();
+  if(/\b(19|20)\d{2}\b/.test(base)) return base;
+  const anos = String(c.ano || '').match(/(19|20)\d{2}/g), ano = anos ? anos[anos.length - 1] : '';
+  const cor = c.cor && !semAc(base).toLowerCase().includes(semAc(c.cor).toLowerCase()) ? capP(c.cor) : '';
+  return [base, cor, ano].filter(Boolean).join(' ');
+}
+function noGestao(v){
+  if(!GEST.idx) return true;
+  if(GEST.idx[normPlaca(v.placa)]) return true;
+  const r = soDig(v.renavam); return !!r && Object.values(GEST.idx).some(g => soDig(g.renavam) === r);
+}
+function sincronizarComGestao(){
+  if(!GEST.idx || !recebeuNuvem) return;
+  const porPlaca = {}, porRen = {};
+  S.veiculos.forEach(v => { porPlaca[normPlaca(v.placa)] = v; if(soDig(v.renavam)) porRen[soDig(v.renavam)] = v; });
+  const docDoDono = {};
+  S.veiculos.forEach(v => { const g = GEST.idx[normPlaca(v.placa)]; if(g && g.proprietario && v.doc) docDoDono[donoKey(g.proprietario)] = {docTipo: v.docTipo, doc: v.doc}; });
+  const novos = []; let mudou = false;
+  for(const [pk, g] of Object.entries(GEST.idx)){
+    const v = porPlaca[pk] || (soDig(g.renavam) && porRen[soDig(g.renavam)]);
+    const frota = g.meuCarro ? 'hudson' : 'fabio';
+    if(!v){
+      const id = 'g' + pk;
+      if((S.tombV || {})[id] || S.veiculos.some(x => x.id === id)) continue;
+      const dono = docDoDono[donoKey(g.proprietario)] || {docTipo: 'CPF', doc: ''};
+      const nv = {...novoVeiculo(nomeDoGestao(g)), id, placa: fmtPlaca(g.placa), renavam: String(g.renavam || ''), docTipo: dono.docTipo, doc: dono.doc, frota};
+      S.veiculos.push(nv); novos.push(nv.nome); mudou = true; continue;
+    }
+    if(!v.renavam && g.renavam){ v.renavam = String(g.renavam); mudou = true; }
+    if(!v.doc && g.proprietario && docDoDono[donoKey(g.proprietario)]){ Object.assign(v, docDoDono[donoKey(g.proprietario)]); mudou = true; }
+    if(v.frota !== frota){ v.frota = frota; mudou = true; }
+  }
+  if(mudou){
+    save(); render();
+    if(novos.length) toast(novos.length === 1 ? `Carro novo do Gestão: ${novos[0]}` : `${novos.length} carros novos vieram do Gestão`);
+  }
+}
 
 /* ---------- DÉBITOS (IPVA, GRT, vistoria e reteste do GNV) ---------- */
 const TIPO_NOME = {ipva:'IPVA', grt:'GRT', vistoria:'Vistoria GNV', reteste:'Reteste GNV', outro:'Outro'};
