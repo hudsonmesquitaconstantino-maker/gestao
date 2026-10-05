@@ -328,7 +328,7 @@ footer{color:var(--mut);font-size:12.5px;text-align:center;margin-top:24px;line-
   </div>
   <section id="dList"></section>
  </div>
-  <footer>Dados salvos na nuvem (mesma chave do Gestão) e neste aparelho. Abre igual no computador e no iPhone.<br>Valores-base do CTB (art. 258): leve R$ 88,38 · média R$ 130,16 · grave R$ 195,23 · gravíssima R$ 293,47 (algumas têm multiplicador).<br><span style="opacity:.6">Multas e Débitos v10</span></footer>
+  <footer>Dados salvos na nuvem (mesma chave do Gestão) e neste aparelho. Abre igual no computador e no iPhone.<br>Valores-base do CTB (art. 258): leve R$ 88,38 · média R$ 130,16 · grave R$ 195,23 · gravíssima R$ 293,47 (algumas têm multiplicador).<br><span style="opacity:.6">Multas e Débitos v11</span></footer>
 </main>
 
 <dialog id="dlg"><div class="dlg-in"></div></dialog>
@@ -1519,14 +1519,46 @@ function aliquotaIPVA(g){
   const eletr = /ELETRIC/.test(c), comb = /GASOL|ALCOOL|ETANOL|FLEX|DIESEL/.test(c);
   if(/HIBRID/.test(c) || (eletr && comb)) return {aliq: 0.015, tipo: 'híbrido'};
   if(eletr) return {aliq: 0.005, tipo: 'elétrico'};
-  if(/GNV|GAS NATURAL/.test(c)) return {aliq: 0.015, tipo: 'GNV'};
+  if(/GNV|GAS NATURAL/.test(c) || (g && (g.gnvExercicio || g.gnvRequalif))) return {aliq: 0.015, tipo: 'GNV'};
   return {aliq: 0.04, tipo: 'gasolina/flex'};
 }
 function ipvaEstimado(v, g, ano){
-  const base = (v.fipeIpva || {})[ano] || +g.valorRef || 0;
+  const fi = v.fipeIpva || {}, jan = fi[ano] && fi[ano + 'f'] === 'jan';
+  const base = fi[ano] || +g.valorRef || 0;
   if(!base) return {valor: null, obs: 'estimado · sem FIPE no Gestão'};
   const a = aliquotaIPVA(g), val = Math.round(base * a.aliq * 0.97 * 100) / 100;
-  return {valor: val, obs: `estimado · FIPE ${money(base)} × ${String(a.aliq * 100).replace('.', ',')}% (${a.tipo}) − 3% cota única`};
+  return {valor: val, obs: `${jan ? 'calculado' : 'estimado'} · FIPE ${jan ? 'jan/' + ano : 'atual'} ${money(base)} × ${String(a.aliq * 100).replace('.', ',')}% (${a.tipo}) − 3% cota única`};
+}
+/* FIPE de JANEIRO do ano, direto da tabela FIPE (mesmos códigos de marca/modelo/ano vinculados no Gestão).
+   Roda sozinho uma vez por ano por carro; atualiza o IPVA ainda não pago. Se a FIPE estiver fora do ar, fica a estimativa. */
+const FIPE2 = 'https://fipe.parallelum.com.br/api/v2';
+let _fipeRodando = false;
+async function buscarFipeJaneiro(){
+  if(_fipeRodando || !GEST.idx || !recebeuNuvem) return;
+  const Y = new Date().getFullYear();
+  const alvos = S.veiculos.filter(v => { const g = gCarro(v); return g && g.fipeM && g.fipeMo && g.fipeA && (v.fipeIpva || {})[Y + 'f'] !== 'jan'; });
+  if(!alvos.length) return;
+  _fipeRodando = true;
+  try{
+    const refs = await fetch(FIPE2 + '/references').then(r => r.json());
+    const ref = (refs || []).find(x => new RegExp('^janeiro\\/' + Y + '$', 'i').test(String(x.month || '').trim()));
+    if(!ref) return;
+    let n = 0;
+    for(const v of alvos){
+      const g = gCarro(v);
+      try{
+        const d = await fetch(`${FIPE2}/cars/brands/${g.fipeM}/models/${g.fipeMo}/years/${g.fipeA}?reference=${ref.code}`).then(r => r.ok ? r.json() : null);
+        const val = d && parseValor(d.price);
+        if(val){ v.fipeIpva = {...(v.fipeIpva || {}), [Y]: val, [Y + 'f']: 'jan'}; n++; }
+      }catch(e){}
+      await new Promise(r => setTimeout(r, 300));
+    }
+    if(n){
+      S.veiculos.forEach(v => { const g = gCarro(v); if(!g) return;
+        (v.debitos || []).forEach(d => { if(d.tipo === 'ipva' && +d.ano === Y && !d.pagoEm && /^(estimado|calculado)/.test(d.obs || '')){ const e = ipvaEstimado(v, g, Y); d.valor = e.valor; d.obs = e.obs; } }); });
+      save(); render();
+    }
+  }catch(e){} finally { _fipeRodando = false; }
 }
 const CORTE_SAIDA = Date.parse('2026-10-05T16:30:00Z');   // só conta carro apagado no Gestão a partir de 05/10/2026 13:30
 function refAtual(g, tipo){
@@ -1618,7 +1650,7 @@ function sincronizarComGestao(){
     if(v.frota !== frota){ v.frota = frota; mudou = true; }
     // FIPE de janeiro guardada como base do IPVA do ano
     const hoje = new Date(), Ya = hoje.getFullYear();
-    if(hoje.getMonth() === 0 && +g.valorRef && !(v.fipeIpva || {})[Ya]){ v.fipeIpva = {...(v.fipeIpva || {}), [Ya]: +g.valorRef}; mudou = true; }
+    if(+g.valorRef && !(v.fipeIpva || {})[Ya] && new RegExp('janeiro.*' + Ya, 'i').test(String(g.fipeMes || ''))){ v.fipeIpva = {...(v.fipeIpva || {}), [Ya]: +g.valorRef, [Ya + 'f']: 'jan'}; mudou = true; }
     // CRLV atrasado → GRT e IPVA do ano entram sozinhos (e são baixados sozinhos quando o CRLV novo chegar ao Gestão)
     const exA = parseInt(g.exercicioCRLV, 10) || 0;
     if(exA && exA < Ya){
@@ -1647,6 +1679,7 @@ function sincronizarComGestao(){
     }
     if(msg.length) toast('Gestão → ' + msg.join(' · '));
   }
+  buscarFipeJaneiro();
 }
 
 /* ---------- DÉBITOS (IPVA, GRT, vistoria e reteste do GNV) ---------- */
@@ -1707,7 +1740,7 @@ function resumoDeb(v){
 }
 function historico(v){
   const it = [];
-  (v.debitos || []).filter(d => d.pagoEm && d.valor).forEach(d => it.push({data: d.pagoEm, txt: `${TIPO_NOME[d.tipo] || d.tipo} ${d.ano}${d.obs && !/^(estimado|valor fixo)/.test(d.obs) ? ' · ' + d.obs : ''}`, valor: d.valor}));
+  (v.debitos || []).filter(d => d.pagoEm && d.valor).forEach(d => it.push({data: d.pagoEm, txt: `${TIPO_NOME[d.tipo] || d.tipo} ${d.ano}${d.obs && !/^(estimado|calculado|valor fixo)/.test(d.obs) ? ' · ' + d.obs : ''}`, valor: d.valor}));
   v.pagas.filter(m => m.pagaEm && m.valor).forEach(m => it.push({data: m.pagaEm, txt: `Multa de ${br(m.data)}`, valor: m.valor}));
   it.sort((a, b) => b.data.localeCompare(a.data));
   const anos = {};
