@@ -328,7 +328,7 @@ footer{color:var(--mut);font-size:12.5px;text-align:center;margin-top:24px;line-
   </div>
   <section id="dList"></section>
  </div>
-  <footer>Dados salvos na nuvem (mesma chave do Gestão) e neste aparelho. Abre igual no computador e no iPhone.<br>Valores-base do CTB (art. 258): leve R$ 88,38 · média R$ 130,16 · grave R$ 195,23 · gravíssima R$ 293,47 (algumas têm multiplicador).<br><span style="opacity:.6">Multas e Débitos v9</span></footer>
+  <footer>Dados salvos na nuvem (mesma chave do Gestão) e neste aparelho. Abre igual no computador e no iPhone.<br>Valores-base do CTB (art. 258): leve R$ 88,38 · média R$ 130,16 · grave R$ 195,23 · gravíssima R$ 293,47 (algumas têm multiplicador).<br><span style="opacity:.6">Multas e Débitos v10</span></footer>
 </main>
 
 <dialog id="dlg"><div class="dlg-in"></div></dialog>
@@ -874,7 +874,7 @@ function desfazer(){
 
 /* ---------- carimbo por item (carro e multa), lixeira com data ---------- */
 let _prev = {v:{}, f:{}};
-const hashV = v => JSON.stringify([v.nome, !!v.destaque, v.renavam, v.docTipo, v.doc, v.placa, v.frota, v.conferido || null, v.copiadoEm || null, v.pos]);
+const hashV = v => JSON.stringify([v.nome, !!v.destaque, v.renavam, v.docTipo, v.doc, v.placa, v.frota, v.conferido || null, v.copiadoEm || null, v.pos, v.fipeIpva || null]);
 const hashF = m => m.tipo ? JSON.stringify(['d', m.tipo, +m.ano, m.valor ?? null, m.venc || '', m.pagoEm || '', m.obs || '', m.ref ?? null, !!m.auto]) : JSON.stringify([m.data, m.valor ?? null, m.obs || '', m.pagaEm || null, !!m.auto]);
 const itensDe = v => [...v.multas, ...v.pagas, ...(v.debitos || [])];
 function fotografar(){
@@ -1510,6 +1510,24 @@ const canonPlaca = p => {
   let c4 = n[4]; if(/\d/.test(c4)) c4 = 'ABCDEFGHIJ'[+c4];
   return L(n.slice(0, 3)) + D(n[3]) + c4 + D(n.slice(5));
 };
+/* GRT (taxa de licenciamento + CRLV-e) que vocês pagam por carro; ano sem valor usa o último conhecido */
+const GRT_VALOR = {2026: 293.71};
+const valorGRT = ano => GRT_VALOR[ano] ?? GRT_VALOR[Math.max(...Object.keys(GRT_VALOR).map(Number).filter(a => a <= ano).concat([Math.min(...Object.keys(GRT_VALOR).map(Number))]))];
+/* IPVA RJ: 4% gasolina/flex, 1,5% GNV ou híbrido, 0,5% elétrico; cota única com 3% de desconto */
+function aliquotaIPVA(g){
+  const c = semAc(String(g && g.combustivel || '')).toUpperCase();
+  const eletr = /ELETRIC/.test(c), comb = /GASOL|ALCOOL|ETANOL|FLEX|DIESEL/.test(c);
+  if(/HIBRID/.test(c) || (eletr && comb)) return {aliq: 0.015, tipo: 'híbrido'};
+  if(eletr) return {aliq: 0.005, tipo: 'elétrico'};
+  if(/GNV|GAS NATURAL/.test(c)) return {aliq: 0.015, tipo: 'GNV'};
+  return {aliq: 0.04, tipo: 'gasolina/flex'};
+}
+function ipvaEstimado(v, g, ano){
+  const base = (v.fipeIpva || {})[ano] || +g.valorRef || 0;
+  if(!base) return {valor: null, obs: 'estimado · sem FIPE no Gestão'};
+  const a = aliquotaIPVA(g), val = Math.round(base * a.aliq * 0.97 * 100) / 100;
+  return {valor: val, obs: `estimado · FIPE ${money(base)} × ${String(a.aliq * 100).replace('.', ',')}% (${a.tipo}) − 3% cota única`};
+}
 const CORTE_SAIDA = Date.parse('2026-10-05T16:30:00Z');   // só conta carro apagado no Gestão a partir de 05/10/2026 13:30
 function refAtual(g, tipo){
   if(!g) return null;
@@ -1535,7 +1553,7 @@ function sincronizarComGestao(){
   if(!GEST.idx || !recebeuNuvem) return;
   const agora = Date.now(), nG = Object.keys(GEST.idx).length;
   S.saidas = S.saidas || {}; S.tombV = S.tombV || {};
-  const novos = [], saiu = [], voltaram = []; let mudou = false, baixas = 0;
+  const novos = [], saiu = [], voltaram = []; let mudou = false, baixas = 0, gerados = 0;
   // 0) DEVOLVE os carros que a v4 tirou por engano (saída sem apagamento no Gestão)
   const sem = semente();
   for(const pk in S.saidas){
@@ -1598,6 +1616,19 @@ function sincronizarComGestao(){
     }
     if(!v.doc && g.proprietario && docDoDono[donoKey(g.proprietario)]){ Object.assign(v, docDoDono[donoKey(g.proprietario)]); mudou = true; }
     if(v.frota !== frota){ v.frota = frota; mudou = true; }
+    // FIPE de janeiro guardada como base do IPVA do ano
+    const hoje = new Date(), Ya = hoje.getFullYear();
+    if(hoje.getMonth() === 0 && +g.valorRef && !(v.fipeIpva || {})[Ya]){ v.fipeIpva = {...(v.fipeIpva || {}), [Ya]: +g.valorRef}; mudou = true; }
+    // CRLV atrasado → GRT e IPVA do ano entram sozinhos (e são baixados sozinhos quando o CRLV novo chegar ao Gestão)
+    const exA = parseInt(g.exercicioCRLV, 10) || 0;
+    if(exA && exA < Ya){
+      v.debitos = v.debitos || [];
+      [['grt', () => ({valor: valorGRT(Ya), obs: 'valor fixo', venc: prazoLic(v, Ya)})], ['ipva', () => ({...ipvaEstimado(v, g, Ya), venc: ''})]].forEach(([tp, f]) => {
+        const id = `${v.id}-${tp}-${Ya}`;
+        if(v.debitos.some(d => d.tipo === tp && +d.ano === Ya) || (S.tomb || {})[id]) return;
+        v.debitos.push({id, tipo: tp, ano: Ya, pagoEm: '', ref: exA, ...f()}); v.debitos.sort(cmpDeb); gerados++; mudou = true;
+      });
+    }
     // 4) débitos quitados pelo documento novo
     const b = baixaAutomatica(v, g); if(b){ baixas += b; mudou = true; }
   }
@@ -1607,6 +1638,7 @@ function sincronizarComGestao(){
     if(novos.length) msg.push(novos.length === 1 ? `entrou: ${novos[0]}` : `${novos.length} carros entraram`);
     if(voltaram.length) msg.push(voltaram.length === 1 ? `recuperei: ${voltaram[0]}` : `recuperei ${voltaram.length} carros: ${voltaram.join(', ')}`);
     if(saiu.length) msg.push(saiu.length === 1 ? `saiu: ${saiu[0]}` : `${saiu.length} carros saíram`);
+    if(gerados) msg.push(`${gerados} débito${gerados > 1 ? 's' : ''} de ${new Date().getFullYear()} lançado${gerados > 1 ? 's' : ''} (GRT/IPVA)`);
     if(baixas) msg.push(`${baixas} débito${baixas > 1 ? 's' : ''} baixado${baixas > 1 ? 's' : ''} pelo Gestão`);
     if(ajustes.length){
       msg.push(`${ajustes.length} ${ajustes.length === 1 ? 'dado corrigido' : 'dados corrigidos'} pelo Gestão`);
@@ -1675,7 +1707,7 @@ function resumoDeb(v){
 }
 function historico(v){
   const it = [];
-  (v.debitos || []).filter(d => d.pagoEm && d.valor).forEach(d => it.push({data: d.pagoEm, txt: `${TIPO_NOME[d.tipo] || d.tipo} ${d.ano}${d.obs ? ' · ' + d.obs : ''}`, valor: d.valor}));
+  (v.debitos || []).filter(d => d.pagoEm && d.valor).forEach(d => it.push({data: d.pagoEm, txt: `${TIPO_NOME[d.tipo] || d.tipo} ${d.ano}${d.obs && !/^(estimado|valor fixo)/.test(d.obs) ? ' · ' + d.obs : ''}`, valor: d.valor}));
   v.pagas.filter(m => m.pagaEm && m.valor).forEach(m => it.push({data: m.pagaEm, txt: `Multa de ${br(m.data)}`, valor: m.valor}));
   it.sort((a, b) => b.data.localeCompare(a.data));
   const anos = {};
@@ -1704,7 +1736,7 @@ function dBodyHTML(v){
   const linhas = r.sit.map(x => `<div class="drow" data-tipo="${x.tipo}">
       <div class="tp">${TIPO_NOME[x.tipo]}</div>
       <div class="rt">${x.ls.length ? `<b class="val">${money(x.total)}</b>` : x.st === 'ok' ? '<b class="val" style="color:var(--green)">R$ 0,00</b>'
-        : x.st === 'pend' || x.st === 'aviso' ? `<label class="mi" style="width:120px"><span>R$</span><input class="dq-valor" inputmode="decimal" placeholder="valor"></label><button class="btn sm pri" data-dact="quick">Lançar</button>` : ''}</div>
+        : x.st === 'pend' || x.st === 'aviso' ? `<label class="mi" style="width:120px"><span>R$</span><input class="dq-valor" inputmode="decimal" placeholder="valor" value="${x.tipo === 'grt' ? num2(valorGRT(anoRef)) : x.tipo === 'ipva' && gCarro(v) ? num2(ipvaEstimado(v, gCarro(v), anoRef).valor) : ''}"></label><button class="btn sm pri" data-dact="quick">Lançar</button>` : ''}</div>
       <div class="det"><span class="st-${x.st}">${ST[x.st]}</span>${esc(x.det)}</div>
     </div>`).join('');
   const ls = debDoAno(v);
@@ -1745,6 +1777,11 @@ function dCardHTML(v){
         <div class="sub">${dOrdem === 'final' && finalPlaca(v.placa) < 10 ? `<span class="tg fin">Final ${finalPlaca(v.placa)}</span>` : ''}<span class="tg ${v.frota}">${v.frota === 'hudson' ? 'Frota Hudson' : 'Frota Fábio'}</span>${motoristaTag(v)}${r.gnv ? '<span class="tg">GNV</span>' : ''}</div></div>
       ${dNumsHTML(v)}
       <span class="chev" aria-hidden="true">›</span>
+    </div>
+    <div class="quick">
+      <button class="cp" data-dact="cp" data-v="${esc(v.renavam)}" title="Copiar Renavam"><small>Renavam</small>${esc(v.renavam)}</button>
+      <button class="cp" data-dact="cp" data-v="${esc(v.doc)}" title="Copiar ${esc(v.docTipo)}"><small>${esc(v.docTipo)}</small>${esc(v.doc)}</button>
+      <button class="cp" data-dact="cp" data-v="${esc(v.placa)}" title="Copiar placa"><small>Placa</small>${esc(v.placa)}</button>
     </div>
     ${op ? dBodyHTML(v) : ''}
   </article>`;
@@ -1794,12 +1831,13 @@ $('#dList').addEventListener('click', e => {
   const b = e.target.closest('[data-dact]'); if(!b) return;
   const act = b.dataset.dact; if(['valor','venc','pagoEm'].includes(act)) return;
   const {card, v, d} = achaDeb(b); if(!v) return;
+  if(act === 'cp'){ if(b.dataset.v) copiar(b.dataset.v, 'Copiado: ' + b.dataset.v); return; }
   if(act === 'toggle'){ if(dAbertos.has(v.id)) dAbertos.delete(v.id); else { dAbertos.add(v.id); dAnim = v.id; } dRefresh(v); return; }
   if(act === 'quick'){
     const row = b.closest('.drow'), val = parseValor(row.querySelector('.dq-valor').value);
     if(val == null){ toast('Digite o valor'); row.querySelector('.dq-valor').focus(); return; }
     const tp = row.dataset.tipo;
-    v.debitos.push({id: uid(), tipo: tp, ano: anoRef, valor: val, venc: tp === 'grt' ? prazoLic(v, anoRef) : '', pagoEm: '', obs: '', ref: refAtual(gCarro(v), tp)});
+    v.debitos.push({id: uid(), tipo: tp, ano: anoRef, valor: val, venc: tp === 'grt' ? prazoLic(v, anoRef) : '', pagoEm: '', obs: tp === 'ipva' && gCarro(v) ? ipvaEstimado(v, gCarro(v), anoRef).obs : '', ref: refAtual(gCarro(v), tp)});
     v.debitos.sort(cmpDeb); save(); dRefresh(v); renderDebStats(); renderSeg(); toast(`${TIPO_NOME[row.dataset.tipo]} ${anoRef} lançado`); return;
   }
   if(act === 'add'){
