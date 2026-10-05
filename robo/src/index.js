@@ -392,7 +392,11 @@ async function http(req, env, exec) {
       try { return J({ leitura: await lerOdometro(ctx, midia), ...info }); } catch (e) { return J({ erro: e.message, ...info }); }
     }
     if (p[2] === 'bcb') {   /* diagnóstico temporário: consulta só domínios do Banco Central */
-      const alvo = new URL(url.searchParams.get('u'));
+      const q = url.searchParams.get('q') || '';
+      const F = ind => `https://olinda.bcb.gov.br/olinda/servico/Expectativas/versao/v1/odata/ExpectativasMercadoAnuais?$top=12&$format=json&$orderby=Data%20desc&$filter=Indicador%20eq%20'${ind}'%20and%20baseCalculo%20eq%200&$select=Indicador,Data,DataReferencia,Mediana,baseCalculo`;
+      const pre = { selic: F('Selic'), ipca: F('IPCA'), cambio: F('C%C3%A2mbio'), pib: F('PIB%20Total') };
+      const m = q.match(/^sgs(\d+)_(\d+)$/);
+      const alvo = new URL(pre[q] || (m ? `https://api.bcb.gov.br/dados/serie/bcdata.sgs.${m[1]}/dados/ultimos/${m[2]}?formato=json` : url.searchParams.get('u')));
       if (!/(^|\.)bcb\.gov\.br$/.test(alvo.hostname)) return new Response('domínio não permitido', { status: 400 });
       const r = await fetch(alvo.href, { headers: { origin: 'https://hudsonmesquitaconstantino-maker.github.io', accept: 'application/json' } });
       const h = {}; for (const [k, v] of r.headers) if (/access-control|content-type/i.test(k)) h[k] = v;
