@@ -391,6 +391,13 @@ async function http(req, env, exec) {
       const info = { http: r.status, tipo: midia.mime, bytes: midia.bytes.byteLength };
       try { return J({ leitura: await lerOdometro(ctx, midia), ...info }); } catch (e) { return J({ erro: e.message, ...info }); }
     }
+    if (p[2] === 'bcb') {   /* diagnóstico temporário: consulta só domínios do Banco Central */
+      const alvo = new URL(url.searchParams.get('u'));
+      if (!/(^|\.)bcb\.gov\.br$/.test(alvo.hostname)) return new Response('domínio não permitido', { status: 400 });
+      const r = await fetch(alvo.href, { headers: { origin: 'https://hudsonmesquitaconstantino-maker.github.io', accept: 'application/json' } });
+      const h = {}; for (const [k, v] of r.headers) if (/access-control|content-type/i.test(k)) h[k] = v;
+      return J({ http: r.status, headers: h, corpo: (await r.text()).slice(0, 6000) });
+    }
     if (p[2] === 'status') return J({ versao: VERSAO, status: await ctx.get('status'), config: await ctx.get('config'), temWA: !!env.WA_KEY, phone: env.PHONE_NUMBER_ID || '', waba: env.WABA_ID || '' });
   }
   return new Response('not found', { status: 404 });
