@@ -326,7 +326,7 @@ footer{color:var(--mut);font-size:12.5px;text-align:center;margin-top:24px;line-
   </div>
   <section id="dList"></section>
  </div>
-  <footer>Dados salvos na nuvem (mesma chave do Gestão) e neste aparelho. Abre igual no computador e no iPhone.<br>Valores-base do CTB (art. 258): leve R$ 88,38 · média R$ 130,16 · grave R$ 195,23 · gravíssima R$ 293,47 (algumas têm multiplicador).<br><span style="opacity:.6">Multas e Débitos v5</span></footer>
+  <footer>Dados salvos na nuvem (mesma chave do Gestão) e neste aparelho. Abre igual no computador e no iPhone.<br>Valores-base do CTB (art. 258): leve R$ 88,38 · média R$ 130,16 · grave R$ 195,23 · gravíssima R$ 293,47 (algumas têm multiplicador).<br><span style="opacity:.6">Multas e Débitos v6</span></footer>
 </main>
 
 <dialog id="dlg"><div class="dlg-in"></div></dialog>
@@ -967,6 +967,7 @@ function paraRemoto(st){
 
 /* ---------- nuvem (Firebase, mesma chave do Gestão) ---------- */
 const firebaseConfig = {apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
+let GEST_TOTAL = 0, GEST_SEMPLACA = 0;
 let GREF = null, GAREF = null, GAPAG = null, GEST = {idx: null, lidoEm: 0, erro: ''};
 let DB = null, REF = null, sinc = 'off', envioT = null, renderPendente = false, recebeuNuvem = false;
 function famHash(key){
@@ -985,7 +986,8 @@ async function conectar(chave){
   if(GREF) GREF.off();
   GREF = DB.ref('familias/' + h + '/gestao/carros');   // SÓ LEITURA: este app nunca grava no Gestão
   GREF.on('value', sg => {
-    const idx = {}; Object.values(sg.val() || {}).forEach(c => { if(c && c.placa) idx[normPlaca(c.placa)] = c; });
+    const raw = sg.val() || {}, idx = {}; Object.values(raw).forEach(c => { if(c && c.placa) idx[normPlaca(c.placa)] = c; });
+    GEST_TOTAL = Object.keys(raw).length; GEST_SEMPLACA = Object.values(raw).filter(c => c && !c.placa).length;
     GEST = {idx, lidoEm: Date.now(), erro: '', alerta: ''}; sincronizarComGestao(); renderDeb(); renderLeve(); renderAvisos();
   }, err => { GEST.erro = err.message; renderDeb(); });
   if(GAREF) GAREF.off();
@@ -1169,7 +1171,8 @@ function renderAvisos(){
   if(!storageOk) h += `<div class="aviso red"><span>Este navegador não está deixando salvar. Abra o arquivo no Chrome ou no Edge e faça backups.</span></div>`;
   const dias = S.ultimoBackup ? (Date.now() - new Date(S.ultimoBackup).getTime())/864e5 : Infinity;
   if(sinc !== 'ok' && recebeuNuvem === false && S.veiculos.length && dias > 7 && !chaveSalva()) h += `<div class="aviso"><span>${S.ultimoBackup ? `Último backup há ${Math.floor(dias)} dias.` : 'Você ainda não fez nenhum backup.'} Se o histórico do navegador for limpo, os dados se perdem.</span><button class="btn sm" data-m="backup">Fazer backup</button></div>`;
-  if(GEST.alerta) h += `<div class="aviso"><span>${esc(GEST.alerta)}. Cadastre no Gestão para ficarem ligados.</span><button class="btn sm" data-fgo="foragestao">Ver</button></div>`;
+  if(GEST.idx){ const cf = conferencia(), prob = cf.fora.length + cf.duplo.length + cf.porRenavam.length + cf.renDif.length + cf.soGestao.length;
+    if(prob) h += `<div class="aviso"><span>${esc(GEST.alerta || 'Há diferenças entre esta lista e o Gestão')}.</span><button class="btn sm" data-conf="1">Conferir</button></div>`; }
   $('#avisos').innerHTML = h;
 }
 
@@ -1418,7 +1421,7 @@ $('#consulta').addEventListener('click', e => {
   if(c.dataset.c === 'zerar') confirmar('Desmarcar o “conferido” de todos os carros?', 'Desmarcar', () => { S.veiculos.forEach(v => v.conferido = null); save(); render(); });
   if(c.dataset.c === 'copiar') modalCopiar();
 });
-$('#avisos').addEventListener('click', e => { const b = e.target.closest('[data-fgo]'); if(b){ filtro = b.dataset.fgo; render(); } });
+$('#avisos').addEventListener('click', e => { if(e.target.closest('[data-conf]')) modalConferencia(); });
 $('#stats').addEventListener('click', e => { const b = e.target.closest('[data-f]'); if(b){ filtro = b.dataset.f; render(); } });
 $('#filtros').addEventListener('click', e => { const b = e.target.closest('[data-f]'); if(b){ filtro = b.dataset.f; render(); } });
 $('#q').addEventListener('input', e => { busca = e.target.value; render(); });
@@ -1551,7 +1554,9 @@ function sincronizarComGestao(){
       S.veiculos.push(nv); novos.push(nv.nome); mudou = true; continue;
     }
     // 3) dados que mandam no Gestão: Renavam, frota, CPF/CNPJ do mesmo dono
-    if(g.renavam && +soDig(g.renavam) !== +soDig(v.renavam)){ v.renavam = soDig(g.renavam).padStart(11, '0'); mudou = true; }
+    if(v.id[0] === 's' && /^\d{9,11}$/.test(v.id.slice(1)) && soDig(v.renavam) !== v.id.slice(1) && g.renavam && +soDig(g.renavam) === +soDig(v.renavam)){
+      v.renavam = v.id.slice(1); mudou = true;   // desfaz a troca de Renavam feita pela v4/v5: vale o da sua lista
+    }
     if(!v.doc && g.proprietario && docDoDono[donoKey(g.proprietario)]){ Object.assign(v, docDoDono[donoKey(g.proprietario)]); mudou = true; }
     if(v.frota !== frota){ v.frota = frota; mudou = true; }
     // 4) débitos quitados pelo documento novo
@@ -1566,6 +1571,37 @@ function sincronizarComGestao(){
     if(baixas) msg.push(`${baixas} débito${baixas > 1 ? 's' : ''} baixado${baixas > 1 ? 's' : ''} pelo Gestão`);
     if(msg.length) toast('Gestão → ' + msg.join(' · '));
   }
+}
+
+/* Conferência carro a carro com o Gestão: explica por que os números não batem */
+function conferencia(){
+  const idx = GEST.idx || {}, porG = {}, out = {fora: [], porRenavam: [], duplo: [], renDif: [], soGestao: []};
+  S.veiculos.forEach(v => {
+    let g = idx[normPlaca(v.placa)], via = 'placa';
+    if(!g){ const r = +soDig(v.renavam); const e = r && Object.values(idx).find(c => +soDig(c.renavam) === r); if(e){ g = e; via = 'renavam'; } }
+    if(!g){ out.fora.push(v); return; }
+    const gk = normPlaca(g.placa); (porG[gk] = porG[gk] || []).push(v);
+    if(via === 'renavam') out.porRenavam.push([v, g]);
+    else if(g.renavam && +soDig(g.renavam) !== +soDig(v.renavam)) out.renDif.push([v, g]);
+  });
+  for(const k in porG) if(porG[k].length > 1) out.duplo.push([idx[k], porG[k]]);
+  for(const k in idx) if(!porG[k]) out.soGestao.push(idx[k]);
+  return out;
+}
+function modalConferencia(){
+  if(!GEST.idx){ toast('Aguardando os dados do Gestão'); return; }
+  const c = conferencia(), nG = Object.keys(GEST.idx).length;
+  const it = (t, d) => `<li><div>${t}<small>${d}</small></div></li>`;
+  const sec = (tit, arr) => arr.length ? `<h4 style="margin:14px 0 4px;font-size:13px">${tit} (${arr.length})</h4><ul class="hl">${arr.join('')}</ul>` : '';
+  modal(`<h2>Conferência com o Gestão</h2>
+    <p class="hint">Aqui: <b>${S.veiculos.length}</b> carros · Gestão: <b>${GEST_TOTAL}</b> cadastros${GEST_SEMPLACA ? ` (${GEST_SEMPLACA} sem placa)` : ''} · ligados: <b>${S.veiculos.length - c.fora.length}</b></p>
+    ${sec('Estão aqui e não estão no Gestão', c.fora.map(v => it(`<b>${esc(v.placa)}</b> ${esc(v.nome)}`, 'nenhum carro do Gestão com essa placa ou Renavam')))}
+    ${sec('Mesmo carro do Gestão ligado a 2 daqui', c.duplo.map(([g, vs]) => it(`Gestão <b>${esc(fmtPlaca(g.placa))}</b>`, 'aqui: ' + vs.map(v => esc(v.placa) + ' ' + esc(v.nome)).join(' e '))))}
+    ${sec('Ligados só pelo Renavam (placa diferente)', c.porRenavam.map(([v, g]) => it(`Aqui <b>${esc(v.placa)}</b> ↔ Gestão <b>${esc(fmtPlaca(g.placa))}</b>`, esc(v.nome) + ' · confira qual placa está certa')))}
+    ${sec('Renavam diferente do Gestão', c.renDif.map(([v, g]) => it(`<b>${esc(v.placa)}</b> ${esc(v.nome)}`, `aqui ${esc(v.renavam)} · Gestão ${esc(String(g.renavam))}`)))}
+    ${sec('Estão no Gestão e não estão aqui', c.soGestao.map(g => it(`<b>${esc(fmtPlaca(g.placa))}</b> ${esc(g.nome || '')}`, 'deveria ter entrado sozinho')))}
+    ${!c.fora.length && !c.duplo.length && !c.porRenavam.length && !c.renDif.length && !c.soGestao.length ? '<p class="hint" style="color:var(--green);font-weight:600">Tudo batendo: cada carro daqui tem o seu no Gestão.</p>' : ''}
+    <div class="row"><button class="btn pri" data-close>Fechar</button></div>`);
 }
 
 /* ---------- DÉBITOS (IPVA, GRT, vistoria e reteste do GNV) ---------- */
@@ -1714,7 +1750,7 @@ function renderDebStats(){
     <div class="st red"><div class="k">Débitos em aberto</div><div class="n">${money(aberto)}</div><div class="d">${nAberto} ${nAberto === 1 ? 'lançamento' : 'lançamentos'}</div></div>
     <button class="st amb" data-f="pend"><div class="k">Carros com pendência ${anoRef}</div><div class="n">${GEST.idx ? pend : '—'}</div><div class="d">de ${S.veiculos.length} carros</div></button>
     <div class="st grn"><div class="k">Pago em ${anoRef}</div><div class="n">${money(pagoAno)}</div><div class="d">débitos + multas baixadas</div></div>
-    <div class="st"><div class="k">Dados do Gestão</div><div class="n" style="font-size:22px">${GEST.erro ? 'Erro' : GEST.idx ? nG + ' carros' : '—'}</div><div class="d">${GEST.alerta ? '⚠ ' + esc(GEST.alerta) + ' · ' : ''}${GEST.erro ? esc(GEST.erro) : GEST.idx ? 'lido ' + new Date(GEST.lidoEm).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}) + ' · só leitura' : 'conecte a chave da nuvem'}</div></div>`;
+    <button class="st" data-conf="1"><div class="k">Dados do Gestão · conferir</div><div class="n" style="font-size:22px">${GEST.erro ? 'Erro' : GEST.idx ? GEST_TOTAL + ' carros' : '—'}</div><div class="d">${GEST.alerta ? '⚠ ' + esc(GEST.alerta) + ' · ' : ''}${GEST.erro ? esc(GEST.erro) : GEST.idx ? 'lido ' + new Date(GEST.lidoEm).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}) + ' · só leitura' : 'conecte a chave da nuvem'}</div></button>`;
 }
 function renderSeg(){
   const nM = S.veiculos.reduce((s, v) => s + v.multas.length, 0);
@@ -1781,7 +1817,7 @@ $('#seg').addEventListener('click', e => {
   aba = b.dataset.aba; try{ localStorage.setItem('multas_aba', aba); }catch(err){}
   window.scrollTo(0, 0); renderSeg(); renderDeb();
 });
-$('#dStats').addEventListener('click', e => { const b = e.target.closest('[data-f]'); if(b){ dFiltro = b.dataset.f; renderDeb(); } });
+$('#dStats').addEventListener('click', e => { if(e.target.closest('[data-conf]')){ modalConferencia(); return; } const b = e.target.closest('[data-f]'); if(b){ dFiltro = b.dataset.f; renderDeb(); } });
 $('#dFiltros').addEventListener('click', e => { const b = e.target.closest('[data-f]'); if(b){ dFiltro = b.dataset.f; renderDeb(); } });
 $('#dq').addEventListener('input', e => { dBusca = e.target.value; renderDeb(); });
 $('#dAno').addEventListener('change', e => { anoRef = +e.target.value; renderDeb(); });
