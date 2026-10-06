@@ -1026,7 +1026,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=165; var APP_DATE='05/10/2026';
+var APP_VER=166; var APP_DATE='05/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -1730,7 +1730,8 @@ function abrirRobo(manterRolagem){
    '<div class="sub" style="margin-top:4px">'+risco.join(' · ')+'</div><div class="sub">'+trocas.join(' · ')+'</div>'+(sit?'<div class="sub" style="margin-top:2px">'+sit+'</div>':'')+(auto?'<div class="sub" style="margin-top:2px">'+auto+'</div>':'')+
    '<div style="display:flex;gap:6px;margin-top:8px;align-items:center"><input id="rbTel_'+pk+'" inputmode="tel" placeholder="(21) 9…" value="'+esc(tel?fmtTel(tel):'')+'" style="flex:1;min-width:0" onchange="roboTel(\''+pk+'\',this.value)">'+
    (ct.telOrigem==='manual'?'<span class="sub" title="Digitado por você">✏️</span>':'<span class="sub" title="Do contrato">📄</span>')+
-   '<button class="btn mini sec" '+((tel&&ct.ativo)?'':'disabled ')+'onclick="roboPedirAgora(\''+pk+'\')">📸 Pedir agora</button></div></div>';
+   '<button class="btn mini sec" '+((tel&&ct.ativo)?'':'disabled ')+'onclick="roboPedirAgora(\''+pk+'\')">📸 Pedir agora</button></div>'+
+   '<button class="btn mini" style="width:100%;margin-top:6px;background:#25D366;border-color:#25D366;color:#fff" '+(tel?'':'disabled ')+'onclick="roboWhats(\''+pk+'\')">💬 Abrir no WhatsApp com a mensagem pronta</button></div>';
  });
  h+='<details class="card"><summary><b>Enviar teste</b> <span class="sub">— manda o pedido para outro número sem mexer no km do carro</span></summary>'+
   '<div style="display:flex;flex-direction:column;gap:6px;margin-top:8px"><input id="rbTesteTel" inputmode="tel" placeholder="Número que vai receber o teste"><select id="rbTestePk">'+lista.map(function(x){return '<option value="'+x.pk+'">'+esc((x.c.nome||x.pk)+' · '+(x.c.placa||x.pk))+'</option>'}).join('')+'</select><button class="btn mini sec" onclick="roboTeste()">Enviar teste</button></div></details>';
@@ -1748,6 +1749,20 @@ function roboTel(pk,v){if(!ROBOREF)return;var d=_telRobo(v);
  if(String(v).replace(/\D/g,'')&&!d){toast('Número inválido — use DDD + número');return}
  var u={tel:d?fmtTel(d):'',telOrigem:'manual',decidido:true,novo:false};if(!d)u.ativo=false;
  ROBOREF.child('contatos/'+pk).update(u).then(function(){toast(d?'📱 Número salvo':'Número removido — motorista desligado')})}
+/* Abre a conversa do motorista no WhatsApp com o pedido já escrito (mesmo texto aprovado do robô).
+   Também avisa o robô: se a foto chegar em até 3 dias, ele lê o km e responde normalmente. */
+function _saudacao(){var h=new Date().getHours();return h<12?'bom dia':(h<18?'boa tarde':'boa noite')}
+function roboWhats(pk){
+ var ct=((ROBO&&ROBO.contatos)||{})[pk]||{},c=S.carros[pk]||{},d=_telRobo(ct.tel);
+ if(!d){toast('Coloque o número do motorista primeiro');return}
+ if(d.length===10&&/[6-9]/.test(d.charAt(2)))d=d.slice(0,2)+'9'+d.slice(2);
+ var placa=String(c.placa||pk).toUpperCase().replace(/[^A-Z0-9]/g,'');if(placa.length===7)placa=placa.slice(0,3)+'-'+placa.slice(3);
+ var msg='Olá, '+_nomeCurto(c.motorista)+', '+_saudacao()+'! Por favor, me envie agora uma foto nítida da quilometragem do painel do '+((c.nome||'carro')+' '+placa).trim()+', para verificação da troca de óleo. Obrigado!';
+ try{if(ROBOREF)ROBOREF.child('contatos/'+pk).update({pedidoWhatsEm:Date.now()})}catch(e){}
+ var url='https://wa.me/55'+d+'?text='+encodeURIComponent(msg);
+ var w=null;try{w=window.open(url,'_blank')}catch(e){}
+ if(!w)location.href=url;
+}
 function roboPedirAgora(pk){if(!ROBOREF)return;ROBOREF.child('contatos/'+pk).update({pedirAgora:Date.now()}).then(function(){toast('📸 Pedido na fila — sai em até 15 min (8h às 20h)')})}
 function roboLigarTodos(){if(!ROBOREF)return;var u={},n=0,cont=(ROBO.contatos||{});
  Object.keys(S.carros).forEach(function(pk){var ct=cont[pk];if(_roboElegivel(S.carros[pk])&&ct&&_telRobo(ct.tel)&&!ct.ativo){u['contatos/'+pk+'/ativo']=true;u['contatos/'+pk+'/decidido']=true;u['contatos/'+pk+'/novo']=false;n++}});

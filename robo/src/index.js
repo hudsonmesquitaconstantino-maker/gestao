@@ -9,7 +9,7 @@
    sem ela, a foto é lida pela IA da própria Cloudflare).
    Este arquivo é público no GitHub: nada de segredo aqui. */
 
-const VERSAO = 'robo-km 3.1';
+const VERSAO = 'robo-km 3.2';
 const DIA = 864e5;
 
 /* ---------------- utilidades ---------------- */
@@ -240,7 +240,8 @@ function estimativa(ct, m, t) {
 function precisaPedir(ct, m, t) {
   m = m || {};
   const e = estimativa(ct, m, t);
-  if (num(m.pedidoEm) && t - num(m.pedidoEm) < MIN_DIAS * DIA) return { pedir: false, motivo: 'pedido recente', e };
+  const ultPedido = Math.max(num(m.pedidoEm), num(ct.pedidoWhatsEm));   /* inclui o pedido que o Hudson mandou pelo próprio WhatsApp */
+  if (ultPedido && t - ultPedido < MIN_DIAS * DIA) return { pedir: false, motivo: 'pedido recente', e };
   if (e.dias != null && e.dias < MIN_DIAS) return { pedir: false, motivo: 'km recente', e };
   if (!e.km || !e.tBase) return { pedir: true, motivo: 'sem histórico de km', e };
   if (!e.kmDia && e.dias >= SEM_HIST_DIAS) return { pedir: true, motivo: 'sem km há ' + Math.round(e.dias) + ' dias', e };
@@ -366,7 +367,10 @@ async function processarWebhook(ctx, corpo) {
     m.vistos = [msg.id, ...vistos].slice(0, 15);
     m.ultimaMsgEm = Date.now();
     try {
-      if (msg.type === 'image' && msg.image && msg.image.id && m.aberto) out.push(await tratarFoto(ctx, pk, (contatos || {})[pk] || {}, m, msg, key === 'teste'));
+      const ctx3 = (contatos || {})[pk] || {};
+      /* pedido feito pelo Hudson no WhatsApp dele (botão do Gestão): a foto que chegar em até 3 dias também é lida */
+      const pedidoManual = num(ctx3.pedidoWhatsEm) > num(m.leituraEm) && Date.now() - num(ctx3.pedidoWhatsEm) < 3 * DIA;
+      if (msg.type === 'image' && msg.image && msg.image.id && (m.aberto || pedidoManual)) out.push(await tratarFoto(ctx, pk, (contatos || {})[pk] || {}, m, msg, key === 'teste'));
       else out.push('ignorada:' + msg.type);
     } catch (e) { out.push('erro:' + e.message); await ctx.log(`foto ${pk}: ${e.message}`); }
     await ctx.put('estado/' + key, m);
