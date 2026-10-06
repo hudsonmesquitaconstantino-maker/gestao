@@ -9,7 +9,7 @@
    sem ela, a foto é lida pela IA da própria Cloudflare).
    Este arquivo é público no GitHub: nada de segredo aqui. */
 
-const VERSAO = 'robo-km 3.4';
+const VERSAO = 'robo-km 3.5';
 const DIA = 864e5;
 
 /* ---------------- utilidades ---------------- */
@@ -127,6 +127,7 @@ function textoResposta(ct, km, nome) {
     L.push(f <= 0 ? `🛢 Troca de óleo: *VENCIDA há ${fmtKm(-f)} km*. Me chama para agendarmos o quanto antes.`
       : `🛢 Troca de óleo: faltam *${fmtKm(f)} km* (troca aos ${fmtKm(po)} km)${f <= 1000 ? '. Já pode agendar.' : '.'}`);
   }
+  if (po) L.push(`🧴 Óleo indicado: ${ct.oleoTipo ? '*' + ct.oleoTipo + '* — ' : ''}*Lubrax* ou o *original da montadora*. Na troca, sempre com filtro novo.`);
   const pc = num(ct.proxCorreiaKm);
   if (ct.temCorreia && pc) {   /* carro com corrente de comando não recebe linha de correia */
     const f = pc - km;
