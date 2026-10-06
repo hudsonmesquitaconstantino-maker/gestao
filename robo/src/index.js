@@ -9,7 +9,7 @@
    sem ela, a foto é lida pela IA da própria Cloudflare).
    Este arquivo é público no GitHub: nada de segredo aqui. */
 
-const VERSAO = 'robo-km 3.0';
+const VERSAO = 'robo-km 3.1';
 const DIA = 864e5;
 
 /* ---------------- utilidades ---------------- */
@@ -199,13 +199,26 @@ function interpretarResposta(txt) {
   return { painel: o.painel !== false, km: certeza === 'baixa' ? null : km, certeza, obs: String(o.obs || '').slice(0, 200) };
 }
 
-/* leitura plausível? (até o dobro do ritmo do carro, mínimo 600 km/dia, + folga) */
+/* Leitura da foto contra o último km conhecido (Gestão ou foto anterior aceita).
+   Km MENOR que o registrado = foto antiga, de outro carro ou tentativa de enganar -> alerta ao Hudson.
+   Km MUITO acima do possível no período = leitura errada -> alerta também. */
+function avaliarLeitura(ct, m, km, agora) {
+  let ref = num(ct.kmUltima), refData = ct.kmUltimaData || '';
+  if (m && num(m.km) > ref) { ref = num(m.km); refData = m.leituraEm ? dataBRT(m.leituraEm) : refData; }
+  if (!ref) return { ok: true };
+  if (km < ref - 100) return { ok: false, tipo: 'regrediu', ref, refData };
+  if (!plausivel({ ...ct, kmUltima: ref, kmUltimaData: refData }, km, agora)) return { ok: false, tipo: 'alto', ref, refData };
+  return { ok: true, ref };
+}
+const MSG_SUSPEITA = 'Recebi, obrigado! Esse km ficou diferente do registro do carro, então vou conferir e, se precisar, te chamo. 👍';
+/* leitura plausível? (até o triplo do ritmo do carro, mínimo 800 km/dia, + folga de 5.000 km).
+   Folgado de propósito: só barra erro grosseiro (dígito a mais/a menos); km menor que o registro é barrado sempre. */
 function plausivel(ct, km, agora) {
   const ref = num(ct.kmUltima); if (!ref) return true;
   if (km < ref - 100) return false;
   const dr = /^\d{4}-\d{2}-\d{2}$/.test(ct.kmUltimaData || '') ? ct.kmUltimaData : '';
   const dias = dr ? Math.max(1, (agora - Date.parse(dr + 'T12:00:00-03:00')) / DIA) : 60;
-  return km - ref <= Math.max(600, 2 * num(ct.kmDia)) * dias + 3000;
+  return km - ref <= Math.max(800, 3 * num(ct.kmDia)) * dias + 5000;
 }
 
 /* ---------------- quem precisa receber o pedido (regra combinada com o Hudson) ----------------
@@ -376,11 +389,20 @@ async function tratarFoto(ctx, pk, ct, m, msg, teste) {
     return 'ilegivel';
   }
   const km = lido.km;
-  if (!plausivel(ct, km, agora) && !(m.suspeito && Math.abs(m.suspeito - km) <= 100)) {
-    m.suspeito = km;
-    await ctx.post(hist, { ...reg, resultado: 'conferir' });
-    await ctx.texto(para, msgConferir(km));
-    return 'conferir';
+  const av = avaliarLeitura(ct, m, km, agora);
+  if (!av.ok) {
+    if (!(m.suspeito && Math.abs(m.suspeito - km) <= 100)) {   /* 1ª vez: pede outra foto, pode ser erro de leitura */
+      m.suspeito = km;
+      await ctx.post(hist, { ...reg, resultado: 'conferir', tipo: av.tipo, ref: av.ref });
+      await ctx.texto(para, msgConferir(km));
+      return 'conferir';
+    }
+    /* 2ª foto confirma o mesmo número: NÃO entra no Gestão e vira alerta para o Hudson */
+    m.suspeita = { km, ref: av.ref, refData: av.refData, tipo: av.tipo, em: agora, resolvida: false };
+    Object.assign(m, { aberto: false, atrasado: false, suspeito: null, falhas: 0 });
+    await ctx.post(hist, { ...reg, resultado: 'suspeita', tipo: av.tipo, ref: av.ref });
+    await ctx.texto(para, MSG_SUSPEITA);
+    return 'suspeita:' + av.tipo;
   }
   if (!teste) await ctx.put('leituras/' + pk, { km, data: dataBRT(agora), em: agora, certeza: lido.certeza });   /* o Gestão aplica no carro */
   await ctx.post(hist, { ...reg, resultado: 'ok' });
@@ -438,4 +460,4 @@ export default {
 };
 
 /* exportado só para os testes locais */
-export const _t = { lerOdometro, precisaPedir, estimativa, foneChave, foneEnvio, interpretarResposta, plausivel, textoResposta, ciclo, processarWebhook, Ctx, primeiroNome, fmtPlaca, saudacao, MODELO, textoPedidoLivre };
+export const _t = { avaliarLeitura, lerOdometro, precisaPedir, estimativa, foneChave, foneEnvio, interpretarResposta, plausivel, textoResposta, ciclo, processarWebhook, Ctx, primeiroNome, fmtPlaca, saudacao, MODELO, textoPedidoLivre };
