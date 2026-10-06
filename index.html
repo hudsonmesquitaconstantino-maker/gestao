@@ -1029,7 +1029,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=174; var APP_DATE='06/10/2026';
+var APP_VER=175; var APP_DATE='06/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -1666,7 +1666,8 @@ function _roboAtrasoDe(pk){
  if(!ped||now<_prazoResposta(ped))return null;
  var d0=new Date(ped);d0.setHours(0,0,0,0);var dias=Math.floor((now-d0.getTime())/864e5);
  var quando=dias<=0?'hoje às '+new Date(ped).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):(dias===1?'ontem':'há '+dias+' dias');
- return {pk:pk,ped:ped,txt:'📸 '+_nomeCurto(c.motorista)+' NÃO mandou a foto do painel (pedido '+quando+via+') — cobrar'};
+ var lemb=(Number(m.lembreteDe)===ped&&Number(m.lembreteEm))?' · lembrete enviado às '+new Date(Number(m.lembreteEm)).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
+ return {pk:pk,ped:ped,txt:'📸 '+_nomeCurto(c.motorista)+' NÃO mandou a foto do painel (pedido '+quando+via+lemb+') — cobrar'};
 }
 function _roboAtrasados(){if(!ROBO||!S)return [];return Object.keys(S.carros).map(_roboAtrasoDe).filter(Boolean)}
 function _roboBadge(){var b=document.getElementById('hbRobo');if(!b)return;var n=_roboAtrasados().length;
@@ -1779,6 +1780,7 @@ function abrirRobo(manterRolagem){
   else if(m.leituraEm)sit='✅ última foto em '+new Date(m.leituraEm).toLocaleDateString('pt-BR')+(m.km?' · '+fmtKm(m.km)+' km':'');
   else if(ct.pedirAgora)sit='⏳ pedido na fila (sai em até 15 min, das 8h às 20h)';
   var pwm=Number(ct.pedidoWhatsEm)||0;if(!m.aberto&&pwm&&(Number(m.leituraEm)||0)<pwm)sit='💬 pedido pelo seu WhatsApp em '+new Date(pwm).toLocaleDateString('pt-BR')+(_roboAtrasoDe(pk)?' — <b style="color:#c0392b">SEM RESPOSTA</b>, cobrar':' — aguardando foto');
+  if(sit&&Number(m.lembreteEm)&&(Number(m.lembreteDe)===Number(m.pedidoEm)||Number(m.lembreteDe)===pwm))sit+=' · ⚠️ lembrete enviado às '+new Date(Number(m.lembreteEm)).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
   var suTxt=_roboSuspeita(m);if(suTxt)sit='<b style="color:#c0392b">'+esc(suTxt)+'</b> <button class="btn mini sec" onclick="roboConferido(\''+pk+'\')">✓ Conferido</button>';
   var pz=_roboPrecisa(ct,m),auto=(ct.ativo&&tel)?(pz.pedir?'🤖 <b>vai pedir</b> na próxima manhã (seg–sáb, 9h–12h): '+pz.txt:'🤖 não vai pedir: '+pz.txt):'';
   h+='<div class="card" style="border-left:4px solid '+cor+'">'+

@@ -9,7 +9,7 @@
    sem ela, a foto é lida pela IA da própria Cloudflare).
    Este arquivo é público no GitHub: nada de segredo aqui. */
 
-const VERSAO = 'robo-km 3.8';
+const VERSAO = 'robo-km 3.9';
 const DIA = 864e5;
 
 /* ---------------- utilidades ---------------- */
@@ -84,10 +84,10 @@ class Ctx {
   texto(para, body) {
     return this.wa(`${this.env.PHONE_NUMBER_ID}/messages`, { messaging_product: 'whatsapp', to: para, type: 'text', text: { body, preview_url: false } });
   }
-  modelo(para, params) {
+  modelo(para, params, tpl = MODELO) {
     return this.wa(`${this.env.PHONE_NUMBER_ID}/messages`, {
       messaging_product: 'whatsapp', to: para, type: 'template',
-      template: { name: MODELO.name, language: { code: MODELO.language },
+      template: { name: tpl.name, language: { code: tpl.language },
         components: [{ type: 'body', parameters: params.map(t => ({ type: 'text', text: String(t).slice(0, 60) })) }] }
     });
   }
@@ -115,6 +115,13 @@ const MODELO = {
     example: { body_text: [['Carlos', 'bom dia', 'Ka Sedan 2015 AZH-5D13']] }
   }]
 };
+/* Lembrete das 16h (texto aprovado pelo Hudson — opção 3, "quanto mais rigoroso, melhor"). */
+const TXT_LEMBRETE = '⚠️ *AVISO — {{1}}*\n\nAté o momento *não recebemos* a foto do painel do *{{2}}*, solicitada hoje pela manhã.\n\nO controle de manutenção faz parte das obrigações do contrato de locação (cláusula 5.2 — vistoria do veículo). Envie *ainda hoje* uma foto nítida com a *quilometragem*.\n\nA falta de resposta será registrada e tratada pela Guimas Car.\n\n*Guimas Car*';
+const MODELO_LEMBRETE = {
+  name: 'lembrete_km_painel', language: 'pt_BR', category: 'UTILITY',
+  components: [{ type: 'BODY', text: TXT_LEMBRETE, example: { body_text: [['Carlos', 'Ka Sedan 2015 AZH-5D13']] } }]
+};
+const textoLembreteLivre = (nome, carro) => TXT_LEMBRETE.replace('{{1}}', nome).replace('{{2}}', carro);
 function textoPedidoLivre(nome, carro, t) { return `Olá, *${nome}*, ${saudacao(t)}! 👋\n\nPor favor, me envie agora uma *foto nítida do painel* mostrando a *quilometragem* do *${carro}*.\n\n🛢️ É para a *verificação da troca de óleo*.\n\nObrigado!\n*Guimas Car*`; }
 const MSG_ILEGIVEL = 'Não consegui ler a quilometragem nessa foto 🤔 Manda outra bem de perto do painel, com o km total aparecendo, por favor.';
 const msgConferir = km => `Li ${fmtKm(km)} km, mas não bateu com o último registro do carro. Manda mais uma foto bem de perto do km total (não o TRIP), por favor.`;
@@ -321,16 +328,26 @@ function prazoResposta(pedidoEm) {
 }
 function prontoParaEnviar(ct) { return !!(ct && ct.elegivel && ct.ativo && foneEnvio(ct.tel)); }
 
-async function garantirModelo(ctx, status, st) {
-  if (status.modelo === 'APPROVED' && status.modeloNome === MODELO.name) return true;
+/* Garante na Meta um modelo de mensagem (cria e manda para aprovação se não existir). campo = onde guarda o status. */
+async function garantirUmModelo(ctx, status, st, tpl, campo) {
+  if (status[campo] === 'APPROVED' && status[campo + 'Nome'] === tpl.name) return true;
   if (!ctx.env.WABA_ID) return false;
   try {
-    const lista = await ctx.wa(`${ctx.env.WABA_ID}/message_templates?name=${MODELO.name}&fields=name,status,language`);
-    let t = (lista.data || []).find(x => x.name === MODELO.name && x.language === MODELO.language);
-    if (!t) { await ctx.wa(`${ctx.env.WABA_ID}/message_templates`, MODELO); t = { status: 'PENDING' }; }
-    st.modelo = t.status; st.modeloNome = MODELO.name;
+    const lista = await ctx.wa(`${ctx.env.WABA_ID}/message_templates?name=${tpl.name}&fields=name,status,language`);
+    let t = (lista.data || []).find(x => x.name === tpl.name && x.language === tpl.language);
+    if (!t) { await ctx.wa(`${ctx.env.WABA_ID}/message_templates`, tpl); t = { status: 'PENDING' }; }
+    st[campo] = t.status; st[campo + 'Nome'] = tpl.name;
     return t.status === 'APPROVED';
-  } catch (e) { st.modelo = 'erro: ' + e.message.slice(0, 120); return false; }
+  } catch (e) { st[campo] = 'erro: ' + e.message.slice(0, 120); return false; }
+}
+const garantirModelo = (ctx, status, st) => garantirUmModelo(ctx, status, st, MODELO, 'modelo');
+
+/* Lembrete: pedido feito ANTES do meio-dia, mesmo dia, das 16h às 20h, e nenhuma FOTO desde o pedido.
+   Áudio, texto ou figurinha não contam — só a foto do painel encerra (regra do Hudson). */
+function devidoLembrete(ped, t) {
+  if (!ped) return false;
+  const p = agoraBRT(ped), a = agoraBRT(t);
+  return p.toISOString().slice(0, 10) === a.toISOString().slice(0, 10) && p.getUTCHours() < 12 && a.getUTCHours() >= 16 && a.getUTCHours() < 20;
 }
 
 async function ciclo(ctx, t = Date.now()) {
@@ -338,6 +355,7 @@ async function ciclo(ctx, t = Date.now()) {
   const r = { enviados: [], atrasados: [], erros: [] };
   const st = {}; const upd = {};
   const modeloOk = await garantirModelo(ctx, status, st);
+  const lembreteOk = modeloOk ? await garantirUmModelo(ctx, status, st, MODELO_LEMBRETE, 'modeloLembrete') : false;
   const h = agoraBRT(t), hora = h.getUTCHours(), dow = h.getUTCDay();
   const janelaRotina = dow >= 1 && dow <= 6 && hora >= 9 && hora < 12;   /* pedidos de rotina: seg–sáb, 9h–12h */
 
@@ -368,6 +386,28 @@ async function ciclo(ctx, t = Date.now()) {
     if (m.chave && m.chave !== chave) m = { pedirAtendido: m.pedirAtendido || null };   /* número trocado: recomeça do zero */
     const manual = num(ct.pedirAgora) > num(m.pedirAtendido);
     if (!ligado && !manual) continue;
+
+    /* LEMBRETE DAS 16h: vale para o pedido do robô e para o que o Hudson mandou pelo WhatsApp dele */
+    if (ligado && !manual) {
+      const pw = num(ct.pedidoWhatsEm) > num(m.leituraEm) ? num(ct.pedidoWhatsEm) : 0;
+      const ped = Math.max(m.aberto ? num(m.pedidoEm) : 0, pw);
+      const fotoDepois = num(m.leituraEm) > ped || (m.suspeita && num(m.suspeita.em) > ped);   /* só foto do PAINEL lida conta; imagem ilegível ou qualquer outra coisa não */
+      if (ped && !fotoDepois && num(m.lembreteDe) !== ped && devidoLembrete(ped, t)) {
+        const nome = primeiroNome(ct.motorista), carroL = `${ct.carro || 'carro'} ${fmtPlaca(ct.placa || pk)}`.trim();
+        const janela = m.ultimaMsgEm && t - m.ultimaMsgEm < 23 * 3600e3;   /* respondeu algo (áudio/texto): conversa aberta, mensagem livre */
+        try {
+          if (janela) await ctx.texto(foneEnvio(ct.tel), textoLembreteLivre(nome, carroL));
+          else if (lembreteOk) await ctx.modelo(foneEnvio(ct.tel), [nome, carroL], MODELO_LEMBRETE);
+          else throw new Error('modelo do lembrete ainda não aprovado pela Meta (' + (st.modeloLembrete || status.modeloLembrete || '?') + ')');
+          upd['estado/' + pk + '/lembreteDe'] = ped; upd['estado/' + pk + '/lembreteEm'] = t;
+          m = { ...m, lembreteDe: ped, lembreteEm: t };
+          r.enviados.push(pk + ':lembrete');
+        } catch (e) {
+          r.erros.push(`${pk} lembrete: ${e.message}`);
+          upd['estado/' + pk + '/lembreteDe'] = ped; upd['estado/' + pk + '/lembreteErro'] = e.message.slice(0, 200);   /* não repete a cada 15 min */
+        }
+      }
+    }
 
     /* pedido aberto: sem foto até o fim do dia = atrasado (aparece em vermelho no Gestão).
        Depois de 7 dias sem resposta, se a troca ainda pedir, manda de novo. */
@@ -432,6 +472,7 @@ async function processarWebhook(ctx, corpo) {
     if (vistos.includes(msg.id)) { out.push('repetida'); continue; }
     m.vistos = [msg.id, ...vistos].slice(0, 15);
     m.ultimaMsgEm = Date.now();
+    if (msg.type === 'image') m.ultimaFotoEm = Date.now();
     try {
       const ctx3 = (contatos || {})[pk] || {};
       /* pedido feito pelo Hudson no WhatsApp dele (botão do Gestão): a foto que chegar em até 3 dias também é lida */
@@ -554,4 +595,4 @@ export default {
 };
 
 /* exportado só para os testes locais */
-export const _t = { avaliarLeitura, lerOdometro, precisaPedir, estimativa, foneChave, foneEnvio, interpretarResposta, plausivel, textoResposta, ciclo, processarWebhook, Ctx, primeiroNome, fmtPlaca, saudacao, MODELO, textoPedidoLivre, marcaCarro, linhaOleo, prazoResposta };
+export const _t = { avaliarLeitura, lerOdometro, precisaPedir, estimativa, foneChave, foneEnvio, interpretarResposta, plausivel, textoResposta, ciclo, processarWebhook, Ctx, primeiroNome, fmtPlaca, saudacao, MODELO, MODELO_LEMBRETE, textoLembreteLivre, devidoLembrete, textoPedidoLivre, marcaCarro, linhaOleo, prazoResposta };
