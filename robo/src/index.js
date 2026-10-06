@@ -9,7 +9,7 @@
    sem ela, a foto é lida pela IA da própria Cloudflare).
    Este arquivo é público no GitHub: nada de segredo aqui. */
 
-const VERSAO = 'robo-km 3.5';
+const VERSAO = 'robo-km 3.6';
 const DIA = 864e5;
 
 /* ---------------- utilidades ---------------- */
@@ -40,7 +40,6 @@ class Ctx {
   constructor(env) {
     this.env = env; this.sub = 0; this.tok = null;
     this.db = env.FIREBASE_DB || 'https://guimas-73e01-default-rtdb.firebaseio.com';
-    this.alerta = num(env.ALERTA_DIAS, 3);
     const id = String(env.ROBO_ID || '').trim();
     if (!/^[0-9a-f]{64}$/.test(id)) throw new Error('Segredo ROBO_ID ausente ou inválido');
     this.base = `familias/${id}`;
@@ -119,6 +118,59 @@ const MODELO = {
 function textoPedidoLivre(nome, carro, t) { return `Olá, *${nome}*, ${saudacao(t)}! 👋\n\nPor favor, me envie agora uma *foto nítida do painel* mostrando a *quilometragem* do *${carro}*.\n\n🛢️ É para a *verificação da troca de óleo*.\n\nObrigado!\n*Guimas Car*`; }
 const MSG_ILEGIVEL = 'Não consegui ler a quilometragem nessa foto 🤔 Manda outra bem de perto do painel, com o km total aparecendo, por favor.';
 const msgConferir = km => `Li ${fmtKm(km)} km, mas não bateu com o último registro do carro. Manda mais uma foto bem de perto do km total (não o TRIP), por favor.`;
+/* Óleo: SEMPRE o original da montadora primeiro (regra do Hudson). A 2ª opção é a melhor marca
+   fora da concessionária — de preferência a mesma fábrica que produz o original. */
+const OLEO_MARCA = {
+  FORD: { nome: 'Ford', orig: 'Motorcraft', alt: 'Mobil' },
+  RENAULT: { nome: 'Renault', orig: 'Motrio', alt: 'Elf' },
+  VW: { nome: 'Volkswagen', orig: 'Maxi Performance', alt: 'Shell Helix' },
+  FIAT: { nome: 'Fiat', orig: 'Selenia', alt: 'Mobil' },
+  JEEP: { nome: 'Jeep', orig: 'Selenia', alt: 'Mobil' },
+  CHEVROLET: { nome: 'Chevrolet', orig: 'ACDelco', alt: 'Mobil' },
+  NISSAN: { nome: 'Nissan', orig: 'Nissan', alt: 'Mobil' },
+  TOYOTA: { nome: 'Toyota', orig: 'Toyota', alt: 'Mobil' },
+  HONDA: { nome: 'Honda', orig: 'Honda', alt: 'Mobil' },
+  HYUNDAI: { nome: 'Hyundai', orig: 'Hyundai', alt: 'Shell Helix' },
+  KIA: { nome: 'Kia', orig: 'Kia', alt: 'Mobil' },
+  PEUGEOT: { nome: 'Peugeot', orig: 'Total Quartz', alt: 'Mobil' },
+  CITROEN: { nome: 'Citroën', orig: 'Total Quartz', alt: 'Mobil' },
+  MITSUBISHI: { nome: 'Mitsubishi', orig: 'Mitsubishi', alt: 'Mobil' }
+};
+const MARCA_RE = [
+  ['FORD', /\bFORD\b|\b(KA|FIESTA|ECOSPORT|FOCUS|RANGER|TERRITORY)\b/],
+  ['RENAULT', /\bRENAULT\b|\b(LOGAN|SANDERO|KWID|DUSTER|CAPTUR|OROCH|STEPWAY)\b/],
+  ['VW', /\b(VW|VOLKSWAGEN|VOLKS)\b|\b(GOL|VOYAGE|FOX|POLO|VIRTUS|UP|SAVEIRO|T-?CROSS|NIVUS|JETTA)\b/],
+  ['FIAT', /\bFIAT\b|\b(UNO|MOBI|ARGO|CRONOS|SIENA|GRAND SIENA|PALIO|STRADA|TORO|PULSE|FASTBACK|DOBLO)\b/],
+  ['JEEP', /\bJEEP\b|\b(RENEGADE|COMPASS|COMMANDER)\b/],
+  ['CHEVROLET', /\b(CHEV|CHEVROLET|GM)\b|\b(ONIX|PRISMA|COBALT|SPIN|CELTA|CLASSIC|TRACKER|MONTANA|S10|CRUZE)\b/],
+  ['NISSAN', /\bNISSAN\b|\b(VERSA|KICKS|MARCH|SENTRA|FRONTIER|LIVINA|TIIDA)\b/],
+  ['TOYOTA', /\bTOYOTA\b|\b(COROLLA|ETIOS|YARIS|HILUX|SW4|COROLLA CROSS)\b/],
+  ['HONDA', /\bHONDA\b|\b(FIT|CITY|CIVIC|HR-?V|WR-?V)\b/],
+  ['HYUNDAI', /\bHYUNDAI\b|\b(HB20S?|CRETA)\b/],
+  ['KIA', /\bKIA\b|\b(PICANTO|CERATO|SPORTAGE|SOUL)\b/],
+  ['PEUGEOT', /\bPEUGEOT\b|\b(208|2008|308|408|3008)\b/],
+  ['CITROEN', /\bCITROEN\b|\b(C3|C4|AIRCROSS|BASALT)\b/],
+  ['MITSUBISHI', /\b(MITSUBISHI|MMC)\b|\b(LANCER|PAJERO|ASX|L200)\b/]
+];
+function marcaCarro(ct) {
+  const sa = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/^I\//, '').replace(/\//g, ' ');
+  /* CRLV primeiro ("FORD/KA SE 1.0", "CHEV/ONIX"…); só depois o apelido do carro no Gestão */
+  for (const txt of [sa(ct.modelo), sa(ct.carro)]) {
+    if (!txt) continue;
+    const pre = txt.split(/\s+/)[0];
+    for (const [k, re] of MARCA_RE) if (re.test(pre)) return k;
+    for (const [k, re] of MARCA_RE) if (re.test(txt)) return k;
+  }
+  return '';
+}
+function linhaOleo(ct) {
+  const mk = OLEO_MARCA[marcaCarro(ct)];
+  const visc = ct.oleoTipo ? `*${ct.oleoTipo}* — ` : '';
+  const igual = ct.oleoTipo ? ' na mesma viscosidade' : '';
+  const orig = mk && (mk.orig === mk.nome ? `use o *original ${mk.orig}* (da concessionária)` : `use o original *${mk.orig}* (${mk.nome})`);
+  return mk ? `🧴 Óleo: ${visc}${orig}. Se não tiver, *${mk.alt}*${igual}. Sempre com filtro novo.`
+    : `🧴 Óleo: ${visc}use o *original da montadora*. Se não tiver, *Mobil*${igual}. Sempre com filtro novo.`;
+}
 function textoResposta(ct, km, nome) {
   const L = [`✅ Recebi${nome ? ', ' + nome : ''}! Km registrado: *${fmtKm(km)}*`];
   const po = num(ct.proxOleoKm);
@@ -127,7 +179,7 @@ function textoResposta(ct, km, nome) {
     L.push(f <= 0 ? `🛢 Troca de óleo: *VENCIDA há ${fmtKm(-f)} km*. Me chama para agendarmos o quanto antes.`
       : `🛢 Troca de óleo: faltam *${fmtKm(f)} km* (troca aos ${fmtKm(po)} km)${f <= 1000 ? '. Já pode agendar.' : '.'}`);
   }
-  if (po) L.push(`🧴 Óleo indicado: ${ct.oleoTipo ? '*' + ct.oleoTipo + '* — ' : ''}*Lubrax* ou o *original da montadora*. Na troca, sempre com filtro novo.`);
+  if (po) L.push(linhaOleo(ct));
   const pc = num(ct.proxCorreiaKm);
   if (ct.temCorreia && pc) {   /* carro com corrente de comando não recebe linha de correia */
     const f = pc - km;
@@ -257,6 +309,13 @@ async function carregar(ctx) {
   const [contatos, estado, config, teste, status] = await Promise.all(['contatos', 'estado', 'config', 'teste', 'status'].map(c => ctx.get(c)));
   return { contatos: contatos || {}, estado: estado || {}, config: config || {}, teste, status: status || {} };
 }
+/* Prazo para o motorista responder (regra do Hudson: "não pode ficar um dia inteiro sem responder"):
+   19h do mesmo dia do pedido; se o pedido saiu tarde, 3 horas depois dele. Mesma regra no Gestão. */
+function prazoResposta(pedidoEm) {
+  const d = agoraBRT(pedidoEm);
+  const h19 = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 19 + 3);
+  return Math.max(h19, pedidoEm + 3 * 3600e3);
+}
 function prontoParaEnviar(ct) { return !!(ct && ct.elegivel && ct.ativo && foneEnvio(ct.tel)); }
 
 async function garantirModelo(ctx, status, st) {
@@ -307,8 +366,10 @@ async function ciclo(ctx, t = Date.now()) {
     const manual = num(ct.pedirAgora) > num(m.pedirAtendido);
     if (!ligado && !manual) continue;
 
-    if (!manual && m.aberto) {
-      if (t - num(m.pedidoEm) >= ctx.alerta * DIA) {
+    /* pedido aberto: sem foto até o fim do dia = atrasado (aparece em vermelho no Gestão).
+       Depois de 7 dias sem resposta, se a troca ainda pedir, manda de novo. */
+    if (!manual && m.aberto && t - num(m.pedidoEm) < MIN_DIAS * DIA) {
+      if (t >= prazoResposta(num(m.pedidoEm))) {
         r.atrasados.push(pk);
         if (!m.atrasado) upd['estado/' + pk + '/atrasado'] = true;
       }
@@ -490,4 +551,4 @@ export default {
 };
 
 /* exportado só para os testes locais */
-export const _t = { avaliarLeitura, lerOdometro, precisaPedir, estimativa, foneChave, foneEnvio, interpretarResposta, plausivel, textoResposta, ciclo, processarWebhook, Ctx, primeiroNome, fmtPlaca, saudacao, MODELO, textoPedidoLivre };
+export const _t = { avaliarLeitura, lerOdometro, precisaPedir, estimativa, foneChave, foneEnvio, interpretarResposta, plausivel, textoResposta, ciclo, processarWebhook, Ctx, primeiroNome, fmtPlaca, saudacao, MODELO, textoPedidoLivre, marcaCarro, linhaOleo, prazoResposta };
