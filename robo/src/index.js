@@ -9,7 +9,7 @@
    sem ela, a foto é lida pela IA da própria Cloudflare).
    Este arquivo é público no GitHub: nada de segredo aqui. */
 
-const VERSAO = 'robo-km 3.9';
+const VERSAO = 'robo-km 3.10';
 const DIA = 864e5;
 
 /* ---------------- utilidades ---------------- */
@@ -540,7 +540,10 @@ async function http(req, env, exec) {
     if (req.method === 'POST') {
       const corpo = await req.json().catch(() => ({}));
       const ctx = new Ctx(env);
-      exec.waitUntil(processarWebhook(ctx, corpo).catch(e => ctx.log('webhook: ' + e.message)));
+      /* registra só QUE chegou algo (tipo e hora) — sem número nem conteúdo — para provar que o caminho Meta → Dualhook → robô funciona */
+      const campos = [...new Set((corpo.entry || []).flatMap(e => (e.changes || []).map(c => c.field)))].join(',').slice(0, 80);
+      exec.waitUntil(processarWebhook(ctx, corpo).catch(e => ctx.log('webhook: ' + e.message))
+        .then(() => ctx.patch('status/webhook', { em: Date.now(), campos: campos || '?' })).catch(() => { }));
       return new Response('ok', { status: 200 });
     }
   }
@@ -575,6 +578,10 @@ async function http(req, env, exec) {
         await ctx.post('historico/' + pk, { em: agora, pk, km: lido.km, painel: true, certeza: lido.certeza, resultado: 'ok', origem: 'simulação' });
       }
       return J({ lido, avaliacao: av, contato: { kmUltima: ct.kmUltima, kmUltimaData: ct.kmUltimaData, proxOleoKm: ct.proxOleoKm, temCorreia: ct.temCorreia, proxCorreiaKm: ct.proxCorreiaKm, kmDia: ct.kmDia }, resposta, aplicado: url.searchParams.get('aplicar') === '1' });
+    }
+    if (p[2] === 'rodar') { try { return J(await ciclo(ctx)); } catch (e) { return J({ erro: e.message }); } }   /* roda a rodada agora (mesma coisa do relógio de 15 min) */
+    if (p[2] === 'modelos') {   /* situação das mensagens modelo na Meta */
+      try { const j = await ctx.wa(`${env.WABA_ID}/message_templates?fields=name,status,category,language,rejected_reason,quality_score&limit=50`); return J(j.data || j); } catch (e) { return J({ erro: e.message }); }
     }
     if (p[2] === 'status') return J({ versao: VERSAO, status: await ctx.get('status'), config: await ctx.get('config'), temWA: !!env.WA_KEY, phone: env.PHONE_NUMBER_ID || '', waba: env.WABA_ID || '' });
   }
