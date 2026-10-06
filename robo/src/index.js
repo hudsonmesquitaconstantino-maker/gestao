@@ -9,7 +9,7 @@
    sem ela, a foto é lida pela IA da própria Cloudflare).
    Este arquivo é público no GitHub: nada de segredo aqui. */
 
-const VERSAO = 'robo-km 3.10';
+const VERSAO = 'robo-km 3.11';
 const DIA = 864e5;
 
 /* ---------------- utilidades ---------------- */
@@ -38,7 +38,7 @@ function foneEnvio(t) {
 /* ---------------- contexto ---------------- */
 class Ctx {
   constructor(env) {
-    this.env = env; this.sub = 0; this.tok = null;
+    this.env = env; this.sub = 0; this.tok = null; this.uso = { modelos: 0, livres: 0 };
     this.db = env.FIREBASE_DB || 'https://guimas-73e01-default-rtdb.firebaseio.com';
     const id = String(env.ROBO_ID || '').trim();
     if (!/^[0-9a-f]{64}$/.test(id)) throw new Error('Segredo ROBO_ID ausente ou inválido');
@@ -81,15 +81,24 @@ class Ctx {
     if (!r.ok) throw new Error(`WhatsApp ${r.status}: ${JSON.stringify(j.error || j).slice(0, 250)}`);
     return j;
   }
-  texto(para, body) {
-    return this.wa(`${this.env.PHONE_NUMBER_ID}/messages`, { messaging_product: 'whatsapp', to: para, type: 'text', text: { body, preview_url: false } });
+  /* contador do mês (Gestão mostra): modelos = cobrados pela Meta; livres = respostas na conversa aberta */
+  async salvarUso(t = Date.now()) {
+    if (!this.uso.modelos && !this.uso.livres) return;
+    const mes = dataBRT(t).slice(0, 7), atual = (await this.get('uso/' + mes).catch(() => null)) || {};
+    await this.put('uso/' + mes, { modelos: num(atual.modelos) + this.uso.modelos, livres: num(atual.livres) + this.uso.livres, em: t });
+    this.uso = { modelos: 0, livres: 0 };
   }
-  modelo(para, params, tpl = MODELO) {
-    return this.wa(`${this.env.PHONE_NUMBER_ID}/messages`, {
+  async texto(para, body) {
+    const r = await this.wa(`${this.env.PHONE_NUMBER_ID}/messages`, { messaging_product: 'whatsapp', to: para, type: 'text', text: { body, preview_url: false } });
+    this.uso.livres++; return r;
+  }
+  async modelo(para, params, tpl = MODELO) {
+    const r = await this.wa(`${this.env.PHONE_NUMBER_ID}/messages`, {
       messaging_product: 'whatsapp', to: para, type: 'template',
       template: { name: tpl.name, language: { code: tpl.language },
         components: [{ type: 'body', parameters: params.map(t => ({ type: 'text', text: String(t).slice(0, 60) })) }] }
     });
+    this.uso.modelos++; return r;
   }
   async baixarMidia(id) {
     const auth = { authorization: 'Bearer ' + this.env.WA_KEY };
@@ -443,6 +452,7 @@ async function ciclo(ctx, t = Date.now()) {
     upd['status'] = { ...status, ...st, versao: VERSAO, ultimaExecucao: t, ultimosEnviados: r.enviados.length, erros: r.erros.slice(0, 5) };
   }
   if (Object.keys(upd).length) await ctx.patch('', upd);
+  await ctx.salvarUso(t).catch(e => ctx.log('uso: ' + e.message));
   return r;
 }
 
@@ -489,6 +499,7 @@ async function processarWebhook(ctx, corpo) {
     await ctx.put('estado/' + key, m);
     if (estado) estado[key] = m;
   }
+  await ctx.salvarUso().catch(e => ctx.log('uso: ' + e.message));
   return { ok: true, out };
 }
 
