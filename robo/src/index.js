@@ -9,7 +9,7 @@
    sem ela, a foto é lida pela IA da própria Cloudflare).
    Este arquivo é público no GitHub: nada de segredo aqui. */
 
-const VERSAO = 'robo-km 3.2';
+const VERSAO = 'robo-km 3.3';
 const DIA = 864e5;
 
 /* ---------------- utilidades ---------------- */
@@ -112,11 +112,11 @@ const MODELO = {
   name: 'pedido_km_painel', language: 'pt_BR', category: 'UTILITY',
   components: [{
     type: 'BODY',
-    text: 'Olá, {{1}}, {{2}}! Por favor, me envie agora uma foto nítida da quilometragem do painel do {{3}}, para verificação da troca de óleo. Obrigado!',
+    text: 'Olá, *{{1}}*, {{2}}! 👋\n\nPor favor, me envie agora uma *foto nítida do painel* mostrando a *quilometragem* do *{{3}}*.\n\n🛢️ É para a *verificação da troca de óleo*.\n\nObrigado!\n*Guimas Car*',
     example: { body_text: [['Carlos', 'bom dia', 'Ka Sedan 2015 AZH-5D13']] }
   }]
 };
-function textoPedidoLivre(nome, carro, t) { return `Olá, ${nome}, ${saudacao(t)}! Por favor, me envie agora uma foto nítida da quilometragem do painel do ${carro}, para verificação da troca de óleo. Obrigado!`; }
+function textoPedidoLivre(nome, carro, t) { return `Olá, *${nome}*, ${saudacao(t)}! 👋\n\nPor favor, me envie agora uma *foto nítida do painel* mostrando a *quilometragem* do *${carro}*.\n\n🛢️ É para a *verificação da troca de óleo*.\n\nObrigado!\n*Guimas Car*`; }
 const MSG_ILEGIVEL = 'Não consegui ler a quilometragem nessa foto 🤔 Manda outra bem de perto do painel, com o km total aparecendo, por favor.';
 const msgConferir = km => `Li ${fmtKm(km)} km, mas não bateu com o último registro do carro. Manda mais uma foto bem de perto do km total (não o TRIP), por favor.`;
 function textoResposta(ct, km, nome) {
