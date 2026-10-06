@@ -1026,7 +1026,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=170; var APP_DATE='06/10/2026';
+var APP_VER=171; var APP_DATE='06/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -1365,6 +1365,7 @@ function normManut(m){
  m.texto=m.texto||'';m.criadoEm=m.criadoEm||0;m.editadoEm=Number(m.editadoEm)||0;
  return m;
 }
+function _kmAlugouContrato(s,c){var id=c&&c.contratoVigenteId,ct=id&&s&&s.contratos&&s.contratos[id];return (ct&&ct.tipo!=='venda'&&ct.status==='vigente'&&Number(ct.kmInicial)>0)?Number(ct.kmInicial):0}
 function normState(s){
  s=s||{};s.rev=s.rev||0;s.dev=s.dev||'';
  s.carros=s.carros||{};s.contratos=s.contratos||{};s.manutencoes=s.manutencoes||{};s.observacoes=s.observacoes||{};s.termos=s.termos||{};s.apagados=s.apagados||{};s.faturas=s.faturas||{};
@@ -1477,7 +1478,10 @@ function normState(s){
  if(!s.observacoes['ob_seed_026'])s.observacoes['ob_seed_026']={"id": "ob_seed_026", "carro": "", "texto": "Acertar R$ 100,00 ao Eliel referente à troca da válvula do cilindro do GNV do Voyage 20 QUB", "data": "2026-07-14", "criadoEm": 1752770000026, "feito": false, "feitoEm": ""};
  if(!s.observacoes['ob_seed_027'])s.observacoes['ob_seed_027']={"id": "ob_seed_027", "carro": "", "texto": "Acertar R$ 450,00 referente a 3 pneus meia-vida Dunlop 175/65R14 — 1 do Uno 18 IXY (no Rafael) e 2 do Ka 18 PZT", "data": "2026-07-14", "criadoEm": 1752770000027, "feito": false, "feitoEm": ""};
  }
- Object.keys(s.carros).forEach(function(k){var c=s.carros[k];if(c.kmUltima<c.kmAtual)c.kmUltima=c.kmAtual});
+ /* v171: "KM de quando alugou" = km inicial do contrato VIGENTE (fonte única, igual em todos os iPhones).
+    Antes o campo do carro só era preenchido se estivesse vazio, e carro realugado ficava com o km do contrato antigo. */
+ Object.keys(s.carros).forEach(function(k){var c=s.carros[k],ka=_kmAlugouContrato(s,c);if(ka&&Number(c.kmAtual)!==ka)c.kmAtual=ka});
+ Object.keys(s.carros).forEach(function(k){var c=s.carros[k];if(c.kmUltima<c.kmAtual){c.kmUltima=c.kmAtual;var ct=_kmAlugouContrato(s,c)&&s.contratos[c.contratoVigenteId];if(ct&&ct.inicio)c.kmUltimaData=ct.inicio}});
 
  return s;
 }
@@ -1502,7 +1506,7 @@ function alertasCarro(c){
   else if(f<=1500)a.push({n:'yel',t:'🛢 Óleo perto: faltam '+fmtKm(f)+' km ('+fmtKm(c.proxOleoKm)+')'});}
  if(km&&c.temCorreia&&c.proxCorreiaKm){var f2=c.proxCorreiaKm-km;
   if(f2<=0)a.push({n:'red',t:'⚙️ Correia dentada VENCIDA ('+fmtKm(c.proxCorreiaKm)+')'});
-  else if(f2<=2000)a.push({n:'yel',t:'⚙️ Correia dentada perto: faltam '+fmtKm(f2)+' km'});}
+  else if(f2<=8000){var _fo2=c.proxOleoKm?Number(c.proxOleoKm)-km:null;a.push({n:'yel',t:'⚙️ Correia dentada perto: faltam '+fmtKm(f2)+' km'+((_fo2!==null&&_fo2>0&&f2-_fo2<=8000)?' — programar junto com a próxima troca de óleo':'')})}}
  var ano=(new Date()).getFullYear();
  if(c.exercicioCRLV&&parseInt(c.exercicioCRLV,10)<ano)a.push({n:'red',t:'📄 CRLV atrasado (exercício '+c.exercicioCRLV+')'});
  if(semAcento(c.combustivel||'').indexOf('gnv')>=0&&c.gnvExercicio&&parseInt(c.gnvExercicio,10)<ano)a.push({n:'red',t:'🔥 Vistoria do GNV atrasada (exercício '+c.gnvExercicio+')'});
@@ -1606,7 +1610,7 @@ function _roboRisco(pk){
  var dias=dt?Math.max(0,Math.floor((Date.now()-Date.parse(dt+'T12:00:00'))/864e5)):null;
  var est=(km&&kd&&dias!==null)?km+kd*dias:km;
  var fo=c.proxOleoKm?(Number(c.proxOleoKm)-est):null,fc=(c.temCorreia&&c.proxCorreiaKm)?(Number(c.proxCorreiaKm)-est):null;
- var nivel=0;if(fo!==null){if(fo<=0)nivel=3;else if(fo<=1500)nivel=2}if(fc!==null){if(fc<=0)nivel=Math.max(nivel,3);else if(fc<=2000)nivel=Math.max(nivel,2)}
+ var nivel=0;if(fo!==null){if(fo<=0)nivel=3;else if(fo<=1500)nivel=2}if(fc!==null){if(fc<=0)nivel=Math.max(nivel,3);else if(fc<=8000)nivel=Math.max(nivel,2)}
  if(dias!==null&&dias>=45)nivel=Math.max(nivel,1);if(!dt)nivel=Math.max(nivel,1);
  return {km:km,dt:dt,dias:dias,kmDia:kd,kdFrota:kdFrota,est:est,estimado:est!==km,fo:fo,fc:fc,nivel:nivel};
 }
@@ -1718,6 +1722,35 @@ function _roboPrecisa(ct,m){
  if(fc!=null&&fc<=1000)return {pedir:true,txt:fc<=0?'correia provavelmente vencida':'correia perto da troca'};
  return {pedir:false,txt:'em dia pela estimativa'};
 }
+/* v171: lançar a quilometragem em 2 toques (sem entrar no editor do carro).
+   Regra do Hudson: o km nunca volta. Km menor que o último registro é recusado. */
+var KMR=null;
+function kmRapido(pk){
+ var c=S&&S.carros[pk];if(!c)return;KMR={pk:pk,forcar:false};
+ var at=Number(c.kmUltima||c.kmAtual)||0;
+ openSheet('<div class="v102sheetHero"><div class="v102sheetIcon">🧭</div><div><div class="v102eyebrow">'+esc(fmtPlaca(c.placa||pk))+'</div><h3>Lançar quilometragem</h3><div class="sub">'+esc(tituloCarro(c))+' · último: <b>'+fmtKm(at)+' km</b>'+(c.kmUltimaData?' em '+dataBR(c.kmUltimaData):'')+'</div></div></div>'+
+  '<label>Km do painel</label><input id="kmrKm" inputmode="numeric" placeholder="Ex.: '+esc(String(at||''))+'" style="font-size:22px;font-weight:700" oninput="KMR.forcar=false;document.getElementById(\'kmrMsg\').innerHTML=\'\'">'+
+  '<label>Data em que viu</label><input id="kmrData" type="date" value="'+hoje()+'" max="'+hoje()+'">'+
+  '<div id="kmrMsg" class="sub" style="margin:6px 0"></div>'+
+  '<button class="btn" style="width:100%" onclick="kmRapidoSalvar()">✓ Salvar km</button><button class="btn sec" style="width:100%;margin-top:6px" onclick="closeSheet(2)">Cancelar</button>',2);
+ setTimeout(function(){var e=document.getElementById('kmrKm');if(e)e.focus()},250);
+}
+function kmRapidoSalvar(){
+ if(!KMR)return;var c=S.carros[KMR.pk];if(!c)return;
+ var km=parseInt(String((document.getElementById('kmrKm')||{}).value||'').replace(/\D/g,''),10)||0,d=(document.getElementById('kmrData')||{}).value||hoje(),msg=document.getElementById('kmrMsg');
+ var at=Number(c.kmUltima||c.kmAtual)||0,dAt=c.kmUltimaData||'';
+ if(!(km>0)){msg.innerHTML='Digite o km.';return}
+ if(d>hoje()){msg.innerHTML='A data não pode ser no futuro.';return}
+ if(at&&km<at-100&&(!dAt||d>=dAt)){msg.innerHTML='<b style="color:#c0392b">⚠️ '+fmtKm(km)+' km é MENOR que o último registro ('+fmtKm(at)+' km'+(dAt?' em '+dataBR(dAt):'')+').</b> O km não pode voltar — confira o painel. Se o registro anterior estava errado, corrija em ✏️ Editar dados.';return}
+ if(dAt&&d<dAt){msg.innerHTML='Essa data é mais antiga que o último registro ('+dataBR(dAt)+'). Para km antigo, lance como manutenção.';return}
+ var dias=dAt?Math.max(1,(Date.parse(d)-Date.parse(dAt))/864e5):60;
+ if(at&&km>at+1000*dias+5000&&!KMR.forcar){KMR.forcar=true;msg.innerHTML='<b style="color:#C77A16">'+fmtKm(km-at)+' km a mais em '+Math.round(dias)+' dia(s) parece muito.</b> Confira o número; se estiver certo, toque em Salvar de novo.';return}
+ c.kmUltima=km;c.kmUltimaData=d;_garanteCampoAt(c).kmUltima=Date.now();c.editadoEm=Date.now();
+ save();closeSheet(2);toast('🧭 '+fmtKm(km)+' km salvo');
+ try{render()}catch(e){}
+ try{if(window._fichaPk===KMR.pk&&document.getElementById('ovSheet').classList.contains('open')&&!document.getElementById('roboTela'))ficha(KMR.pk)}catch(e){}
+ try{_roboRepintar()}catch(e){}
+}
 function _roboRepintar(){try{if(document.getElementById('roboTela')&&document.getElementById('ovSheet').classList.contains('open')&&!digitando())abrirRobo(true)}catch(e){}}
 function abrirRobo(manterRolagem){
  if(!S){toast('Dados ainda carregando');return}
@@ -1751,7 +1784,7 @@ function abrirRobo(manterRolagem){
    '<div class="sub" style="margin-top:4px">'+risco.join(' · ')+'</div><div class="sub">'+trocas.join(' · ')+'</div>'+(sit?'<div class="sub" style="margin-top:2px">'+sit+'</div>':'')+(auto?'<div class="sub" style="margin-top:2px">'+auto+'</div>':'')+
    '<div style="display:flex;gap:6px;margin-top:8px;align-items:center"><input id="rbTel_'+pk+'" inputmode="tel" placeholder="(21) 9…" value="'+esc(tel?fmtTel(tel):'')+'" style="flex:1;min-width:0" onchange="roboTel(\''+pk+'\',this.value)">'+
    (ct.telOrigem==='manual'?'<span class="sub" title="Digitado por você">✏️</span>':'<span class="sub" title="Do contrato">📄</span>')+
-   '<button class="btn mini sec" '+((tel&&ct.ativo)?'':'disabled ')+'onclick="roboPedirAgora(\''+pk+'\')">📸 Pedir agora</button></div>'+
+   '<button class="btn mini sec" onclick="kmRapido(\''+pk+'\')">✏️ km</button><button class="btn mini sec" '+((tel&&ct.ativo)?'':'disabled ')+'onclick="roboPedirAgora(\''+pk+'\')">📸 Pedir agora</button></div>'+
    '<button class="btn mini" style="width:100%;margin-top:6px;background:#25D366;border-color:#25D366;color:#fff" '+(tel?'':'disabled ')+'onclick="roboWhats(\''+pk+'\')">💬 Abrir no WhatsApp com a mensagem pronta</button></div>';
  });
  h+='<details class="card"><summary><b>Enviar teste</b> <span class="sub">— manda o pedido para outro número sem mexer no km do carro</span></summary>'+
@@ -2633,7 +2666,7 @@ function ficha(pk){window._fichaPk=pk;
  var h='<div class="v99hero"><div class="row v99heroTop">'+plateHtml(c.placa)+'<div class="grow"><h3>'+esc(tituloCarro(c))+'</h3>'+
   '<div class="sub">'+esc(c.modeloCRLV||'')+'</div><div class="v99heroMeta">'+_stq+'<span class="v99driver">'+(c.motorista?'👤 '+esc(primNome(c.motorista)):'sem motorista')+'</span></div></div></div>'+
   '<div class="v99metrics">'+
-   '<div class="v99metric"><small>KM atual</small><strong>'+fmtKm(_kmq)+'</strong></div>'+
+   '<div class="v99metric" style="cursor:pointer" onclick="kmRapido(\''+pk+'\')"><small>KM atual ✏️</small><strong>'+fmtKm(_kmq)+'</strong></div>'+
    '<div class="v99metric '+(_pendq?'warn':'ok')+'"><small>Pendências</small><strong>'+(_pendq?_pendq:'Em dia')+'</strong></div>'+
    '<div class="v99metric '+_proxq.nivel+'"><small>'+esc(_proxq.rotulo)+'</small><strong>'+esc(_proxq.valor)+'</strong></div>'+
   '</div></div>';
@@ -3370,7 +3403,7 @@ function salvarCorrecaoContrato(id){
  /* Só acompanha o odômetro do CARRO quando ainda é claramente o mesmo marco criado
     pelo contrato. Se já existe leitura posterior, não rebaixa nem sobrescreve. */
  var mudouCarro=[];
- if(Number(c.kmAtual)===Number(antes.kmInicial)&&Number(antes.kmInicial)>0&&Number(c.kmAtual)!==km){c.kmAtual=km;mudouCarro.push('kmAtual')}
+ if(((c.contratoVigenteId===ct.id&&ct.status==='vigente')||Number(c.kmAtual)===Number(antes.kmInicial))&&km>0&&Number(c.kmAtual)!==km){c.kmAtual=km;mudouCarro.push('kmAtual')}
  if(Number(c.kmUltima)===Number(antes.kmInicial)&&String(c.kmUltimaData||'')===String(antes.inicio||'')){
   if(Number(c.kmUltima)!==km){c.kmUltima=km;mudouCarro.push('kmUltima')}
   if(String(c.kmUltimaData||'')!==ini){c.kmUltimaData=ini;mudouCarro.push('kmUltimaData')}
@@ -3532,7 +3565,8 @@ function formCarro(pk){
  '<option value="correia"'+(_sincSel==='correia'?' selected':'')+'>Correia dentada</option><option value="corrente"'+(_sincSel==='corrente'?' selected':'')+'>Corrente de comando</option></select>'+
  '<div class="v102info" id="fc_sincInfo">'+(novo?'Analisando os dados do veículo…':(c.sincronismoOrigem==='auto'&&c.sincronismoRegra?'Identificado automaticamente na inclusão do carro.':'Configuração existente preservada.'))+'</div></div>'+
  '<div class="v102panel"><div class="v102panelHead"><span>🧭</span><div><b>Uso e quilometragem</b><small>Situação operacional da frota</small></div></div>'+
- '<div class="grid2">'+f('KM de quando alugou','kmAtual',c.kmAtual||'')+f('Última quilometragem','kmUltima',c.kmUltima||'')+'</div>'+
+ '<div class="grid2">'+(_kmAlugouContrato(S,c)?'<div><label>KM de quando alugou</label><input id="fc_kmAtual" readonly style="opacity:.6" value="'+esc(String(_kmAlugouContrato(S,c)))+'"></div>':f('KM de quando alugou','kmAtual',c.kmAtual||''))+f('Última quilometragem','kmUltima',c.kmUltima||'')+'</div>'+
+ (_kmAlugouContrato(S,c)?'<div class="v102info">O KM de quando alugou vem do contrato vigente. Para corrigir, use ✏️ Corrigir contrato.</div>':'')+
  '<label>Data em que viu essa quilometragem</label><input type="date" id="e_kmUltimaData" onchange="this.dataset.mexeu=1" value="'+esc(c.kmUltimaData||'')+'">'+
  '<label>Frota do veículo</label><select id="fc_meuCarro">'+opcoesSel(['Frota Fábio','Frota Hudson'],c.meuCarro?'Frota Hudson':'Frota Fábio')+'</select>'+
  '<label>Situação do veículo</label><select id="fc_emVenda">'+opcoesSel(['Na frota (normal)','Em processo de venda ao motorista'],c.emVenda?'Em processo de venda ao motorista':'Na frota (normal)')+'</select>'+
