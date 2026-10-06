@@ -1026,7 +1026,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=171; var APP_DATE='06/10/2026';
+var APP_VER=172; var APP_DATE='06/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -1506,7 +1506,7 @@ function alertasCarro(c){
   else if(f<=1500)a.push({n:'yel',t:'🛢 Óleo perto: faltam '+fmtKm(f)+' km ('+fmtKm(c.proxOleoKm)+')'});}
  if(km&&c.temCorreia&&c.proxCorreiaKm){var f2=c.proxCorreiaKm-km;
   if(f2<=0)a.push({n:'red',t:'⚙️ Correia dentada VENCIDA ('+fmtKm(c.proxCorreiaKm)+')'});
-  else if(f2<=8000){var _fo2=c.proxOleoKm?Number(c.proxOleoKm)-km:null;a.push({n:'yel',t:'⚙️ Correia dentada perto: faltam '+fmtKm(f2)+' km'+((_fo2!==null&&_fo2>0&&f2-_fo2<=8000)?' — programar junto com a próxima troca de óleo':'')})}}
+  else if(f2<=8000){a.push({n:'yel',t:'⚙️ Correia dentada perto: faltam '+fmtKm(f2)+' km (troca aos '+fmtKm(c.proxCorreiaKm)+')'})}}
  var ano=(new Date()).getFullYear();
  if(c.exercicioCRLV&&parseInt(c.exercicioCRLV,10)<ano)a.push({n:'red',t:'📄 CRLV atrasado (exercício '+c.exercicioCRLV+')'});
  if(semAcento(c.combustivel||'').indexOf('gnv')>=0&&c.gnvExercicio&&parseInt(c.gnvExercicio,10)<ano)a.push({n:'red',t:'🔥 Vistoria do GNV atrasada (exercício '+c.gnvExercicio+')'});

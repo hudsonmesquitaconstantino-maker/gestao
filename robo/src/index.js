@@ -9,7 +9,7 @@
    sem ela, a foto é lida pela IA da própria Cloudflare).
    Este arquivo é público no GitHub: nada de segredo aqui. */
 
-const VERSAO = 'robo-km 3.7';
+const VERSAO = 'robo-km 3.8';
 const DIA = 864e5;
 
 /* ---------------- utilidades ---------------- */
@@ -177,22 +177,17 @@ function textoResposta(ct, km, nome) {
   const po = num(ct.proxOleoKm);
   if (po) {
     const f = po - km;
-    L.push(f <= 0 ? `🛢 Troca de óleo: *VENCIDA há ${fmtKm(-f)} km*. Me chama para agendarmos o quanto antes.`
-      : `🛢 Troca de óleo: faltam *${fmtKm(f)} km* (troca aos ${fmtKm(po)} km)${f <= 1000 ? '. Já pode agendar.' : '.'}`);
+    /* troca de óleo é responsabilidade do motorista: só informa, sem "agendar" */
+    L.push(f <= 0 ? `🛢 Troca de óleo: *VENCIDA há ${fmtKm(-f)} km*. Faça a troca o quanto antes.`
+      : `🛢 Troca de óleo: faltam *${fmtKm(f)} km* (troca aos ${fmtKm(po)} km).`);
   }
   if (po) L.push(linhaOleo(ct));
   const pc = num(ct.proxCorreiaKm);
   if (ct.temCorreia && pc) {   /* carro com corrente de comando não recebe linha de correia */
     const f = pc - km;
     if (f <= 0) L.push(`⚙️ Correia dentada: *VENCIDA há ${fmtKm(-f)} km*. Me chama para agendarmos o quanto antes.`);
-    else if (f <= AVISO_CORREIA) {
-      /* regra do Hudson: a partir de ~8.000 km já avisa forte — costuma cair na próxima troca de óleo */
-      const kd = num(ct.kmDia), dias = kd > 0 ? f / kd : 0;
-      const quando = !dias ? '' : dias <= 12 ? ' — pelo seu ritmo, *em menos de 2 semanas*' : dias <= 24 ? ' — pelo seu ritmo, *em 2 a 3 semanas*'
-        : dias <= 40 ? ' — pelo seu ritmo, *em cerca de 1 mês*' : dias <= 60 ? ' — pelo seu ritmo, *em 1 mês e meio a 2 meses*' : ` — pelo seu ritmo, *em cerca de ${Math.round(dias / 30)} meses*`;
-      const junto = po && po > km && pc - po <= AVISO_CORREIA;
-      L.push(`⚠️ *Correia dentada: faltam só ${fmtKm(f)} km* (troca aos ${fmtKm(pc)} km)${quando}. ${junto ? 'Vamos trocar *junto com a próxima troca de óleo*.' : 'Me chama para agendarmos.'}`);
-    } else L.push(`⚙️ Correia dentada: faltam *${fmtKm(f)} km* (troca aos ${fmtKm(pc)} km).`);
+    else if (f <= AVISO_CORREIA) L.push(`⚠️ *Correia dentada: faltam ${fmtKm(f)} km* (troca aos ${fmtKm(pc)} km).`);   /* a partir de 8.000 km: destaque (regra do Hudson) */
+    else L.push(`⚙️ Correia dentada: faltam *${fmtKm(f)} km* (troca aos ${fmtKm(pc)} km).`);
   }
   L.push('', '_Mensagem automática · Guimas Car_');
   return L.join('\n');
