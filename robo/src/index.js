@@ -579,6 +579,16 @@ async function http(req, env, exec) {
       }
       return J({ lido, avaliacao: av, contato: { kmUltima: ct.kmUltima, kmUltimaData: ct.kmUltimaData, proxOleoKm: ct.proxOleoKm, temCorreia: ct.temCorreia, proxCorreiaKm: ct.proxCorreiaKm, kmDia: ct.kmDia }, resposta, aplicado: url.searchParams.get('aplicar') === '1' });
     }
+    if (p[2] === 'resumo') {   /* revisão sem dados pessoais: só contagens e placas */
+      const { contatos, estado, config } = await carregar(ctx), t = Date.now(), L = Object.entries(contatos);
+      const el = L.filter(([, c]) => c.elegivel), com = el.filter(([, c]) => foneEnvio(c.tel)), lig = com.filter(([, c]) => c.ativo);
+      const pedir = lig.map(([pk, c]) => [pk, precisaPedir(c, estado[pk] || {}, t)]).filter(([, a]) => a.pedir).map(([pk, a]) => pk + ': ' + a.motivo);
+      const semOleo = el.filter(([, c]) => !num(c.proxOleoKm)).map(([pk]) => pk), semKm = el.filter(([, c]) => !num(c.kmUltima)).map(([pk]) => pk);
+      const semMarca = el.filter(([, c]) => !marcaCarro(c)).map(([pk]) => pk), correiaSemKm = el.filter(([, c]) => c.temCorreia && !num(c.proxCorreiaKm)).map(([pk]) => pk);
+      const novos = el.filter(([, c]) => c.novo && !c.decidido).map(([pk]) => pk);
+      return J({ roboLigado: !!config.ativo, elegiveis: el.length, comNumero: com.length, ligados: lig.length, semNumero: el.filter(([, c]) => !foneEnvio(c.tel)).map(([pk]) => pk),
+        pediriaNaProximaManha: pedir, semProximaTrocaOleo: semOleo, semKmRegistrado: semKm, marcaNaoReconhecida: semMarca, correiaSemProximaTroca: correiaSemKm, motoristaNovoAConfirmar: novos });
+    }
     if (p[2] === 'rodar') { try { return J(await ciclo(ctx)); } catch (e) { return J({ erro: e.message }); } }   /* roda a rodada agora (mesma coisa do relógio de 15 min) */
     if (p[2] === 'modelos') {   /* situação das mensagens modelo na Meta */
       try { const j = await ctx.wa(`${env.WABA_ID}/message_templates?fields=name,status,category,language,rejected_reason,quality_score&limit=50`); return J(j.data || j); } catch (e) { return J({ erro: e.message }); }
