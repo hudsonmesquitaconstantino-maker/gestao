@@ -355,7 +355,7 @@ async function ciclo(ctx, t = Date.now()) {
   const r = { enviados: [], atrasados: [], erros: [] };
   const st = {}; const upd = {};
   const modeloOk = await garantirModelo(ctx, status, st);
-  const lembreteOk = modeloOk ? await garantirUmModelo(ctx, status, st, MODELO_LEMBRETE, 'modeloLembrete') : false;
+  const lembreteOk = await garantirUmModelo(ctx, status, st, MODELO_LEMBRETE, 'modeloLembrete');   /* os dois modelos vão juntos para aprovação */
   const h = agoraBRT(t), hora = h.getUTCHours(), dow = h.getUTCDay();
   const janelaRotina = dow >= 1 && dow <= 6 && hora >= 9 && hora < 12;   /* pedidos de rotina: seg–sáb, 9h–12h */
 
