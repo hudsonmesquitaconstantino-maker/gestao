@@ -9,7 +9,7 @@
    sem ela, a foto é lida pela IA da própria Cloudflare).
    Este arquivo é público no GitHub: nada de segredo aqui. */
 
-const VERSAO = 'robo-km 3.3';
+const VERSAO = 'robo-km 3.4';
 const DIA = 864e5;
 
 /* ---------------- utilidades ---------------- */
@@ -210,6 +210,7 @@ function avaliarLeitura(ct, m, km, agora) {
   if (!plausivel({ ...ct, kmUltima: ref, kmUltimaData: refData }, km, agora)) return { ok: false, tipo: 'alto', ref, refData };
   return { ok: true, ref };
 }
+const MSG_AUDIO = nome => `Recebi seu áudio${nome ? ', ' + nome : ''}! 👍 Para eu registrar o km certinho, preciso da *foto do painel* com a *quilometragem* aparecendo. Pode mandar quando puder. 📸`;
 const MSG_SUSPEITA = 'Recebi, obrigado! Esse km ficou diferente do registro do carro, então vou conferir e, se precisar, te chamo. 👍';
 /* leitura plausível? (até o triplo do ritmo do carro, mínimo 800 km/dia, + folga de 5.000 km).
    Folgado de propósito: só barra erro grosseiro (dígito a mais/a menos); km menor que o registro é barrado sempre. */
@@ -323,7 +324,7 @@ async function ciclo(ctx, t = Date.now()) {
     const atendido = manual ? num(ct.pedirAgora) : (num(m.pedirAtendido) || null);
     try {
       await pedir(foneEnvio(ct.tel), primeiroNome(ct.motorista), carro, m);
-      upd['estado/' + pk] = { ...m, chave, aberto: true, pedidoEm: t, atrasado: false, falhas: 0, suspeito: null, motivo, pedirAtendido: atendido, erro: null };
+      upd['estado/' + pk] = { ...m, chave, aberto: true, pedidoEm: t, atrasado: false, falhas: 0, suspeito: null, lembrouAudio: false, motivo, pedirAtendido: atendido, erro: null };
       r.enviados.push(pk);
     } catch (e) {
       r.erros.push(`${pk}: ${e.message}`);
@@ -371,6 +372,12 @@ async function processarWebhook(ctx, corpo) {
       /* pedido feito pelo Hudson no WhatsApp dele (botão do Gestão): a foto que chegar em até 3 dias também é lida */
       const pedidoManual = num(ctx3.pedidoWhatsEm) > num(m.leituraEm) && Date.now() - num(ctx3.pedidoWhatsEm) < 3 * DIA;
       if (msg.type === 'image' && msg.image && msg.image.id && (m.aberto || pedidoManual)) out.push(await tratarFoto(ctx, pk, (contatos || {})[pk] || {}, m, msg, key === 'teste'));
+      else if (msg.type === 'audio' && (m.aberto || pedidoManual) && !m.lembrouAudio) {
+        /* respondeu com áudio em vez da foto: lembra UMA vez por pedido, com educação */
+        m.lembrouAudio = true;
+        await ctx.texto(msg.from, MSG_AUDIO(primeiroNome(ctx3.motorista)));
+        out.push('audio:lembrete');
+      }
       else out.push('ignorada:' + msg.type);
     } catch (e) { out.push('erro:' + e.message); await ctx.log(`foto ${pk}: ${e.message}`); }
     await ctx.put('estado/' + key, m);
@@ -410,7 +417,7 @@ async function tratarFoto(ctx, pk, ct, m, msg, teste) {
   }
   if (!teste) await ctx.put('leituras/' + pk, { km, data: dataBRT(agora), em: agora, certeza: lido.certeza });   /* o Gestão aplica no carro */
   await ctx.post(hist, { ...reg, resultado: 'ok' });
-  Object.assign(m, { aberto: false, atrasado: false, leituraEm: agora, km, falhas: 0, suspeito: null });
+  Object.assign(m, { aberto: false, atrasado: false, leituraEm: agora, km, falhas: 0, suspeito: null, lembrouAudio: false });
   await ctx.texto(para, textoResposta(ct, km, primeiroNome(ct.motorista)));
   return 'ok:' + km;
 }
@@ -444,6 +451,24 @@ async function http(req, env, exec) {
       const midia = { bytes: await r.arrayBuffer(), mime: r.headers.get('content-type') || 'image/jpeg' };
       const info = { http: r.status, tipo: midia.mime, bytes: midia.bytes.byteLength };
       try { return J({ leitura: await lerOdometro(ctx, midia), ...info }); } catch (e) { return J({ erro: e.message, ...info }); }
+    }
+    if (p[2] === 'contatos') { const [c, e] = await Promise.all([ctx.get('contatos'), ctx.get('estado')]); const so = (url.searchParams.get('pk') || '').split(',').filter(Boolean);
+      const f = o => so.length ? Object.fromEntries(Object.entries(o || {}).filter(([k]) => so.includes(k))) : o; return J({ contatos: f(c), estado: f(e) }); }
+    if (p[2] === 'simular') {   /* lê uma foto real e mostra a resposta que o motorista receberia; &aplicar=1 grava a leitura */
+      const pk = url.searchParams.get('pk'), r = await fetch(url.searchParams.get('img'), { headers: { 'user-agent': 'GuimasCarRoboKm' } });
+      const midia = { bytes: await r.arrayBuffer(), mime: r.headers.get('content-type') || 'image/jpeg' };
+      const ct = (await ctx.get('contatos/' + pk)) || {}, m = (await ctx.get('estado/' + pk)) || {}, agora = Date.now();
+      const lido = await lerOdometro(ctx, midia);
+      if (!lido.painel || !lido.km) return J({ lido, resposta: MSG_ILEGIVEL });
+      const av = avaliarLeitura(ct, m, lido.km, agora);
+      if (!av.ok) return J({ lido, avaliacao: av, resposta: msgConferir(lido.km) + '  (se a 2ª foto confirmar: ' + MSG_SUSPEITA + ')' });
+      const resposta = textoResposta(ct, lido.km, primeiroNome(ct.motorista));
+      if (url.searchParams.get('aplicar') === '1') {
+        await ctx.put('leituras/' + pk, { km: lido.km, data: dataBRT(agora), em: agora, certeza: lido.certeza, origem: 'simulação' });
+        await ctx.patch('estado/' + pk, { aberto: false, atrasado: false, leituraEm: agora, km: lido.km, falhas: 0, suspeito: null });
+        await ctx.post('historico/' + pk, { em: agora, pk, km: lido.km, painel: true, certeza: lido.certeza, resultado: 'ok', origem: 'simulação' });
+      }
+      return J({ lido, avaliacao: av, contato: { kmUltima: ct.kmUltima, kmUltimaData: ct.kmUltimaData, proxOleoKm: ct.proxOleoKm, temCorreia: ct.temCorreia, proxCorreiaKm: ct.proxCorreiaKm, kmDia: ct.kmDia }, resposta, aplicado: url.searchParams.get('aplicar') === '1' });
     }
     if (p[2] === 'status') return J({ versao: VERSAO, status: await ctx.get('status'), config: await ctx.get('config'), temWA: !!env.WA_KEY, phone: env.PHONE_NUMBER_ID || '', waba: env.WABA_ID || '' });
   }
