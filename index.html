@@ -993,6 +993,9 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 @keyframes v105SheetIn{from{opacity:.25;transform:translateY(34px) scale(.99)}to{opacity:1;transform:none}}
 @media(max-width:390px){.v105savedActions{grid-template-columns:1fr}.v100step small{font-size:8.8px!important}.v100panel{padding:12px!important}}
 @media(prefers-reduced-motion:reduce){#toast,.v100item,.v105saved,.overlay.open .sheetwrap{transition:none!important;animation:none!important}}
+.atenGrp{margin:10px 0 4px}.atenGrpT{font-weight:700;font-size:14px;margin:0 0 6px;display:flex;justify-content:space-between;gap:8px}.atenGrpT span{font-weight:500;color:var(--tx2);font-size:12px}
+.atenRow{border-left:4px solid #C77A16;background:var(--card2,rgba(0,0,0,.03));border-radius:10px;padding:8px 10px;margin:0 0 6px;cursor:pointer}.atenRow.red{border-left-color:#c0392b}
+.atenCar{font-weight:700;font-size:13px}.atenCar span{font-weight:500;color:var(--tx2);font-size:12px;margin-left:4px}.atenTx{font-size:13px;margin-top:2px}.atenRow.red .atenTx{color:var(--warn)}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -1026,7 +1029,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=172; var APP_DATE='06/10/2026';
+var APP_VER=173; var APP_DATE='06/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -2372,13 +2375,21 @@ function vFrota(){
   if(al.length)atengeral.push({c:c,al:al});
  });
  if(atengeral.length){
-  h+='<div class="card" id="fAten"><div class="tit">⚠️ Atenção ('+atengeral.length+' carro'+(atengeral.length>1?'s':'')+')</div>';
-  atengeral.forEach(function(x){
-   var pk=normPlaca(x.c.placa);
-   var _temRed=x.al.some(function(a){return a.n==='red'});
-   h+='<div class="card tap'+(_temRed?' atenRed':'')+'" style="margin:0 0 6px" onclick="ficha(\''+pk+'\')"><div class="tit" style="font-size:14px">'+esc(tituloCarro(x.c))+' — '+esc(fmtPlaca(x.c.placa))+'</div>'+
-    x.al.map(function(a){return '<div class="sub" style="color:var(--'+(a.n==='red'?'warn':'tx')+')">'+a.t+'</div>'}).join('')+'</div>';
-  });
+  /* v173: agrupado por ASSUNTO (óleo, correia, km, GNV, documentação, lembretes), não por carro.
+     Dentro do grupo: vermelho primeiro; óleo e correia pelo que está mais perto/mais vencido. */
+  var GRP=[{k:'oleo',t:'🛢 Troca de óleo'},{k:'correia',t:'⚙️ Correia dentada'},{k:'km',t:'📸 Quilometragem e robô'},{k:'gnv',t:'🔥 GNV'},{k:'doc',t:'📄 Documentação'},{k:'obs',t:'📝 Lembretes'}],grp={},nAv=0;
+  var _cat=function(t){t=String(t||'');return /^🛢/.test(t)?'oleo':/^⚙/.test(t)?'correia':/^(🔥|🧯)/.test(t)?'gnv':/^📄/.test(t)?'doc':/^📝/.test(t)?'obs':'km'};
+  atengeral.forEach(function(x){var km=Number(x.c.kmUltima||x.c.kmAtual)||0;x.al.forEach(function(a){var k=_cat(a.t);nAv++;
+   var ord=k==='oleo'?(Number(x.c.proxOleoKm)||0)-km:(k==='correia'?(Number(x.c.proxCorreiaKm)||0)-km:0);
+   (grp[k]=grp[k]||[]).push({c:x.c,a:a,red:a.n==='red',ord:ord})})});
+  h+='<div class="card" id="fAten"><div class="tit">⚠️ Atenção ('+atengeral.length+' carro'+(atengeral.length>1?'s':'')+' · '+nAv+' aviso'+(nAv>1?'s':'')+')</div>';
+  GRP.forEach(function(g){var it=grp[g.k];if(!it||!it.length)return;
+   it.sort(function(u,v){return (v.red-u.red)||(u.ord-v.ord)||tituloCarro(u.c).localeCompare(tituloCarro(v.c))});
+   var nr=it.filter(function(x){return x.red}).length;
+   h+='<div class="atenGrp"><div class="atenGrpT">'+g.t+' <span>'+it.length+(nr?' · <b style="color:var(--warn)">'+nr+' vencido'+(nr>1?'s':'')+'</b>':'')+'</span></div>';
+   it.forEach(function(x){var pk=normPlaca(x.c.placa),txt=String(x.a.t).replace(/^(🛢|⚙️|⚙|📸|🔥|🧯|📄|📝|⚠️)\s*/,'');
+    h+='<div class="atenRow tap'+(x.red?' red':'')+'" onclick="ficha(\''+pk+'\')"><div class="atenCar">'+esc(tituloCarro(x.c))+' <span>'+esc(fmtPlaca(x.c.placa))+'</span></div><div class="atenTx">'+txt+'</div></div>'});
+   h+='</div>'});
   h+='</div>';
  }
  h+='<button class="btn ok" onclick="formCarro()">➕ ADICIONAR CARRO NOVO</button>';
@@ -5731,10 +5742,18 @@ function detectarComponentes(m){
 /* v134 — uma NOVA troca registrada torna obsoleto o alvo manual da troca anterior.
    O manual serve para ajustar a próxima quilometragem do evento ATUAL; não deve sobreviver
    a uma nova troca real feita antes do alvo antigo. */
-function _liberarProximaManualPorNovaTroca(c,d){
+/* v173: só libera quando a manutenção é a troca MAIS RECENTE do componente no carro.
+   Lançar depois uma troca ANTIGA (histórico atrasado) não pode apagar o ajuste manual do Hudson. */
+function _ehTrocaMaisRecente(m,comp){
+ if(!m||!m.carro)return true;var dm=_dtManut(m)||'',om=_odoManut(m)||0,ok=true;
+ manutsDoCarro(m.carro).forEach(function(x){if(!ok||x.id===m.id)return;var dx=_dtManut(x)||'',ox=_odoManut(x)||0;
+  if((dx>dm||(dx===dm&&ox>om))&&detectarComponentes(x).comps[comp])ok=false});
+ return ok;
+}
+function _liberarProximaManualPorNovaTroca(c,d,m){
  if(!c||!d||!d.comps)return [];var f=[];
- if(d.comps.oleo&&c.proxOleoManual){c.proxOleoManual=0;f.push('proxOleoManual')}
- if(d.comps.correia&&c.proxCorreiaManual){c.proxCorreiaManual=0;f.push('proxCorreiaManual')}
+ if(d.comps.oleo&&c.proxOleoManual&&_ehTrocaMaisRecente(m,'oleo')){c.proxOleoManual=0;f.push('proxOleoManual')}
+ if(d.comps.correia&&c.proxCorreiaManual&&_ehTrocaMaisRecente(m,'correia')){c.proxCorreiaManual=0;f.push('proxCorreiaManual')}
  return f;
 }
 function aplicarDeteccao(m,carro){
@@ -6366,7 +6385,7 @@ function gerarManut(){
  S.manutencoes[m.id]=m;_gestaoFormDirty=false;
  _kmPorManut(carro,odo,fim||ini);
  var _detNova=detectarComponentes(m);
- var _libNova=_liberarProximaManualPorNovaTroca(carro,_detNova);
+ var _libNova=_liberarProximaManualPorNovaTroca(carro,_detNova,m);
  var _marc=aplicarDeteccao(m,carro);
  if(_detNova.comps.oleo||_detNova.comps.correia){
   var _camDer=[];
@@ -6517,8 +6536,8 @@ function salvarEdicaoManut(){
   var _mudouEvt=(Number(m.odometro)||0)!==_oldOdo||(_dtManut(m)||'')!==_oldDt;
   var _mudouO=!!_newD.comps.oleo&&(!_oldD.comps.oleo||_mudouEvt||Number(_newD.proxOleo||0)!==Number(_oldD.proxOleo||0));
   var _mudouC=!!_newD.comps.correia&&(!_oldD.comps.correia||_mudouEvt||Number(_newD.proxCorreia||0)!==Number(_oldD.proxCorreia||0));
-  if(_mudouO&&carro.proxOleoManual)carro.proxOleoManual=0;
-  if(_mudouC&&carro.proxCorreiaManual)carro.proxCorreiaManual=0;
+  if(_mudouO&&carro.proxOleoManual&&_ehTrocaMaisRecente(m,'oleo'))carro.proxOleoManual=0;
+  if(_mudouC&&carro.proxCorreiaManual&&_ehTrocaMaisRecente(m,'correia'))carro.proxCorreiaManual=0;
   recomputarCompsAposAlteracao(m.carro,_sumiu,m.id);
   recalcTrocasCarro(m.carro); /* só acrescenta/atualiza; não apaga histórico legado */
   if(_mudouO)_touchCarro(carro,['proxOleoKm','proxOleoManual','oleoIntervalo']);
