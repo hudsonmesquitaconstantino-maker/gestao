@@ -1026,7 +1026,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=162; var APP_DATE='05/10/2026';
+var APP_VER=163; var APP_DATE='05/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -1656,6 +1656,20 @@ function _nomeCurto(n){n=String(n||'').trim().split(/\s+/)[0]||'';return n?n.cha
 function _telRobo(t){var d=String(t||'').replace(/\D/g,'');if(d.indexOf('55')===0&&d.length>=12)d=d.slice(2);return (d.length===10||d.length===11)?d:''}
 
 /* ---------- tela 📸 Robô do km ---------- */
+/* Mesma regra do robô (robo/src/index.js · precisaPedir): mostrar aqui o que ele vai fazer. */
+function _roboPrecisa(ct,m){
+ m=m||{};var t=Date.now(),DIA=864e5,km=Number(ct.kmUltima)||0,tb=/^\d{4}-\d{2}-\d{2}$/.test(ct.kmUltimaData||'')?Date.parse(ct.kmUltimaData+'T12:00:00-03:00'):0;
+ if((Number(m.leituraEm)||0)>tb&&Number(m.km)>0){km=Number(m.km);tb=Number(m.leituraEm)}
+ var dias=tb?Math.max(0,(t-tb)/DIA):null,kd=Number(ct.kmDia)||0,est=km&&dias!=null&&kd?km+kd*dias:(km||null);
+ var fo=Number(ct.proxOleoKm)&&est?Number(ct.proxOleoKm)-est:null,fc=ct.temCorreia&&Number(ct.proxCorreiaKm)&&est?Number(ct.proxCorreiaKm)-est:null;
+ if(Number(m.pedidoEm)&&t-Number(m.pedidoEm)<7*DIA)return {pedir:false,txt:'pedido feito há menos de 7 dias'};
+ if(dias!=null&&dias<7)return {pedir:false,txt:'km recente — não precisa pedir'};
+ if(!km||!tb)return {pedir:true,txt:'sem km registrado'};
+ if(!kd&&dias>=30)return {pedir:true,txt:'sem km há '+Math.round(dias)+' dias'};
+ if(fo!=null&&fo<=500)return {pedir:true,txt:fo<=0?'óleo provavelmente vencido':'óleo perto da troca'};
+ if(fc!=null&&fc<=1000)return {pedir:true,txt:fc<=0?'correia provavelmente vencida':'correia perto da troca'};
+ return {pedir:false,txt:'em dia pela estimativa'};
+}
 function _roboRepintar(){try{if(document.getElementById('roboTela')&&document.getElementById('ovSheet').classList.contains('open')&&!digitando())abrirRobo(true)}catch(e){}}
 function abrirRobo(manterRolagem){
  if(!S){toast('Dados ainda carregando');return}
@@ -1664,7 +1678,7 @@ function abrirRobo(manterRolagem){
  var lista=Object.keys(S.carros).filter(function(pk){return _roboElegivel(S.carros[pk])}).map(function(pk){return {pk:pk,c:S.carros[pk],r:_roboRisco(pk),ct:cont[pk]||{},m:est[pk]||{}}});
  lista.sort(function(a,b){return (b.r.nivel-a.r.nivel)||((a.r.fo===null?1e9:a.r.fo)-(b.r.fo===null?1e9:b.r.fo))||(a.c.nome||'').localeCompare(b.c.nome||'')});
  var nLig=lista.filter(function(x){return x.ct.ativo&&_telRobo(x.ct.tel)}).length,nSem=lista.filter(function(x){return !_telRobo(x.ct.tel)}).length;
- var h='<div id="roboTela"><div class="v102sheetHero"><div class="v102sheetIcon">📸</div><div><div class="v102eyebrow">WHATSAPP</div><h3>Robô do km</h3><div class="sub">A cada 20 dias pede a foto do painel, lê o km e responde quanto falta para óleo e correia. Só recebe quem estiver ligado aqui.</div></div></div>';
+ var h='<div id="roboTela"><div class="v102sheetHero"><div class="v102sheetIcon">📸</div><div><div class="v102eyebrow">WHATSAPP</div><h3>Robô do km</h3><div class="sub">Pede a foto do painel só quando a estimativa indica que a troca de óleo (ou correia) chegou ou está perto, ou quando o carro está sem km registrado. Lê o km e responde quanto falta. Só recebe quem estiver ligado aqui.</div></div></div>';
  h+='<div class="card" style="display:flex;align-items:center;gap:10px;justify-content:space-between"><div><b>'+(cfg.ativo?'🟢 Robô ligado':'⚪ Robô desligado')+'</b><div class="sub">'+nLig+' motorista(s) ligado(s) · '+nSem+' sem número'+(st.ultimaExecucao?' · última checagem '+new Date(st.ultimaExecucao).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'')+'</div>'+((st.erros&&st.erros.length)?'<div class="sub" style="color:var(--bad,#c33)">⚠️ '+esc(st.erros[0])+'</div>':'')+'</div><button class="btn mini'+(cfg.ativo?' sec':'')+'" onclick="roboLigarGeral('+(!cfg.ativo)+')">'+(cfg.ativo?'Desligar':'Ligar')+'</button></div>';
  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px"><button class="btn mini sec" onclick="roboLigarTodos()">✅ Ligar todos que têm número</button></div>';
  lista.forEach(function(x){
@@ -1680,10 +1694,11 @@ function abrirRobo(manterRolagem){
   if(m.aberto&&m.pedidoEm){var d=Math.floor((Date.now()-m.pedidoEm)/864e5);sit=(m.atrasado?'🔴 ':'⏳ ')+'pedido enviado '+(d?'há '+d+' dia(s)':'hoje')+', aguardando foto';}
   else if(m.leituraEm)sit='✅ última foto em '+new Date(m.leituraEm).toLocaleDateString('pt-BR')+(m.km?' · '+fmtKm(m.km)+' km':'');
   else if(ct.pedirAgora)sit='⏳ pedido na fila (sai em até 15 min, das 8h às 20h)';
+  var pz=_roboPrecisa(ct,m),auto=(ct.ativo&&tel)?(pz.pedir?'🤖 <b>vai pedir</b> na próxima manhã (seg–sáb, 9h–12h): '+pz.txt:'🤖 não vai pedir: '+pz.txt):'';
   h+='<div class="card" style="border-left:4px solid '+cor+'">'+
    '<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div><b>'+esc(c.nome||pk)+'</b> <span class="sub">'+esc(c.placa||pk)+'</span><div class="sub">'+esc(c.motorista)+(ct.novo&&!ct.decidido?' · <b style="color:#C77A16">novo motorista — confirme</b>':'')+'</div></div>'+
    '<button class="btn mini'+(ct.ativo&&tel?'':' sec')+'" style="white-space:nowrap;'+(ct.ativo&&tel?'background:#2E7D5B;color:#fff;border-color:#2E7D5B':'')+'" onclick="roboLigar(\''+pk+'\','+(!(ct.ativo&&tel))+')">'+(ct.ativo&&tel?'✅ Ligado':'Ligar')+'</button></div>'+
-   '<div class="sub" style="margin-top:4px">'+risco.join(' · ')+'</div><div class="sub">'+trocas.join(' · ')+'</div>'+(sit?'<div class="sub" style="margin-top:2px">'+sit+'</div>':'')+
+   '<div class="sub" style="margin-top:4px">'+risco.join(' · ')+'</div><div class="sub">'+trocas.join(' · ')+'</div>'+(sit?'<div class="sub" style="margin-top:2px">'+sit+'</div>':'')+(auto?'<div class="sub" style="margin-top:2px">'+auto+'</div>':'')+
    '<div style="display:flex;gap:6px;margin-top:8px;align-items:center"><input id="rbTel_'+pk+'" inputmode="tel" placeholder="(21) 9…" value="'+esc(tel?fmtTel(tel):'')+'" style="flex:1;min-width:0" onchange="roboTel(\''+pk+'\',this.value)">'+
    (ct.telOrigem==='manual'?'<span class="sub" title="Digitado por você">✏️</span>':'<span class="sub" title="Do contrato">📄</span>')+
    '<button class="btn mini sec" '+((tel&&ct.ativo)?'':'disabled ')+'onclick="roboPedirAgora(\''+pk+'\')">📸 Pedir agora</button></div></div>';

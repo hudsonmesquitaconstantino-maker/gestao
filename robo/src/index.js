@@ -9,7 +9,7 @@
    sem ela, a foto é lida pela IA da própria Cloudflare).
    Este arquivo é público no GitHub: nada de segredo aqui. */
 
-const VERSAO = 'robo-km 2.1';
+const VERSAO = 'robo-km 3.0';
 const DIA = 864e5;
 
 /* ---------------- utilidades ---------------- */
@@ -40,7 +40,7 @@ class Ctx {
   constructor(env) {
     this.env = env; this.sub = 0; this.tok = null;
     this.db = env.FIREBASE_DB || 'https://guimas-73e01-default-rtdb.firebaseio.com';
-    this.intervalo = num(env.INTERVALO_DIAS, 20); this.alerta = num(env.ALERTA_DIAS, 3);
+    this.alerta = num(env.ALERTA_DIAS, 3);
     const id = String(env.ROBO_ID || '').trim();
     if (!/^[0-9a-f]{64}$/.test(id)) throw new Error('Segredo ROBO_ID ausente ou inválido');
     this.base = `familias/${id}`;
@@ -208,6 +208,34 @@ function plausivel(ct, km, agora) {
   return km - ref <= Math.max(600, 2 * num(ct.kmDia)) * dias + 3000;
 }
 
+/* ---------------- quem precisa receber o pedido (regra combinada com o Hudson) ----------------
+   Sem prazo fixo. Pede a foto só quando:
+   (a) pela estimativa (último km + média de km/dia do carro × dias), a troca de óleo (ou da correia)
+       provavelmente já chegou ou está a menos de MARGEM km; ou
+   (b) não há como estimar: carro sem km registrado, ou sem média e com o último km há mais de 30 dias.
+   Nunca pede para quem mandou km/foto há menos de 7 dias nem repete pedido em menos de 7 dias. */
+const MARGEM_OLEO = 500, MARGEM_CORREIA = 1000, MIN_DIAS = 7, SEM_HIST_DIAS = 30;
+function estimativa(ct, m, t) {
+  let km = num(ct.kmUltima), tBase = /^\d{4}-\d{2}-\d{2}$/.test(ct.kmUltimaData || '') ? Date.parse(ct.kmUltimaData + 'T12:00:00-03:00') : 0;
+  if (num(m && m.leituraEm) > tBase && num(m && m.km) > 0) { km = num(m.km); tBase = num(m.leituraEm); }
+  const dias = tBase ? Math.max(0, (t - tBase) / DIA) : null, kmDia = num(ct.kmDia);
+  const est = km && dias != null && kmDia ? km + kmDia * dias : (km || null);
+  const fo = num(ct.proxOleoKm) && est ? num(ct.proxOleoKm) - est : null;
+  const fc = ct.temCorreia && num(ct.proxCorreiaKm) && est ? num(ct.proxCorreiaKm) - est : null;
+  return { km, tBase, dias, kmDia, est, fo, fc };
+}
+function precisaPedir(ct, m, t) {
+  m = m || {};
+  const e = estimativa(ct, m, t);
+  if (num(m.pedidoEm) && t - num(m.pedidoEm) < MIN_DIAS * DIA) return { pedir: false, motivo: 'pedido recente', e };
+  if (e.dias != null && e.dias < MIN_DIAS) return { pedir: false, motivo: 'km recente', e };
+  if (!e.km || !e.tBase) return { pedir: true, motivo: 'sem histórico de km', e };
+  if (!e.kmDia && e.dias >= SEM_HIST_DIAS) return { pedir: true, motivo: 'sem km há ' + Math.round(e.dias) + ' dias', e };
+  if (e.fo != null && e.fo <= MARGEM_OLEO) return { pedir: true, motivo: e.fo <= 0 ? 'óleo provavelmente vencido' : 'óleo perto da troca', e };
+  if (e.fc != null && e.fc <= MARGEM_CORREIA) return { pedir: true, motivo: e.fc <= 0 ? 'correia provavelmente vencida' : 'correia perto da troca', e };
+  return { pedir: false, motivo: 'em dia pela estimativa', e };
+}
+
 /* ---------------- ciclo (a cada 15 min, 8h–20h) ---------------- */
 async function carregar(ctx) {
   const [contatos, estado, config, teste, status] = await Promise.all(['contatos', 'estado', 'config', 'teste', 'status'].map(c => ctx.get(c)));
@@ -273,8 +301,8 @@ async function ciclo(ctx, t = Date.now()) {
     let motivo = '';
     if (manual) motivo = 'manual';
     else if (janelaRotina) {
-      const tRef = /^\d{4}-\d{2}-\d{2}$/.test(ct.kmUltimaData || '') ? Date.parse(ct.kmUltimaData + 'T12:00:00-03:00') : 0;
-      if (t - Math.max(num(m.leituraEm), num(m.pedidoEm), tRef) >= ctx.intervalo * DIA) motivo = 'rotina';
+      const av = precisaPedir(ct, m, t);
+      if (av.pedir) motivo = av.motivo;
     }
     if (!motivo) continue;
     const carro = `${ct.carro || 'carro'} ${fmtPlaca(ct.placa || pk)}`.trim();
@@ -410,4 +438,4 @@ export default {
 };
 
 /* exportado só para os testes locais */
-export const _t = { lerOdometro, foneChave, foneEnvio, interpretarResposta, plausivel, textoResposta, ciclo, processarWebhook, Ctx, primeiroNome, fmtPlaca, saudacao, MODELO, textoPedidoLivre };
+export const _t = { lerOdometro, precisaPedir, estimativa, foneChave, foneEnvio, interpretarResposta, plausivel, textoResposta, ciclo, processarWebhook, Ctx, primeiroNome, fmtPlaca, saudacao, MODELO, textoPedidoLivre };
