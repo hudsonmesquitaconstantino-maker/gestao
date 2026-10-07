@@ -1322,7 +1322,7 @@ html.teclado .n3nav{display:none}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=196; var APP_DATE='07/10/2026';
+var APP_VER=197; var APP_DATE='07/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -8946,8 +8946,9 @@ function _n4Pend(){
  var cs=carrosOrdenados().filter(function(c){return c.status!=='pessoal'});
  var ofi=[],pro=[],venda=[],rod=[];
  cs.forEach(function(c){var k=g2Situacao(c).k;if(k==='oficina')ofi.push(c);else if(k==='pronto')pro.push(c);else if(k==='venda')venda.push(c);else rod.push(c)});
- rod=rod.concat(venda);
+ /* compra e venda conta como rodando (o semanal continua entrando), mas a manutenção é do motorista: não entra nas pendências nem no robô */
  var comPend=rod.filter(function(c){return _g2Al(c).length}),emDia=rod.filter(function(c){return !_g2Al(c).length});
+ rod=rod.concat(venda);
  var semMot=cs.filter(function(c){return !c.motorista&&g2Situacao(c).k!=='venda'});
  var h='<div class="g2head"><div class="g2data">'+_g2Data()+'</div><div class="g2titulo">Pendências</div></div>';
  h+='<div class="n4total"><b>'+cs.length+' carros</b> na frota <span>(sem contar os '+carrosOrdenados().filter(function(c){return c.status==='pessoal'}).length+' pessoais)</span></div>';
@@ -8989,7 +8990,7 @@ function _n4Pend(){
   lem.forEach(function(o){h+='<div class="n4row" onclick="go(4)"><div class="n4tx"><b>'+esc(String(o.texto||'').slice(0,80))+'</b><small>'+(o.quando<hoje()?'venceu '+dataBR(o.quando):'hoje')+'</small></div><span class="n4chev">›</span></div>'});
   h+='</div>'}
  /* 4 · em dia: só a contagem */
- h+='<button class="n4ok" onclick="FROTA_F=\'sempend\';BUSCA_F=\'\';go(0)"><span class="n4okIc">✓</span><span><b>'+emDia.length+' carros rodando sem pendência</b><small>ver na Frota</small></span><span class="n4chev">›</span></button>';
+ h+='<button class="n4ok" onclick="FROTA_F=\'sempend\';BUSCA_F=\'\';go(0)"><span class="n4okIc">✓</span><span><b>'+emDia.length+' carros rodando sem pendência</b><small>'+(venda.length?'+ '+venda.length+' de compra e venda (manutenção do motorista) · ':'')+'ver na Frota</small></span><span class="n4chev">›</span></button>';
  return h;
 }
 
@@ -9000,7 +9001,8 @@ var N4F=[['todos','Frota'],['rodando','Rodando'],['oficina','Na oficina'],['pron
   if(f==='todos')return !pes;if(f==='pessoal')return pes;
   if(f==='rodando')return !pes&&(k==='alugado'||k==='venda');
   if(f==='semmot')return !pes&&!c.motorista&&k!=='venda';
-  if(f==='sempend')return !pes&&(k==='alugado'||k==='venda')&&!_g2Al(c).length;
+  if(f==='sempend')return !pes&&k==='alugado'&&!_g2Al(c).length;
+  if(f==='venda')return !pes&&k==='venda';
   return o(f,c)};
  w._n4=1;window._g2Filtro=w;})();
 function vFrota(){G2AL=new Map();try{return _n4Frota()}finally{G2AL=null}}
