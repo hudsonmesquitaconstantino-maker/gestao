@@ -275,6 +275,57 @@ textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px
 .vazio-lista{text-align:center;color:var(--mut);padding:40px 0}
 footer{color:var(--mut);font-size:12.5px;text-align:center;margin-top:24px;line-height:1.6}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ===== v2 · menos informação ao mesmo tempo ===== */
+.mu2stats{margin:14px 0 10px}
+.mu2hero{display:flex;gap:10px;align-items:stretch;flex-wrap:wrap}
+.mu2big{flex:1 1 220px;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:grid;grid-template-columns:auto 1fr;column-gap:12px;align-items:center}
+.mu2big .k{grid-column:1/-1;font-size:12px;color:var(--mut);font-weight:600}
+.mu2big b{font-family:var(--num);font-size:34px;line-height:1.05;color:var(--red)}
+.mu2big .d{font-size:13px;color:var(--mut)}
+.mu2alerta{flex:0 1 auto;background:var(--amber-s);color:#7A4B0C;border:1px solid #F1D8B3;border-radius:14px;padding:10px 14px;font-weight:700;font-size:14px;text-align:left}
+.mu2res{margin-top:8px}
+.mu2res summary{list-style:none;cursor:pointer;font-size:13.5px;font-weight:650;color:var(--mut);padding:6px 2px}
+.mu2res summary::-webkit-details-marker{display:none}
+.mu2res summary:after{content:' ›';display:inline-block;transition:transform .2s}
+.mu2res[open] summary:after{transform:rotate(90deg)}
+.mu2res .stats{margin:6px 0 4px;grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:720px){.mu2res .stats{grid-template-columns:1fr 1fr}}
+.tools{flex-wrap:nowrap}
+.tools .search{flex:1;min-width:0}
+#ordem{flex:0 0 auto;max-width:150px}
+body.mcOn{overflow:hidden}
+.mc{position:fixed;inset:0;z-index:55;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch}
+.mc[hidden]{display:none}
+.mcIn{max-width:560px;margin:0 auto;padding:calc(14px + env(safe-area-inset-top)) 16px calc(20px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px;min-height:100%;box-sizing:border-box}
+.mcTop{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.mcTop b{font-size:17px}.mcTop small{display:block;color:var(--mut);font-size:13px}
+.mcX{width:42px;height:42px;border-radius:21px;border:1px solid var(--line);background:var(--card);font-size:17px;flex:none}
+.mcIn .bar{height:6px;border-radius:3px;background:#E3E5E9;overflow:hidden}.mcIn .bar i{display:block;height:100%;background:var(--green)}
+.mcCar{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:14px}
+.mcHead{display:flex;gap:14px;align-items:center}
+.mcPlate{width:120px;flex:none}.mcPlate b{font-size:20px}.mcPlate i{font-size:8px;line-height:12px}
+.mcNome{font-size:20px;font-weight:750;line-height:1.2}
+.mcCopias{display:grid;gap:8px}
+.mcCp{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;text-align:left;border:1px solid var(--line);background:var(--soft);border-radius:12px;padding:10px 12px;min-height:50px}
+.mcCp small{color:var(--mut);font-weight:600;font-size:12px;min-width:62px}
+.mcCp b{font-family:var(--num);font-size:17px;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mcCp span{color:var(--amber);font-weight:700;font-size:13px}
+.mcCp:active{transform:scale(.98)}
+.mcK{font-size:13px;font-weight:700;color:var(--mut)}
+.mcDatas{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.mcData{font-size:13px;font-weight:600;background:var(--red-s);color:var(--red);border-radius:6px;padding:3px 8px;font-variant-numeric:tabular-nums}
+.mcData.obr{background:#FFF1DC;color:#8A5300}
+.mcAddRow{display:flex;gap:8px;margin-top:6px}
+.mcAddRow input{flex:1;min-width:0;border:1px solid var(--line);border-radius:10px;padding:0 10px;min-height:44px;font-size:16px;background:#fff}
+.mcPe{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;margin-top:auto;position:sticky;bottom:0;padding:10px 0 calc(4px + env(safe-area-inset-bottom));background:linear-gradient(to top,var(--bg) 75%,rgba(242,243,245,0))}
+.mcBig{min-height:52px;font-size:16px;justify-content:center}
+.mcPular{min-height:52px;padding:0 18px}
+.mcFim{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:40px 10px}
+.mcFim .mcBig{width:100%}
+.mcOk{width:64px;height:64px;border-radius:32px;background:var(--green-s);color:var(--green);display:grid;place-items:center;font-size:30px;font-weight:800}
+.mcFim h2{margin:4px 0 0;font-size:22px}.mcFim p{margin:0 0 10px;color:var(--mut)}
+@media(min-width:900px){.mcIn{padding-top:28px}}
 </style>
 </head>
 <body>
@@ -306,13 +357,13 @@ footer{color:var(--mut);font-size:12.5px;text-align:center;margin-top:24px;line-
 
 <main class="wrap">
  <div id="pgMultas">
-  <section class="stats" id="stats"></section>
+  <section class="mu2stats" id="stats"></section>
   <div id="avisos"></div>
   <section class="consulta" id="consulta"></section>
   <div class="tools">
     <label class="search"><span aria-hidden="true">⌕</span><input id="q" placeholder="Buscar por carro, placa ou Renavam…" autocomplete="off"></label>
     <select id="ordem" aria-label="Ordenar">
-      <option value="nome" selected>Nome A–Z</option>
+      <option value="nome" selected>A–Z</option>
       <option value="original">Ordem do grupo</option>
       <option value="qtd">Mais multas</option>
       <option value="valor">Maior valor</option>
@@ -323,9 +374,7 @@ footer{color:var(--mut);font-size:12.5px;text-align:center;margin-top:24px;line-
   <div class="filtros" id="filtros">
     <button class="fchip on" data-f="todos">Todos</button>
     <button class="fchip" data-f="com">Com multa</button>
-    <button class="fchip" data-f="sem">Sem multa</button>
-    <button class="fchip" data-f="valor">Falta valor</button>
-    <button class="fchip" data-f="pend">Falta conferir hoje</button>
+    <button class="fchip" data-f="pend">Falta conferir</button>
     <button class="fchip" data-f="hudson">Frota Hudson</button>
     <button class="fchip" data-f="fabio">Frota Fábio</button>
   </div>
@@ -349,6 +398,7 @@ footer{color:var(--mut);font-size:12.5px;text-align:center;margin-top:24px;line-
  </div>
   <footer>Dados salvos na nuvem (mesma chave do Gestão) e neste aparelho. Abre igual no computador e no iPhone.<br>Valores-base do CTB (art. 258): leve R$ 88,38 · média R$ 130,16 · grave R$ 195,23 · gravíssima R$ 293,47 (algumas têm multiplicador).<br><span style="opacity:.6">Multas e Débitos v13</span></footer>
 </main>
+<div class="mc" id="mc" hidden><div class="mcIn"></div></div>
 
 <dialog id="dlg"><div class="dlg-in"></div></dialog>
 <input type="file" id="arqBackup" accept=".json,application/json" hidden>
@@ -1093,7 +1143,7 @@ function lista(){
     const qp = normPlaca(q), qd = soDig(q);
     l = l.filter(v => v.nome.toLowerCase().includes(q) || (qp && normPlaca(v.placa).includes(qp)) || (qd.length >= 3 && (soDig(v.renavam).includes(qd) || soDig(v.doc).includes(qd))));
   }
-  const f = {com:v=>v.multas.length>0, sem:v=>!v.multas.length, valor:v=>tot(v).sem>0, hudson:v=>v.frota==='hudson', fabio:v=>v.frota!=='hudson', pend:v=>!confHoje(v)}[filtro];
+  const f = {com:v=>v.multas.length>0, sem:v=>!v.multas.length, valor:v=>tot(v).sem>0, obrsem:v=>obrSemValor(v)>0, hudson:v=>v.frota==='hudson', fabio:v=>v.frota!=='hudson', pend:v=>!confHoje(v)}[filtro];
   if(f) l = l.filter(f);
   return ordenar(l);
 }
@@ -1146,13 +1196,13 @@ function cardHTML(v){
       ${numsHTML(v)}
       <span class="chev" aria-hidden="true">›</span>
     </div>
-    <div class="quick">
+    ${op ? `<div class="quick">
       <button class="cp" data-act="cp" data-v="${esc(v.renavam)}" title="Copiar Renavam"><small>Renavam</small>${esc(v.renavam)}</button>
       <button class="cp" data-act="cp" data-v="${esc(v.doc)}" title="Copiar ${esc(v.docTipo)}"><small>${esc(v.docTipo)}</small>${esc(v.doc)}</button>
       <button class="cp" data-act="cp" data-v="${esc(v.placa)}" title="Copiar placa"><small>Placa</small>${esc(v.placa)}</button>
       <button class="wa${copiadoHoje(v) ? ' on' : ''}" data-act="cpcar" title="Copiar a mensagem deste carro para o grupo">${copiadoHoje(v) ? '✓ Copiado' : '⧉ WhatsApp'}</button>
       <button class="conf${ok ? ' on' : ''}" data-act="conf">${ok ? '✓ Conferido' : 'Marcar conferido'}</button>
-    </div>
+    </div>` : ''}
     ${op ? bodyHTML(v) : ''}
   </article>`;
 }
@@ -1160,19 +1210,24 @@ function cardHTML(v){
 function refreshCard(v){ const el = $(`.car[data-id="${v.id}"]`); if(el) el.outerHTML = cardHTML(v); }
 
 function renderStats(){
-  let n=0, val=0, sem=0, com=0, pago=0, qPago=0, h=0, f=0;
+  let n=0, val=0, sem=0, com=0, pago=0, qPago=0, h=0, f=0, obr=0;
   const mesAtual = isoHoje().slice(0,7);
   const nomeMes = new Date().toLocaleDateString('pt-BR',{month:'long'});
   S.veiculos.forEach(v => {
-    const t = tot(v); n+=t.n; val+=t.val; sem+=t.sem; if(t.n) com++;
+    const t = tot(v); n+=t.n; val+=t.val; sem+=t.sem; if(t.n) com++; obr += obrSemValor(v);
     if(v.frota==='hudson') h+=t.val; else f+=t.val;
     v.pagas.forEach(m => { if((m.pagaEm||'').slice(0,7) === mesAtual){ pago += m.valor||0; qPago++; } });
   });
+  /* v2: um número na frente (multas em aberto). Valor lançado e baixadas ficam no "Resumo de valores".
+     O aviso laranja só aparece para multa OBRIGATÓRIA sem valor — as outras ficam sem valor de propósito. */
   $('#stats').innerHTML = `
-    <button class="st red" data-f="com"><div class="k">Multas em aberto</div><div class="n">${n}</div><div class="d">em ${com} de ${S.veiculos.length} carros</div></button>
+    <div class="mu2hero"><button class="mu2big" data-f="com"><span class="k">Multas em aberto</span><b>${n}</b><span class="d">em ${com} de ${S.veiculos.length} carros</span></button>
+    ${obr ? `<button class="mu2alerta" data-f="obrsem">${obr} obrigatória${obr===1?'':'s'} sem valor →</button>` : ''}</div>
+    <details class="mu2res"${RES_ABERTO ? ' open' : ''} ontoggle="RES_ABERTO=this.open"><summary>Resumo de valores</summary><div class="stats">
     <div class="st"><div class="k">Valor lançado</div><div class="n">${money(val)}</div><div class="d">Hudson ${money(h)} · Fábio ${money(f)}</div></div>
-    <button class="st amb" data-f="valor"><div class="k">Falta lançar valor</div><div class="n">${sem}</div><div class="d">${sem===1 ? 'multa sem valor' : 'multas sem valor'}</div></button>
-    <div class="st grn"><div class="k">Baixadas em ${nomeMes}</div><div class="n">${money(pago)}</div><div class="d">${qPago} ${qPago===1 ? 'multa' : 'multas'} · zera todo mês</div></div>`;
+    <button class="st amb" data-f="valor"><div class="k">Sem valor lançado</div><div class="n">${sem}</div><div class="d">${obr} obrigatória${obr===1?'':'s'}</div></button>
+    <div class="st grn"><div class="k">Baixadas em ${nomeMes}</div><div class="n">${money(pago)}</div><div class="d">${qPago} ${qPago===1 ? 'multa' : 'multas'} · zera todo mês</div></div>
+    </div></details>`;
 }
 
 function renderConsulta(){
@@ -1183,7 +1238,7 @@ function renderConsulta(){
       <small>${ok} de ${N} carros conferidos · ${br(isoHoje())}</small>
       <div class="bar"><i style="width:${pct}%"></i></div></div>
     ${fim ? `<button class="btn pri" data-c="copiar">⧉ Enviar para o grupo</button>`
-          : `<button class="btn grn" data-c="proximo">Próximo a conferir →</button>`}
+          : `<button class="btn grn" data-c="modo">${ok ? 'Continuar consulta →' : 'Começar consulta →'}</button>`}
     ${ok ? `<button class="btn ghost sm" data-c="zerar">Desmarcar todos</button>` : ''}`;
 }
 
@@ -1357,6 +1412,63 @@ function fazerBackup(){
   S.ultimoBackup = new Date().toISOString(); save(false); renderAvisos(); toast('Backup baixado — guarde o arquivo');
 }
 
+/* ---------- v2 · MODO CONSULTA (rotina de segunda): um carro por vez, em tela cheia ----------
+   Mesmos dados e mesmas regras: só marca "conferido hoje", copia Renavam/CPF/placa e
+   adiciona multa nova (sem valor, como sempre). Valor, obrigatória e baixa continuam no cartão. */
+let MC_ID = null, RES_ABERTO = false;
+const obrSemValor = v => v.multas.filter(m => m.obrig && m.valor == null).length;
+function mcLista(){ return ordenar(S.veiculos.slice()); }
+function mcProximo(depoisDe){
+  const l = mcLista(), i = l.findIndex(x => x.id === depoisDe);
+  const resto = i >= 0 ? l.slice(i + 1).concat(l.slice(0, i)) : l;
+  const v = resto.find(x => !confHoje(x) && x.id !== depoisDe);
+  return v ? v.id : null;
+}
+function abrirModoConsulta(){
+  const v = mcLista().find(x => !confHoje(x));
+  MC_ID = v ? v.id : null; mcRender();
+  $('#mc').hidden = false; document.body.classList.add('mcOn'); window.scrollTo(0, 0);
+}
+function fecharModoConsulta(){ $('#mc').hidden = true; document.body.classList.remove('mcOn'); render(); }
+function mcRender(){
+  const l = mcLista(), N = l.length, ok = l.filter(confHoje).length, pct = N ? Math.round(ok / N * 100) : 0;
+  const v = MC_ID && achar(MC_ID);
+  const topo = `<div class="mcTop"><div><b>Consulta de ${br(isoHoje())}</b><small>${ok} de ${N} conferidos</small></div><button class="mcX" data-mc="fechar" aria-label="Sair da consulta">✕</button></div><div class="bar"><i style="width:${pct}%"></i></div>`;
+  if(!v){
+    $('#mc .mcIn').innerHTML = topo + `<div class="mcFim"><div class="mcOk">✓</div><h2>Consulta concluída</h2><p>Os ${N} carros foram conferidos hoje.</p>
+      <button class="btn pri mcBig" data-mc="grupo">⧉ Enviar para o grupo</button><button class="btn mcBig" data-mc="fechar">Voltar para a lista</button></div>`;
+    return;
+  }
+  const t = tot(v);
+  const datas = v.multas.map(m => `<span class="mcData${m.obrig ? ' obr' : ''}">${br(m.data)}${m.obrig ? ' · obrig.' : ''}</span>`).join('');
+  const linha = (rot, val) => `<button class="mcCp" data-mc="cp" data-v="${esc(val)}"><small>${esc(rot)}</small><b>${esc(val || '—')}</b><span>Copiar</span></button>`;
+  $('#mc .mcIn').innerHTML = topo + `
+    <div class="mcCar">
+      <div class="mcHead"><div class="plate mcPlate"><i>BRASIL</i><b>${esc(v.placa || '—')}</b></div>
+        <div><div class="mcNome">${esc(v.nome)}</div><div class="sub"><span class="tg ${v.frota}">${v.frota === 'hudson' ? 'Frota Hudson' : 'Frota Fábio'}</span>${motoristaTag(v)}</div></div></div>
+      <div class="mcCopias">${linha('Renavam', v.renavam)}${linha(v.docTipo || 'CPF', v.doc)}${linha('Placa', v.placa)}</div>
+      <div class="mcMultas"><div class="mcK">${t.n ? t.n + (t.n === 1 ? ' multa em aberto' : ' multas em aberto') : 'Nenhuma multa em aberto'}</div>${datas ? `<div class="mcDatas">${datas}</div>` : ''}</div>
+      <div class="mcAdd"><label class="mcK" for="mcData">Apareceu multa nova?</label><div class="mcAddRow"><input type="date" id="mcData" max="${isoHoje()}"><button class="btn" data-mc="add">＋ Adicionar</button></div></div>
+    </div>
+    <div class="mcPe"><button class="btn mcPular" data-mc="pular">Pular</button><button class="btn grn mcBig" data-mc="ok">${t.n ? 'Conferido' : 'Sem multa'} ✓ · próximo</button></div>`;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('#mc [data-mc]'); if(!b) return;
+  const v = MC_ID && achar(MC_ID), a = b.dataset.mc;
+  if(a === 'fechar'){ fecharModoConsulta(); return; }
+  if(a === 'grupo'){ fecharModoConsulta(); modalCopiar(); return; }
+  if(!v) return;
+  if(a === 'cp'){ if(b.dataset.v) copiar(b.dataset.v, 'Copiado: ' + b.dataset.v); return; }
+  if(a === 'add'){
+    const d = ($('#mcData') || {}).value;
+    if(!d){ toast('Escolha a data da multa'); return; }
+    v.multas.push({id:uid(), data:d, valor:null, obs:''}); v.multas.sort(cmpData); v.conferido = isoHoje();
+    save(); mcRender(); toast(`Multa de ${br(d)} adicionada`); return;
+  }
+  if(a === 'pular'){ const p = mcProximo(v.id); if(p){ MC_ID = p; mcRender(); } else toast('Não há outro carro para conferir'); return; }
+  if(a === 'ok'){ v.conferido = isoHoje(); save(); MC_ID = mcProximo(v.id); mcRender(); return; }
+});
+
 /* ---------- eventos ---------- */
 $('#list').addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if(!b) return;
@@ -1436,6 +1548,7 @@ $('#list').addEventListener('keydown', e => {
 
 $('#consulta').addEventListener('click', e => {
   const c = e.target.closest('[data-c]'); if(!c) return;
+  if(c.dataset.c === 'modo'){ abrirModoConsulta(); return; }
   if(c.dataset.c === 'proximo'){
     const v = lista().find(x => !confHoje(x)) || S.veiculos.find(x => !confHoje(x));
     if(v){ abertos.clear(); abrirEIr(v); }
