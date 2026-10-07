@@ -245,6 +245,9 @@ body.deb #pgMultas{display:none} body.deb #pgDebitos{display:block} body.deb #bt
 /* janelas */
 dialog{border:0;border-radius:18px;padding:0;width:min(580px,calc(100vw - 32px));max-height:calc(100vh - 48px);box-shadow:0 24px 70px rgba(16,24,40,.25);color:var(--ink)}
 dialog[open]{animation:sheet .35s var(--ease)}
+/* teclado aberto (iPhone): a janela fica na parte visível, acima do teclado */
+html.teclado dialog[open]{position:fixed;top:calc(var(--vvt,0px) + 8px);bottom:auto;margin:0 auto;max-height:calc(var(--vvh,100vh) - 16px)}
+html.teclado #toast{bottom:auto;top:calc(var(--vvt,0px) + 12px)}
 @keyframes sheet{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 dialog::backdrop{background:rgba(15,17,21,.38);backdrop-filter:blur(3px)}
 .dlg-in{padding:18px 18px 16px}
@@ -1996,6 +1999,32 @@ if('serviceWorker' in navigator && location.protocol === 'https:'){
       }
     }
   }catch(e){}
+})();
+</script>
+<script>
+/* v179 — teclado do iPhone. Com o teclado aberto: a barra de baixo some, e a janela/folha aberta
+   passa a ocupar só a parte visível da tela (acima do teclado), sem "flutuar" nem travar. */
+(function(){
+ var vv=window.visualViewport,de=document.documentElement,foco=false,aberto=false,raf=0;
+ function campo(el){return !!el&&(/^(TEXTAREA|SELECT)$/.test(el.tagName)||(el.tagName==='INPUT'&&!/^(checkbox|radio|file|button|submit|reset|range|color|hidden)$/i.test(el.type||'')))||!!(el&&el.isContentEditable)}
+ function aplicar(){
+  raf=0;
+  var h=vv?vv.height:window.innerHeight,t=vv?Math.max(0,vv.offsetTop):0,kb=vv?Math.max(0,window.innerHeight-vv.height):0;
+  var agora=foco&&(kb>120||!vv)||kb>150;
+  de.style.setProperty('--vvh',Math.round(h)+'px');
+  de.style.setProperty('--vvt',Math.round(t)+'px');
+  if(agora!==aberto){
+   aberto=agora;de.classList.toggle('teclado',agora);
+   if(agora){var a=document.activeElement;if(campo(a)&&a.closest&&a.closest('dialog'))setTimeout(function(){try{a.scrollIntoView({block:'center'})}catch(e){}},60)}
+   
+  }
+ }
+ function agenda(){if(!raf)raf=(window.requestAnimationFrame||setTimeout)(aplicar)}
+ if(vv){vv.addEventListener('resize',agenda);vv.addEventListener('scroll',agenda)}
+ window.addEventListener('resize',agenda);
+ document.addEventListener('focusin',function(e){if(campo(e.target)){foco=true;agenda();setTimeout(agenda,250)}},true);
+ document.addEventListener('focusout',function(){setTimeout(function(){foco=campo(document.activeElement);agenda();setTimeout(agenda,300)},80)},true);
+ aplicar();
 })();
 </script>
 </body>

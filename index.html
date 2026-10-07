@@ -62,6 +62,14 @@ nav button.on{color:var(--ac)}
 .sheet h3{margin:0 0 4px;font-size:16px}
 .sheet .sub{margin-bottom:8px}
 #ovAsk{z-index:85}
+/* v179 teclado aberto (iPhone): sem barra de baixo; folha cabe na área visível */
+html.teclado nav{display:none!important}
+html.teclado #toast{bottom:12px}
+html.teclado .overlay{top:var(--vvt,0px);bottom:auto;height:var(--vvh,100%)}
+html.teclado .sheet{height:calc(var(--vvh,100dvh) - 10px);border-radius:14px 14px 0 0;padding-bottom:12px}
+html.teclado #ovAsk .sheet{max-height:calc(var(--vvh,72dvh) - 10px)}
+html.teclado #pdfFull{top:var(--vvt,0px);bottom:auto;height:var(--vvh,100%)}
+
 #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(86px + env(safe-area-inset-bottom));background:#1D2530;border:1px solid var(--bord);color:var(--tx);padding:10px 16px;border-radius:12px;font-size:13.5px;z-index:90;display:none;max-width:88%;text-align:center;box-shadow:0 4px 18px rgba(0,0,0,.5)}
 .mono{font-family:'SF Mono',Menlo,monospace;font-size:12.5px;white-space:pre-wrap;word-break:break-word;background:#0A0E13;border:1px solid var(--bord);border-radius:10px;padding:12px;line-height:1.5}
 .kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13px;margin-top:6px}
@@ -759,6 +767,7 @@ input[type="file"]{padding:9px 10px;font-size:12.5px}
 .v102panelHead>span{width:31px;height:31px;border-radius:10px;background:var(--v102-soft);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
 .v102panelHead b{font-size:14px;display:block}
 .v102panelHead small{font-size:11.5px;color:var(--tx2);display:block;margin-top:1px}
+.diasChip{display:inline-block;font-size:11px;font-weight:800;line-height:1.5;padding:0 7px;border-radius:999px;background:rgba(245,158,11,.16);color:var(--warn);white-space:nowrap;vertical-align:1px;margin-left:2px}
 .v102panel label:first-of-type{margin-top:5px}
 .v102panel input,.v102panel select,.v102panel textarea{background:#F8F9FA}
 .v102info{font-size:11.5px;line-height:1.42;color:var(--tx2);background:#F8F9FA;border-radius:10px;padding:9px 10px;margin-top:9px}
@@ -1029,7 +1038,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=178; var APP_DATE='06/10/2026';
+var APP_VER=179; var APP_DATE='07/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -1090,6 +1099,10 @@ function periodoTexto(ini,fim){
  if(a[0]===b[0])return d1+' de '+MESES[parseInt(a[1],10)-1]+' a '+d2+' de '+MESES[parseInt(b[1],10)-1]+' de '+b[0];
  return dataLonga(ini)+' a '+dataLonga(fim);
 }
+/* v179: quantos dias o carro ficou (entrada -> saída). Mesmo dia = sem número. */
+function _diasManut(ini,fim){if(!ini||!fim||!/^\d{4}-\d{2}-\d{2}$/.test(ini)||!/^\d{4}-\d{2}-\d{2}$/.test(fim))return 0;var n=diasEntre(ini,fim);return n>0?n:0}
+function _diasTxt(ini,fim){var n=_diasManut(ini,fim);return n?n+' dia'+(n>1?'s':''):''}
+function _diasChip(ini,fim){var t=_diasTxt(ini,fim);return t?' <span class="diasChip">⏱ '+t+'</span>':''}
 /* ---------- valor por extenso (reais) ---------- */
 function extenso(n){
  n=Math.round((Number(n)||0)*100);var reais=Math.floor(n/100),cent=n%100;
@@ -2858,7 +2871,7 @@ h+='<div class="sect">Devolução do carro</div>';
  if(!mans.length)h+='<div class="sub">Nenhuma manutenção registrada.</div>';
  mans.forEach(function(m){
   h+='<div class="card tap" style="margin:0 0 6px" onclick="verManut(\''+m.id+'\')"><div class="row"><div class="grow">'+
-   '<div class="tit" style="font-size:14px">'+esc(periodoTexto(m.dataIni,m.dataFim))+'</div>'+
+   '<div class="tit" style="font-size:14px">'+esc(periodoTexto(m.dataIni,m.dataFim))+_diasChip(m.dataIni,m.dataFim)+'</div>'+
    '<div class="sub">'+esc(primNome(m.motorista))+' · '+fmtKm(m.odometro)+' km</div></div>'+
    '<div style="color:var(--warn);font-weight:800">R$ '+fmtBRL(m.total)+'</div></div></div>';
  });
@@ -4969,7 +4982,7 @@ function tImportRenderLista(){
   var ck=!!TIMP_SEL[m.id];
   var ix=a.indexOf(m);
   h+='<div id="v138card_'+ix+'" class="v137impMaint'+(ck?' selected':'')+'"><button type="button" id="v138pick_'+ix+'" class="v138pickTop'+(ck?' on':'')+'" onclick="tImportToggleOne(\''+esc(m.id)+'\','+ix+')"><span class="v138check">'+(ck?'✓':'')+'</span><span class="grow">'+
-    '<span class="tit">'+esc(periodoTexto(m.dataIni,m.dataFim)||_tImpOrigemLabel(m))+'</span>'+
+    '<span class="tit">'+esc(periodoTexto(m.dataIni,m.dataFim)||_tImpOrigemLabel(m))+_diasChip(m.dataIni,m.dataFim)+'</span>'+
     '<span class="sub" style="display:block">'+esc(primNome(m.motorista||''))+(m.odometro?' · '+fmtKm(m.odometro)+' km':'')+' · R$ '+fmtBRL(m.total||0)+' · '+(m.pecas||[]).length+' peça'+((m.pecas||[]).length===1?'':'s')+' · '+(m.blocos||[]).length+' bloco'+((m.blocos||[]).length===1?'':'s')+'</span>'+
     '<span class="v138pickText">'+(ck?'Selecionada':'Toque para selecionar')+'</span></span></button><details><summary>Ver itens desta manutenção</summary><div class="v137impPreview">'+_tImpResumoHtml(m)+'</div></details></div>';
  });
@@ -6270,7 +6283,7 @@ function vManut(){
    '<div id="mFrotaFinanceiraBox" class="v102panel" style="display:none;margin-top:10px"></div>'+
    '<label>Motorista</label><input id="mMotorista" oninput="mRasc();mAtualizaSteps()" placeholder="sugere o atual ao escolher o carro">'+
    '<div class="grid2"><div><label>Data de início</label><input type="date" id="mIni" onchange="mRasc();mAtualizaSteps();mDesenha()" value="'+hoje()+'"></div>'+
-   '<div><label>Data final</label><input type="date" id="mFim" onchange="mRasc();mDesenha()" value="'+hoje()+'"></div></div>'+
+   '<div><label>Data final</label><input type="date" id="mFim" onchange="mRasc();mDesenha()" value="'+hoje()+'"></div></div><div id="mDias" class="sub" style="margin:-2px 0 8px"></div>'+
    '<label>Odômetro (km)</label><input id="mOdo" oninput="mRasc()" inputmode="numeric" placeholder="101117"></div>'+
   '<div class="v100panel"><div class="v100panelHead"><div class="v100panelIcon">🧩</div><div class="grow"><div class="v100panelTitle">Peças</div><div class="v100panelSub">Cada peça pode ter sua própria data de competência. Se todas forem do mesmo mês, use a data padrão abaixo.</div></div></div>'+
    '<label>Data padrão das peças</label><input type="date" id="mPecasData" value="'+hoje()+'" onchange="mRasc();mDesenha()"><div class="sub" style="margin:4px 0 10px">Já vem com a data de hoje. Todas as peças usam esta competência; altere a data individual somente quando uma peça pertencer a outro dia/mês.</div><div id="mPecas"></div>'+
@@ -6306,6 +6319,8 @@ function mDesenha(){
  if(!_mP||!_mB)return;
  var _baseIni=(document.getElementById('mIni')||{}).value||hoje();
  var _baseFim=(document.getElementById('mFim')||{}).value||_baseIni;
+ var _mDi=document.getElementById('mDias');
+ if(_mDi)_mDi.innerHTML=_diasManut(_baseIni,_baseFim)?'⏱ Carro parado <b>'+_diasTxt(_baseIni,_baseFim)+'</b> nesta manutenção':'';
  var _basePecas=(document.getElementById('mPecasData')||{}).value||_baseFim||_baseIni;
  var hp='';
  MP.forEach(function(p,i){
@@ -6320,11 +6335,11 @@ function mDesenha(){
  setTimeout(function(){document.querySelectorAll('#mPecas .taflex').forEach(function(t){taGrow(t)})},30);
  var hb='';
  MB.forEach(function(b,i){
-  hb+='<div class="v100item"><div class="v100itemTop"><div class="v100itemTitle">MÃO DE OBRA '+('0'+(i+1)).slice(-2)+'</div><button class="v100remove" onclick="MB.splice('+i+',1);mDesenha()">Remover</button></div>'+
+  hb+='<div class="v100item"><div class="v100itemTop"><div class="v100itemTitle">MÃO DE OBRA '+('0'+(i+1)).slice(-2)+_diasChip(b.dataIni||_baseIni,b.dataFim||_baseFim)+'</div><button class="v100remove" onclick="MB.splice('+i+',1);mDesenha()">Remover</button></div>'+
    '<div class="v100laborGrid"><div><label>Tipo</label><input placeholder="Mecânico / Borracheiro / Retífica" value="'+esc(b.titulo)+'" oninput="MB['+i+'].titulo=this.value;mRasc()"></div>'+
    '<div><label>Profissional</label><input placeholder="Vinícius" value="'+esc(b.nome)+'" oninput="MB['+i+'].nome=this.value;mRasc();mAtualizaSteps()"></div>'+
-   '<div><label>Início deste serviço <span style="font-weight:400">(padrão: manutenção)</span></label><input type="date" value="'+esc(b.dataIni||_baseIni)+'" onchange="MB['+i+'].dataIni=this.value;mRasc()"></div>'+
-   '<div><label>Final / competência <span style="font-weight:400">(padrão: manutenção)</span></label><input type="date" value="'+esc(b.dataFim||_baseFim)+'" onchange="MB['+i+'].dataFim=this.value;mRasc()"></div>'+
+   '<div><label>Início deste serviço <span style="font-weight:400">(padrão: manutenção)</span></label><input type="date" value="'+esc(b.dataIni||_baseIni)+'" onchange="MB['+i+'].dataIni=this.value;mRasc();mDesenha()"></div>'+
+   '<div><label>Final / competência <span style="font-weight:400">(padrão: manutenção)</span></label><input type="date" value="'+esc(b.dataFim||_baseFim)+'" onchange="MB['+i+'].dataFim=this.value;mRasc();mDesenha()"></div>'+
    '<div class="wide"><label>Status no fechamento</label><select onchange="MB['+i+'].pendenteFinanceiro=this.value===\'1\';mRasc()"><option value="0"'+(!b.pendenteFinanceiro?' selected':'')+'>Pago / contabilizar</option><option value="1"'+(b.pendenteFinanceiro?' selected':'')+'>Pendente / não contabilizar ainda</option></select></div>'+
    '<div class="wide"><label>Valor da mão de obra (R$)</label><input placeholder="1.700,00" inputmode="decimal" value="'+esc(b.valor)+'" oninput="MB['+i+'].valor=this.value;mTotais();mAtualizaSteps()"></div>'+
    '<div class="wide"><label>Serviços realizados <span style="font-weight:400">(um por linha)</span></label><textarea placeholder="Ex.: Troca da pastilha dianteira\nPróxima troca com X km\nGARANTIA ATÉ data" oninput="MB['+i+'].servicos=this.value;taGrow(this);mRasc();mAtualizaSteps()">'+esc(b.servicos)+'</textarea></div></div></div>';
@@ -6347,7 +6362,7 @@ function buildManutTexto(m,carro){
  var t='*VEÍCULO:* '+carro.nome+(carro.motor?' '+carro.motor:'')+'\n'+
  '*PLACA:* '+fmtPlaca(carro.placa)+'\n'+
  '*MOTORISTA:* '+m.motorista+'\n'+
- '*DATA:* '+periodoTexto(m.dataIni,m.dataFim)+'\n'+
+ '*DATA:* '+periodoTexto(m.dataIni,m.dataFim)+(_diasTxt(m.dataIni,m.dataFim)?' ('+_diasTxt(m.dataIni,m.dataFim)+')':'')+'\n'+
  '*ODÔMETRO:* '+fmtKm(m.odometro)+' km\n'+
  '_______________________________________\n';
  if(m.pecas.length){
@@ -6458,11 +6473,11 @@ function editarManut(id){
  if(!EP.length)EP=[{valor:'',desc:'',loja:'',data:'',pendenteFinanceiro:false}];
  if(!EB.length)EB=[{titulo:'Mecânico',nome:'',valor:'',servicos:'',dataIni:'',dataFim:'',pendenteFinanceiro:false}];
  var c=S.carros[m.carro]||{nome:m.carro,placa:m.carro,motor:''};
- var h='<div class="v105editFlow"><div class="v102sheetHero"><div class="v102sheetIcon">✎</div><div><div class="v102eyebrow">MANUTENÇÃO · EDIÇÃO</div><h3>Editar manutenção</h3><div class="sub">'+esc(tituloCarro(c))+' · '+esc(fmtPlaca(c.placa))+' · '+esc(periodoTexto(m.dataIni,m.dataFim))+'</div></div></div>'+
+ var h='<div class="v105editFlow"><div class="v102sheetHero"><div class="v102sheetIcon">✎</div><div><div class="v102eyebrow">MANUTENÇÃO · EDIÇÃO</div><h3>Editar manutenção</h3><div class="sub">'+esc(tituloCarro(c))+' · '+esc(fmtPlaca(c.placa))+' · '+esc(periodoTexto(m.dataIni,m.dataFim))+_diasChip(m.dataIni,m.dataFim)+'</div></div></div>'+
   '<div class="v102panel"><div class="v102panelHead"><span>🚗</span><div><b>Serviço registrado</b><small>Corrija os dados sem alterar o histórico fora deste lançamento.</small></div></div>'+
   '<label>Motorista</label><input id="edMot" value="'+esc(m.motorista||'')+'">'+
-  '<div class="grid2"><div><label>Data de início</label><input type="date" id="edIni" value="'+esc(m.dataIni||'')+'"></div>'+
-  '<div><label>Data final</label><input type="date" id="edFim" value="'+esc(m.dataFim||'')+'"></div></div>'+
+  '<div class="grid2"><div><label>Data de início</label><input type="date" id="edIni" onchange="edDesenha()" value="'+esc(m.dataIni||'')+'"></div>'+
+  '<div><label>Data final</label><input type="date" id="edFim" onchange="edDesenha()" value="'+esc(m.dataFim||'')+'"></div></div><div id="edDias" class="sub" style="margin:-2px 0 8px"></div>'+
   '<label>Odômetro (km)</label><input id="edOdo" inputmode="numeric" value="'+esc(m.odometro?String(m.odometro):'')+'">'+
   (contratoVendaVigenteDoCarro(m.carro)?('<div class="v102info" style="margin-top:10px"><b>Fechamento desta manutenção</b><br>Este carro tem compra e venda. Escolha quem adiantou/pagará este lançamento ao fornecedor; isso não altera a frota física do carro.</div><label>Responsável financeiro</label><select id="edFrotaFechamento"><option value=""'+(!m.frotaFechamento?' selected':'')+'>Automático pela frota do carro ('+_rotuloFrotaFinanceira(_frotaPadraoCarro(m.carro))+') · legado</option><option value="fabio"'+(m.frotaFechamento==='fabio'?' selected':'')+'>Frota Fábio</option><option value="hudson"'+(m.frotaFechamento==='hudson'?' selected':'')+'>Frota Hudson</option></select>'):'')+'</div>'+
   '<div class="v102panel"><div class="v102panelHead"><span>🧩</span><div><b>Peças</b><small>Descrição, valor, fornecedor e competência financeira.</small></div></div>'+
@@ -6478,7 +6493,8 @@ function editarManut(id){
  setTimeout(edDesenha,30);
 }
 function edDesenha(){
- var hp='';
+ var hp='',_eI=(document.getElementById('edIni')||{}).value||'',_eF=(document.getElementById('edFim')||{}).value||_eI,_eD=document.getElementById('edDias');
+ if(_eD)_eD.innerHTML=_diasManut(_eI,_eF)?'⏱ Carro parado <b>'+_diasTxt(_eI,_eF)+'</b> nesta manutenção':'';
  EP.forEach(function(p,i){
   hp+='<div class="v100item"><div class="v100itemTop"><div class="v100itemTitle">PEÇA '+('0'+(i+1)).slice(-2)+'</div><button class="v100remove" onclick="EP.splice('+i+',1);edDesenha()">Remover</button></div>'+
    '<div class="v100pieceGrid"><div class="desc"><label>Descrição</label><textarea rows="1" class="taflex" placeholder="Ex.: Pastilha de freio dianteira" oninput="EP['+i+'].desc=this.value;taGrow(this)">'+esc(p.desc)+'</textarea></div>'+
@@ -6491,11 +6507,11 @@ function edDesenha(){
  setTimeout(function(){document.querySelectorAll('#edPecas .taflex').forEach(function(t){taGrow(t)})},30);
  var hb='';
  EB.forEach(function(b,i){
-  hb+='<div class="v100item"><div class="v100itemTop"><div class="v100itemTitle">MÃO DE OBRA '+('0'+(i+1)).slice(-2)+'</div><button class="v100remove" onclick="EB.splice('+i+',1);edDesenha()">Remover</button></div>'+
+  hb+='<div class="v100item"><div class="v100itemTop"><div class="v100itemTitle">MÃO DE OBRA '+('0'+(i+1)).slice(-2)+_diasChip(b.dataIni||_eI,b.dataFim||_eF)+'</div><button class="v100remove" onclick="EB.splice('+i+',1);edDesenha()">Remover</button></div>'+
    '<div class="v100laborGrid"><div><label>Tipo</label><input value="'+esc(b.titulo)+'" oninput="EB['+i+'].titulo=this.value"></div>'+
    '<div><label>Profissional</label><input value="'+esc(b.nome)+'" oninput="EB['+i+'].nome=this.value"></div>'+
-   '<div><label>Início deste serviço <span style="font-weight:400">(opcional)</span></label><input type="date" value="'+esc(b.dataIni||'')+'" onchange="EB['+i+'].dataIni=this.value"></div>'+
-   '<div><label>Final / competência <span style="font-weight:400">(opcional)</span></label><input type="date" value="'+esc(b.dataFim||'')+'" onchange="EB['+i+'].dataFim=this.value"></div>'+
+   '<div><label>Início deste serviço <span style="font-weight:400">(opcional)</span></label><input type="date" value="'+esc(b.dataIni||'')+'" onchange="EB['+i+'].dataIni=this.value;edDesenha()"></div>'+
+   '<div><label>Final / competência <span style="font-weight:400">(opcional)</span></label><input type="date" value="'+esc(b.dataFim||'')+'" onchange="EB['+i+'].dataFim=this.value;edDesenha()"></div>'+
    '<div class="wide"><label>Status no fechamento</label><select onchange="EB['+i+'].pendenteFinanceiro=this.value===\'1\'"><option value="0"'+(!b.pendenteFinanceiro?' selected':'')+'>Pago / contabilizar</option><option value="1"'+(b.pendenteFinanceiro?' selected':'')+'>Pendente / não contabilizar ainda</option></select></div>'+
    '<div class="wide"><label>Valor (R$)</label><input inputmode="decimal" value="'+esc(b.valor)+'" oninput="EB['+i+'].valor=this.value;edTotais()"></div>'+
    '<div class="wide"><label>Serviços realizados</label><textarea class="taflex" oninput="EB['+i+'].servicos=this.value;taGrow(this)">'+esc(b.servicos)+'</textarea></div></div></div>';
@@ -6560,7 +6576,7 @@ function salvarEdicaoManut(){
 function verManut(id){
  var m=S.manutencoes[id];if(!m)return;
  var c=S.carros[m.carro]||{nome:m.carro,placa:m.carro,motor:''};
- var h='<div class="v102sheetHero"><div class="v102sheetIcon">🔧</div><div><div class="v102eyebrow">HISTÓRICO</div><h3>'+esc(tituloCarro(c))+'</h3><div class="sub">'+esc(fmtPlaca(c.placa))+' · '+esc(periodoTexto(m.dataIni,m.dataFim))+'</div></div></div>'+
+ var h='<div class="v102sheetHero"><div class="v102sheetIcon">🔧</div><div><div class="v102eyebrow">HISTÓRICO</div><h3>'+esc(tituloCarro(c))+'</h3><div class="sub">'+esc(fmtPlaca(c.placa))+' · '+esc(periodoTexto(m.dataIni,m.dataFim))+_diasChip(m.dataIni,m.dataFim)+'</div></div></div>'+
   '<div class="v102maintTop"><div>'+plateHtml(c.placa)+'</div><div class="grow"><small>Motorista</small><strong>'+(m.motorista?esc(m.motorista):'—')+'</strong><small>Odômetro</small><strong>'+(m.odometro?fmtKm(m.odometro)+' km':'—')+'</strong></div></div>';
  if(m.origem==='whatsapp')h+='<div class="v102info">Este lançamento veio do histórico importado do WhatsApp.</div>';
  if(m.frotaFechamento)h+='<div class="v102info"><b>Fechamento financeiro:</b> '+_rotuloFrotaFinanceira(m.frotaFechamento)+' · atribuição manual deste lançamento.</div>';
@@ -6579,7 +6595,7 @@ function verManut(id){
   var bs=[];if(b.nome)bs.push(esc(b.nome));if(tNum(b.valor)>0)bs.push('R$ '+fmtBRL(tNum(b.valor)));
   var bi=b.dataIni||'',bf=b.dataFim||'',be=_dataBloco(m,b);
   if(b.pendenteFinanceiro)bs.push('⏳ pendente · fora do fechamento');
-  else if(bi&&bf)bs.push(esc(periodoTexto(bi,bf)));
+  else if(bi&&bf)bs.push(esc(periodoTexto(bi,bf))+_diasChip(bi,bf));
   else if(bf||bi)bs.push('competência '+esc(dataBR(bf||bi)));
   else if(be)bs.push('competência '+esc(dataBR(be)));
   h+='<div class="v102panel"><div class="v102panelHead"><span>🛠️</span><div><b>'+esc(b.titulo||'Mão de obra')+'</b><small>'+bs.join(' · ')+'</small></div></div>';
@@ -7044,7 +7060,7 @@ function vHistorico(){
   var db=semAcento(m.motorista+' '+m.carro+' '+fmtPlaca(m.carro)+' '+(c.nome||'')+' '+tituloCarro(c)+' '+mTexto(m));
   h+='<div class="card tap" data-hbusca="'+esc(db)+'" onclick="verManut(\''+m.id+'\')"><div class="row">'+plateHtml(c.placa)+
    '<div class="grow"><div class="tit" style="font-size:14px">'+esc(tituloCarro(c))+'</div>'+
-   '<div class="sub">'+esc(periodoTexto(m.dataIni,m.dataFim))+' · '+esc(primNome(m.motorista))+'</div></div>'+
+   '<div class="sub">'+esc(periodoTexto(m.dataIni,m.dataFim))+_diasChip(m.dataIni,m.dataFim)+' · '+esc(primNome(m.motorista))+'</div></div>'+
    '<div style="color:var(--warn);font-weight:800">R$ '+fmtBRL(m.total)+'</div></div></div>';
  });
  return h;
@@ -7858,6 +7874,32 @@ boot();render();
  function _recalcAuto(){try{if(window.recalcTudoSilencioso){var n=recalcTudoSilencioso();if(n&&window.render)render()}}catch(e){}}
  setTimeout(_recalcAuto,4500);
  setTimeout(_recalcAuto,12000);
+})();
+</script>
+<script>
+/* v179 — teclado do iPhone. Com o teclado aberto: a barra de baixo some, e a janela/folha aberta
+   passa a ocupar só a parte visível da tela (acima do teclado), sem "flutuar" nem travar. */
+(function(){
+ var vv=window.visualViewport,de=document.documentElement,foco=false,aberto=false,raf=0;
+ function campo(el){return !!el&&(/^(TEXTAREA|SELECT)$/.test(el.tagName)||(el.tagName==='INPUT'&&!/^(checkbox|radio|file|button|submit|reset|range|color|hidden)$/i.test(el.type||'')))||!!(el&&el.isContentEditable)}
+ function aplicar(){
+  raf=0;
+  var h=vv?vv.height:window.innerHeight,t=vv?Math.max(0,vv.offsetTop):0,kb=vv?Math.max(0,window.innerHeight-vv.height):0;
+  var agora=foco&&(kb>120||!vv)||kb>150;
+  de.style.setProperty('--vvh',Math.round(h)+'px');
+  de.style.setProperty('--vvt',Math.round(t)+'px');
+  if(agora!==aberto){
+   aberto=agora;de.classList.toggle('teclado',agora);
+   if(agora){var a=document.activeElement;if(campo(a)&&a.closest&&a.closest('.sheet'))setTimeout(function(){try{a.scrollIntoView({block:'center'})}catch(e){}},60)}
+   else if(document.body.style.position==='fixed'){try{window.scrollTo(0,0)}catch(e){}}
+  }
+ }
+ function agenda(){if(!raf)raf=(window.requestAnimationFrame||setTimeout)(aplicar)}
+ if(vv){vv.addEventListener('resize',agenda);vv.addEventListener('scroll',agenda)}
+ window.addEventListener('resize',agenda);
+ document.addEventListener('focusin',function(e){if(campo(e.target)){foco=true;agenda();setTimeout(agenda,250)}},true);
+ document.addEventListener('focusout',function(){setTimeout(function(){foco=campo(document.activeElement);agenda();setTimeout(agenda,300)},80)},true);
+ aplicar();
 })();
 </script>
 </body>
