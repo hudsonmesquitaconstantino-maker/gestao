@@ -9,7 +9,7 @@
    sem ela, a foto é lida pela IA da própria Cloudflare).
    Este arquivo é público no GitHub: nada de segredo aqui. */
 
-const VERSAO = 'robo-km 3.13';
+const VERSAO = 'robo-km 3.14';
 const DIA = 864e5;
 
 /* ---------------- utilidades ---------------- */
@@ -67,6 +67,15 @@ class Ctx {
   patch(c, v) { return this.fb('PATCH', c, v); }
   put(c, v) { return this.fb('PUT', c, v); }
   post(c, v) { return this.fb('POST', c, v); }
+  /* Trava curta no Firebase (ETag): só UMA execução ganha. Evita resposta repetida quando chegam várias fotos juntas (álbum). */
+  async reivindicar(c, janela) {
+    const url = `${this.db}/${this.base}/${c}.json?auth=${await this.token()}`;
+    const r = await this.f(url, { headers: { 'X-Firebase-ETag': 'true' } });
+    const etag = r.headers.get('ETag') || r.headers.get('etag'), v = await r.json().catch(() => null);
+    if (num(v) && Date.now() - num(v) < janela) return false;
+    const w = await this.f(url, { method: 'PUT', headers: { 'if-match': etag || '', 'content-type': 'application/json' }, body: JSON.stringify(Date.now()) });
+    return w.ok;
+  }
   log(erro) { return this.post('erros', { em: Date.now(), erro: String(erro).slice(0, 300) }).catch(() => { }); }
 
   /* ---------- WhatsApp (Dualhook ou Graph API da Meta: mesmo formato) ---------- */
@@ -215,8 +224,9 @@ Leia o HODÔMETRO TOTAL (ODO / quilometragem total do carro).
 NUNCA use o hodômetro parcial (TRIP, TRIP A, TRIP B, "A", "B"), velocímetro, conta-giros, autonomia, temperatura, relógio ou consumo.
 Se aparecerem dois números de km, o total é o maior e costuma vir rotulado ODO ou sem rótulo de TRIP.
 Leia TODOS os dígitos do hodômetro total, um por um. Em painel digital (ex.: Fiat Mobi/Uno) o último dígito às vezes aparece afastado dos outros por um espaço: "10783 1" é 107831, não 10783. Carro de frota costuma ter 5 ou 6 dígitos.
-Responda SOMENTE com JSON: {"painel": true|false, "odometro": inteiro ou null, "certeza": "alta"|"media"|"baixa", "obs": "texto curto"}.
-"painel" = false se a foto não for de um painel de carro. "odometro" = null se não der para ler com segurança.`;
+Responda SOMENTE com JSON: {"tipo": "painel"|"etiqueta"|"outro", "painel": true|false, "odometro": inteiro ou null, "certeza": "alta"|"media"|"baixa", "obs": "texto curto"}.
+"tipo" = "painel" SOMENTE se a foto mostra o quadro de instrumentos do carro (velocímetro/visor). Etiqueta de troca de óleo, adesivo, nota, papel ou qualquer número escrito à mão = "etiqueta" (NUNCA é o hodômetro). Motor, pneu, peça, pessoa, documento = "outro".
+"painel" = false sempre que "tipo" não for "painel". "odometro" = null se não der para ler com segurança ou se não for painel.`;
 
 function b64(buf) {
   if (typeof Buffer !== 'undefined') return Buffer.from(buf).toString('base64');
@@ -272,7 +282,9 @@ function interpretarResposta(txt) {
   if (typeof km === 'string') km = Number(km.replace(/\D/g, ''));
   km = Number.isFinite(km) && km > 0 && km < 2e6 ? Math.round(km) : null;
   const certeza = String(o.certeza || '').toLowerCase();
-  return { painel: o.painel !== false, km: certeza === 'baixa' ? null : km, certeza, obs: String(o.obs || '').slice(0, 200) };
+  const tipo = String(o.tipo || (o.painel === false ? 'outro' : 'painel')).toLowerCase();
+  const painel = o.painel !== false && tipo === 'painel';   /* etiqueta/nota com km escrito NUNCA vale como hodômetro */
+  return { painel, tipo, km: certeza === 'baixa' || !painel ? null : km, certeza, obs: String(o.obs || '').slice(0, 200) };
 }
 
 /* Leitura da foto contra o último km conhecido (Gestão ou foto anterior aceita).
@@ -482,7 +494,7 @@ async function processarWebhook(ctx, corpo) {
     const alvo = porChave[foneChave(msg.from)];
     if (!alvo) { out.push('desconhecido'); continue; }   /* não é motorista ligado: o robô não mexe */
     const { key, pk } = alvo;
-    const m = { ...((estado || {})[key] || {}) };
+    const m0 = (estado || {})[key] || {}, m = { ...m0 };
     const vistos = m.vistos || [];
     if (vistos.includes(msg.id)) { out.push('repetida'); continue; }
     m.vistos = [msg.id, ...vistos].slice(0, 15);
@@ -501,7 +513,9 @@ async function processarWebhook(ctx, corpo) {
       }
       else out.push('ignorada:' + msg.type);
     } catch (e) { out.push('erro:' + e.message); await ctx.log(`foto ${pk}: ${e.message}`); }
-    await ctx.put('estado/' + key, m);
+    /* grava SÓ o que esta mensagem mudou: fotos de um álbum chegam juntas e uma não pode apagar o resultado da outra */
+    const dif = {}; for (const k of new Set([...Object.keys(m0), ...Object.keys(m)])) if (JSON.stringify(m0[k]) !== JSON.stringify(m[k])) dif[k] = m[k] === undefined ? null : m[k];
+    if (Object.keys(dif).length) await ctx.patch('estado/' + key, dif);
     if (estado) estado[key] = m;
   }
   await ctx.salvarUso().catch(e => ctx.log('uso: ' + e.message));
@@ -515,10 +529,15 @@ async function tratarFoto(ctx, pk, ct, m, msg, teste) {
   const reg = { em: agora, pk, km: lido.km, painel: lido.painel, certeza: lido.certeza, obs: lido.obs, midia: msg.image.id };
   const hist = 'historico/' + (teste ? 'teste' : pk);
 
+  const chave = teste ? 'teste' : pk, espera = num(ctx.env.ESPERA_MS, 8000);
   if (!lido.painel || !lido.km) {
     m.falhas = num(m.falhas) + 1;
-    await ctx.post(hist, { ...reg, resultado: 'ilegivel' });
-    if (m.falhas <= 2) await ctx.texto(para, MSG_ILEGIVEL);
+    await ctx.post(hist, { ...reg, resultado: lido.tipo === 'etiqueta' ? 'etiqueta' : 'ilegivel' });
+    /* álbum: espera as outras fotos; se alguma deu certo, fica quieto. No máximo 1 aviso a cada 10 min. */
+    if (espera) await new Promise(r => setTimeout(r, espera));
+    const atual = (await ctx.get('estado/' + chave).catch(() => null)) || {};
+    if (num(atual.leituraEm) > agora - 5 * 60e3) return 'ilegivel:silencio';
+    if (await ctx.reivindicar(`travas/${chave}/ilegivel`, 10 * 60e3)) await ctx.texto(para, MSG_ILEGIVEL);
     return 'ilegivel';
   }
   let km = lido.km;
@@ -535,7 +554,7 @@ async function tratarFoto(ctx, pk, ct, m, msg, teste) {
     if (!(m.suspeito && Math.abs(m.suspeito - km) <= 100)) {   /* 1ª vez: pede outra foto, pode ser erro de leitura */
       m.suspeito = km;
       await ctx.post(hist, { ...reg, resultado: 'conferir', tipo: av.tipo, ref: av.ref });
-      await ctx.texto(para, msgConferir(km));
+      if (await ctx.reivindicar(`travas/${chave}/conferir`, 3 * 60e3)) await ctx.texto(para, msgConferir(km));
       return 'conferir';
     }
     /* 2ª foto confirma o mesmo número: NÃO entra no Gestão e vira alerta para o Hudson */
@@ -548,7 +567,7 @@ async function tratarFoto(ctx, pk, ct, m, msg, teste) {
   if (!teste) await ctx.put('leituras/' + pk, { km, data: dataBRT(agora), em: agora, certeza: lido.certeza });   /* o Gestão aplica no carro */
   await ctx.post(hist, { ...reg, resultado: 'ok' });
   Object.assign(m, { aberto: false, atrasado: false, leituraEm: agora, km, falhas: 0, suspeito: null, lembrouAudio: false });
-  await ctx.texto(para, textoResposta(ct, km, primeiroNome(ct.motorista)));
+  if (await ctx.reivindicar(`travas/${chave}/ok`, 3 * 60e3)) await ctx.texto(para, textoResposta(ct, km, primeiroNome(ct.motorista)));   /* álbum com 2 fotos boas: 1 resposta */
   return 'ok:' + km;
 }
 
