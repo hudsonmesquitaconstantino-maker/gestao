@@ -9,7 +9,7 @@
    sem ela, a foto é lida pela IA da própria Cloudflare).
    Este arquivo é público no GitHub: nada de segredo aqui. */
 
-const VERSAO = 'robo-km 3.14';
+const VERSAO = 'robo-km 3.15';
 const DIA = 864e5;
 
 /* ---------------- utilidades ---------------- */
@@ -351,6 +351,15 @@ function prazoResposta(pedidoEm) {
   const h19 = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 19 + 3);
   return Math.max(h19, pedidoEm + 3 * 3600e3);
 }
+/* Pedido de foto ainda vale? Regra do Hudson: pedido vive no máximo 24 h (o do robô, até o fim da cobrança de 7 dias)
+   e FECHA assim que o km do carro foi atualizado no Gestão depois do pedido (ele já sabe o km — não precisa de foto). */
+function pedidoAberto(ct, m, t = Date.now()) {
+  const kmEm = num(ct && ct.kmUltimaEm);
+  const robo = m && m.aberto && num(m.pedidoEm) && t - num(m.pedidoEm) < MIN_DIAS * DIA && !(kmEm > num(m.pedidoEm)) ? num(m.pedidoEm) : 0;
+  const pw = num(ct && ct.pedidoWhatsEm);
+  const manual = pw && pw > num(m && m.leituraEm) && t - pw < DIA && !(kmEm > pw) ? pw : 0;
+  return Math.max(robo, manual);
+}
 function prontoParaEnviar(ct) { return !!(ct && ct.elegivel && ct.ativo && foneEnvio(ct.tel)); }
 
 /* Garante na Meta um modelo de mensagem (cria e manda para aprovação se não existir). campo = onde guarda o status. */
@@ -414,8 +423,7 @@ async function ciclo(ctx, t = Date.now()) {
 
     /* LEMBRETE DAS 16h: vale para o pedido do robô e para o que o Hudson mandou pelo WhatsApp dele */
     if (ligado && !manual) {
-      const pw = num(ct.pedidoWhatsEm) > num(m.leituraEm) ? num(ct.pedidoWhatsEm) : 0;
-      const ped = Math.max(m.aberto ? num(m.pedidoEm) : 0, pw);
+      const ped = pedidoAberto(ct, m, t);
       const fotoDepois = num(m.leituraEm) > ped || (m.suspeita && num(m.suspeita.em) > ped);   /* só foto do PAINEL lida conta; imagem ilegível ou qualquer outra coisa não */
       if (ped && !fotoDepois && num(m.lembreteDe) !== ped && devidoLembrete(ped, t)) {
         const nome = primeiroNome(ct.motorista), carroL = `${ct.carro || 'carro'} ${fmtPlaca(ct.placa || pk)}`.trim();
@@ -437,6 +445,9 @@ async function ciclo(ctx, t = Date.now()) {
 
     /* pedido aberto: sem foto até o fim do dia = atrasado (aparece em vermelho no Gestão).
        Depois de 7 dias sem resposta, se a troca ainda pedir, manda de novo. */
+    if (m.aberto && num(ct.kmUltimaEm) > num(m.pedidoEm)) {   /* km chegou pelo Gestão: pedido resolvido */
+      upd['estado/' + pk + '/aberto'] = false; upd['estado/' + pk + '/atrasado'] = false; m = { ...m, aberto: false, atrasado: false };
+    }
     if (!manual && m.aberto && t - num(m.pedidoEm) < MIN_DIAS * DIA) {
       if (t >= prazoResposta(num(m.pedidoEm))) {
         r.atrasados.push(pk);
@@ -503,9 +514,9 @@ async function processarWebhook(ctx, corpo) {
     try {
       const ctx3 = (contatos || {})[pk] || {};
       /* pedido feito pelo Hudson no WhatsApp dele (botão do Gestão): a foto que chegar em até 3 dias também é lida */
-      const pedidoManual = num(ctx3.pedidoWhatsEm) > num(m.leituraEm) && Date.now() - num(ctx3.pedidoWhatsEm) < 3 * DIA;
-      if (msg.type === 'image' && msg.image && msg.image.id && (m.aberto || pedidoManual)) out.push(await tratarFoto(ctx, pk, (contatos || {})[pk] || {}, m, msg, key === 'teste'));
-      else if (msg.type === 'audio' && (m.aberto || pedidoManual) && !m.lembrouAudio) {
+      const aberto = key === 'teste' ? !!m.aberto : !!pedidoAberto(ctx3, m);
+      if (msg.type === 'image' && msg.image && msg.image.id && aberto) out.push(await tratarFoto(ctx, pk, (contatos || {})[pk] || {}, m, msg, key === 'teste'));
+      else if (msg.type === 'audio' && aberto && !m.lembrouAudio) {
         /* respondeu com áudio em vez da foto: lembra UMA vez por pedido, com educação */
         m.lembrouAudio = true;
         await ctx.texto(msg.from, MSG_AUDIO(primeiroNome(ctx3.motorista)));
@@ -676,4 +687,4 @@ export default {
 };
 
 /* exportado só para os testes locais */
-export const _t = { avaliarLeitura, lerOdometro, precisaPedir, estimativa, foneChave, foneEnvio, interpretarResposta, plausivel, textoResposta, ciclo, processarWebhook, Ctx, primeiroNome, fmtPlaca, saudacao, MODELO, MODELO_LEMBRETE, textoLembreteLivre, devidoLembrete, textoPedidoLivre, marcaCarro, linhaOleo, prazoResposta };
+export const _t = { avaliarLeitura, lerOdometro, precisaPedir, estimativa, foneChave, foneEnvio, interpretarResposta, plausivel, textoResposta, ciclo, processarWebhook, Ctx, primeiroNome, fmtPlaca, saudacao, MODELO, MODELO_LEMBRETE, textoLembreteLivre, devidoLembrete, pedidoAberto, textoPedidoLivre, marcaCarro, linhaOleo, prazoResposta };

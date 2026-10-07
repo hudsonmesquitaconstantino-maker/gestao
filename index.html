@@ -1029,7 +1029,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=177; var APP_DATE='06/10/2026';
+var APP_VER=178; var APP_DATE='06/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -1635,7 +1635,7 @@ function _roboSync(){
   var r=_roboRisco(pk);
   set(pk,'elegivel',el);set(pk,'carro',c.nome||'');set(pk,'modelo',String(c.modeloCRLV||'').trim());set(pk,'placa',c.placa||pk);
   set(pk,'proxOleoKm',Number(c.proxOleoKm)||0);set(pk,'oleoTipo',String(c.oleoTipo||'').trim().toUpperCase());set(pk,'temCorreia',!!c.temCorreia);set(pk,'proxCorreiaKm',c.temCorreia?(Number(c.proxCorreiaKm)||0):0);
-  set(pk,'kmUltima',Number(c.kmUltima||c.kmAtual)||0);set(pk,'kmUltimaData',c.kmUltimaData||'');set(pk,'kmDia',r.kmDia||0);
+  set(pk,'kmUltima',Number(c.kmUltima||c.kmAtual)||0);set(pk,'kmUltimaData',c.kmUltimaData||'');set(pk,'kmUltimaEm',Number((c._campoAt||{}).kmUltima)||0);set(pk,'kmDia',r.kmDia||0);
  });
  Object.keys(cont).forEach(function(pk){if(!S.carros[pk])set(pk,'elegivel',false)});
  if(n){try{ROBOREF.update(upd)}catch(e){}}
@@ -1662,7 +1662,8 @@ function _roboAtrasoDe(pk){
  if(!ligado||!conectado||!_roboElegivel(c))return null;
  var ped=0,via='';
  if(m.aberto&&Number(m.pedidoEm))ped=Number(m.pedidoEm);
- var pw=Number(ct.pedidoWhatsEm)||0;if(pw>ped&&(Number(m.leituraEm)||0)<pw){ped=pw;via=' (pedido pelo seu WhatsApp)'}
+ var kmEm=Number((c._campoAt||{}).kmUltima)||0;if(ped&&kmEm>ped)ped=0;
+ var pw=Number(ct.pedidoWhatsEm)||0;if(pw>ped&&(Number(m.leituraEm)||0)<pw&&now-pw<864e5&&!(kmEm>pw)){ped=pw;via=' (pedido pelo seu WhatsApp)'}
  if(!ped||now<_prazoResposta(ped))return null;
  var d0=new Date(ped);d0.setHours(0,0,0,0);var dias=Math.floor((now-d0.getTime())/864e5);
  var quando=dias<=0?'hoje às '+new Date(ped).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):(dias===1?'ontem':'há '+dias+' dias');
