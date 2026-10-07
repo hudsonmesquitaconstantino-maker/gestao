@@ -1234,6 +1234,22 @@ html.teclado .n3pe{display:none}
 @media(max-width:380px){.n3linha{grid-template-columns:minmax(0,1fr) 94px}.n3f>span{font-size:15px}}
 .n3kitMais{color:var(--ac);box-shadow:none;background:transparent}
 #n3c .v100review{margin:0;border:0;box-shadow:none;padding:0;background:none}#n3c .v100reviewTitle{display:none}
+/* v189 · passo a passo limpo */
+.n3passos{margin:0 4px 16px}
+.n3seg{display:flex;gap:5px}.n3seg i{flex:1;height:4px;border-radius:2px;background:#DADDE2;transition:background .25s}.n3seg i.on{background:var(--ac)}
+.n3passoTx{margin-top:8px;font-size:14px;font-weight:600;color:var(--tx2)}
+.n3passo>.n3grp:first-child,.n3passo>div:first-child>.n3grp:first-child{margin-top:0}
+.n3nav{position:sticky;bottom:calc(84px + env(safe-area-inset-bottom));z-index:20;margin:18px 0 0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;padding:8px;border-radius:16px;background:rgba(242,243,245,.85);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px)}
+.n3nav.so1{grid-template-columns:minmax(0,1fr)}
+.n3nav .btn{min-height:50px;margin:0;font-size:17px;border-radius:12px}
+.n3nav .btn.sec{padding:0 22px}
+html.teclado .n3nav{display:none}
+.n3rv{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:12px 16px;border-bottom:.5px solid var(--bord);font-size:15.5px}
+.n3rv:last-child{border-bottom:0}.n3rv>span{min-width:0}.n3rv small{display:block;color:var(--tx2);font-size:14px;margin-top:3px;line-height:1.4}
+.n3rv>b{white-space:nowrap;font-variant-numeric:tabular-nums}.n3vz{color:var(--tx2)}
+.n3tot .n3f>span{font-weight:600}.n3tot b{font-size:22px;font-variant-numeric:tabular-nums}
+.n3linha{grid-template-columns:minmax(0,1fr) 112px}
+#n3c .v100reviewTitle{display:none!important}#n3c .v100review{border:0!important;box-shadow:none!important;padding:0!important;background:none!important}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -1267,7 +1283,7 @@ html.teclado .n3pe{display:none}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=188; var APP_DATE='07/10/2026';
+var APP_VER=189; var APP_DATE='07/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -3272,7 +3288,7 @@ function vMais(){
  var it=[['nota','Observações',nObs+' pendente'+(nObs===1?'':'s'),'go(4)'],['robo','Robô do km',nRob?nRob+' sem responder hoje':'Fotos do painel e respostas','abrirRobo()'],['doc','Novo contrato de locação','Puxa os dados do carro','go(2)'],['carro','Adicionar carro novo','Placa, CRLV e motorista','formCarro()'],['eng','Configurações','Chave, backup e versão','openCfg()']];
  var h='<div class="g2head"><div class="g2titulo">Mais</div></div><div class="g2grp">';
  it.forEach(function(o){h+='<button class="g2opt" onclick="'+o[3]+'"><span class="g2ic">'+G2I[o[0]]+'</span><span class="g2optTx"><b>'+o[1]+'</b><small>'+o[2]+'</small></span>'+G2I.chev+'</button>'});
- h+='</div><div class="g2grp"><label class="n3f n3sw" style="min-height:58px"><span><b style="font-weight:600">Nova tela de manutenção</b><small>Prévia: só neste aparelho</small></span><input type="checkbox"'+((typeof n3Ligado==='function'&&n3Ligado())?' checked':'')+' onchange="n3Alternar()"></label></div>';
+ h+='</div><div class="g2grp"><label class="n3f n3sw" style="min-height:58px"><span><b style="font-weight:600">Manutenção por passos (nova)</b><small>Prévia: só neste aparelho</small></span><input type="checkbox"'+((typeof n3Ligado==='function'&&n3Ligado())?' checked':'')+' onchange="n3Alternar()"></label></div>';
  h+='<div class="g2ver">GuimasCar Gestão · v'+APP_VER+' · '+APP_DATE+'</div>';
  return h;
 }
@@ -8506,338 +8522,194 @@ boot();render();
  setTimeout(function(){try{if(window.varrerDocsAuto)varrerDocsAuto()}catch(e){}},4000);
  /* recálculo automático das trocas: garante que nenhum número antigo gravado
     sobreviva a uma correção de regra. Roda ao abrir e de novo quando a nuvem chega. */
- function _recalcAuto(){try{if(window.recalcTudoSilencioso){var n=recalcTudoSilencioso();if(n&&window.render)render()}}catch(e){}}
+ function _recalcAuto(){try{if(window.recalcTudoSilencioso){var n=recalcTudoSilencioso();if(n&&window.render&&TAB!==1&&TAB!==2)render()}}catch(e){}} /* v189: não redesenha formulário aberto */
  setTimeout(_recalcAuto,4500);
  setTimeout(_recalcAuto,12000);
 })();
 </script>
 <script>
-/* ===================== v187 — NOVA CRIAÇÃO (manutenção e contrato) =====================
-   Regra de ouro: o RESULTADO não muda. A tela nova preenche os MESMOS campos (mesmos ids:
-   mCarro, mMotorista, mIni, mFim, mOdo, mPecasData / ncCarro, ncNome…) e as MESMAS listas
-   (MP = peças, MB = mão de obra) e salva pelas MESMAS funções (gerarManut / gerarContrato).
-   O que muda é o preenchimento: o Gestão aprende com o histórico (1.200 manutenções e os
-   contratos) e sugere o que você costuma lançar — você só confirma ou corrige. */
+/* ===================== v189 — CRIAÇÃO POR PASSOS, LIMPA (manutenção e contrato) =====================
+   Pedido do Hudson (07/10/2026): manter o passo a passo (Voltar/Continuar), mas mais organizado e limpo,
+   sem atalhos nem sugestões automáticas na manutenção.
+   Regra de ouro: o RESULTADO não muda. As telas preenchem os MESMOS campos (mesmos ids: mCarro, mMotorista,
+   mIni, mFim, mOdo, mPecasData / ncCarro, ncNome…) e as MESMAS listas (MP = peças, MB = mão de obra) e salvam
+   pelas MESMAS funções de antes (gerarManut / gerarContrato). */
 function n3Ligado(){try{return localStorage.getItem('n3m')==='1'}catch(e){return false}}
-/* contrato novo aprovado pelo Hudson em 07/10/2026: ligado para todos */
-function n3cLigado(){try{return localStorage.getItem('n3c')!=='0'}catch(e){return true}}
 function n3Alternar(){try{localStorage.setItem('n3m',n3Ligado()?'0':'1')}catch(e){}toast(n3Ligado()?'Nova tela de manutenção ligada':'Voltou para a tela antiga de manutenção');try{render()}catch(e){}}
-function n3Norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[’']/g,"'").replace(/\s+/g,' ').trim()}
-function n3Data(m){return m.dataFim||m.dataIni||''}
-function n3Ord(a,b){return n3Data(b).localeCompare(n3Data(a))||(Number(b.criadoEm)||0)-(Number(a.criadoEm)||0)}
+function n3cLigado(){try{return localStorage.getItem('n3c')!=='0'}catch(e){return true}}
+function n3Norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[’']/g,"'").replace(/\s+/g,' ').trim()}
 function n3Dm(iso){if(!iso)return '';var p=iso.split('-');return p[2]+'/'+p[1]+'/'+p[0].slice(2)}
 
-/* ---------- O QUE O HISTÓRICO ENSINA ---------- */
-var N3H=null;
-function n3Hist(){
- var ks=Object.keys(S.manutencoes||{});
- var chave=ks.length+'|'+ks.reduce(function(a,k){var m=S.manutencoes[k];return Math.max(a,Number(m.editadoEm)||0,Number(m.criadoEm)||0)},0);
- if(N3H&&N3H.chave===chave)return N3H;
- var M=ks.map(function(k){return S.manutencoes[k]}).filter(Boolean).sort(n3Ord);
- var um=new Date();um.setFullYear(um.getFullYear()-1);var desde=um.toISOString().slice(0,10);
- var pecas={},profs={},par={},servs={};
- M.forEach(function(m){
-  var d=n3Data(m),rec=d>=desde;
-  (m.pecas||[]).forEach(function(p){var k=n3Norm(p.desc);if(!k)return;
-   var o=pecas[k]||(pecas[k]={desc:p.desc,n:0,valor:0,data:'',loja:''});o.n++;
-   if(!o.valor&&p.valor>0){o.valor=p.valor;o.data=d;o.loja=p.loja||''}});
-  (m.blocos||[]).forEach(function(b){var nome=String(b.nome||'').trim();if(!nome)return;
-   var k=n3Norm(b.titulo)+'|'+n3Norm(nome);
-   var o=profs[k]||(profs[k]={titulo:b.titulo||'Mecânico',nome:nome,n:0,n12:0,valor:0,data:''});o.n++;if(rec)o.n12++;
-   if(!o.valor&&b.valor>0){o.valor=b.valor;o.data=d}
-   (b.servicos||[]).forEach(function(s){var ks2=n3Norm(s).replace(/\d[\d.]*/g,'#');if(!servs[ks2])servs[ks2]={txt:s,n:0};servs[ks2].n++});
-  });
-  /* peça → linha de serviço que costuma acompanhar (mesma manutenção, mais palavras em comum) */
-  var linhas=[];(m.blocos||[]).forEach(function(b){(b.servicos||[]).forEach(function(s){linhas.push(s)})});
-  (m.pecas||[]).forEach(function(p){var k=n3Norm(p.desc);if(!k||par[k])return;
-   var pw=n3Palavras(p.desc),melhor='',nota=0;
-   linhas.forEach(function(s){var sw=n3Palavras(s),c=0;pw.forEach(function(w){if(sw.indexOf(w)>=0)c++});var r=c?c/Math.min(pw.length,sw.length):0;if(r>nota){nota=r;melhor=s}});
-   if(nota>=.6&&!/pr[oó]xima troca/i.test(melhor))par[k]=melhor;
-  });
- });
- var wp={},ws={};Object.keys(pecas).forEach(function(k){n3Palavras(k).forEach(function(w){wp[w]=(wp[w]||0)+pecas[k].n})});
- Object.keys(servs).forEach(function(k){n3Palavras(k).forEach(function(w){ws[w]=1})});
- var marcas={};Object.keys(wp).forEach(function(w){if(!ws[w]&&wp[w]>=2&&!/\d/.test(w))marcas[w]=1});
- var lp=Object.keys(pecas).map(function(k){var o=pecas[k];o.k=k;return o}).sort(function(a,b){return b.n-a.n});
- var lprof=Object.keys(profs).map(function(k){return profs[k]}).filter(function(o){return !/^mec[aâ]nico d[oa] /i.test(o.nome)}).sort(function(a,b){return (b.n12-a.n12)||(b.n-a.n)});
- var kits=N3KITS.map(function(kt){var n=0;M.forEach(function(m){if(n3DataOk(m,desde)&&n3TemServ(m,kt.sv))n++});return {k:kt.k,n:n}});
- N3H={chave:chave,marcas:marcas,M:M,pecas:lp,profs:lprof,par:par,servs:servs,kitsN:kits,desde:desde};
- return N3H;
-}
-function n3DataOk(m,desde){return n3Data(m)>=desde}
-function n3Palavras(s){return n3Norm(s).replace(/[^a-z0-9 ]/g,' ').split(' ').filter(function(w){return w.length>2&&!/^(troca|trocar|par|jogo|das|dos|uma|com|lado)$/.test(w)})}
-function n3TemServ(m,re){return (m.blocos||[]).some(function(b){return (b.servicos||[]).some(function(s){return re.test(s)})})}
-
-/* ---------- ATALHOS: os serviços que mais se repetem no histórico ---------- */
-var N3KITS=[
- {k:'oleo',t:'Troca de óleo',sv:/troca d[oe] [oó]leo e filtro de [oó]leo/i,pc:/litros? de [oó]leo(?! de caixa| atf| de freio)|filtro de [oó]leo/i,prox:'oleo'},
- {k:'alinhamento',t:'Alinhamento',sv:/^alinhamento/i},
- {k:'balanceamento',t:'Balanceamento',sv:/^balanceamento/i},
- {k:'vela',t:'Velas',sv:/troca do jogo de velas?$/i,pc:/jogo de vela(?!.*cabo)/i},
- {k:'cabo',t:'Cabos de vela',sv:/cabos? de vela/i,pc:/cabos? de vela/i},
- {k:'pastilha',t:'Pastilha de freio',sv:/pastilha/i,pc:/pastilha/i},
- {k:'filtros',t:'Filtros',sv:/troca do filtro de (ar|cabine|combust)/i,pc:/^filtro de (ar|cabine|combust)/i,multi:1},
- {k:'correia',t:'Correia dentada',sv:/correia dentada/i,pc:/correia dentada/i,prox:'correia'},
- {k:'gnv',t:'Regulagem do GNV',sv:/regulagem do gnv/i},
- {k:'tbi',t:'Limpeza TBI/bicos',sv:/limpeza d(o tbi|os bicos)/i},
- {k:'embreagem',t:'Embreagem',sv:/kit de embreagem/i,pc:/embreagem/i},
- {k:'amortecedor',t:'Amortecedor',sv:/amortecedor/i,pc:/amortecedor/i},
- {k:'bateria',t:'Bateria',sv:/bateria/i,pc:/bateria/i},
- {k:'arrefecimento',t:'Arrefecimento',sv:/arrefecimento|reservat[oó]rio d|radiador/i,pc:/paraflu|desmineralizada/i,multi:1}
-];
-function n3Kit(k){for(var i=0;i<N3KITS.length;i++)if(N3KITS[i].k===k)return N3KITS[i];return null}
-function n3Intervalo(c,pk,tipo){
- var v=Number(tipo==='oleo'?c.oleoIntervalo:c.correiaIntervalo)||0;if(v>0)return v;
- var re=tipo==='oleo'?/[oó]leo/i:/correia/i,ach=0;
- manutsDoCarro(pk).slice().sort(n3Ord).some(function(m){var o=Number(m.odometro)||0;if(!o)return false;
-  return (m.blocos||[]).some(function(b){return (b.servicos||[]).some(function(s){
-   if(!re.test(s))return false;var x=s.match(/pr[oó]xima troca com\s*([\d.]+)/i);if(!x)return false;var n=parseInt(x[1].replace(/\D/g,''),10)-o;
-   if(n>=3000&&n<=(tipo==='oleo'?20000:120000)){ach=n;return true}return false})})});
- return ach||(tipo==='oleo'?10000:50000);
-}
-function n3ProxLinha(s,odo,iv){
- var alvo=odo>0?fmtKm(odo+iv)+' km':'___ km';
- if(/pr[oó]xima troca com/i.test(s))return s.replace(/\(?\s*pr[oó]xima troca com[^)]*\)?\s*$/i,'(Próxima troca com '+alvo+')');
- return s.replace(/\s*$/,'')+' (Próxima troca com '+alvo+')';
+/* ---------- PASSO A PASSO (serve para manutenção e contrato) ---------- */
+function n3PassoBarra(id,nomes){return '<div class="n3passos" id="'+id+'Barra"><div class="n3seg">'+nomes.map(function(){return '<i></i>'}).join('')+'</div><div class="n3passoTx"></div></div>'}
+function n3PassoNav(id){return '<div class="n3nav" id="'+id+'Nav"><button type="button" class="btn sec" onclick="n3Passo(\''+id+'\',-1)">Voltar</button><button type="button" class="btn ok" onclick="n3Passo(\''+id+'\',1)">Continuar</button></div>'}
+var N3P={};
+function n3Passo(id,d,abs){
+ var r=document.getElementById(id);if(!r)return;var cfg=N3P[id];if(!cfg)return;
+ var ps=r.querySelectorAll('.n3passo'),n=ps.length,at=abs?d:(cfg.at||0)+d;
+ if(!abs&&d>0&&cfg.at===n-1){cfg.salvar();return}
+ if(!abs&&d>0&&cfg.pode&&!cfg.pode(cfg.at))return;
+ at=Math.max(0,Math.min(n-1,at));cfg.at=at;
+ ps.forEach(function(p,j){p.hidden=j!==at});
+ var b=document.getElementById(id+'Barra');
+ if(b){b.querySelectorAll('.n3seg i').forEach(function(x,j){x.className=j<=at?'on':''});b.querySelector('.n3passoTx').textContent='Passo '+(at+1)+' de '+n+' · '+cfg.nomes[at]}
+ var nav=document.getElementById(id+'Nav');
+ if(nav){nav.children[0].hidden=at===0;nav.classList.toggle('so1',at===0);nav.children[1].textContent=at===n-1?cfg.fim:'Continuar';nav.hidden=!!(cfg.semNav&&cfg.semNav(at))}
+ if(cfg.ao)try{cfg.ao(at)}catch(e){}
+ try{window.scrollTo(0,0)}catch(e){}
 }
 
-/* ---------- ESTADO DA TELA ---------- */
-var N3={pk:'',busca:'',bloco:0,autoProx:{},mais:false,sug:-1,abertas:{}};
+/* ===================== MANUTENÇÃO ===================== */
+var N3={pk:'',busca:'',abertas:{}};
 function n3Car(){return N3.pk&&S.carros[N3.pk]||null}
-
+var N3M_NOMES=['Carro','Motorista, data e km','Peças','Mão de obra','Conferir e salvar'];
 function vManutN3(){
  var rasc=null;try{rasc=JSON.parse(localStorage.getItem(RASC_K)||'null')}catch(e){}
  var temRasc=rasc&&(rasc.MP||[]).concat(rasc.MB||[]).some(function(x){return (x.valor||x.desc||x.servicos||x.nome||'').toString().trim()});
  if(temRasc){MP=rasc.MP||[];MB=rasc.MB||[];MFROTA=(rasc.frota==='hudson'||rasc.frota==='fabio')?rasc.frota:'';MFROTA_PK=rasc.carro||'';N3.pk=rasc.carro||''}
- else if(!MP.length&&!MB.length){N3.pk=N3.pk&&S.carros[N3.pk]?N3.pk:'';N3.autoProx={}}
- if(!MB.length)MB=[{titulo:'Mecânico',nome:'',valor:'',servicos:'',dataIni:'',dataFim:'',pendenteFinanceiro:false}];
- N3.bloco=Math.min(N3.bloco,MB.length-1);
+ else if(!MP.length&&!MB.length){N3.pk=N3.pk&&S.carros[N3.pk]?N3.pk:''}
+ if(!MP.length)MP=[{valor:'',desc:'',loja:'',data:'',pendenteFinanceiro:false}];
+ if(!MB.length)MB=[{titulo:'Mecânico',nome:'Vinícius',valor:'',servicos:'',dataIni:'',dataFim:'',pendenteFinanceiro:false}];
+ var passoAntes=(N3P.n3m&&N3P.n3m.at)||0;
+ N3P.n3m={at:0,nomes:N3M_NOMES,fim:'Salvar manutenção',salvar:n3Salvar,
+  pode:function(at){if(at===0&&!N3.pk){toast('Escolha o carro');return false}return true},
+  semNav:function(at){return at===0&&!N3.pk},
+  ao:function(at){if(at===4)n3DesenhaRevisao()}};
  var h='<div class="n3" id="n3m">'+
-  '<div class="n3top"><h2>Nova manutenção</h2><p>O Gestão sugere o que você costuma lançar. Confira e salve.</p></div>'+
+  '<div class="n3top"><h2>Nova manutenção</h2></div>'+n3PassoBarra('n3m',N3M_NOMES)+
   '<select id="mCarro" hidden onchange="mPuxaCarro();mRasc()"><option value=""></option>'+opcoesCarros(N3.pk)+'</select><div id="mCarroInfo" hidden></div><div id="mSaida" hidden></div>'+
-  '<section class="n3sec" id="n3Carro"></section>'+
-  '<div id="n3Corpo"'+(N3.pk?'':' hidden')+'>'+
-   '<div id="mFrotaFinanceiraBox" class="n3grp n3pad" style="display:none"></div>'+
-   '<div class="n3h">Quando e quanto rodou</div>'+
+  /* 1 · carro */
+  '<section class="n3passo" id="n3Carro"></section>'+
+  /* 2 · motorista, data e km */
+  '<section class="n3passo" hidden>'+
    '<div class="n3grp">'+
     '<label class="n3f"><span>Motorista</span><input id="mMotorista" autocomplete="off" oninput="mRasc()" placeholder="nome"></label>'+
     '<label class="n3f"><span>Data</span><input type="date" id="mIni" value="'+hoje()+'" onchange="n3DataMudou()"></label>'+
     '<label class="n3f n3sw"><span>Ficou mais de um dia</span><input type="checkbox" id="n3Varios" onchange="n3Varios(this.checked)"></label>'+
     '<label class="n3f" id="n3FimRow" hidden><span>Até</span><input type="date" id="mFim" value="'+hoje()+'" onchange="n3DataMudou()"></label>'+
     '<div class="n3info" id="mDias"></div>'+
-    '<label class="n3f"><span>Odômetro</span><input id="mOdo" inputmode="numeric" autocomplete="off" placeholder="km" oninput="n3OdoMudou()"></label>'+
-    '<div class="n3info" id="n3OdoInfo"></div>'+
+    '<label class="n3f"><span>Odômetro</span><input id="mOdo" inputmode="numeric" autocomplete="off" placeholder="km" oninput="mRasc()"></label>'+
    '</div>'+
-   '<div class="n3h">O que foi feito <small>toque para preencher</small></div>'+
-   '<div class="n3kits" id="n3Kits"></div>'+
-   '<div class="n3h">Peças <b id="mTotP">R$ 0,00</b></div>'+
-   '<div class="n3grp" id="n3Pecas"></div>'+
-   '<div class="n3h">Mão de obra <b id="mTotM">R$ 0,00</b></div>'+
-   '<div id="n3Blocos"></div>'+
-   '<button class="n3link" onclick="n3NovoBloco()">＋ Outro profissional</button>'+
-   '<details class="n3mais"'+(N3.mais?' open':'')+' ontoggle="N3.mais=this.open"><summary>Mais opções</summary><div class="n3grp">'+
-    '<label class="n3f"><span>Data das peças <small>competência no fechamento</small></span><input type="date" id="mPecasData" value="'+hoje()+'" onchange="mRasc();n3DesenhaPecas()"></label>'+
-    '<div class="n3info">Já vem com a data de hoje. Só mude se as peças forem de outro dia ou mês.</div>'+
-   '</div></details>'+
-   '<div class="n3pe"><div><small>Total</small><b id="mTotG">R$ 0,00</b></div><button class="btn ok" onclick="n3Salvar()">Salvar manutenção</button></div>'+
-  '</div></div>';
+   '<div id="mFrotaFinanceiraBox" class="n3grp n3pad" style="display:none"></div>'+
+  '</section>'+
+  /* 3 · peças */
+  '<section class="n3passo" hidden><div class="n3h">Peças <b id="mTotP">R$ 0,00</b></div><div class="n3grp" id="n3Pecas"></div></section>'+
+  /* 4 · mão de obra */
+  '<section class="n3passo" hidden><div class="n3h">Mão de obra <b id="mTotM">R$ 0,00</b></div><div id="n3Blocos"></div>'+
+   '<button class="n3link" onclick="n3NovoBloco()">＋ Outro profissional</button></section>'+
+  /* 5 · conferir e salvar */
+  '<section class="n3passo" hidden><div id="n3Rev"></div>'+
+   '<div class="n3grp"><label class="n3f"><span>Data das peças <small>competência no fechamento</small></span><input type="date" id="mPecasData" value="'+hoje()+'" onchange="mRasc();n3DesenhaPecas()"></label></div>'+
+   '<div class="n3grp n3tot"><div class="n3f"><span>Total</span><b id="mTotG">R$ 0,00</b></div></div></section>'+
+  n3PassoNav('n3m')+
+ '</div>';
  setTimeout(function(){
   if(!document.getElementById('n3m'))return;
   if(temRasc){var s=function(id,v){var e=document.getElementById(id);if(e&&v)e.value=v};
    s('mCarro',rasc.carro);s('mIni',rasc.ini);s('mFim',rasc.fim);s('mOdo',rasc.odo);s('mPecasData',rasc.pdat);
    if(rasc.carro){try{mPuxaCarro(MFROTA)}catch(e){}}
    s('mMotorista',rasc.mot);
-   var vr=rasc.fim&&rasc.ini&&rasc.fim!==rasc.ini;document.getElementById('n3Varios').checked=vr;document.getElementById('n3FimRow').hidden=!vr;
-   toast('📝 Rascunho recuperado — nada se perdeu');
+   var vr=rasc.fim&&rasc.ini&&rasc.fim!==rasc.ini;document.getElementById('n3Varios').checked=vr;document.getElementById('n3FimRow').hidden=!vr;n3DataMudou();
+   if(!passoAntes)toast('📝 Rascunho recuperado — nada se perdeu');
   }else if(N3.pk){document.getElementById('mCarro').value=N3.pk;try{mPuxaCarro()}catch(e){}}
-  n3DesenhaCarro();n3DesenhaTudo();n3OdoMudou(true);
+  n3DesenhaCarro();n3DesenhaPecas();n3DesenhaBlocos();
+  n3Passo('n3m',N3.pk?Math.max(1,temRasc?passoAntes:1):0,true);
  },20);
  return h;
 }
 /* a seleção de carro pode vir de fora (ficha do carro → "Nova manutenção") */
 (function(){var o=window.mPuxaCarro;if(typeof o!=='function'||o._n3)return;
- var w=function(){var r=o.apply(this,arguments);try{if(document.getElementById('n3m')){var v=document.getElementById('mCarro').value;if(v!==N3.pk){N3.pk=v;n3DesenhaCarro();n3DesenhaTudo();n3OdoMudou(true)}}}catch(e){}return r};
+ var w=function(){var r=o.apply(this,arguments);try{if(document.getElementById('n3m')){var v=document.getElementById('mCarro').value;if(v!==N3.pk){N3.pk=v;n3DesenhaCarro();if(v)n3Passo('n3m',1,true)}}}catch(e){}return r};
  w._n3=1;window.mPuxaCarro=w;})();
 
-/* ---------- CARRO ---------- */
+/* ---------- 1 · CARRO ---------- */
 function n3DesenhaCarro(){
  var box=document.getElementById('n3Carro');if(!box)return;var c=n3Car();
- var corpo=document.getElementById('n3Corpo');if(corpo)corpo.hidden=!c;
- if(!c){box.innerHTML='<div class="n3h">Qual carro?</div><div class="n3busca"><input id="n3Busca" placeholder="Buscar placa, carro ou motorista" autocomplete="off" value="'+esc(N3.busca)+'" oninput="N3.busca=this.value;n3ListaCarros()"></div><div class="n3grp" id="n3Lista"></div>';n3ListaCarros();return}
- var km=Number(c.kmUltima||c.kmAtual)||0,ult=manutsDoCarro(N3.pk).slice().sort(n3Ord).slice(0,3);
- var h='<div class="n3grp"><div class="n3carro">'+plateHtml(c.placa)+'<div class="n3carroTx"><b>'+esc(tituloCarro(c))+'</b><small>'+(c.motorista?esc(primNome(c.motorista)):'sem motorista')+(km?' · '+fmtKm(km)+' km'+(c.kmUltimaData?' em '+n3Dm(c.kmUltimaData):''):'')+'</small></div><button class="n3mini" onclick="n3TrocarCarro()">Trocar</button></div>';
- if(ult.length){
-  h+='<div class="n3subh">Últimas deste carro</div>';
-  ult.forEach(function(m){var itens=(m.pecas||[]).map(function(p){return p.desc}).concat([].concat.apply([],(m.blocos||[]).map(function(b){return b.servicos||[]})));
-   h+='<button class="n3ult" onclick="verManut(\''+m.id+'\')"><span class="n3ultD">'+n3Dm(n3Data(m))+'</span><span class="n3ultT">'+esc(itens.slice(0,2).join(' · ')||'—')+(itens.length>2?' <i>+'+(itens.length-2)+'</i>':'')+'</span><span class="n3ultV">'+(m.total>0?'R$ '+fmtBRL(m.total):'')+'</span></button>'});
- }
- box.innerHTML=h+'</div>';
+ if(!c){box.innerHTML='<div class="n3busca"><input id="n3Busca" placeholder="Buscar placa, carro ou motorista" autocomplete="off" value="'+esc(N3.busca)+'" oninput="N3.busca=this.value;n3ListaCarros()"></div><div class="n3grp" id="n3Lista"></div>';n3ListaCarros();return}
+ box.innerHTML='<div class="n3grp"><div class="n3carro">'+plateHtml(c.placa)+'<div class="n3carroTx"><b>'+esc(tituloCarro(c))+'</b><small>'+(c.motorista?esc(primNome(c.motorista)):'sem motorista')+'</small></div><button class="n3mini" onclick="n3TrocarCarro()">Trocar</button></div></div>';
 }
 function n3ListaCarros(){
  var el=document.getElementById('n3Lista');if(!el)return;var q=n3Norm(N3.busca).replace(/[^a-z0-9 ]/g,'');
- var cs=carrosOrdenados().filter(function(c){if(!q)return c.status!=='pessoal'||true;var t=n3Norm(c.placa+' '+tituloCarro(c)+' '+(c.motorista||'')).replace(/[^a-z0-9 ]/g,'');return q.split(' ').every(function(w){return t.indexOf(w)>=0||t.replace(/ /g,'').indexOf(w)>=0})});
- el.innerHTML=cs.map(function(c){var pk=normPlaca(c.placa),u=manutsDoCarro(pk).slice().sort(n3Ord)[0];
-  return '<button class="n3row" onclick="n3Escolher(\''+pk+'\')">'+plateHtml(c.placa)+'<span class="n3rowTx"><b>'+esc(tituloCarro(c))+'</b><small>'+(c.motorista?esc(primNome(c.motorista)):(c.status==='pessoal'?'pessoal':'sem motorista'))+(u?' · última '+n3Dm(n3Data(u)):'')+'</small></span><span class="n3chev">›</span></button>'}).join('')||'<div class="n3vazio">Nenhum carro encontrado</div>';
+ var cs=carrosOrdenados().filter(function(c){if(!q)return true;var t=n3Norm(c.placa+' '+tituloCarro(c)+' '+(c.motorista||'')).replace(/[^a-z0-9 ]/g,'');return q.split(' ').every(function(w){return t.indexOf(w)>=0||t.replace(/ /g,'').indexOf(w)>=0})});
+ el.innerHTML=cs.map(function(c){var pk=normPlaca(c.placa);
+  return '<button class="n3row" onclick="n3Escolher(\''+pk+'\')">'+plateHtml(c.placa)+'<span class="n3rowTx"><b>'+esc(tituloCarro(c))+'</b><small>'+(c.motorista?esc(primNome(c.motorista)):(c.status==='pessoal'?'pessoal':'sem motorista'))+'</small></span><span class="n3chev">›</span></button>'}).join('')||'<div class="n3vazio">Nenhum carro encontrado</div>';
 }
 function n3Escolher(pk){
  N3.pk=pk;N3.busca='';var s=document.getElementById('mCarro');s.value=pk;mPuxaCarro();mRasc();
- n3DesenhaCarro();n3DesenhaTudo();n3OdoMudou(true);try{window.scrollTo({top:0,behavior:'smooth'})}catch(e){}
+ n3DesenhaCarro();n3Passo('n3m',1,true);
 }
-function n3TrocarCarro(){N3.pk='';document.getElementById('mCarro').value='';try{mFrotaFinanceiraUI('', '')}catch(e){}mRasc();n3DesenhaCarro();setTimeout(function(){var b=document.getElementById('n3Busca');if(b)b.focus()},50)}
+function n3TrocarCarro(){N3.pk='';document.getElementById('mCarro').value='';try{mFrotaFinanceiraUI('', '')}catch(e){}mRasc();n3DesenhaCarro();n3Passo('n3m',0,true)}
 
-/* ---------- DATAS E KM ---------- */
-function n3Varios(on){var r=document.getElementById('n3FimRow'),f=document.getElementById('mFim'),i=document.getElementById('mIni');r.hidden=!on;if(!on)f.value=i.value;else if(f.value<=i.value)f.value=i.value;n3DataMudou();if(on)setTimeout(function(){try{f.focus()}catch(e){}},30)}
+/* ---------- 2 · DATAS ---------- */
+function n3Varios(on){var r=document.getElementById('n3FimRow'),f=document.getElementById('mFim'),i=document.getElementById('mIni');r.hidden=!on;if(!on)f.value=i.value;else if(f.value<i.value)f.value=i.value;n3DataMudou();if(on)setTimeout(function(){try{f.focus()}catch(e){}},30)}
 function n3DataMudou(){
  var i=document.getElementById('mIni'),f=document.getElementById('mFim');if(!i||!f)return;
  if(!document.getElementById('n3Varios').checked)f.value=i.value;
  var d=document.getElementById('mDias');if(d)d.innerHTML=(f.value&&f.value!==i.value)?'⏱ Carro parado <b>'+_diasTxt(i.value,f.value)+'</b> nesta manutenção':'';
- mRasc();n3DesenhaBlocos();
-}
-function n3Odo(){return parseInt(((document.getElementById('mOdo')||{}).value||'').replace(/\D/g,''),10)||0}
-function n3OdoMudou(silencioso){
- var el=document.getElementById('mOdo'),info=document.getElementById('n3OdoInfo'),c=n3Car();if(!el||!info)return;
- var dig=el.value.replace(/\D/g,'');if(dig&&el.value!==fmtKm(dig)&&!silencioso){el.value=fmtKm(dig)}
- var odo=n3Odo(),km=c?Number(c.kmUltima||c.kmAtual)||0:0,t=[];
- if(c&&km){if(odo&&odo<km-100)t.push('<span class="n3alerta">⚠️ Menor que o último km registrado ('+fmtKm(km)+' em '+n3Dm(c.kmUltimaData)+'). Confira.</span>');else if(!odo)t.push('Último registrado: '+fmtKm(km)+' km'+(c.kmUltimaData?' em '+n3Dm(c.kmUltimaData):''))}
- if(c&&c.proxOleoKm&&odo){var f=c.proxOleoKm-odo;t.push(f<=0?'<span class="n3alerta">Óleo vencido há '+fmtKm(-f)+' km</span>':'Óleo: faltam '+fmtKm(f)+' km')}
- info.innerHTML=t.join(' · ');
- /* linhas "Próxima troca com X km" que o atalho criou acompanham o odômetro */
- var mudou=false,pk=N3.pk;
- MB.forEach(function(b,bi){var ls=String(b.servicos||'').split('\n');ls.forEach(function(s,li){
-  var tipo=N3.autoProx[bi+':'+n3Norm(s.replace(/\(?\s*pr[oó]xima troca com[^)]*\)?\s*$/i,''))];
-  if(tipo&&c){var n=n3ProxLinha(s,odo,n3Intervalo(c,pk,tipo));if(n!==s){ls[li]=n;mudou=true}}});
-  b.servicos=ls.join('\n')});
- if(mudou)n3DesenhaBlocos();
  mRasc();
 }
 
-/* ---------- ATALHOS ---------- */
-function n3DesenhaKits(){
- var el=document.getElementById('n3Kits');if(!el)return;var H=n3Hist(),n={};H.kitsN.forEach(function(x){n[x.k]=x.n});
- var ks=N3KITS.slice().sort(function(a,b){return (n[b.k]||0)-(n[a.k]||0)});
- var vis=ks.filter(function(k,i){return N3.kitsTodos||i<6||n3KitAplicado(k)});
- el.innerHTML=vis.map(function(k){var on=n3KitAplicado(k);return '<button class="n3kit'+(on?' on':'')+'" onclick="n3AplicaKit(\''+k.k+'\')">'+(on?'✓ ':'')+esc(k.t)+'</button>'}).join('')+
-  (vis.length<ks.length?'<button class="n3kit n3kitMais" onclick="N3.kitsTodos=true;n3DesenhaKits()">Mais '+(ks.length-vis.length)+'…</button>':'');
-}
-function n3KitAplicado(k){return MB.some(function(b){return String(b.servicos||'').split('\n').some(function(s){return k.sv.test(s.trim())})})}
-function n3AplicaKit(key){
- var kt=n3Kit(key),c=n3Car();if(!kt||!c)return;
- if(n3KitAplicado(kt)){toast('Já está na lista');return}
- var H=n3Hist(),pk=N3.pk,odo=n3Odo();
- var fonte=manutsDoCarro(pk).slice().sort(n3Ord).filter(function(m){return n3TemServ(m,kt.sv)})[0],doCarro=!!fonte;
- if(!fonte)fonte=H.M.filter(function(m){return n3TemServ(m,kt.sv)})[0];
- var linhas=[],prof=null;
- if(fonte){(fonte.blocos||[]).forEach(function(b){(b.servicos||[]).forEach(function(s){if(kt.sv.test(s)&&linhas.indexOf(s)<0&&(kt.multi||!linhas.length)){linhas.push(s);if(!prof)prof=b}})})}
- if(!doCarro&&kt.prox)linhas=[kt.prox==='oleo'?'Troca do óleo e filtro de óleo do motor':'Troca do kit correia dentada'];
- if(!linhas.length)linhas=[kt.t];
- /* peças: as que acompanharam este serviço da última vez (só do mesmo carro: marca/medida certas) */
- if(kt.pc&&fonte&&(doCarro||kt.multi)){(fonte.pecas||[]).forEach(function(p){if(!kt.pc.test(p.desc))return;
-  if(MP.some(function(x){return n3Norm(x.desc)===n3Norm(p.desc)}))return;
-  var hp=null;H.pecas.some(function(o){if(o.k===n3Norm(p.desc)){hp=o;return true}return false});
-  var val=doCarro?(p.valor>0?p.valor:(hp&&hp.valor)||0):(hp&&hp.valor)||0;
-  n3TiraPecaVazia();MP.push({valor:val?fmtBRL(val):'',desc:p.desc,loja:doCarro?(p.loja||''):'',data:'',pendenteFinanceiro:false})})}
- var bi=n3BlocoAlvo(prof);var b=MB[bi];
- linhas.forEach(function(s){
-  if(kt.prox){s=n3ProxLinha(s,odo,n3Intervalo(c,pk,kt.prox));N3.autoProx[bi+':'+n3Norm(s.replace(/\(?\s*pr[oó]xima troca com[^)]*\)?\s*$/i,''))]=kt.prox}
-  b.servicos=(String(b.servicos||'').replace(/\s+$/,'')+'\n'+s).replace(/^\n/,'')});
- mRasc();n3DesenhaTudo();
- if(kt.prox&&!odo){toast('Digite o odômetro: a próxima troca se calcula sozinha');setTimeout(function(){var o=document.getElementById('mOdo');if(o)try{o.focus()}catch(e){}},300)}
-}
+/* ---------- 3 · PEÇAS ---------- */
 function n3TiraPecaVazia(){MP=MP.filter(function(p){return String(p.desc||'').trim()||parseBRL(p.valor)>0})}
-function n3BlocoAlvo(prof){
- /* usa o bloco do mesmo profissional, ou o atual se ainda estiver em branco; senão cria outro */
- var c=n3Car(),nomeProf=prof?String(prof.nome||'').trim():'';
- if(prof&&/^mec[aâ]nico d[oa] /i.test(nomeProf))nomeProf=(c&&c.motorista)?'Mecânico do '+_nomeCurto(c.motorista):nomeProf;
- if(prof&&/^troca de [oó]leo$/i.test(nomeProf))nomeProf='Troca de óleo';
- var ach=-1;if(nomeProf)MB.forEach(function(b,i){if(ach<0&&n3Norm(b.nome)===n3Norm(nomeProf))ach=i});
- if(ach>=0)return ach;
- var at=MB[N3.bloco]||MB[0];
- var vazio=function(b){return b&&!String(b.nome||'').trim()&&!String(b.servicos||'').trim()&&!(parseBRL(b.valor)>0)};
- if(vazio(at)){if(prof){at.titulo=prof.titulo||'Mecânico';at.nome=nomeProf}return MB.indexOf(at)}
- if(!prof||!nomeProf||n3Norm(at.nome)===n3Norm(nomeProf)||!String(at.nome||'').trim())return MB.indexOf(at);
- MB.push({titulo:prof.titulo||'Mecânico',nome:nomeProf,valor:'',servicos:'',dataIni:'',dataFim:'',pendenteFinanceiro:false});
- return MB.length-1;
-}
-
-/* ---------- PEÇAS ---------- */
 function n3DesenhaPecas(){
  var el=document.getElementById('n3Pecas');if(!el)return;
  var pad=(document.getElementById('mPecasData')||{}).value||hoje();
  var h='';MP.forEach(function(p,i){var ab=N3.abertas['p'+i];
-  h+='<div class="n3item"><div class="n3linha"><div class="n3desc"><textarea rows="1" class="n3ta" placeholder="Peça (ex.: Filtro de ar do motor)" data-i="'+i+'" oninput="MP['+i+'].desc=this.value;taGrow(this);n3Sugere(this);mRasc();n3DesenhaSugServ()" onfocus="n3Sugere(this)" onblur="n3FechaSug(this)" autocomplete="off" autocapitalize="sentences">'+esc(p.desc)+'</textarea><div class="n3sug" id="n3sug'+i+'"></div></div>'+
+  h+='<div class="n3item"><div class="n3linha"><textarea rows="1" class="n3ta" placeholder="Peça" oninput="MP['+i+'].desc=this.value;taGrow(this);mRasc()" autocomplete="off" autocapitalize="sentences">'+esc(p.desc)+'</textarea>'+
    '<input class="n3val" placeholder="R$ 0,00" inputmode="decimal" value="'+esc(p.valor)+'" oninput="MP['+i+'].valor=this.value;mTotais()"></div>'+
-   '<div class="n3sub"><button class="n3mini" onclick="N3.abertas[\'p'+i+'\']=!N3.abertas[\'p'+i+'\'];n3DesenhaPecas()">'+(p.loja?esc(p.loja)+' · ':'')+((p.data&&p.data!==pad)?n3Dm(p.data)+' · ':'')+(p.pendenteFinanceiro?'pendente · ':'')+(ab?'fechar':'loja, data…')+'</button><button class="n3mini n3x" onclick="MP.splice('+i+',1);n3DesenhaTudo();mRasc()">Remover</button></div>'+
-   (ab?'<div class="n3extra"><label class="n3f"><span>Loja</span><input value="'+esc(p.loja)+'" placeholder="Abrahão, Mega…" oninput="MP['+i+'].loja=this.value;mRasc()"></label>'+
+   '<div class="n3sub"><button class="n3mini" onclick="N3.abertas[\'p'+i+'\']=!N3.abertas[\'p'+i+'\'];n3DesenhaPecas()">'+(p.loja?esc(p.loja)+' · ':'')+((p.data&&p.data!==pad)?n3Dm(p.data)+' · ':'')+(p.pendenteFinanceiro?'pendente · ':'')+(ab?'fechar':'loja, data, status')+'</button>'+(MP.length>1?'<button class="n3mini n3x" onclick="MP.splice('+i+',1);n3DesenhaPecas();mRasc()">Remover</button>':'')+'</div>'+
+   (ab?'<div class="n3extra"><label class="n3f"><span>Loja</span><input value="'+esc(p.loja)+'" placeholder="Auto peças" oninput="MP['+i+'].loja=this.value;mRasc()"></label>'+
     '<label class="n3f"><span>Data desta peça</span><input type="date" value="'+esc(p.data||pad)+'" onchange="MP['+i+'].data=this.value;mRasc()"></label>'+
-    '<label class="n3f n3sw"><span>Pendente (fora do fechamento)</span><input type="checkbox"'+(p.pendenteFinanceiro?' checked':'')+' onchange="MP['+i+'].pendenteFinanceiro=this.checked;mRasc()"></label></div>':'')+
+    '<label class="n3f n3sw"><span>Pendente <small>não contabilizar ainda</small></span><input type="checkbox"'+(p.pendenteFinanceiro?' checked':'')+' onchange="MP['+i+'].pendenteFinanceiro=this.checked;mRasc()"></label></div>':'')+
   '</div>'});
  el.innerHTML=h+'<button class="n3add" onclick="MP.push({valor:\'\',desc:\'\',loja:\'\',data:\'\',pendenteFinanceiro:false});n3DesenhaPecas();var t=document.querySelectorAll(\'#n3Pecas .n3ta\');if(t.length)t[t.length-1].focus()">＋ Adicionar peça</button>';
  setTimeout(function(){document.querySelectorAll('#n3Pecas .n3ta').forEach(taGrow)},10);
  mTotais();
 }
-function n3Sugere(ta){
- var i=+ta.dataset.i,box=document.getElementById('n3sug'+i);if(!box)return;
- var q=n3Norm(ta.value).replace(/[^a-z0-9 ]/g,' ').trim();if(q.length<2){box.innerHTML='';return}
- var ws=q.split(/\s+/),H=n3Hist(),res=[];
- H.pecas.some(function(o){var t=' '+o.k.replace(/[^a-z0-9 ]/g,' ');if(o.k===n3Norm(ta.value))return false;
-  if(ws.every(function(w){return t.indexOf(' '+w)>=0})){res.push(o)}return res.length>=6});
- box.innerHTML=res.map(function(o){return '<button type="button" onmousedown="event.preventDefault()" data-k="'+esc(o.k)+'" onclick="n3UsaSug('+i+',this.dataset.k)"><span>'+esc(o.desc)+'</span>'+(o.valor?'<small>R$ '+fmtBRL(o.valor)+(o.data?' · '+n3Dm(o.data):'')+'</small>':'')+'</button>'}).join('');
-}
-function n3FechaSug(ta){setTimeout(function(){var b=document.getElementById('n3sug'+ta.dataset.i);if(b)b.innerHTML=''},180)}
-function n3UsaSug(i,k){
- var H=n3Hist(),o=null;H.pecas.some(function(x){if(x.k===k){o=x;return true}return false});if(!o||!MP[i])return;
- MP[i].desc=o.desc;if(!(parseBRL(MP[i].valor)>0)&&o.valor)MP[i].valor=fmtBRL(o.valor);if(!MP[i].loja&&o.loja)MP[i].loja=o.loja;
- mRasc();n3DesenhaPecas();n3DesenhaSugServ();
- setTimeout(function(){var v=document.querySelectorAll('#n3Pecas .n3val')[i];if(v)try{v.focus();v.select()}catch(e){}},30);
-}
 
-/* ---------- MÃO DE OBRA ---------- */
+/* ---------- 4 · MÃO DE OBRA ---------- */
 function n3DesenhaBlocos(){
- var el=document.getElementById('n3Blocos');if(!el)return;var H=n3Hist();
+ var el=document.getElementById('n3Blocos');if(!el)return;
  var ini=(document.getElementById('mIni')||{}).value||hoje(),fim=(document.getElementById('mFim')||{}).value||ini;
  var h='';MB.forEach(function(b,i){var ab=N3.abertas['b'+i];
-  var hp=null;H.profs.some(function(o){if(n3Norm(o.nome)===n3Norm(b.nome)&&n3Norm(o.titulo)===n3Norm(b.titulo)){hp=o;return true}return false});
-  h+='<div class="n3grp n3bloco" onfocusin="N3.bloco='+i+'">'+
-   (MB.length>1?'<div class="n3blH"><span>Profissional '+(i+1)+'</span><button class="n3mini n3x" onclick="MB.splice('+i+',1);N3.bloco=0;n3DesenhaTudo();mRasc()">Remover</button></div>':'')+
-   '<div class="n3profs">'+H.profs.slice(0,8).map(function(o){var on=n3Norm(o.nome)===n3Norm(b.nome)&&n3Norm(o.titulo)===n3Norm(b.titulo);return '<button class="n3chip'+(on?' on':'')+'" data-t="'+esc(o.titulo)+'" data-n="'+esc(o.nome)+'" onclick="n3Prof('+i+',this.dataset.t,this.dataset.n)">'+esc(o.nome)+(/^mec/i.test(o.titulo)?'':'<small>'+esc(o.titulo)+'</small>')+'</button>'}).join('')+'</div>'+
-   '<label class="n3f"><span>Quem fez</span><input value="'+esc(b.nome)+'" placeholder="Vinícius" oninput="MB['+i+'].nome=this.value;mRasc()" onchange="n3DesenhaBlocos()"></label>'+
-   '<label class="n3f"><span>Função</span><input value="'+esc(b.titulo)+'" placeholder="Mecânico" oninput="MB['+i+'].titulo=this.value;mRasc()"></label>'+
-   '<label class="n3f"><span>Valor'+(hp&&hp.valor?' <small>última: R$ '+fmtBRL(hp.valor)+'</small>':'')+'</span><input inputmode="decimal" placeholder="R$ 0,00" value="'+esc(b.valor)+'" oninput="MB['+i+'].valor=this.value;mTotais()"></label>'+
-   '<label class="n3f n3col"><span>Serviços <small>um por linha</small></span><textarea class="n3serv" rows="2" placeholder="Ex.: Troca do filtro de ar do motor" oninput="MB['+i+'].servicos=this.value;taGrow(this);mRasc();n3DesenhaKits();n3DesenhaSugServ()">'+esc(b.servicos)+'</textarea></label>'+
-   '<div class="n3sugserv" data-b="'+i+'"></div>'+
-   '<div class="n3sub"><button class="n3mini" onclick="N3.abertas[\'b'+i+'\']=!N3.abertas[\'b'+i+'\'];n3DesenhaBlocos()">'+(b.pendenteFinanceiro?'pendente · ':'')+((b.dataIni&&b.dataIni!==ini)||(b.dataFim&&b.dataFim!==fim)?'datas próprias · ':'')+(ab?'fechar':'datas, pendente…')+'</button></div>'+
+  h+='<div class="n3grp n3bloco">'+
+   (MB.length>1?'<div class="n3blH"><span>Profissional '+(i+1)+'</span><button class="n3mini n3x" onclick="MB.splice('+i+',1);n3DesenhaBlocos();mRasc()">Remover</button></div>':'')+
+   '<label class="n3f"><span>Profissional</span><input value="'+esc(b.nome)+'" placeholder="Vinícius" oninput="MB['+i+'].nome=this.value;mRasc()"></label>'+
+   '<label class="n3f"><span>Função</span><input value="'+esc(b.titulo)+'" placeholder="Mecânico / Borracheiro" oninput="MB['+i+'].titulo=this.value;mRasc()"></label>'+
+   '<label class="n3f"><span>Valor</span><input inputmode="decimal" placeholder="R$ 0,00" value="'+esc(b.valor)+'" oninput="MB['+i+'].valor=this.value;mTotais()"></label>'+
+   '<label class="n3f n3col"><span>Serviços realizados <small>um por linha</small></span><textarea rows="3" placeholder="Troca da pastilha dianteira&#10;Próxima troca com X km" oninput="MB['+i+'].servicos=this.value;taGrow(this);mRasc()">'+esc(b.servicos)+'</textarea></label>'+
+   '<div class="n3sub"><button class="n3mini" onclick="N3.abertas[\'b'+i+'\']=!N3.abertas[\'b'+i+'\'];n3DesenhaBlocos()">'+(b.pendenteFinanceiro?'pendente · ':'')+((b.dataIni&&b.dataIni!==ini)||(b.dataFim&&b.dataFim!==fim)?'datas próprias · ':'')+(ab?'fechar':'datas e status')+'</button></div>'+
    (ab?'<div class="n3extra"><label class="n3f"><span>Início deste serviço</span><input type="date" value="'+esc(b.dataIni||ini)+'" onchange="MB['+i+'].dataIni=this.value;mRasc()"></label>'+
     '<label class="n3f"><span>Final / competência</span><input type="date" value="'+esc(b.dataFim||fim)+'" onchange="MB['+i+'].dataFim=this.value;mRasc()"></label>'+
-    '<label class="n3f n3sw"><span>Pendente (fora do fechamento)</span><input type="checkbox"'+(b.pendenteFinanceiro?' checked':'')+' onchange="MB['+i+'].pendenteFinanceiro=this.checked;mRasc()"></label></div>':'')+
+    '<label class="n3f n3sw"><span>Pendente <small>não contabilizar ainda</small></span><input type="checkbox"'+(b.pendenteFinanceiro?' checked':'')+' onchange="MB['+i+'].pendenteFinanceiro=this.checked;mRasc()"></label></div>':'')+
   '</div>'});
  el.innerHTML=h;
  setTimeout(function(){document.querySelectorAll('#n3Blocos textarea').forEach(taGrow)},10);
- n3DesenhaSugServ();mTotais();
+ mTotais();
 }
-function n3Prof(i,t,n){var b=MB[i];if(!b)return;b.titulo=t;b.nome=n;N3.bloco=i;mRasc();n3DesenhaBlocos()}
-function n3NovoBloco(){MB.push({titulo:'Mecânico',nome:'',valor:'',servicos:'',dataIni:'',dataFim:'',pendenteFinanceiro:false});N3.bloco=MB.length-1;n3DesenhaBlocos();mRasc()}
-/* peças lançadas que ainda não aparecem nos serviços viram sugestão de linha ("Troca do …") */
-function n3DesenhaSugServ(){
- var H=n3Hist(),todas=MB.map(function(b){return String(b.servicos||'')}).join('\n'),tn=n3Norm(todas),sug=[];
- MP.forEach(function(p){var d=String(p.desc||'').trim();if(d.length<4)return;var k=n3Norm(d);
-  var l=H.par[k];if(!l){var lim=d.split(/\s+/).filter(function(w){var n=n3Norm(w).replace(/[^a-z0-9]/g,'');return !H.marcas[n]}).join(' ').replace(/\s*[+&]\s*$/,'');l='Troca do '+lim.charAt(0).toLowerCase()+lim.slice(1)}
-  var pw=n3Palavras(l),c=0;pw.forEach(function(w){if(tn.indexOf(w)>=0)c++});
-  if(pw.length&&c/pw.length>=.6)return;if(sug.indexOf(l)<0)sug.push(l)});
- document.querySelectorAll('#n3Blocos .n3sugserv').forEach(function(el){var i=+el.dataset.b;
-  el.innerHTML=(i===Math.min(N3.bloco,MB.length-1)&&sug.length)?sug.slice(0,6).map(function(s){return '<button class="n3chip n3chipS" onclick="n3AddServ('+i+',this.dataset.s)" data-s="'+esc(s)+'">＋ '+esc(s)+'</button>'}).join(''):''});
-}
-function n3AddServ(i,s){var b=MB[i];if(!b)return;b.servicos=(String(b.servicos||'').replace(/\s+$/,'')+'\n'+s).replace(/^\n/,'');mRasc();n3DesenhaBlocos();n3DesenhaKits()}
+function n3NovoBloco(){MB.push({titulo:'',nome:'',valor:'',servicos:'',dataIni:'',dataFim:'',pendenteFinanceiro:false});n3DesenhaBlocos();mRasc();setTimeout(function(){var t=document.querySelectorAll('#n3Blocos .n3bloco');var x=t[t.length-1];if(x){try{x.scrollIntoView({block:'start',behavior:'smooth'});x.querySelector('input').focus()}catch(e){}}},40)}
 
-function n3DesenhaTudo(){n3DesenhaKits();n3DesenhaPecas();n3DesenhaBlocos()}
+/* ---------- 5 · CONFERIR ---------- */
+function n3DesenhaRevisao(){
+ var el=document.getElementById('n3Rev');if(!el)return;var c=n3Car();if(!c){el.innerHTML='';return}
+ var g=function(id){return (document.getElementById(id)||{}).value||''};
+ var ini=g('mIni'),fim=g('mFim')||ini,odo=g('mOdo').replace(/\D/g,'');
+ var ps=MP.filter(function(p){return String(p.desc||'').trim()||parseBRL(p.valor)>0}),bs=MB.filter(function(b){return String(b.nome||'').trim()||String(b.servicos||'').trim()||parseBRL(b.valor)>0});
+ var h='<div class="n3grp"><div class="n3carro">'+plateHtml(c.placa)+'<div class="n3carroTx"><b>'+esc(tituloCarro(c))+'</b><small>'+esc(g('mMotorista')||'sem motorista')+' · '+esc(periodoTexto(ini,fim))+(odo?' · '+fmtKm(odo)+' km':'')+'</small></div></div></div>';
+ h+='<div class="n3h">Peças</div><div class="n3grp">'+(ps.length?ps.map(function(p){return '<div class="n3rv"><span>'+esc(p.desc||'—')+'</span><b>'+(parseBRL(p.valor)>0?'R$ '+fmtBRL(parseBRL(p.valor)):'')+'</b></div>'}).join(''):'<div class="n3rv n3vz"><span>Sem peças</span></div>')+'</div>';
+ h+='<div class="n3h">Mão de obra</div><div class="n3grp">'+(bs.length?bs.map(function(b){var sv=String(b.servicos||'').split('\n').map(function(s){return s.trim()}).filter(Boolean);
+  return '<div class="n3rv"><span><b>'+esc(b.nome||'—')+'</b>'+(b.titulo?' · '+esc(b.titulo):'')+(sv.length?'<small>'+sv.map(esc).join('<br>')+'</small>':'')+'</span><b>'+(parseBRL(b.valor)>0?'R$ '+fmtBRL(parseBRL(b.valor)):'')+'</b></div>'}).join(''):'<div class="n3rv n3vz"><span>Sem mão de obra</span></div>')+'</div>';
+ el.innerHTML=h;mTotais();
+}
 
 /* ---------- SALVAR: a mesma gravação de sempre, e abre a manutenção pronta ---------- */
 function n3Salvar(){
  var antes={};Object.keys(S.manutencoes||{}).forEach(function(k){antes[k]=1});
- n3TiraPecaVazia();
+ var bkP=MP.slice();n3TiraPecaVazia();
  gerarManut();
  var novo='';Object.keys(S.manutencoes||{}).forEach(function(k){if(!antes[k])novo=k});
- if(!novo){if(!MP.length)MP=[];n3DesenhaPecas();return}
- N3.pk='';N3.autoProx={};N3.abertas={};N3.bloco=0;MP=[];MB=[];
+ if(!novo){MP=bkP;return}
+ N3.pk='';N3.abertas={};MP=[];MB=[];N3P.n3m=null;
  try{render()}catch(e){}
  setTimeout(function(){verManut(novo)},60);
 }
@@ -8847,21 +8719,23 @@ function n3Salvar(){
    cada campo muda de lugar na tela, mas é o MESMO campo, com o mesmo id e as mesmas máscaras.
    Por isso o contrato gerado (texto, Word, valores) sai idêntico. */
 var N3C={busca:'',mot:''};
+var N3C_NOMES=['Carro','Motorista','Endereço','Condições','Recebimento','Conferir e gerar'];
 function vContratoN3(){
  var antigo=vContrato().replace('<div class="v100form">','<div class="v100form" data-g2="1">');
+ N3P.n3c={at:0,nomes:N3C_NOMES,fim:'Gerar contrato',salvar:function(){gerarContrato()},
+  pode:function(at){if(at===0&&!n3cPk()){toast('Escolha o carro');return false}if(at===1&&!String((document.getElementById('ncNome')||{}).value||'').trim()){toast('Preencha o nome do motorista');return false}return true},
+  semNav:function(at){return at===0&&!n3cPk()},
+  ao:function(at){try{ncResumo()}catch(e){}n3cInfo()}};
  return '<div class="n3" id="n3c">'+
-  '<div class="n3top"><h2>Novo contrato</h2><p>Escolha o carro e o motorista. O resto vem preenchido; confira e gere.</p><div id="n3cAviso"></div></div>'+
-  '<section id="n3cCarro"></section>'+
-  '<div id="n3cCorpo" hidden>'+
-   '<div class="n3h">Motorista</div><div id="n3cMot"></div>'+
-   '<div class="n3grp" id="n3cPessoa"></div><div class="n3info" id="n3cCnhInfo"></div>'+
-   '<div class="n3h">Endereço <small>o CEP completa a rua</small></div><div class="n3grp" id="n3cEnd"></div>'+
-   '<div class="n3h">Condições</div><div class="n3grp" id="n3cCond"></div><div class="n3info" id="n3cCondInfo"></div>'+
-   '<div class="n3h">Semana antecipada</div><div class="n3grp n3pad" id="n3c34"></div>'+
-   '<div class="n3h">Recebimento (PIX)</div><div class="n3grp" id="n3cPix"></div>'+
-   '<div class="n3h">Resumo</div><div class="n3grp n3pad" id="n3cRes"></div>'+
-   '<div class="n3pe"><div><small>Semanal</small><b id="n3cSem">—</b></div><button class="btn ok" onclick="gerarContrato()">Gerar contrato</button></div>'+
-  '</div></div>'+
+  '<div class="n3top"><h2>Novo contrato</h2><div id="n3cAviso"></div></div>'+n3PassoBarra('n3c',N3C_NOMES)+
+  '<section class="n3passo" id="n3cCarro"></section>'+
+  '<section class="n3passo" hidden><div id="n3cMot"></div><div class="n3grp" id="n3cPessoa"></div><div class="n3info" id="n3cCnhInfo"></div></section>'+
+  '<section class="n3passo" hidden><div class="n3h">Endereço <small>o CEP completa a rua</small></div><div class="n3grp" id="n3cEnd"></div></section>'+
+  '<section class="n3passo" hidden><div class="n3grp" id="n3cCond"></div><div class="n3info" id="n3cCondInfo"></div><div class="n3h">Semana antecipada</div><div class="n3grp n3pad" id="n3c34"></div></section>'+
+  '<section class="n3passo" hidden><div class="n3h">PIX para receber</div><div class="n3grp" id="n3cPix"></div></section>'+
+  '<section class="n3passo" hidden><div class="n3grp n3pad" id="n3cRes"></div></section>'+
+  n3PassoNav('n3c')+
+  '</div>'+
   '<div id="n3cStage" hidden>'+antigo+'</div>';
 }
 function n3cMonta(){
@@ -8888,9 +8762,10 @@ function n3cMonta(){
  var hero=document.querySelector('#n3cStage .v100formHero'),av=document.getElementById('n3cAviso');
  if(hero&&av&&window.MutationObserver){new MutationObserver(function(){hero.querySelectorAll('.v102info').forEach(function(x){av.appendChild(x)})}).observe(hero,{childList:true})}
  n3cDesenhaCarro();n3cDesenhaMot();n3cInfo();
+ n3Passo('n3c',n3cPk()?1:0,true);
 }
 (function(){var o=window.ncPuxaCarro;if(typeof o!=='function'||o._n3)return;
- var w=function(){var r=o.apply(this,arguments);try{if(document.getElementById('n3c')){n3cCompleta();n3cDesenhaCarro();n3cInfo()}}catch(e){}return r};
+ var w=function(){var r=o.apply(this,arguments);try{if(document.getElementById('n3c')){n3cCompleta();n3cDesenhaCarro();n3cInfo();if(n3cPk()&&N3P.n3c&&!N3P.n3c.at)n3Passo('n3c',1,true)}}catch(e){}return r};
  w._n3=1;window.ncPuxaCarro=w;})();
 function n3cPk(){return (document.getElementById('ncCarro')||{}).value||''}
 /* valores que o carro ainda não tem como padrão: usa o último contrato de locação dele */
@@ -8903,8 +8778,7 @@ function n3cCompleta(){
 }
 function n3cDesenhaCarro(){
  var box=document.getElementById('n3cCarro');if(!box)return;var pk=n3cPk(),c=pk&&S.carros[pk];
- var corpo=document.getElementById('n3cCorpo');if(corpo)corpo.hidden=!c;
- if(!c){box.innerHTML='<div class="n3h">Qual carro?</div><div class="n3busca"><input id="n3cBusca" placeholder="Buscar placa ou carro" autocomplete="off" value="'+esc(N3C.busca)+'" oninput="N3C.busca=this.value;n3cListaCarros()"></div><div class="n3grp" id="n3cLista"></div>';n3cListaCarros();return}
+ if(!c){box.innerHTML='<div class="n3busca"><input id="n3cBusca" placeholder="Buscar placa ou carro" autocomplete="off" value="'+esc(N3C.busca)+'" oninput="N3C.busca=this.value;n3cListaCarros()"></div><div class="n3grp" id="n3cLista"></div>';n3cListaCarros();return}
  var vig=c.contratoVigenteId&&S.contratos[c.contratoVigenteId],km=Number(c.kmUltima||c.kmAtual)||0;
  box.innerHTML='<div class="n3grp"><div class="n3carro">'+plateHtml(c.placa)+'<div class="n3carroTx"><b>'+esc(tituloCarro(c))+'</b><small>'+(km?fmtKm(km)+' km':'sem km')+(c.combustivel?' · '+esc(c.combustivel):'')+'</small></div>'+(NCTRANSFER?'':'<button class="n3mini" onclick="n3cTrocarCarro()">Trocar</button>')+'</div>'+
   (vig&&!NCTRANSFER?'<div class="n3info n3alertaBox">Este carro tem contrato vigente com <b>'+esc(primNome((vig.locatario||{}).nome||c.motorista||''))+'</b> desde '+n3Dm(vig.inicio)+'. Ao gerar, aquele contrato é encerrado e vai para os anteriores.</div>':'')+'</div>';
@@ -8917,8 +8791,8 @@ function n3cListaCarros(){
  el.innerHTML=cs.map(function(c){var pk=normPlaca(c.placa),livre=c.status==='parado'&&!c.oficinaDesde;
   return '<button class="n3row" onclick="n3cEscolher(\''+pk+'\')">'+plateHtml(c.placa)+'<span class="n3rowTx"><b>'+esc(tituloCarro(c))+'</b><small>'+(livre?'<span class="n3ok">parado · pronto para alugar</span>':c.oficinaDesde?'na oficina':(c.motorista?'com '+esc(primNome(c.motorista)):esc(c.status||'')))+'</small></span><span class="n3chev">›</span></button>'}).join('')||'<div class="n3vazio">Nenhum carro encontrado</div>';
 }
-function n3cEscolher(pk){var s=document.getElementById('ncCarro');if(!s)return;s.value=pk;N3C.busca='';ncPuxaCarro();try{ncResumo()}catch(e){}n3cDesenhaMot();try{window.scrollTo({top:0,behavior:'smooth'})}catch(e){}}
-function n3cTrocarCarro(){var s=document.getElementById('ncCarro');if(s)s.value='';n3cDesenhaCarro();setTimeout(function(){var b=document.getElementById('n3cBusca');if(b)b.focus()},50)}
+function n3cEscolher(pk){var s=document.getElementById('ncCarro');if(!s)return;s.value=pk;N3C.busca='';ncPuxaCarro();try{ncResumo()}catch(e){}n3cDesenhaMot();n3Passo('n3c',1,true)}
+function n3cTrocarCarro(){var s=document.getElementById('ncCarro');if(s)s.value='';n3cDesenhaCarro();n3Passo('n3c',0,true);setTimeout(function(){var b=document.getElementById('n3cBusca');if(b)b.focus()},50)}
 
 /* ---------- MOTORISTA QUE JÁ TEVE CONTRATO ---------- */
 function n3cMotoristas(){
