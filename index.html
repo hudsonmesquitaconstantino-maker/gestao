@@ -1177,7 +1177,7 @@ nav.g2nav button.g2plus:active{transform:scale(.94)}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=181; var APP_DATE='07/10/2026';
+var APP_VER=182; var APP_DATE='07/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -3296,22 +3296,24 @@ function _fichaTabHtml(pk,T){
   h+='<div class="g2sub"><span>Observações</span><button class="g2link" onclick="obsNova(\''+pk+'\')">+ Nova</button></div>';
   h+=obs.length?obsListaHtml(obs,true):'<div class="g2vazio">Nenhuma pendência deste carro.</div>';
   var _oc=obsDoCarro(pk,true);if(_oc.length)h+='<details style="margin:6px 0"><summary class="sub">Concluídas ('+_oc.length+')</summary>'+obsListaHtml(_oc,true)+'</details>';
+  h+='<div class="g2grp" style="margin-top:14px">'+_g2Opt('chave','Peças trocadas','Bomba d\'água, embreagem, alternador, arranque…','fichaTab(\'hist\')')+'</div>';
   h+='<div class="g2sub"><span>Gastos com o carro</span></div>'+gastosCarroHtml(pk);
   h+='<div class="g2sub"><span>Última manutenção</span>'+(mans.length>1?'<button class="g2link" onclick="fichaTab(\'hist\')">Ver todas ('+mans.length+')</button>':'')+'</div>';
   h+=mans.length?'<div class="g2list">'+_g2ManRow(mans[0])+'</div>':'<div class="g2vazio">Nenhuma manutenção registrada.</div>';
  }else if(T==='hist'){
-  h+='<div class="g2sub"><span>Manutenções</span><span>'+mans.length+'</span></div>';
-  h+=mans.length?'<div class="g2list">'+mans.map(_g2ManRow).join('')+'</div>':'<div class="g2vazio">Nenhuma manutenção registrada.</div>';
-  h+='<div style="height:10px"></div>'+grupoCatalogo(pk);
+  /* v182: peças trocadas (bomba d'água, embreagem, alternador…) logo no topo do Histórico, abertas */
   var COMPS=[['vela','Vela'],['cabos','Cabos de vela'],['embreagem','Embreagem'],['bateria','Bateria'],['alternador','Alternador'],['arranque','Arranque'],['freios','Freios (pastilha)'],['ventoinha','Ventoinha'],['radiador','Radiador'],['caixaDir','Caixa de direção'],['bombaAgua','Bomba d\'água'],['motor','Motor (cabeçote/bloco)']];
   if(!c.temCorreia)COMPS.unshift(['comando','Corrente de comando']);
-  h+='<details class="v99details"><summary class="v99summary"><span>Histórico por componente</span><span>componentes ›</span></summary><div class="v99detailbody"><div class="sect">Componentes <span class="x" style="display:inline;padding:0 6px" onclick="editarTrocas(\''+pk+'\')">✎</span></div>';
+  h+='<div class="g2sub" id="g2Pecas"><span>Peças trocadas</span><button class="g2link" onclick="editarTrocas(\''+pk+'\')">Corrigir</button></div><div class="card g2pecas" style="margin:0 0 8px">';
   COMPS.forEach(function(par){var u=(c.ultTrocas||{})[par[0]];
    var val=(u&&(u.km||u.data)?((u.km?fmtKm(u.km)+' km':'')+(u.km&&u.data?' · ':'')+(u.data?dataBR(u.data):'')):'—');
    var abre=(u&&u.mid&&S.manutencoes&&S.manutencoes[u.mid]);
    h+='<div class="kv'+(abre?' tap':'')+'"'+(abre?' onclick="verManut(\''+u.mid+'\')"':'')+'><b>'+par[1]+'</b><span>'+val+(abre?' <span style="opacity:.45">›</span>':'')+'</span></div>'});
   h+=grupoRodas(c,'pneu','Pneus')+grupoRodas(c,'amort','Amortecedores')+grupoRodas(c,'mola','Molas');
-  h+='<button class="btn mini sec" onclick="recalcTrocasUI(\''+pk+'\')">Recalcular do histórico</button></div></details>';
+  h+='<button class="btn mini sec" onclick="recalcTrocasUI(\''+pk+'\')">Recalcular do histórico</button></div>';
+  h+=grupoCatalogo(pk);
+  h+='<div class="g2sub"><span>Manutenções</span><span>'+mans.length+'</span></div>';
+  h+=mans.length?'<div class="g2list">'+mans.map(_g2ManRow).join('')+'</div>':'<div class="g2vazio">Nenhuma manutenção registrada.</div>';
  }else if(T==='contrato'){
   var ct=c.contratoVigenteId?S.contratos[c.contratoVigenteId]:null;if(ct&&ct.tipo==='venda')ct=null;
   var vendas=Object.keys(S.contratos).map(function(k){return S.contratos[k]}).filter(function(x){return x.carro===pk&&x.tipo==='venda'});
