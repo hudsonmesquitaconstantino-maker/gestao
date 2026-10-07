@@ -1250,6 +1250,11 @@ html.teclado .n3nav{display:none}
 .n3tot .n3f>span{font-weight:600}.n3tot b{font-size:22px;font-variant-numeric:tabular-nums}
 .n3linha{grid-template-columns:minmax(0,1fr) 112px}
 #n3c .v100reviewTitle{display:none!important}#n3c .v100review{border:0!important;box-shadow:none!important;padding:0!important;background:none!important}
+/* v191 · página única: detalhes sempre abertos */
+.n3item{padding:4px 0 10px}
+.n3extra{margin:6px 12px 0}
+.n3subR{justify-content:flex-end;padding-top:4px}
+.n3bloco .n3extra{margin:0 12px 12px}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -1283,7 +1288,7 @@ html.teclado .n3nav{display:none}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=190; var APP_DATE='07/10/2026';
+var APP_VER=191; var APP_DATE='07/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -8547,6 +8552,16 @@ var N3P={};
 function n3Passo(id,d,abs){
  var r=document.getElementById(id);if(!r)return;var cfg=N3P[id];if(!cfg)return;
  var ps=r.querySelectorAll('.n3passo'),n=ps.length,at=abs?d:(cfg.at||0)+d;
+ /* v191 — Hudson preferiu UMA PÁGINA, descendo (07/10/2026): o carro em cima e, escolhido o carro, todo o resto aberto */
+ if(cfg.unica){
+  if(!abs&&d>0){cfg.salvar();return}
+  var tem=cfg.temCarro();ps.forEach(function(p,j){p.hidden=j>0&&!tem});
+  var bb=document.getElementById(id+'Barra');if(bb)bb.hidden=true;
+  var nv=document.getElementById(id+'Nav');if(nv){nv.hidden=!tem;nv.children[0].hidden=true;nv.classList.add('so1');nv.children[1].textContent=cfg.fim}
+  if(cfg.ao)try{cfg.ao(-1)}catch(e){}
+  if(abs&&d===0)try{window.scrollTo(0,0)}catch(e){}
+  return;
+ }
  if(!abs&&d>0&&cfg.at===n-1){cfg.salvar();return}
  if(!abs&&d>0&&cfg.pode&&!cfg.pode(cfg.at))return;
  at=Math.max(0,Math.min(n-1,at));cfg.at=at;
@@ -8571,17 +8586,17 @@ function vManutN3(){
  if(!MP.length)MP=[{valor:'',desc:'',loja:'',data:'',pendenteFinanceiro:false}];
  if(!MB.length)MB=[{titulo:'Mecânico',nome:'Vinícius',valor:'',servicos:'',dataIni:'',dataFim:'',pendenteFinanceiro:false}];
  var passoAntes=(N3P.n3m&&N3P.n3m.at)||0;
- N3P.n3m={at:0,nomes:N3M_NOMES,fim:'Salvar manutenção',salvar:n3Salvar,
+ N3P.n3m={unica:1,temCarro:function(){return !!N3.pk},at:0,nomes:N3M_NOMES,fim:'Salvar manutenção',salvar:n3Salvar,
   pode:function(at){if(at===0&&!N3.pk){toast('Escolha o carro');return false}return true},
   semNav:function(at){return at===0&&!N3.pk},
-  ao:function(at){if(at===4)n3DesenhaRevisao()}};
+  ao:function(at){}};
  var h='<div class="n3" id="n3m">'+
-  '<div class="n3top"><h2>Nova manutenção</h2></div>'+n3PassoBarra('n3m',N3M_NOMES)+
+  '<div class="n3top"><h2>Nova manutenção</h2></div><div class="n3h">Carro</div>'+
   '<select id="mCarro" hidden onchange="mPuxaCarro();mRasc()"><option value=""></option>'+opcoesCarros(N3.pk)+'</select><div id="mCarroInfo" hidden></div><div id="mSaida" hidden></div>'+
   /* 1 · carro */
   '<section class="n3passo" id="n3Carro"></section>'+
   /* 2 · motorista, data e km */
-  '<section class="n3passo" hidden>'+
+  '<section class="n3passo" hidden><div class="n3h">Motorista, data e km</div>'+
    '<div class="n3grp">'+
     '<label class="n3f"><span>Motorista</span><input id="mMotorista" autocomplete="off" oninput="mRasc()" placeholder="nome"></label>'+
     '<label class="n3f"><span>Data</span><input type="date" id="mIni" value="'+hoje()+'" onchange="n3DataMudou()"></label>'+
@@ -8598,7 +8613,7 @@ function vManutN3(){
   '<section class="n3passo" hidden><div class="n3h">Mão de obra <b id="mTotM">R$ 0,00</b></div><div id="n3Blocos"></div>'+
    '<button class="n3link" onclick="n3NovoBloco()">＋ Outro profissional</button></section>'+
   /* 5 · conferir e salvar */
-  '<section class="n3passo" hidden><div id="n3Rev"></div>'+
+  '<section class="n3passo" hidden><div class="n3h">Fechamento</div>'+
    '<div class="n3grp"><label class="n3f"><span>Data das peças <small>competência no fechamento</small></span><input type="date" id="mPecasData" value="'+hoje()+'" onchange="mRasc();n3DesenhaPecas()"></label></div>'+
    '<div class="n3grp n3tot"><div class="n3f"><span>Total</span><b id="mTotG">R$ 0,00</b></div></div></section>'+
   n3PassoNav('n3m')+
@@ -8654,10 +8669,10 @@ function n3TiraPecaVazia(){MP=MP.filter(function(p){return String(p.desc||'').tr
 function n3DesenhaPecas(){
  var el=document.getElementById('n3Pecas');if(!el)return;
  var pad=(document.getElementById('mPecasData')||{}).value||hoje();
- var h='';MP.forEach(function(p,i){var ab=N3.abertas['p'+i];
+ var h='';MP.forEach(function(p,i){var ab=true;
   h+='<div class="n3item"><div class="n3linha"><textarea rows="1" class="n3ta" placeholder="Peça" oninput="MP['+i+'].desc=this.value;taGrow(this);mRasc()" autocomplete="off" autocapitalize="sentences">'+esc(p.desc)+'</textarea>'+
    '<input class="n3val" placeholder="R$ 0,00" inputmode="decimal" value="'+esc(p.valor)+'" oninput="MP['+i+'].valor=this.value;mTotais()"></div>'+
-   '<div class="n3sub"><button class="n3mini" onclick="N3.abertas[\'p'+i+'\']=!N3.abertas[\'p'+i+'\'];n3DesenhaPecas()">'+(p.loja?esc(p.loja)+' · ':'')+((p.data&&p.data!==pad)?n3Dm(p.data)+' · ':'')+(p.pendenteFinanceiro?'pendente · ':'')+(ab?'fechar':'loja, data, status')+'</button>'+(MP.length>1?'<button class="n3mini n3x" onclick="MP.splice('+i+',1);n3DesenhaPecas();mRasc()">Remover</button>':'')+'</div>'+
+   (MP.length>1?'<div class="n3sub n3subR"><button class="n3mini n3x" onclick="MP.splice('+i+',1);n3DesenhaPecas();mRasc()">Remover peça</button></div>':'')+
    (ab?'<div class="n3extra"><label class="n3f"><span>Loja</span><input value="'+esc(p.loja)+'" placeholder="Auto peças" oninput="MP['+i+'].loja=this.value;mRasc()"></label>'+
     '<label class="n3f"><span>Data desta peça</span><input type="date" value="'+esc(p.data||pad)+'" onchange="MP['+i+'].data=this.value;mRasc()"></label>'+
     '<label class="n3f n3sw"><span>Pendente <small>não contabilizar ainda</small></span><input type="checkbox"'+(p.pendenteFinanceiro?' checked':'')+' onchange="MP['+i+'].pendenteFinanceiro=this.checked;mRasc()"></label></div>':'')+
@@ -8671,14 +8686,14 @@ function n3DesenhaPecas(){
 function n3DesenhaBlocos(){
  var el=document.getElementById('n3Blocos');if(!el)return;
  var ini=(document.getElementById('mIni')||{}).value||hoje(),fim=(document.getElementById('mFim')||{}).value||ini;
- var h='';MB.forEach(function(b,i){var ab=N3.abertas['b'+i];
+ var h='';MB.forEach(function(b,i){var ab=true;
   h+='<div class="n3grp n3bloco">'+
    (MB.length>1?'<div class="n3blH"><span>Profissional '+(i+1)+'</span><button class="n3mini n3x" onclick="MB.splice('+i+',1);n3DesenhaBlocos();mRasc()">Remover</button></div>':'')+
    '<label class="n3f"><span>Profissional</span><input value="'+esc(b.nome)+'" placeholder="Vinícius" oninput="MB['+i+'].nome=this.value;mRasc()"></label>'+
    '<label class="n3f"><span>Função</span><input value="'+esc(b.titulo)+'" placeholder="Mecânico / Borracheiro" oninput="MB['+i+'].titulo=this.value;mRasc()"></label>'+
    '<label class="n3f"><span>Valor</span><input inputmode="decimal" placeholder="R$ 0,00" value="'+esc(b.valor)+'" oninput="MB['+i+'].valor=this.value;mTotais()"></label>'+
    '<label class="n3f n3col"><span>Serviços realizados <small>um por linha</small></span><textarea rows="3" placeholder="Troca da pastilha dianteira&#10;Próxima troca com X km" oninput="MB['+i+'].servicos=this.value;taGrow(this);mRasc()">'+esc(b.servicos)+'</textarea></label>'+
-   '<div class="n3sub"><button class="n3mini" onclick="N3.abertas[\'b'+i+'\']=!N3.abertas[\'b'+i+'\'];n3DesenhaBlocos()">'+(b.pendenteFinanceiro?'pendente · ':'')+((b.dataIni&&b.dataIni!==ini)||(b.dataFim&&b.dataFim!==fim)?'datas próprias · ':'')+(ab?'fechar':'datas e status')+'</button></div>'+
+
    (ab?'<div class="n3extra"><label class="n3f"><span>Início deste serviço</span><input type="date" value="'+esc(b.dataIni||ini)+'" onchange="MB['+i+'].dataIni=this.value;mRasc()"></label>'+
     '<label class="n3f"><span>Final / competência</span><input type="date" value="'+esc(b.dataFim||fim)+'" onchange="MB['+i+'].dataFim=this.value;mRasc()"></label>'+
     '<label class="n3f n3sw"><span>Pendente <small>não contabilizar ainda</small></span><input type="checkbox"'+(b.pendenteFinanceiro?' checked':'')+' onchange="MB['+i+'].pendenteFinanceiro=this.checked;mRasc()"></label></div>':'')+
@@ -8722,18 +8737,18 @@ var N3C={busca:'',mot:''};
 var N3C_NOMES=['Carro','Motorista','Endereço','Condições','Recebimento','Conferir e gerar'];
 function vContratoN3(){
  var antigo=vContrato().replace('<div class="v100form">','<div class="v100form" data-g2="1">');
- N3P.n3c={at:0,nomes:N3C_NOMES,fim:'Gerar contrato',salvar:function(){gerarContrato()},
+ N3P.n3c={unica:1,temCarro:function(){return !!n3cPk()},at:0,nomes:N3C_NOMES,fim:'Gerar contrato',salvar:function(){gerarContrato()},
   pode:function(at){if(at===0&&!n3cPk()){toast('Escolha o carro');return false}if(at===1&&!String((document.getElementById('ncNome')||{}).value||'').trim()){toast('Preencha o nome do motorista');return false}return true},
   semNav:function(at){return at===0&&!n3cPk()},
   ao:function(at){try{ncResumo()}catch(e){}n3cInfo()}};
  return '<div class="n3" id="n3c">'+
-  '<div class="n3top"><h2>Novo contrato</h2><div id="n3cAviso"></div></div>'+n3PassoBarra('n3c',N3C_NOMES)+
+  '<div class="n3top"><h2>Novo contrato</h2><div id="n3cAviso"></div></div><div class="n3h">Carro</div>'+
   '<section class="n3passo" id="n3cCarro"></section>'+
-  '<section class="n3passo" hidden><div id="n3cMot"></div><div class="n3grp" id="n3cPessoa"></div><div class="n3info" id="n3cCnhInfo"></div></section>'+
+  '<section class="n3passo" hidden><div class="n3h">Motorista</div><div id="n3cMot"></div><div class="n3grp" id="n3cPessoa"></div><div class="n3info" id="n3cCnhInfo"></div></section>'+
   '<section class="n3passo" hidden><div class="n3h">Endereço <small>o CEP completa a rua</small></div><div class="n3grp" id="n3cEnd"></div></section>'+
-  '<section class="n3passo" hidden><div class="n3grp" id="n3cCond"></div><div class="n3info" id="n3cCondInfo"></div><div class="n3h">Semana antecipada</div><div class="n3grp n3pad" id="n3c34"></div></section>'+
+  '<section class="n3passo" hidden><div class="n3h">Condições</div><div class="n3grp" id="n3cCond"></div><div class="n3info" id="n3cCondInfo"></div><div class="n3h">Semana antecipada</div><div class="n3grp n3pad" id="n3c34"></div></section>'+
   '<section class="n3passo" hidden><div class="n3h">PIX para receber</div><div class="n3grp" id="n3cPix"></div></section>'+
-  '<section class="n3passo" hidden><div class="n3grp n3pad" id="n3cRes"></div></section>'+
+  '<section class="n3passo" hidden><div class="n3h">Resumo</div><div class="n3grp n3pad" id="n3cRes"></div></section>'+
   n3PassoNav('n3c')+
   '</div>'+
   '<div id="n3cStage" hidden>'+antigo+'</div>';
