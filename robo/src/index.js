@@ -9,7 +9,7 @@
    sem ela, a foto é lida pela IA da própria Cloudflare).
    Este arquivo é público no GitHub: nada de segredo aqui. */
 
-const VERSAO = 'robo-km 3.16';
+const VERSAO = 'robo-km 3.17';
 const DIA = 864e5;
 
 /* ---------------- utilidades ---------------- */
@@ -36,6 +36,9 @@ function foneEnvio(t) {
 }
 
 /* ---------------- contexto ---------------- */
+/* Hudson: TODA mensagem que o robô escreve sozinho avisa que é automática */
+const AVISO_AUTO = '_🤖 Mensagem automática — Guimas Car_';
+const comAviso = body => /Mensagem automática/.test(body) ? body : String(body).replace(/\n*\*Guimas Car\*\s*$/, '') + '\n\n' + AVISO_AUTO;
 class Ctx {
   constructor(env) {
     this.env = env; this.sub = 0; this.tok = null; this.uso = { modelos: 0, livres: 0 };
@@ -98,6 +101,7 @@ class Ctx {
     this.uso = { modelos: 0, livres: 0 };
   }
   async texto(para, body) {
+    body = comAviso(body);
     const r = await this.wa(`${this.env.PHONE_NUMBER_ID}/messages`, { messaging_product: 'whatsapp', to: para, type: 'text', text: { body, preview_url: false } });
     this.uso.livres++; return r;
   }
