@@ -636,6 +636,13 @@ async function http(req, env, exec) {
           const foto = num(m.leituraEm) > ped ? 'foto ok' : (m.suspeita && num(m.suspeita.em) > ped ? 'foto suspeita' : (num(m.ultimaMsgEm) > ped ? 'respondeu sem foto' : 'sem resposta'));
           return pk + ': ' + foto + (num(m.lembreteDe) === ped ? ' · lembrete enviado' : ''); }).filter(Boolean), semProximaTrocaOleo: semOleo, semKmRegistrado: semKm, marcaNaoReconhecida: semMarca, correiaSemProximaTroca: correiaSemKm, motoristaNovoAConfirmar: novos });
     }
+    if (p[2] === 'diag') {   /* datas do pedido de UMA placa (sem nome/telefone) */
+      const pk = url.searchParams.get('pk'), ct = (await ctx.get('contatos/' + pk)) || {}, m = (await ctx.get('estado/' + pk)) || {};
+      const h = Object.values((await ctx.get('historico/' + pk)) || {}).slice(-15).map(x => ({ em: x.em && new Date(x.em - 3 * 3600e3).toISOString().slice(0, 16), km: x.km, resultado: x.resultado }));
+      const d = v => num(v) ? new Date(num(v) - 3 * 3600e3).toISOString().slice(0, 16) : null;
+      return J({ ativo: ct.ativo, pedidoWhatsEm: d(ct.pedidoWhatsEm), kmUltima: ct.kmUltima, kmUltimaData: ct.kmUltimaData, proxOleoKm: ct.proxOleoKm,
+        aberto: m.aberto, pedidoEm: d(m.pedidoEm), leituraEm: d(m.leituraEm), km: m.km, ultimaMsgEm: d(m.ultimaMsgEm), historico: h });
+    }
     if (p[2] === 'trava') {   /* teste da trava: 1ª = true, 2ª = false */
       const c = 'travas/_teste/' + Date.now(); const a = await ctx.reivindicar(c, 60e3), b = await ctx.reivindicar(c, 60e3); await ctx.put('travas/_teste', null); return J({ primeira: a, segunda: b });
     }
