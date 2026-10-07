@@ -1267,7 +1267,7 @@ html.teclado .n3pe{display:none}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=187; var APP_DATE='07/10/2026';
+var APP_VER=188; var APP_DATE='07/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -2534,7 +2534,7 @@ function render(){
  else if(TAB===6)m.innerHTML=vMais();
  else if(TAB===0){m.innerHTML=vFrota();try{if(BUSCA_F){var _fb=document.getElementById('fBusca');if(_fb){_fb.value=BUSCA_F;fAplica()}}}catch(e){}}
  else if(TAB===1){if(typeof n3Ligado==='function'&&n3Ligado()){m.innerHTML=vManutN3()}else{m.innerHTML=vManut();setTimeout(_g2Passos,0);}}
- else if(TAB===2){if(typeof n3Ligado==='function'&&n3Ligado()){m.innerHTML=vContratoN3();setTimeout(aplicarMascarasContrato,30);setTimeout(n3cMonta,45)}else{m.innerHTML=vContrato();setTimeout(aplicarMascarasContrato,30);setTimeout(_g2Passos,0);}}
+ else if(TAB===2){if(typeof n3cLigado==='function'&&n3cLigado()){m.innerHTML=vContratoN3();setTimeout(aplicarMascarasContrato,30);setTimeout(n3cMonta,45)}else{m.innerHTML=vContrato();setTimeout(aplicarMascarasContrato,30);setTimeout(_g2Passos,0);}}
  else if(TAB===3)m.innerHTML=vHistorico();
  else m.innerHTML=vObs();
  try{window.scrollTo(0,_sy)}catch(e){}
@@ -3272,7 +3272,7 @@ function vMais(){
  var it=[['nota','Observações',nObs+' pendente'+(nObs===1?'':'s'),'go(4)'],['robo','Robô do km',nRob?nRob+' sem responder hoje':'Fotos do painel e respostas','abrirRobo()'],['doc','Novo contrato de locação','Puxa os dados do carro','go(2)'],['carro','Adicionar carro novo','Placa, CRLV e motorista','formCarro()'],['eng','Configurações','Chave, backup e versão','openCfg()']];
  var h='<div class="g2head"><div class="g2titulo">Mais</div></div><div class="g2grp">';
  it.forEach(function(o){h+='<button class="g2opt" onclick="'+o[3]+'"><span class="g2ic">'+G2I[o[0]]+'</span><span class="g2optTx"><b>'+o[1]+'</b><small>'+o[2]+'</small></span>'+G2I.chev+'</button>'});
- h+='</div><div class="g2grp"><label class="n3f n3sw" style="min-height:58px"><span><b style="font-weight:600">Nova criação de manutenção e contrato</b><small>Prévia: só neste aparelho</small></span><input type="checkbox"'+((typeof n3Ligado==='function'&&n3Ligado())?' checked':'')+' onchange="n3Alternar()"></label></div>';
+ h+='</div><div class="g2grp"><label class="n3f n3sw" style="min-height:58px"><span><b style="font-weight:600">Nova tela de manutenção</b><small>Prévia: só neste aparelho</small></span><input type="checkbox"'+((typeof n3Ligado==='function'&&n3Ligado())?' checked':'')+' onchange="n3Alternar()"></label></div>';
  h+='<div class="g2ver">GuimasCar Gestão · v'+APP_VER+' · '+APP_DATE+'</div>';
  return h;
 }
@@ -8518,8 +8518,10 @@ boot();render();
    (MP = peças, MB = mão de obra) e salva pelas MESMAS funções (gerarManut / gerarContrato).
    O que muda é o preenchimento: o Gestão aprende com o histórico (1.200 manutenções e os
    contratos) e sugere o que você costuma lançar — você só confirma ou corrige. */
-function n3Ligado(){try{return localStorage.getItem('n3')==='1'}catch(e){return false}}
-function n3Alternar(){try{localStorage.setItem('n3',n3Ligado()?'0':'1')}catch(e){}toast(n3Ligado()?'Nova criação ligada':'Voltou para a criação antiga');try{render()}catch(e){}}
+function n3Ligado(){try{return localStorage.getItem('n3m')==='1'}catch(e){return false}}
+/* contrato novo aprovado pelo Hudson em 07/10/2026: ligado para todos */
+function n3cLigado(){try{return localStorage.getItem('n3c')!=='0'}catch(e){return true}}
+function n3Alternar(){try{localStorage.setItem('n3m',n3Ligado()?'0':'1')}catch(e){}toast(n3Ligado()?'Nova tela de manutenção ligada':'Voltou para a tela antiga de manutenção');try{render()}catch(e){}}
 function n3Norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[’']/g,"'").replace(/\s+/g,' ').trim()}
 function n3Data(m){return m.dataFim||m.dataIni||''}
 function n3Ord(a,b){return n3Data(b).localeCompare(n3Data(a))||(Number(b.criadoEm)||0)-(Number(a.criadoEm)||0)}
