@@ -1283,7 +1283,7 @@ html.teclado .n3nav{display:none}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=189; var APP_DATE='07/10/2026';
+var APP_VER=190; var APP_DATE='07/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -3288,8 +3288,7 @@ function vMais(){
  var it=[['nota','Observações',nObs+' pendente'+(nObs===1?'':'s'),'go(4)'],['robo','Robô do km',nRob?nRob+' sem responder hoje':'Fotos do painel e respostas','abrirRobo()'],['doc','Novo contrato de locação','Puxa os dados do carro','go(2)'],['carro','Adicionar carro novo','Placa, CRLV e motorista','formCarro()'],['eng','Configurações','Chave, backup e versão','openCfg()']];
  var h='<div class="g2head"><div class="g2titulo">Mais</div></div><div class="g2grp">';
  it.forEach(function(o){h+='<button class="g2opt" onclick="'+o[3]+'"><span class="g2ic">'+G2I[o[0]]+'</span><span class="g2optTx"><b>'+o[1]+'</b><small>'+o[2]+'</small></span>'+G2I.chev+'</button>'});
- h+='</div><div class="g2grp"><label class="n3f n3sw" style="min-height:58px"><span><b style="font-weight:600">Manutenção por passos (nova)</b><small>Prévia: só neste aparelho</small></span><input type="checkbox"'+((typeof n3Ligado==='function'&&n3Ligado())?' checked':'')+' onchange="n3Alternar()"></label></div>';
- h+='<div class="g2ver">GuimasCar Gestão · v'+APP_VER+' · '+APP_DATE+'</div>';
+ h+='</div><div class="g2ver">GuimasCar Gestão · v'+APP_VER+' · '+APP_DATE+'</div>';
  return h;
 }
 /* ---------- LANÇAR (+) ---------- */
@@ -8534,7 +8533,8 @@ boot();render();
    Regra de ouro: o RESULTADO não muda. As telas preenchem os MESMOS campos (mesmos ids: mCarro, mMotorista,
    mIni, mFim, mOdo, mPecasData / ncCarro, ncNome…) e as MESMAS listas (MP = peças, MB = mão de obra) e salvam
    pelas MESMAS funções de antes (gerarManut / gerarContrato). */
-function n3Ligado(){try{return localStorage.getItem('n3m')==='1'}catch(e){return false}}
+/* aprovado pelo Hudson em 07/10/2026: manutenção por passos para todos */
+function n3Ligado(){try{return localStorage.getItem('n3m')!=='0'}catch(e){return true}}
 function n3Alternar(){try{localStorage.setItem('n3m',n3Ligado()?'0':'1')}catch(e){}toast(n3Ligado()?'Nova tela de manutenção ligada':'Voltou para a tela antiga de manutenção');try{render()}catch(e){}}
 function n3cLigado(){try{return localStorage.getItem('n3c')!=='0'}catch(e){return true}}
 function n3Norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[’']/g,"'").replace(/\s+/g,' ').trim()}
