@@ -9,7 +9,7 @@
    sem ela, a foto é lida pela IA da própria Cloudflare).
    Este arquivo é público no GitHub: nada de segredo aqui. */
 
-const VERSAO = 'robo-km 3.15';
+const VERSAO = 'robo-km 3.16';
 const DIA = 864e5;
 
 /* ---------------- utilidades ---------------- */
@@ -141,7 +141,7 @@ const MODELO_LEMBRETE = {
 };
 const textoLembreteLivre = (nome, carro) => TXT_LEMBRETE.replace('{{1}}', nome).replace('{{2}}', carro);
 function textoPedidoLivre(nome, carro, t) { return `Olá, *${nome}*, ${saudacao(t)}! 👋\n\nPor favor, me envie agora uma *foto nítida do painel* mostrando a *quilometragem* do *${carro}*.\n\n🛢️ É para a *verificação da troca de óleo*.\n\nObrigado!\n*Guimas Car*`; }
-const MSG_ILEGIVEL = 'Não consegui ler a quilometragem nessa foto 🤔 Manda outra bem de perto do painel, com o km total aparecendo, por favor.';
+const MSG_ILEGIVEL = 'Não consegui ler a quilometragem nessa foto 🤔 Manda outra *agora*, bem de perto do painel, com o km total aparecendo.';
 const msgConferir = km => `Li ${fmtKm(km)} km, mas não bateu com o último registro do carro. Manda mais uma foto bem de perto do km total (não o TRIP), por favor.`;
 /* Óleo: SEMPRE o original da montadora primeiro (regra do Hudson). A 2ª opção é a melhor marca
    fora da concessionária — de preferência a mesma fábrica que produz o original. */
@@ -298,7 +298,7 @@ function avaliarLeitura(ct, m, km, agora) {
   if (!plausivel({ ...ct, kmUltima: ref, kmUltimaData: refData }, km, agora)) return { ok: false, tipo: 'alto', ref, refData };
   return { ok: true, ref };
 }
-const MSG_AUDIO = nome => `Recebi seu áudio${nome ? ', ' + nome : ''}! 👍 Para eu registrar o km certinho, preciso da *foto do painel* com a *quilometragem* aparecendo. Pode mandar quando puder. 📸`;
+const MSG_AUDIO = nome => `Recebi seu áudio${nome ? ', ' + nome : ''}! 👍 Mas o áudio não vale como resposta: preciso da *foto do painel* com a *quilometragem* aparecendo, enviada *hoje*. 📸`;
 const MSG_SUSPEITA = 'Recebi, obrigado! Esse km ficou diferente do registro do carro, então vou conferir e, se precisar, te chamo. 👍';
 /* leitura plausível? (até o triplo do ritmo do carro, mínimo 800 km/dia, + folga de 5.000 km).
    Folgado de propósito: só barra erro grosseiro (dígito a mais/a menos); km menor que o registro é barrado sempre. */
