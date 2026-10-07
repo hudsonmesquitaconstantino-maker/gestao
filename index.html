@@ -1005,6 +1005,145 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 .atenGrp{margin:10px 0 4px}.atenGrpT{font-weight:700;font-size:14px;margin:0 0 6px;display:flex;justify-content:space-between;gap:8px}.atenGrpT span{font-weight:500;color:var(--tx2);font-size:12px}
 .atenRow{border-left:4px solid #C77A16;background:var(--card2,rgba(0,0,0,.03));border-radius:10px;padding:8px 10px;margin:0 0 6px;cursor:pointer}.atenRow.red{border-left-color:#c0392b}
 .atenCar{font-weight:700;font-size:13px}.atenCar span{font-weight:500;color:var(--tx2);font-size:12px;margin-left:4px}.atenTx{font-size:13px;margin-top:2px}.atenRow.red .atenTx{color:var(--warn)}
+/* ===================== v181 — NOVA INTERFACE =====================
+   Regras: o normal fica sem cor; vermelho = agir, âmbar = acompanhar; 4 tamanhos de letra
+   (28 título · 16 texto · 14 apoio · 12 rótulo); ícones de traço no lugar de emoji; ação principal embaixo. */
+nav.g2nav{display:grid!important;grid-template-columns:repeat(5,1fr);align-items:start}
+nav.g2nav button{min-height:48px}
+nav.g2nav button .ic{display:flex;justify-content:center;font-size:0!important;height:26px;align-items:center}
+nav.g2nav button .ic svg{width:24px;height:24px}
+nav.g2nav button.g2plus::before{display:none!important}
+nav.g2nav button.g2plus .g2plusB{width:48px;height:48px;border-radius:24px;background:var(--ac);color:#fff;display:flex;align-items:center;justify-content:center;margin:-6px auto 0;box-shadow:0 6px 16px -6px rgba(199,122,22,.8)}
+nav.g2nav button.g2plus .g2plusB svg{width:26px;height:26px}
+nav.g2nav button.g2plus:active{transform:scale(.94)}
+.g2head{margin:4px 4px 12px}
+.g2headRow{display:flex;justify-content:space-between;align-items:center}
+.g2data{font-size:14px;color:var(--tx2);font-weight:500}
+.g2titulo{font-size:28px;font-weight:800;letter-spacing:-.025em;line-height:1.15;color:var(--tx)}
+.g2add{display:flex;align-items:center;gap:4px;border:0;background:var(--card);color:var(--ac);font:600 14px var(--sf);border-radius:999px;padding:0 14px;min-height:36px;box-shadow:0 1px 2px rgba(17,24,39,.06)}
+.g2add svg{width:16px;height:16px}
+.g2mix{display:flex;gap:2px;height:8px;border-radius:4px;overflow:hidden;margin:2px 4px 8px}
+.g2mix i{display:block;min-width:0}
+.g2bg-red{background:var(--red)}.g2bg-amb{background:var(--ac)}.g2bg-ok{background:var(--ok)}
+.g2leg{display:flex;gap:16px;flex-wrap:wrap;margin:0 4px;font-size:14px;color:var(--tx2)}
+.g2leg span{display:flex;align-items:center;gap:6px;cursor:pointer}
+.g2leg b{color:var(--tx);font-variant-numeric:tabular-nums}
+.g2dot{width:9px;height:9px;border-radius:5px;display:inline-block;flex:0 0 auto}
+.g2dot-red{background:var(--red)}.g2dot-amb{background:var(--ac)}.g2dot-ok{background:var(--ok)}
+.g2lbl{display:flex;justify-content:space-between;align-items:center;margin:22px 6px 8px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--tx2)}
+.g2lbl span:last-child{font-variant-numeric:tabular-nums}
+.g2task{background:var(--card);border-radius:16px;padding:14px;margin:0 0 10px;box-shadow:0 1px 2px rgba(17,24,39,.04)}
+.g2taskH{display:flex;gap:10px;align-items:baseline}
+.g2taskH .g2dot{transform:translateY(-1px)}
+.g2taskH b{font-size:16px;font-weight:700;line-height:1.3;color:var(--tx)}
+.g2pl{font-weight:500;color:var(--tx2);font-size:14px;white-space:nowrap}
+.g2taskTx{font-size:14px;color:var(--tx2);margin:6px 0 0 19px;line-height:1.4}
+.g2taskB{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 0 19px}
+.btn.g2b{width:auto!important;margin:0!important;min-height:42px;padding:0 16px;font-size:15px;border-radius:12px}
+.btn.g2b:not(.ok){background:var(--card2)!important;color:var(--tx)!important;border:0!important}
+.g2link{background:none;border:0;color:var(--ac);font:600 14px var(--sf);padding:8px 6px;min-height:36px}
+.g2vazio{font-size:14px;color:var(--tx2);padding:4px 6px 8px}
+.g2list{background:var(--card);border-radius:16px;overflow:hidden;box-shadow:0 1px 2px rgba(17,24,39,.04)}
+.g2row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 12px 10px 14px;border-bottom:.5px solid var(--bord);min-height:62px;cursor:pointer}
+.g2row:last-child{border-bottom:0}
+.g2row:active{background:var(--card2)}
+.g2rowTx{min-width:0}
+.g2t{font-size:16px;font-weight:650;line-height:1.25;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.g2s{font-size:14px;color:var(--tx2);line-height:1.3;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.g2st{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;margin-top:3px;line-height:1.3}
+.g2st i{font-style:normal;font-weight:500;color:var(--tx2)}
+.g2st-red{color:var(--red)}.g2st-amb{color:var(--warn)}
+.g2sit{font-size:12px;font-weight:600;border-radius:6px;padding:1px 7px;background:var(--card2);color:var(--tx2)}
+.g2sit-oficina{background:rgba(192,57,43,.08);color:var(--red)}
+.g2sit-pronto{background:rgba(30,125,82,.1);color:var(--ok)}
+.g2chev{width:15px;height:15px;color:var(--tx2);opacity:.7;flex:0 0 auto}
+.g2row .plate{margin:0}
+.g2rowM{grid-template-columns:minmax(0,1fr) auto}
+.g2rowM .g2t{white-space:normal}
+.g2val{font-weight:700;font-size:15px;font-variant-numeric:tabular-nums;color:var(--tx);white-space:nowrap}
+.g2quiet{display:flex;justify-content:space-between;align-items:center;width:100%;margin:16px 0 0;background:none;border:1px dashed var(--bord);border-radius:16px;padding:14px;color:var(--tx2);font:500 15px var(--sf);min-height:52px;text-align:left}
+.g2quiet b{color:var(--ok)}
+.g2rodape{display:flex;gap:18px;flex-wrap:wrap;margin:14px 6px 4px;font-size:14px;color:var(--tx2)}
+.g2rodape span{display:flex;align-items:center;gap:6px;cursor:pointer}
+.g2rodape svg{width:17px;height:17px}
+.g2busca{display:flex;align-items:center;gap:8px;background:var(--card);border-radius:12px;padding:0 12px;margin:0 0 10px;box-shadow:0 1px 2px rgba(17,24,39,.04)}
+.g2busca svg{width:18px;height:18px;color:var(--tx2);flex:0 0 auto}
+.g2busca input{border:0!important;background:none!important;box-shadow:none!important;margin:0!important;padding:11px 0!important;min-height:44px;font-size:16px!important}
+.g2chips{display:flex;gap:8px;overflow-x:auto;padding:0 0 10px;margin:0 -12px;padding-left:12px;padding-right:12px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.g2chips::-webkit-scrollbar{display:none}
+.g2chip{border:0;background:var(--card);color:var(--tx);font:600 14px var(--sf);border-radius:999px;padding:0 14px;min-height:36px;white-space:nowrap;display:flex;align-items:center;gap:6px;box-shadow:0 1px 2px rgba(17,24,39,.05)}
+.g2chip b{font-weight:600;color:var(--tx2);font-variant-numeric:tabular-nums}
+.g2chip.on{background:var(--tx);color:#fff}.g2chip.on b{color:rgba(255,255,255,.7)}
+.g2grp{background:var(--card);border-radius:16px;overflow:hidden;margin:0 0 12px;box-shadow:0 1px 2px rgba(17,24,39,.04)}
+.g2opt{display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;border:0;border-bottom:.5px solid var(--bord);background:none;padding:10px 12px;min-height:58px;text-align:left;color:var(--tx);font-family:var(--sf)}
+.g2opt:last-child{border-bottom:0}
+.g2opt:active{background:var(--card2)}
+.g2ic{width:38px;height:38px;border-radius:11px;background:rgba(199,122,22,.12);color:var(--ac);display:flex;align-items:center;justify-content:center}
+.g2ic svg{width:20px;height:20px}
+.g2optTx{min-width:0}
+.g2optTx b{display:block;font-size:16px;font-weight:600;line-height:1.25}
+.g2optTx small{display:block;font-size:13px;color:var(--tx2);line-height:1.3;margin-top:1px}
+.g2perigo b{color:var(--red)}.g2perigo .g2ic{background:rgba(192,57,43,.1);color:var(--red)}
+.g2ver{text-align:center;font-size:12px;color:var(--tx2);margin:14px 0}
+.g2sheetH{font-size:20px;font-weight:750;letter-spacing:-.02em;margin:0 2px 12px;padding-right:40px}
+.g2box{background:var(--card);border-radius:16px;padding:12px 14px;margin:0 0 10px}
+.sheet .g2grp,.sheet .g2list,.sheet .g2saude,.sheet .g2box,.sheet .g2sitLinha.g2sit-alugado,.sheet .g2sitLinha.g2sit-pessoal,.sheet .g2sitLinha.g2sit-venda{background:var(--card2);box-shadow:none}
+.sheet .g2seg{box-shadow:0 0 0 4px var(--card)}
+/* ficha do carro */
+.g2hero{display:flex;gap:14px;align-items:center;margin:0 0 10px;padding-right:40px}
+.g2hero .plate{margin:0}
+.g2heroTx{min-width:0}
+.g2heroTx h3{font-size:22px!important;font-weight:800;letter-spacing:-.02em;margin:0!important;line-height:1.15}
+.g2heroTx .sub{font-size:15px;margin:2px 0 0!important}
+.g2sitLinha{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--tx2);background:var(--card);border-radius:12px;padding:0 12px;min-height:40px;margin:0 0 8px}
+.g2sitLinha svg:first-child{width:18px;height:18px}
+.g2sitLinha span{flex:1;min-width:0}
+.g2sitLinha.g2sit-oficina{color:var(--red);background:rgba(192,57,43,.07)}
+.g2sitLinha.g2sit-pronto{color:var(--ok);background:rgba(30,125,82,.08)}
+.g2kmL{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:6px 2px 12px}
+.g2kmL b{font-size:28px;font-weight:750;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--tx)}
+.g2kmL span{font-size:14px;color:var(--tx2)}
+.g2kmL em{font-style:normal;font-size:14px;font-weight:600;color:var(--ac);margin-left:auto}
+.g2saude{background:var(--card);border-radius:16px;padding:12px 14px;display:grid;gap:14px;box-shadow:0 1px 2px rgba(17,24,39,.04)}
+.g2bar{display:grid;gap:6px}
+.g2barT{display:flex;justify-content:space-between;gap:10px;font-size:15px;align-items:baseline}
+.g2barT b{font-weight:650;color:var(--tx)}
+.g2barT b small{font-weight:500;color:var(--tx2);font-size:12px}
+.g2barT span{color:var(--tx2);font-variant-numeric:tabular-nums;text-align:right}
+.g2barT .g2red{color:var(--red);font-weight:650}.g2barT .g2amb{color:var(--warn);font-weight:650}
+.g2barL{height:6px;border-radius:3px;background:var(--card2);overflow:hidden}
+.g2barL i{display:block;height:100%;border-radius:3px}
+.g2barS{font-size:12px;color:var(--tx2)}
+.g2avisos{display:grid;gap:6px;margin:10px 0 0}
+.g2aviso{font-size:14px;line-height:1.4;border-radius:12px;padding:10px 12px}
+.g2aviso-red{background:rgba(192,57,43,.08);color:var(--red)}
+.g2aviso-amb{background:rgba(199,122,22,.1);color:var(--warn)}
+.g2seg{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card2);border-radius:11px;padding:2px;margin:16px 0 4px;position:sticky;top:-2px;z-index:3;box-shadow:0 0 0 4px var(--bg)}
+.g2seg button{border:0;background:none;border-radius:9px;min-height:36px;font:600 14px var(--sf);color:var(--tx)}
+.g2seg button.on{background:var(--card);box-shadow:0 1px 3px rgba(17,24,39,.14)}
+.g2sub{display:flex;justify-content:space-between;align-items:center;margin:18px 4px 8px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--tx2)}
+.g2sub .g2link{text-transform:none;letter-spacing:0;padding:0 2px;min-height:0}
+.g2btns{display:flex;flex-wrap:wrap;gap:6px}
+#fichaTabBody{padding-bottom:84px}
+.g2dock{position:sticky;bottom:calc(-18px - env(safe-area-inset-bottom));margin:0 -14px calc(-18px - env(safe-area-inset-bottom));padding:10px 14px calc(12px + env(safe-area-inset-bottom));display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;background:linear-gradient(to top,var(--bg) 72%,rgba(242,243,245,0));z-index:4}
+.g2dock .btn{margin:0!important;min-height:50px}
+.g2dockMain{display:flex!important;align-items:center;justify-content:center;gap:8px;font-size:16px!important}
+.g2dockMain svg{width:19px;height:19px}
+.btn.g2sq{width:50px!important;padding:0!important;display:flex!important;align-items:center;justify-content:center;background:var(--card)!important;color:var(--tx)!important;border:0!important}
+.btn.g2sq svg{width:21px;height:21px}
+/* formulários em passos */
+.g2passos .v100panel{display:none}
+.g2passos .v100panel.g2passoOn{display:block}
+.g2passos .v100formHero .sub,.g2passos .v100panelSub,.g2passos .v100hint{display:none}
+.g2passos #mPecasData+.sub{display:none}
+.g2passoBar{margin:4px 2px 12px}
+.g2passoSeg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px}
+.g2passoSeg i{height:5px;border-radius:3px;background:var(--bord);cursor:pointer}
+.g2passoSeg i.on{background:var(--ac)}
+.g2passoTx{font-size:14px;color:var(--tx2);font-weight:600;margin-top:8px}
+.g2passoNav{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;margin:12px 0 4px}
+.g2passoNav .btn{margin:0!important;min-height:50px}
+.g2passoNav .btn.sec{padding:0 18px}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -1015,12 +1154,12 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <div class="hbtns"><button class="hbtn" id="hbRobo" style="position:relative" onclick="abrirRobo()" title="Robô do km">📸</button> <button class="hbtn" onclick="openCfg()">⚙️</button></div>
 </header>
 <main id="main"></main>
-<nav>
-<button id="nb0" class="on" onclick="go(0)"><span class="ic">🚗</span>Frota</button>
-<button id="nb1" onclick="go(1)"><span class="ic">🔧</span>Manutenção</button>
-<button id="nb2" onclick="go(2)"><span class="ic">📄</span>Contrato</button>
-<button id="nb3" onclick="go(3)"><span class="ic">📚</span>Histórico</button>
-<button id="nb4" onclick="go(4)"><span class="ic">📝</span>Observações</button>
+<nav class="g2nav">
+<button id="nbHoje" class="on" onclick="go(5)"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></span>Hoje</button>
+<button id="nbFrota" onclick="FROTA_F='todos';BUSCA_F='';go(0)"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16v-5l2-5h10l2 5v5"/><path d="M3 16h18v3H3z"/><circle cx="7.5" cy="13.2" r=".7" fill="currentColor"/><circle cx="16.5" cy="13.2" r=".7" fill="currentColor"/></svg></span>Frota</button>
+<button id="nbLancar" class="g2plus" onclick="abrirLancar()" aria-label="Lançar"><span class="g2plusB"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
+<button id="nbHist" onclick="go(3)"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg></span>Histórico</button>
+<button id="nbMais" onclick="go(6)"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="19" cy="12" r="1.4" fill="currentColor"/></svg></span>Mais</button>
 </nav>
 <div id="toast"></div>
 
@@ -1038,7 +1177,7 @@ details.v99details>summary:active,.v102settings>details>summary:active{backgroun
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=180; var APP_DATE='07/10/2026';
+var APP_VER=181; var APP_DATE='07/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -1583,7 +1722,7 @@ function _regMaisNovo(a,b){if(!a)return b;if(!b)return a;var aa=_regAt(a),bb=_re
 /* Exclusão normal é definitiva contra cópias antigas/offline. A única exceção é uma
    restauração EXPLÍCITA de backup, marcada com restauradoEm posterior ao túmulo. */
 function _tombVence(apagados,id,obj){var t=Number(apagados&&apagados[id])||0;if(!t)return false;return !(Number(obj&&obj.restauradoEm)>t)}
-var CARRO_CAMPOS_EDIT=['nome','modeloCRLV','motor','motorCodigo','ano','chassi','renavam','cor','potencia','combustivel','proprietario','locadorId','codigoRadio','motorista','status','semanalPadrao','caucaoPadrao','proximasTrocas','contratoVigenteId','procLeilao','procFinanciado','procObs','emVenda','meuCarro','oleoTipo','oleoIntervalo','correiaIntervalo','proxOleoKm','proxOleoManual','temCorreia','proxCorreiaKm','proxCorreiaManual','sincronismoOrigem','sincronismoRegra','sincronismoConfirmadoEm'];
+var CARRO_CAMPOS_EDIT=['nome','modeloCRLV','motor','motorCodigo','ano','chassi','renavam','cor','potencia','combustivel','proprietario','locadorId','codigoRadio','motorista','status','semanalPadrao','caucaoPadrao','proximasTrocas','contratoVigenteId','procLeilao','procFinanciado','procObs','emVenda','meuCarro','oleoTipo','oleoIntervalo','correiaIntervalo','proxOleoKm','proxOleoManual','temCorreia','proxCorreiaKm','proxCorreiaManual','sincronismoOrigem','sincronismoRegra','sincronismoConfirmadoEm','oficinaDesde','oficinaOnde'];
 function _garanteCampoAt(c){if(!c)return {};if(!c._campoAt||typeof c._campoAt!=='object'){c._campoAt={_legacy:Number(c.editadoEm)||0}}else if(c._campoAt._legacy===undefined)c._campoAt._legacy=Number(c.editadoEm)||0;return c._campoAt}
 function _campoAtCarro(c,k){var m=c&&c._campoAt;if(m&&typeof m==='object')return Number(m[k])||Number(m._all)||Number(m._legacy)||0;return Number(c&&c.editadoEm)||0}
 /* v162: ROBÔ DO KM (WhatsApp) — área ISOLADA da nuvem.
@@ -1602,7 +1741,7 @@ function _aplicarRobo(){
   if(ref){var dd=dAt?Math.max(1,(Date.parse(l.data)-Date.parse(dAt))/864e5):60;if(km<ref-100||km>ref+1000*dd+5000)return}
   if(l.data>dAt||(l.data===dAt&&km>(Number(c.kmUltima)||0))){c.kmUltima=km;c.kmUltimaData=l.data;_garanteCampoAt(c).kmUltima=Date.now();mud++}
  });
- if(mud){try{save()}catch(e){}try{if(TAB===0||TAB===3||TAB===4)keepScreenStill(render)}catch(e){}}
+ if(mud){try{save()}catch(e){}try{if(TAB===0||TAB===3||TAB===4||TAB===5||TAB===6)keepScreenStill(render)}catch(e){}}
  return mud;
 }
 /* km rodados por dia, pelas manutenções/leituras do último ano (sem chute: precisa de 2 pontos com 20+ dias) */
@@ -1631,7 +1770,7 @@ function _roboRisco(pk){
  if(dias!==null&&dias>=45)nivel=Math.max(nivel,1);if(!dt)nivel=Math.max(nivel,1);
  return {km:km,dt:dt,dias:dias,kmDia:kd,kdFrota:kdFrota,est:est,estimado:est!==km,fo:fo,fc:fc,nivel:nivel};
 }
-function _roboElegivel(c){return !!(c&&c.status==='ativo'&&String(c.motorista||'').trim()&&!c.emVenda)}
+function _roboElegivel(c){return !!(c&&c.status==='ativo'&&String(c.motorista||'').trim()&&!c.emVenda&&!c.oficinaDesde)}
 function _roboTelContrato(c){var ct=c&&c.contratoVigenteId&&S.contratos[c.contratoVigenteId];return (ct&&ct.locatario&&ct.locatario.tel)||''}
 /* Exporta para a área do robô, campo a campo (nunca sobrescreve o liga/desliga nem o número que o Hudson digitou). */
 function _roboSync(){
@@ -2103,7 +2242,7 @@ function aplicarSnapshot(v){
        recebido da nuvem não pode ser desfeito por ultTrocas órfã presente no cache local. */
     var recMerge=0;try{recMerge=recalcTudoSilencioso(true)}catch(e){}
     if(add>0||recMerge>0||base===local||_saveQueued||GSYNC.localDirty||_gBusinessSig(S)!==_gBusinessSig(v)){_saveQueued=false;S.rev=Date.now();S.dev=DEV;_gSetDirty(true);_refSetSeguro(S,'primeiro-merge')}else{GSYNC.remoteLast=v;_gSetDirty(false)}
-    if(_gBusinessSig(S)!==_sigAntes&&(TAB===0||TAB===3||TAB===4))keepScreenStill(render);
+    if(_gBusinessSig(S)!==_sigAntes&&(TAB===0||TAB===3||TAB===4||TAB===5||TAB===6))keepScreenStill(render);
     setTimeout(function(){atualizarFipe()},2500);
     return;
    }
@@ -2115,7 +2254,7 @@ function aplicarSnapshot(v){
     var recMerge=0;try{recMerge=recalcTudoSilencioso(true)}catch(e){}
     if(add>0||recMerge>0){S.rev=Date.now();S.dev=DEV;_gSetDirty(true);_refSetSeguro(S,'merge-remoto')}else if(_gBusinessSig(S)===_gBusinessSig(v)){GSYNC.remoteLast=v;_gSetDirty(false)}
     var _mudouVisual=_gBusinessSig(S)!==_sigAntes;
-    if(_mudouVisual&&(TAB===0||TAB===3||TAB===4))render();
+    if(_mudouVisual&&(TAB===0||TAB===3||TAB===4||TAB===5||TAB===6))render();
     try{if(_mudouVisual&&window._fichaPk&&document.getElementById('ovSheet').classList.contains('open')&&!document.getElementById('ovSheet2').classList.contains('open'))ficha(window._fichaPk)}catch(e){}};
    if(digitando()){_filaSnapshot(v)}else keepScreenStill(adota);
 }
@@ -2290,10 +2429,10 @@ setInterval(checkUpdate,15*60*1000);
 </script>
 <script>
 /* ===================== TELAS ===================== */
-var TAB=0,BUSCA_H='';
+var TAB=5,BUSCA_H='';
 function go(t){
  var mudou=TAB!==t;if(mudou)_gestaoFormDirty=false;TAB=t;
- for(var i=0;i<5;i++)document.getElementById('nb'+i).classList.toggle('on',i===t);
+ var _nbm={5:'nbHoje',0:'nbFrota',3:'nbHist',6:'nbMais',4:'nbMais'};['nbHoje','nbFrota','nbHist','nbMais'].forEach(function(id){var e=document.getElementById(id);if(e)e.classList.toggle('on',_nbm[t]===id)});
  window.scrollTo(0,0);render();
  if(mudou){var m=document.getElementById('main');if(m){m.classList.remove('v102enter');void m.offsetWidth;m.classList.add('v102enter')}}
 }
@@ -2301,9 +2440,11 @@ function render(){
  var _sy=0;try{_sy=window.scrollY||0}catch(e){}
  var m=document.getElementById('main');
  if(!S){m.innerHTML='<div class="card"><div class="tit">Conectando…</div><div class="sub">Aguardando dados da nuvem.</div></div>';return}
- if(TAB===0)m.innerHTML=vFrota();
- else if(TAB===1)m.innerHTML=vManut();
- else if(TAB===2){m.innerHTML=vContrato();setTimeout(aplicarMascarasContrato,30);}
+ if(TAB===5)m.innerHTML=vHoje();
+ else if(TAB===6)m.innerHTML=vMais();
+ else if(TAB===0){m.innerHTML=vFrota();try{if(BUSCA_F){var _fb=document.getElementById('fBusca');if(_fb){_fb.value=BUSCA_F;fAplica()}}}catch(e){}}
+ else if(TAB===1){m.innerHTML=vManut();setTimeout(_g2Passos,0);}
+ else if(TAB===2){m.innerHTML=vContrato();setTimeout(aplicarMascarasContrato,30);setTimeout(_g2Passos,0);}
  else if(TAB===3)m.innerHTML=vHistorico();
  else m.innerHTML=vObs();
  try{window.scrollTo(0,_sy)}catch(e){}
@@ -2383,13 +2524,13 @@ function plateHtml(p){return '<div class="plate"><div class="top">BRASIL</div><d
 /* ---------- FROTA ---------- */
 function semAcento(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
 function fAplica(){
- var q=((document.getElementById('fBusca')||{value:''}).value||'').trim();
+ var q=((document.getElementById('fBusca')||{value:''}).value||'').trim();BUSCA_F=q;
  var at=document.getElementById('fAten');if(at)at.style.display=q?'none':'';
  document.querySelectorAll('[data-busca]').forEach(function(el){
   el.style.display=buscaMatch(el.getAttribute('data-busca'),q)?'':'none';
  });
 }
-function vFrota(){
+function _vFrotaV180(){
  var h='<input id="fBusca" placeholder="🔎 Buscar por placa, modelo ou motorista…" oninput="fAplica()" style="margin:0 0 10px">';
  /* painel de atenção */
  var atengeral=[];
@@ -2683,7 +2824,7 @@ function grupoCatalogo(pk){
  });
  return h+'</div></details>';
 }
-function ficha(pk){window._fichaPk=pk;
+function _fichaV180(pk){window._fichaPk=pk;
  setTimeout(function(){try{varrerDocsAuto({pk:pk})}catch(e){}},300);
  var c=S.carros[pk];if(!c)return;
  var ct=c.contratoVigenteId?S.contratos[c.contratoVigenteId]:null;
@@ -2881,6 +3022,400 @@ h+='<div class="sect">Devolução do carro</div>';
  openSheet(h);
 }
 function fimPassado(iso){return iso&&iso<hoje()}
+/* ===================== v181 — NOVA INTERFACE (Hoje · Frota · + · Histórico · Mais) =====================
+   Só muda o que aparece e em que ordem. Dados, nuvem, merge e regras continuam os mesmos.
+   Semáforo do carro = os mesmos avisos de alertasCarro(): vermelho = agir, amarelo = acompanhar, sem cor = em dia.
+   Situação manual (Hudson): oficinaDesde/oficinaOnde. Oficina NÃO é aviso; só aparece na aba "Na oficina". */
+var G2I={
+ sol:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+ carro:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16v-5l2-5h10l2 5v5"/><path d="M3 16h18v3H3z"/><circle cx="7.5" cy="13.2" r=".7" fill="currentColor"/><circle cx="16.5" cy="13.2" r=".7" fill="currentColor"/></svg>',
+ mais:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+ hist:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>',
+ pontos:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="19" cy="12" r="1.4" fill="currentColor"/></svg>',
+ chev:'<svg class="g2chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
+ chave:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></svg>',
+ km:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18a9 9 0 1 1 16 0"/><path d="M12 13l4-4"/></svg>',
+ doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4M9 13h6M9 17h6"/></svg>',
+ nota:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12l-4 4H4z"/><path d="M16 20v-4h4M8 9h8M8 13h5"/></svg>',
+ cam:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
+ troca:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg>',
+ tag:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="7.5" r="1.3"/></svg>',
+ din:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>',
+ robo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9.5 16h5"/></svg>',
+ eng:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>',
+ pare:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8 8l8 8"/></svg>',
+ pessoa:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>',
+ ofi:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V9l9-6 9 6v12"/><path d="M7 21v-7h10v7M7 17h10"/></svg>',
+ msg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>',
+ busca:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'
+};
+var FROTA_F='todos',BUSCA_F='',HOJE_TODAS=false,HOJE_ACOMP=false,G2AL=null;
+/* avisos calculados uma vez por tela (a Frota pergunta várias vezes pelo mesmo carro) */
+function _g2Al(c){if(G2AL&&G2AL.has(c))return G2AL.get(c);var a=alertasCarro(c);if(G2AL)G2AL.set(c,a);return a}
+function _g2Pk(c){return normPlaca(c.placa)}
+function _g2Cat(t){t=String(t||'');return /^🛢/.test(t)?'oleo':/^⚙/.test(t)?'correia':/^(🔥|🧯)/.test(t)?'gnv':/^📄/.test(t)?'doc':/^📝/.test(t)?'obs':'km'}
+function _g2Km(c){return Number(c.kmUltima||c.kmAtual)||0}
+/* texto curto de um aviso (o texto longo continua igual no resto do app) */
+function _g2Curto(c,a){
+ var t=String(a.t||''),k=_g2Cat(t),km=_g2Km(c);
+ if(k==='oleo'){var f=(Number(c.proxOleoKm)||0)-km;return f<=0?'Óleo vencido · passou '+fmtKm(-f)+' km':'Óleo · faltam '+fmtKm(f)+' km'}
+ if(k==='correia'){var f2=(Number(c.proxCorreiaKm)||0)-km;return f2<=0?'Correia vencida':'Correia · faltam '+fmtKm(f2)+' km'}
+ if(k==='doc'){var ex=(t.match(/exerc[ií]cio (\d{4})/)||[])[1];return 'CRLV '+(ex?ex+' ':'')+'atrasado'}
+ if(k==='gnv'){if(/Requalifica/i.test(t))return /VENCIDA/.test(t)?'Cilindro do GNV vencido':'Cilindro do GNV vence este ano';return 'Vistoria do GNV atrasada'}
+ if(k==='obs')return t.replace(/^📝\s*/,'');
+ if(/MENOR que o último km/.test(t))return 'Km da manutenção a conferir';
+ if(/Foto do painel com km/.test(t))return 'Foto do km para conferir';
+ if(/NÃO mandou a foto/.test(t))return 'Não mandou a foto do km';
+ if(/confirme o número/.test(t))return 'Robô: confirmar número do motorista';
+ return t.replace(/^\S+\s/,'').slice(0,60);
+}
+function _g2Ativo(c){return c&&c.status!=='pessoal'}
+/* semáforo: 'red' agir · 'amb' acompanhar · 'ok' em dia */
+function g2Nivel(c){var al=_g2Al(c);if(al.some(function(a){return a.n==='red'}))return 'red';return al.length?'amb':'ok'}
+function g2Nota(c){var s=0,km=_g2Km(c);_g2Al(c).forEach(function(a){s+=a.n==='red'?3:1});
+ var f=(Number(c.proxOleoKm)||0)-km;if(c.proxOleoKm&&km&&f<=2000)s+=Math.max(0,(2000-f)/2000);return s}
+function g2OficinaDias(c){var d=c&&c.oficinaDesde;if(!d||!/^\d{4}-\d{2}-\d{2}$/.test(d))return 0;return Math.max(1,diasEntre(d,hoje())+1)}
+/* situação manual do carro: na oficina / parado pronto / alugado / pessoal / compra e venda */
+function g2Situacao(c){
+ if(c.oficinaDesde){var n=g2OficinaDias(c);return {k:'oficina',t:'Na oficina há '+n+' dia'+(n>1?'s':'')+(c.oficinaOnde?' · '+c.oficinaOnde:''),curto:'Oficina · '+n+' dia'+(n>1?'s':'')}}
+ if(c.status==='parado')return {k:'pronto',t:'Parado · pronto para alugar',curto:'Pronto para alugar'};
+ if(c.status==='pessoal')return {k:'pessoal',t:'Uso pessoal',curto:'Pessoal'};
+ if(c.status==='venda'||c.emVenda)return {k:'venda',t:'Compra e venda',curto:'Compra e venda'};
+ return {k:'alugado',t:c.motorista?'Alugado':'Sem motorista',curto:''};
+}
+function _g2Dot(n){return '<span class="g2dot g2dot-'+n+'"></span>'}
+function g2Row(c){
+ var pk=_g2Pk(c),n=g2Nivel(c),al=_g2Al(c),si=g2Situacao(c);
+ var reds=al.filter(function(a){return a.n==='red'}),lst=reds.length?reds:al;
+ var st='';
+ var _lb=lst.length?_g2Curto(c,lst[0]):'';if(_lb.length>27&&_lb.indexOf(' · ')>0)_lb=_lb.split(' · ')[0];
+ if(lst.length)st='<span class="g2st g2st-'+n+'">'+_g2Dot(n)+esc(_lb)+(lst.length>1?' <i>+'+(lst.length-1)+'</i>':'')+'</span>';
+ var sit=si.curto?'<span class="g2sit g2sit-'+si.k+'">'+esc(si.curto)+'</span>':'';
+ var db=semAcento(fmtPlaca(c.placa)+' '+c.placa+' '+tituloCarro(c)+' '+c.nome+' '+(c.motorista||''));
+ return '<div class="g2row tap" data-busca="'+esc(db)+'" onclick="ficha(\''+pk+'\')">'+plateHtml(c.placa)+
+  '<div class="g2rowTx"><div class="g2t">'+esc(tituloCarro(c))+'</div><div class="g2s">'+(c.motorista?esc(primNome(c.motorista)):'sem motorista')+sit+'</div>'+st+'</div>'+G2I.chev+'</div>';
+}
+/* ---------- HOJE ---------- */
+function _g2Data(){var d=new Date(),ds=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];return ds[d.getDay()]+', '+d.getDate()+' de '+MESES[d.getMonth()]}
+function vHoje(){G2AL=new Map();try{return _vHoje()}finally{G2AL=null}}
+function _vHoje(){
+ var cs=carrosOrdenados().filter(_g2Ativo),red=[],amb=[],ok=[];
+ cs.forEach(function(c){var n=g2Nivel(c);(n==='red'?red:n==='amb'?amb:ok).push(c)});
+ /* tarefas: um cartão por carro; documento/GNV e foto do km sem resposta viram um cartão só */
+ var tarefas=[],grDoc=[],grFoto=[];
+ red.forEach(function(c){
+  var pk=_g2Pk(c),rs=_g2Al(c).filter(function(a){return a.n==='red'}),cats=rs.map(function(a){return _g2Cat(a.t)});
+  var soDoc=cats.every(function(k){return k==='doc'||k==='gnv'}),soFoto=rs.every(function(a){return /NÃO mandou a foto/.test(a.t)});
+  if(soDoc){grDoc.push(c);return}
+  if(soFoto){grFoto.push(c);return}
+  var oleo=rs.some(function(a){return _g2Cat(a.t)==='oleo'});
+  var prio=oleo?0:(cats.indexOf('correia')>=0?1:(cats.indexOf('km')>=0?2:3));
+  var bt='<button class="btn g2b" onclick="ficha(\''+pk+'\')">Abrir carro</button>';
+  if(oleo&&c.motorista)bt='<button class="btn ok g2b" onclick="g2CobrarOleo(\''+pk+'\')">Cobrar '+esc(primNome(c.motorista))+'</button>'+bt;
+  tarefas.push({p:prio,h:esc(tituloCarro(c))+' <span class="g2pl">'+esc(fmtPlaca(c.placa))+'</span>',tx:rs.map(function(a){return esc(_g2Curto(c,a))}).join(' · '),bt:bt});
+ });
+ if(grFoto.length===1){var c1=grFoto[0];grDoc.length;tarefas.push({p:2,h:esc(tituloCarro(c1))+' <span class="g2pl">'+esc(fmtPlaca(c1.placa))+'</span>',tx:esc(primNome(c1.motorista))+' não mandou a foto do km.',bt:'<button class="btn g2b" onclick="abrirRobo()">Abrir robô</button>'})}
+ else if(grFoto.length)tarefas.push({p:2,h:grFoto.length+' motoristas não mandaram a foto do km',tx:grFoto.map(function(c){return esc(primNome(c.motorista))}).join(', ')+'. O lembrete automático sai às 16h.',bt:'<button class="btn g2b" onclick="abrirRobo()">Abrir robô</button>'});
+ if(grDoc.length===1){var c2=grDoc[0],r2=alertasCarro(c2).filter(function(a){return a.n==='red'});tarefas.push({p:4,h:esc(tituloCarro(c2))+' <span class="g2pl">'+esc(fmtPlaca(c2.placa))+'</span>',tx:r2.map(function(a){return esc(_g2Curto(c2,a))}).join(' · '),bt:'<button class="btn g2b" onclick="ficha(\''+_g2Pk(c2)+'\')">Abrir carro</button>'})}
+ else if(grDoc.length)tarefas.push({p:4,h:grDoc.length+' carros com documento ou GNV vencido',tx:'CRLV atrasado, vistoria do GNV ou cilindro vencido.',bt:'<button class="btn g2b" onclick="FROTA_F=\'docs\';go(0)">Ver os '+grDoc.length+' carros</button>'});
+ /* lembretes gerais (sem carro) vencidos ou de hoje */
+ try{obsGerais(false).forEach(function(o){if(o.quando&&o.quando<=hoje())tarefas.push({p:3,h:'Lembrete'+(o.quando<hoje()?' vencido':' de hoje'),tx:esc(String(o.texto||'').slice(0,90)),bt:'<button class="btn g2b" onclick="go(4)">Ver observações</button>'})})}catch(e){}
+ tarefas.sort(function(a,b){return a.p-b.p});
+ var h='<div class="g2head"><div class="g2data">'+_g2Data()+'</div><div class="g2titulo">Hoje</div></div>';
+ var tot=red.length+amb.length+ok.length||1;
+ h+='<div class="g2mix" aria-hidden="true"><i class="g2bg-red" style="flex:'+red.length+'"></i><i class="g2bg-amb" style="flex:'+amb.length+'"></i><i class="g2bg-ok" style="flex:'+ok.length+'"></i></div>';
+ h+='<div class="g2leg"><span onclick="FROTA_F=\'agir\';go(0)">'+_g2Dot('red')+'<b>'+red.length+'</b> agir</span><span onclick="FROTA_F=\'acomp\';go(0)">'+_g2Dot('amb')+'<b>'+amb.length+'</b> acompanhar</span><span onclick="FROTA_F=\'ok\';go(0)">'+_g2Dot('ok')+'<b>'+ok.length+'</b> em dia</span></div>';
+ h+='<div class="g2lbl"><span>Precisa de você</span><span>'+tarefas.length+'</span></div>';
+ if(!tarefas.length)h+='<div class="g2vazio">Nada urgente hoje.</div>';
+ (HOJE_TODAS?tarefas:tarefas.slice(0,5)).forEach(function(t){
+  h+='<div class="g2task">'+'<div class="g2taskH">'+_g2Dot('red')+'<b>'+t.h+'</b></div><div class="g2taskTx">'+t.tx+'</div><div class="g2taskB">'+t.bt+'</div></div>';
+ });
+ if(!HOJE_TODAS&&tarefas.length>5)h+='<button class="g2link" onclick="HOJE_TODAS=true;render()">Ver mais '+(tarefas.length-5)+'</button>';
+ if(amb.length){
+  amb.sort(function(a,b){return g2Nota(b)-g2Nota(a)});
+  h+='<div class="g2lbl"><span>Acompanhar</span><span>'+amb.length+'</span></div><div class="g2list">';
+  (HOJE_ACOMP?amb:amb.slice(0,4)).forEach(function(c){h+=g2Row(c)});
+  h+='</div>';
+  if(!HOJE_ACOMP&&amb.length>4)h+='<button class="g2link" onclick="HOJE_ACOMP=true;render()">Ver mais '+(amb.length-4)+'</button>';
+ }
+ h+='<button class="g2quiet" onclick="FROTA_F=\'ok\';go(0)"><span><b>'+ok.length+' carro'+(ok.length===1?'':'s')+' em dia.</b> Nada a fazer.</span>'+G2I.chev+'</button>';
+ var nOf=cs.filter(function(c){return c.oficinaDesde}).length,nPr=cs.filter(function(c){return !c.oficinaDesde&&c.status==='parado'}).length;
+ if(nOf||nPr)h+='<div class="g2rodape">'+(nOf?'<span onclick="FROTA_F=\'oficina\';go(0)">'+G2I.ofi+nOf+' na oficina</span>':'')+(nPr?'<span onclick="FROTA_F=\'pronto\';go(0)">'+G2I.carro+nPr+' pronto'+(nPr>1?'s':'')+' para alugar</span>':'')+'</div>';
+ return h;
+}
+/* ---------- FROTA ---------- */
+var G2F=[['todos','Todos'],['agir','Agir'],['acomp','Acompanhar'],['ok','Em dia'],['oficina','Na oficina'],['pronto','Prontos p/ alugar'],['docs','Documentos']];
+function _g2Filtro(f,c){var n=g2Nivel(c);
+ if(f==='agir')return n==='red';if(f==='acomp')return n==='amb';if(f==='ok')return n==='ok'&&_g2Ativo(c);
+ if(f==='oficina')return !!c.oficinaDesde;if(f==='pronto')return !c.oficinaDesde&&c.status==='parado';
+ if(f==='docs')return _g2Al(c).some(function(a){var k=_g2Cat(a.t);return a.n==='red'&&(k==='doc'||k==='gnv')});
+ return true}
+function vFrota(){G2AL=new Map();try{return _vFrota()}finally{G2AL=null}}
+function _vFrota(){
+ var cs=carrosOrdenados();
+ var h='<div class="g2head g2headRow"><div class="g2titulo">Frota</div><button class="g2add" onclick="formCarro()">'+G2I.mais+'Carro</button></div>';
+ h+='<div class="g2busca">'+G2I.busca+'<input id="fBusca" placeholder="Placa, modelo ou motorista" oninput="fAplica()" autocomplete="off"></div>';
+ h+='<div class="g2chips">';
+ G2F.forEach(function(f){var q=cs.filter(function(c){return _g2Filtro(f[0],c)}).length;if(!q&&f[0]!=='todos'&&f[0]!==FROTA_F)return;
+  h+='<button class="g2chip'+(FROTA_F===f[0]?' on':'')+'" onclick="FROTA_F=\''+f[0]+'\';render()">'+(f[0]==='agir'?_g2Dot('red'):f[0]==='acomp'?_g2Dot('amb'):'')+f[1]+' <b>'+q+'</b></button>'});
+ h+='</div>';
+ var ordNivel={red:0,amb:1,ok:2},ordSit={alugado:0,oficina:1,venda:2,pronto:3,pessoal:4};
+ var lst=cs.filter(function(c){return _g2Filtro(FROTA_F,c)}).sort(function(a,b){
+  var sa=g2Situacao(a).k,sb=g2Situacao(b).k;
+  return (ordNivel[g2Nivel(a)]-ordNivel[g2Nivel(b)])||(g2Nota(b)-g2Nota(a))||((ordSit[sa]||0)-(ordSit[sb]||0))||tituloCarro(a).localeCompare(tituloCarro(b))});
+ h+='<div class="g2list" id="g2lista">';
+ if(!lst.length)h+='<div class="g2vazio" style="padding:16px">Nenhum carro aqui.</div>';
+ lst.forEach(function(c){h+=g2Row(c)});
+ h+='</div>';
+ return h;
+}
+/* ---------- MAIS ---------- */
+function vMais(){
+ var nObs=0;try{nObs=Object.keys(S.observacoes||{}).filter(function(k){return !S.observacoes[k].feito}).length}catch(e){}
+ var nRob=0;try{nRob=_roboAtrasados().length}catch(e){}
+ var it=[['nota','Observações',nObs+' pendente'+(nObs===1?'':'s'),'go(4)'],['robo','Robô do km',nRob?nRob+' sem responder hoje':'Fotos do painel e respostas','abrirRobo()'],['doc','Novo contrato de locação','Puxa os dados do carro','go(2)'],['carro','Adicionar carro novo','Placa, CRLV e motorista','formCarro()'],['eng','Configurações','Chave, backup e versão','openCfg()']];
+ var h='<div class="g2head"><div class="g2titulo">Mais</div></div><div class="g2grp">';
+ it.forEach(function(o){h+='<button class="g2opt" onclick="'+o[3]+'"><span class="g2ic">'+G2I[o[0]]+'</span><span class="g2optTx"><b>'+o[1]+'</b><small>'+o[2]+'</small></span>'+G2I.chev+'</button>'});
+ h+='</div><div class="g2ver">GuimasCar Gestão · v'+APP_VER+' · '+APP_DATE+'</div>';
+ return h;
+}
+/* ---------- LANÇAR (+) ---------- */
+function abrirLancar(){
+ openSheet('<div class="g2sheetH">Lançar</div><div class="g2grp">'+
+  _g2Opt('chave','Manutenção','Peças, mão de obra e dias parado','closeSheet(2);go(1)')+
+  _g2Opt('km','Quilometragem','Escolha o carro e digite o km','g2EscolherCarro(\'km\')')+
+  _g2Opt('doc','Contrato de locação','Puxa os dados do carro','closeSheet(2);go(2)')+
+  _g2Opt('nota','Observação','Geral ou de um carro','closeSheet(2);obsNova()')+
+  _g2Opt('ofi','Carro na oficina','Marcar entrada ou saída','g2EscolherCarro(\'ofi\')')+
+ '</div>',2);
+}
+function _g2Opt(ic,t,s,on,perigo){return '<button class="g2opt'+(perigo?' g2perigo':'')+'" onclick="'+on+'"><span class="g2ic">'+G2I[ic]+'</span><span class="g2optTx"><b>'+t+'</b><small>'+s+'</small></span>'+G2I.chev+'</button>'}
+function g2EscolherCarro(acao){
+ var h='<div class="g2sheetH">'+(acao==='km'?'Quilometragem de qual carro?':'Qual carro?')+'</div><div class="g2grp">';
+ carrosOrdenados().filter(_g2Ativo).forEach(function(c){var pk=_g2Pk(c);
+  h+='<div class="g2row tap" onclick="'+(acao==='km'?'kmRapido(\''+pk+'\')':'g2Oficina(\''+pk+'\')')+'">'+plateHtml(c.placa)+'<div class="g2rowTx"><div class="g2t">'+esc(tituloCarro(c))+'</div><div class="g2s">'+(c.motorista?esc(primNome(c.motorista)):'sem motorista')+(acao==='km'&&_g2Km(c)?' · '+fmtKm(_g2Km(c))+' km':'')+'</div></div>'+G2I.chev+'</div>'});
+ openSheet(h+'</div>',2);
+}
+/* ---------- SITUAÇÃO: NA OFICINA ---------- */
+function g2Oficina(pk){
+ var c=S.carros[pk];if(!c)return;var na=!!c.oficinaDesde;
+ openSheet('<div class="g2sheetH">'+esc(tituloCarro(c))+' · '+esc(fmtPlaca(c.placa))+'</div>'+
+  '<div class="sub" style="margin:0 2px 12px">'+(na?'Está na oficina desde '+dataBR(c.oficinaDesde)+' ('+g2OficinaDias(c)+' dia'+(g2OficinaDias(c)>1?'s':'')+').':(c.status==='parado'?'Parado e pronto para alugar.':'Rodando com o motorista.'))+'</div>'+
+  '<div class="g2box"><label>Entrou na oficina em</label><input type="date" id="g2OfDesde" value="'+esc(c.oficinaDesde||hoje())+'" max="'+hoje()+'">'+
+  '<label>Onde / com quem <span class="v102optional">opcional</span></label><input id="g2OfOnde" value="'+esc(c.oficinaOnde||'')+'" placeholder="Vinícius, retífica, borracheiro…">'+
+  '<button class="btn ok" onclick="g2SalvarOficina(\''+pk+'\',true)">'+(na?'Salvar':'Marcar como na oficina')+'</button></div>'+
+  (na?'<button class="btn sec" onclick="g2SalvarOficina(\''+pk+'\',false)">Saiu da oficina'+(c.status==='parado'?' · pronto para alugar':'')+'</button>':'')+
+  '<div class="sub" style="margin:10px 2px 0">Carro na oficina não gera aviso. Ele aparece na aba “Na oficina” da Frota e o robô não pede foto do km enquanto ele estiver lá.</div>',2);
+}
+function g2SalvarOficina(pk,entrar){
+ var c=S.carros[pk];if(!c)return;
+ if(entrar){var d=(document.getElementById('g2OfDesde')||{}).value||hoje();if(d>hoje()){toast('A data não pode ser no futuro');return}
+  c.oficinaDesde=d;c.oficinaOnde=String((document.getElementById('g2OfOnde')||{}).value||'').trim()}
+ else{c.oficinaDesde='';c.oficinaOnde=''}
+ _touchCarro(c,['oficinaDesde','oficinaOnde']);save();closeSheet(2);
+ toast(entrar?'Marcado: na oficina':'Saiu da oficina');
+ try{render()}catch(e){}
+ try{if(window._fichaPk===pk&&document.getElementById('ovSheet').classList.contains('open'))ficha(pk)}catch(e){}
+ try{_roboSync()}catch(e){}
+}
+/* ---------- COBRAR TROCA DE ÓLEO (abre o WhatsApp com a mensagem pronta; quem envia é você) ---------- */
+function g2CobrarOleo(pk){
+ var c=S.carros[pk];if(!c)return;
+ var ct=((typeof ROBO!=='undefined'&&ROBO&&ROBO.contatos)||{})[pk]||{},d=_telRobo(ct.tel)||_telRobo(_roboTelContrato(c));
+ if(!d){toast('Sem telefone do motorista. Coloque no robô do km ou no contrato.');return}
+ if(d.length===10&&/[6-9]/.test(d.charAt(2)))d=d.slice(0,2)+'9'+d.slice(2);
+ var km=_g2Km(c),f=(Number(c.proxOleoKm)||0)-km;
+ var msg='Olá, *'+_nomeCurto(c.motorista)+'*, '+_saudacao()+'!\n\nO *'+((c.nome||'carro')+' '+fmtPlaca(c.placa)).trim()+'* está com '+fmtKm(km)+' km e a *troca de óleo venceu'+(f<0?' há '+fmtKm(-f)+' km':'')+'*.\n\nFaça a troca o quanto antes e me mande a foto da etiqueta nova.\n\n*Guimas Car*';
+ var q='send?phone=55'+d+'&text='+encodeURIComponent(msg),saiu=false;
+ var marca=function(){if(document.hidden)saiu=true};document.addEventListener('visibilitychange',marca);
+ setTimeout(function(){document.removeEventListener('visibilitychange',marca);if(!saiu&&!document.hidden)location.href='whatsapp://'+q},1500);
+ location.href='whatsapp-smb://'+q;
+}
+/* ---------- FICHA DO CARRO ---------- */
+function novaManutPara(pk){
+ closeSheet(2);closeSheet();go(1);
+ setTimeout(function(){var s=document.getElementById('mCarro');if(s&&!s.value){s.value=pk;try{mPuxaCarro()}catch(e){}try{mRasc()}catch(e){}}},120);
+}
+function _g2Barra(nome,txt,cls,pct,cor,sub,on){
+ return '<div class="g2bar'+(on?' tap':'')+'"'+(on?' onclick="'+on+'"':'')+'><div class="g2barT"><b>'+nome+'</b><span class="'+cls+'">'+txt+'</span></div><div class="g2barL"><i style="width:'+Math.max(4,Math.min(100,pct))+'%;background:'+cor+'"></i></div>'+(sub?'<div class="g2barS">'+sub+'</div>':'')+'</div>';
+}
+function _g2Saude(c,pk){
+ var km=_g2Km(c),h='',VERM='var(--red)',AMA='var(--ac)',VERD='var(--ok)';
+ function ult(u){return u&&(u.km||u.data)?'última: '+(u.km?fmtKm(u.km)+' km':'')+(u.km&&u.data?' · ':'')+(u.data?dataBR(u.data):''):''}
+ if(c.proxOleoKm&&km){var f=c.proxOleoKm-km,iv=Number(c.oleoIntervalo)||10000;
+  h+=_g2Barra('Óleo'+(c.oleoTipo?' <small>'+esc(c.oleoTipo)+'</small>':''),f<=0?'passou '+fmtKm(-f)+' km':'faltam '+fmtKm(f)+' km',f<=0?'g2red':f<=2000?'g2amb':'',f/iv*100,f<=0?VERM:f<=2000?AMA:VERD,'troca aos '+fmtKm(c.proxOleoKm)+' km'+(ult((c.ultTrocas||{}).oleo)?' · '+ult((c.ultTrocas||{}).oleo):''),'editarProg(\''+pk+'\')')}
+ else h+=_g2Barra('Óleo',c.proxOleoKm?'sem km':'sem previsão','',4,'var(--bord)','','editarProg(\''+pk+'\')');
+ if(c.temCorreia){if(c.proxCorreiaKm&&km){var f2=c.proxCorreiaKm-km,iv2=Number(c.correiaIntervalo)||60000;
+   h+=_g2Barra('Correia dentada',f2<=0?'vencida':'faltam '+fmtKm(f2)+' km',f2<=0?'g2red':f2<=8000?'g2amb':'',f2/iv2*100,f2<=0?VERM:f2<=8000?AMA:VERD,'troca aos '+fmtKm(c.proxCorreiaKm)+' km','editarProg(\''+pk+'\')')}
+  else h+=_g2Barra('Correia dentada','sem previsão','',4,'var(--bord)','','editarProg(\''+pk+'\')')}
+ var ano=(new Date()).getFullYear(),crlvOk=!c.exercicioCRLV||parseInt(c.exercicioCRLV,10)>=ano;
+ h+=_g2Barra('Documento (CRLV)',c.exercicioCRLV?(crlvOk?'exercício '+c.exercicioCRLV+' em dia':'exercício '+c.exercicioCRLV+' atrasado'):'sem CRLV lido',crlvOk?'':'g2red',100,c.exercicioCRLV?(crlvOk?VERD:VERM):'var(--bord)','','fichaTab(\'docs\')');
+ if(semAcento(c.combustivel||'').indexOf('gnv')>=0){
+  var vOk=!c.gnvExercicio||parseInt(c.gnvExercicio,10)>=ano,rq=c.gnvRequalif||'',rqV=rq&&rq<hoje(),rqA=rq&&!rqV&&rq.slice(0,4)===String(ano);
+  var tx=!vOk?'vistoria '+c.gnvExercicio+' atrasada':(rqV?'cilindro vencido':(rqA?'cilindro vence em '+dataBR(rq):(c.gnvExercicio?'vistoria '+c.gnvExercicio+' em dia':'sem laudo lido')));
+  var bad=!vOk||rqV;h+=_g2Barra('GNV',tx,bad?'g2red':rqA?'g2amb':'',100,bad?VERM:rqA?AMA:(c.gnvExercicio?VERD:'var(--bord)'),rq&&!rqV&&!rqA?'cilindro: requalificar em '+dataBR(rq):'','fichaTab(\'docs\')');
+ }
+ return '<div class="g2saude">'+h+'</div>';
+}
+function ficha(pk){
+ window._fichaPk=pk;if(window._fichaTabPk!==pk){window._fichaTab='resumo';window._fichaTabPk=pk}
+ setTimeout(function(){try{varrerDocsAuto({pk:pk})}catch(e){}},300);
+ var c=S.carros[pk];if(!c)return;
+ var ct=c.contratoVigenteId?S.contratos[c.contratoVigenteId]:null;if(ct&&ct.tipo==='venda')ct=null;
+ var si=g2Situacao(c),km=_g2Km(c);
+ var foto=(function(){try{var l=_roboLeitura(pk);return (l&&l.data===c.kmUltimaData&&Number(l.km)===Number(c.kmUltima))}catch(e){return false}})();
+ var h='<div class="g2hero">'+plateHtml(c.placa)+'<div class="g2heroTx"><h3>'+esc(tituloCarro(c))+'</h3><div class="sub">'+(c.motorista?esc(primNome(c.motorista)):'Sem motorista')+(ct&&ct.semanal?' · R$ '+fmtBRL(ct.semanal)+'/semana':'')+'</div></div></div>';
+ h+='<div class="g2sitLinha tap g2sit-'+si.k+'" onclick="g2Oficina(\''+pk+'\')">'+(si.k==='oficina'?G2I.ofi:si.k==='alugado'?G2I.pessoa:G2I.carro)+'<span>'+esc(si.t)+'</span>'+G2I.chev+'</div>';
+ h+='<div class="g2kmL tap" onclick="kmRapido(\''+pk+'\')"><b>'+(km?fmtKm(km)+' km':'Sem km')+'</b><span>'+(c.kmUltimaData?(foto?'foto do painel · ':'')+dataBR(c.kmUltimaData):'toque para lançar')+'</span><em>atualizar</em></div>';
+ h+=_g2Saude(c,pk);
+ var outros=alertasCarro(c).filter(function(a){var k=_g2Cat(a.t);return k==='km'||k==='obs'});
+ if(outros.length){h+='<div class="g2avisos">';outros.forEach(function(a){h+='<div class="g2aviso g2aviso-'+(a.n==='red'?'red':'amb')+'">'+esc(String(a.t).replace(/^(📸|⚠️|📝)\s*/,''))+'</div>'});h+='</div>'}
+ var T=window._fichaTab||'resumo';
+ h+='<div class="g2seg" id="fichaSeg">'+[['resumo','Resumo'],['hist','Histórico'],['contrato','Contrato'],['docs','Docs']].map(function(t){return '<button class="'+(T===t[0]?'on':'')+'" onclick="fichaTab(\''+t[0]+'\')">'+t[1]+'</button>'}).join('')+'</div>';
+ h+='<div id="fichaTabBody">'+_fichaTabHtml(pk,T)+'</div>';
+ h+='<div class="g2dock"><button class="btn ok g2dockMain" onclick="novaManutPara(\''+pk+'\')">'+G2I.chave+'Lançar manutenção</button><button class="btn sec g2sq" onclick="kmRapido(\''+pk+'\')" aria-label="Atualizar km">'+G2I.cam+'</button><button class="btn sec g2sq" onclick="fichaMais(\''+pk+'\')" aria-label="Mais ações">'+G2I.pontos+'</button></div>';
+ openSheet(h);
+}
+function fichaTab(t){
+ var pk=window._fichaPk;if(!pk||!S.carros[pk])return;window._fichaTab=t;window._fichaTabPk=pk;
+ var b=document.getElementById('fichaTabBody'),sg=document.getElementById('fichaSeg');
+ if(!b||!sg){ficha(pk);return}
+ b.innerHTML=_fichaTabHtml(pk,t);
+ sg.querySelectorAll('button').forEach(function(x,i){x.classList.toggle('on',['resumo','hist','contrato','docs'][i]===t)});
+ try{if(window.growAll)growAll(b)}catch(e){}
+}
+function _g2ManRow(m){
+ return '<div class="g2row g2rowM tap" onclick="verManut(\''+m.id+'\')"><div class="g2rowTx"><div class="g2t">'+esc(periodoTexto(m.dataIni,m.dataFim))+_diasChip(m.dataIni,m.dataFim)+'</div><div class="g2s">'+esc(primNome(m.motorista))+(m.odometro>0?' · '+fmtKm(m.odometro)+' km':'')+'</div></div><div class="g2val">R$ '+fmtBRL(m.total)+'</div></div>';
+}
+function _fichaTabHtml(pk,T){
+ var c=S.carros[pk];if(!c)return '';
+ var mans=Object.keys(S.manutencoes).map(function(k){return S.manutencoes[k]}).filter(function(m){return m.carro===pk}).sort(function(a,b){return (b.dataIni||'').localeCompare(a.dataIni)||b.criadoEm-a.criadoEm});
+ var h='';
+ if(T==='resumo'){
+  var obs=obsDoCarro(pk,false);
+  h+='<div class="g2sub"><span>Observações</span><button class="g2link" onclick="obsNova(\''+pk+'\')">+ Nova</button></div>';
+  h+=obs.length?obsListaHtml(obs,true):'<div class="g2vazio">Nenhuma pendência deste carro.</div>';
+  var _oc=obsDoCarro(pk,true);if(_oc.length)h+='<details style="margin:6px 0"><summary class="sub">Concluídas ('+_oc.length+')</summary>'+obsListaHtml(_oc,true)+'</details>';
+  h+='<div class="g2sub"><span>Gastos com o carro</span></div>'+gastosCarroHtml(pk);
+  h+='<div class="g2sub"><span>Última manutenção</span>'+(mans.length>1?'<button class="g2link" onclick="fichaTab(\'hist\')">Ver todas ('+mans.length+')</button>':'')+'</div>';
+  h+=mans.length?'<div class="g2list">'+_g2ManRow(mans[0])+'</div>':'<div class="g2vazio">Nenhuma manutenção registrada.</div>';
+ }else if(T==='hist'){
+  h+='<div class="g2sub"><span>Manutenções</span><span>'+mans.length+'</span></div>';
+  h+=mans.length?'<div class="g2list">'+mans.map(_g2ManRow).join('')+'</div>':'<div class="g2vazio">Nenhuma manutenção registrada.</div>';
+  h+='<div style="height:10px"></div>'+grupoCatalogo(pk);
+  var COMPS=[['vela','Vela'],['cabos','Cabos de vela'],['embreagem','Embreagem'],['bateria','Bateria'],['alternador','Alternador'],['arranque','Arranque'],['freios','Freios (pastilha)'],['ventoinha','Ventoinha'],['radiador','Radiador'],['caixaDir','Caixa de direção'],['bombaAgua','Bomba d\'água'],['motor','Motor (cabeçote/bloco)']];
+  if(!c.temCorreia)COMPS.unshift(['comando','Corrente de comando']);
+  h+='<details class="v99details"><summary class="v99summary"><span>Histórico por componente</span><span>componentes ›</span></summary><div class="v99detailbody"><div class="sect">Componentes <span class="x" style="display:inline;padding:0 6px" onclick="editarTrocas(\''+pk+'\')">✎</span></div>';
+  COMPS.forEach(function(par){var u=(c.ultTrocas||{})[par[0]];
+   var val=(u&&(u.km||u.data)?((u.km?fmtKm(u.km)+' km':'')+(u.km&&u.data?' · ':'')+(u.data?dataBR(u.data):'')):'—');
+   var abre=(u&&u.mid&&S.manutencoes&&S.manutencoes[u.mid]);
+   h+='<div class="kv'+(abre?' tap':'')+'"'+(abre?' onclick="verManut(\''+u.mid+'\')"':'')+'><b>'+par[1]+'</b><span>'+val+(abre?' <span style="opacity:.45">›</span>':'')+'</span></div>'});
+  h+=grupoRodas(c,'pneu','Pneus')+grupoRodas(c,'amort','Amortecedores')+grupoRodas(c,'mola','Molas');
+  h+='<button class="btn mini sec" onclick="recalcTrocasUI(\''+pk+'\')">Recalcular do histórico</button></div></details>';
+ }else if(T==='contrato'){
+  var ct=c.contratoVigenteId?S.contratos[c.contratoVigenteId]:null;if(ct&&ct.tipo==='venda')ct=null;
+  var vendas=Object.keys(S.contratos).map(function(k){return S.contratos[k]}).filter(function(x){return x.carro===pk&&x.tipo==='venda'});
+  var anteriores=Object.keys(S.contratos).map(function(k){return S.contratos[k]}).filter(function(x){return x.carro===pk&&x.status!=='vigente'&&x.tipo!=='venda'}).sort(function(a,b){return (b.encerradoEm||'').localeCompare(a.encerradoEm||'')});
+  h+='<div class="g2sub"><span>Contrato vigente</span></div>';
+  if(ct){
+   h+='<div class="card" style="margin:0 0 8px"><div class="tit">'+esc(ct.locatario.nome)+'</div>'+
+    '<div class="sub">R$ '+fmtBRL(ct.semanal)+'/semana · caução R$ '+fmtBRL(ct.caucao)+'</div>'+
+    '<div class="sub">'+dataBR(ct.inicio)+' → '+dataBR(ct.fim)+(fimPassado(ct.fim)?' · renova sozinho':'')+'</div>'+docBtns(ct)+
+    (ct.origem==='gerado'?'<button class="btn mini sec" onclick="editarContratoVigente(\''+ct.id+'\')">Corrigir contrato</button>':'')+
+    (ct.ultimaCorrecaoEm?'<div class="sub" style="margin:5px 0 2px">Última correção: '+dataBR(ct.ultimaCorrecaoData||'')+(ct.pdfDesatualizadoEm?' · PDF anterior à correção':'')+'</div>':'')+
+    '</div><div class="g2grp">'+_g2Opt('troca','Levar motorista para outro carro','O contrato vai junto','prepararTransferenciaContrato(\''+pk+'\')')+_g2Opt('pare','Encerrar e trocar motorista','Pede confirmação','trocarMotorista(\''+pk+'\')',true)+'</div>';
+  }else h+='<div class="g2vazio">Sem contrato vigente.</div><button class="btn ok" onclick="novoContratoPara(\''+pk+'\')">Criar contrato para este carro</button>';
+  if(anteriores.length){
+   h+='<details class="v99details"><summary class="v99summary"><span>Contratos anteriores</span><span>'+anteriores.length+' ›</span></summary><div class="v99detailbody">';
+   anteriores.forEach(function(x){h+='<div class="card" style="margin:0 0 6px"><div class="tit" style="font-size:14px">'+esc(x.locatario.nome)+'</div><div class="sub">'+dataBR(x.inicio)+' → '+dataBR(x.fim)+(x.encerradoEm?' · encerrado em '+dataBR(x.encerradoEm):'')+(x.transferidoParaCarro?' · transferido para '+esc(fmtPlaca(x.transferidoParaCarro)):'')+'</div>'+docBtns(x)+
+    (x.transferidoParaCarro?'':'<button class="btn mini ok" onclick="reativarContrato(\''+x.id+'\')">Reativar contrato</button>')+'<button class="btn mini red" onclick="excluirContrato(\''+x.id+'\')">Excluir contrato</button></div>'});
+   h+='</div></details>';
+  }
+  if(vendas.length){
+   h+='<div class="g2sub"><span>Compra e venda</span></div>';
+   vendas.forEach(function(v){var d=v.venda||{};
+    h+='<div class="card" style="margin:0 0 6px"><div class="tit">'+esc(v.locatario.nome||'Comprador')+'</div>'+
+     (d.valorTotal?'<div class="sub">Valor R$ '+fmtBRL(d.valorTotal)+(d.entrada?' · entrada R$ '+fmtBRL(d.entrada):'')+(d.saldo?' · saldo R$ '+fmtBRL(d.saldo):'')+'</div>':'')+
+     (d.parcela?'<div class="sub">'+(d.nParcelas||'?')+'x R$ '+fmtBRL(d.parcela)+'/semana'+(d.ultima?' + última de R$ '+fmtBRL(d.ultima):'')+'</div>':'')+
+     (v.inicio||v.fim?'<div class="sub">'+dataBR(v.inicio)+' → '+dataBR(v.fim)+'</div>':'')+
+     '<button class="btn mini ok" onclick="verVendaHtml(\''+v.id+'\')">Ler contrato</button>'+
+     (v.temPdf?'<button class="btn mini" onclick="verDoc(\''+pk+'/ct/'+v.id+'/pdf\',\'Compra e venda '+esc(fmtPlaca(pk))+'\',\''+pk+'\',\'pdf\')">Ver PDF</button><button class="btn mini sec" onclick="baixarDoc(\''+pk+'/ct/'+v.id+'/pdf\',\'Compra e venda '+esc(fmtPlaca(pk))+'.pdf\',\''+pk+'\',\'pdf\')">Baixar PDF</button><button class="btn mini sec" onclick="anexarContratoDoc(\''+pk+'\',\''+v.id+'\',\'pdf\')">Substituir PDF</button>':'<button class="btn mini sec" onclick="anexarContratoDoc(\''+pk+'\',\''+v.id+'\',\'pdf\')">Anexar PDF</button>')+
+     (v.temDocx?'<button class="btn mini sec" onclick="baixarDoc(\''+pk+'/ct/'+v.id+'/docx\',\'Compra e venda '+esc(fmtPlaca(pk))+'.docx\')">Baixar Word</button><button class="btn mini sec" onclick="anexarContratoDoc(\''+pk+'\',\''+v.id+'\',\'docx\')">Substituir Word</button>':'<button class="btn mini sec" onclick="anexarContratoDoc(\''+pk+'\',\''+v.id+'\',\'docx\')">Anexar Word</button>')+
+     '<button class="btn mini" onclick="formVenda(\''+pk+'\',\''+v.id+'\')">Editar dados</button><button class="btn mini red" onclick="excluirContrato(\''+v.id+'\')">Excluir</button></div>'});
+  }
+  var _tmsTodos=Object.keys(S.termos||{}).map(function(k){return S.termos[k]}).filter(function(t){return t.carro===pk}).sort(function(a,b){return (b.criadoEm||0)-(a.criadoEm||0)});
+  var _tms=_tmsTodos.filter(function(t){return t.status!=='revogado'}),_tmsRev=_tmsTodos.filter(function(t){return t.status==='revogado'});
+  if(_tms.length){h+='<details class="v99details"><summary class="v99summary"><span>Termos de devolução</span><span>'+_tms.length+' ›</span></summary><div class="v99detailbody">';
+   _tms.forEach(function(t){h+='<div class="card" style="margin:0 0 6px"><div class="tit" style="font-size:14px">'+esc(primNome(t.motorista||''))+' · '+esc(t.motivo||'')+'</div><div class="sub">'+dataBR(t.dataFim||'')+' · '+(t.aDevolver?'a devolver':'devido pelo motorista')+' R$ '+fmtBRL(t.saldo||0)+'</div>'+
+    '<button class="btn mini ok" onclick="gerarPdfTermo(\''+t.id+'\')">PDF profissional</button><button class="btn mini" onclick="verTermo(\''+t.id+'\')">Ver termo</button><button class="btn mini" onclick="editarTermo(\''+t.id+'\')">Editar termo</button><button class="btn mini red" onclick="excluirTermo(\''+t.id+'\')">Excluir</button></div>'});
+   h+='</div></details>'}
+  if(_tmsRev.length){h+='<details class="v99details"><summary class="v99summary"><span>Termos revogados</span><span>'+_tmsRev.length+' ›</span></summary><div class="v99detailbody">';
+   _tmsRev.forEach(function(t){h+='<div class="card" style="margin:0 0 6px;opacity:.88"><div class="tit" style="font-size:14px">'+esc(primNome(t.motorista||''))+' · '+esc(t.motivo||'')+' <span class="chip warn">revogado</span></div><div class="sub">'+dataBR(t.dataFim||'')+(t.revogadoData?' · revogado em '+dataBR(t.revogadoData):'')+' · saldo anterior R$ '+fmtBRL(t.saldo||0)+'</div><button class="btn mini sec" onclick="verTermoRevogado(\''+t.id+'\')">Ver registro</button><button class="btn mini red" onclick="excluirTermo(\''+t.id+'\')">Excluir</button></div>'});
+   h+='</div></details>'}
+  h+='<div class="g2sub"><span>Outras ações de contrato</span></div><div class="g2grp">'+
+   _g2Opt('doc','Importar contrato pronto (Word)','Arquivo .docx feito por fora','importarContratoWord(\''+pk+'\')')+
+   _g2Opt('tag','Registrar compra e venda','Reserva de domínio','formVenda(\''+pk+'\',\'\')')+
+   _g2Opt('din','Termo de devolução','Acerto de contas na saída do motorista','abrirTermo(\''+pk+'\')')+'</div>';
+ }else{
+  h+='<div class="g2sub"><span>Documento CRLV</span><span>'+(c.exercicioCRLV?'exercício '+esc(c.exercicioCRLV):'')+'</span></div>';
+  h+='<div class="g2btns">'+(c.temCrlv?'<button class="btn mini" onclick="verDoc(\''+pk+'/crlv\',\'CRLV '+esc(fmtPlaca(c.placa))+'\')">Ver PDF</button>':'')+'<button class="btn mini sec" onclick="pedirArquivo(\''+pk+'/crlv\',\'application/pdf\',\''+pk+'\')">'+(c.temCrlv?'Substituir':'Anexar')+' CRLV</button>'+
+   ((c.temCrlv||c.temGnvDoc)?'<button class="btn mini sec" onclick="varrerDocsAuto({pk:\''+pk+'\',force:true})">Reler documentos</button>':'')+'</div>';
+  if(!c.temCrlv)h+='<div class="g2vazio">Nenhum CRLV anexado.</div>';
+  if(c.temCrlv){var _fal=faltaDoCrlv(c);if(c.crlvSemTexto)h+='<div class="g2aviso g2aviso-amb">CRLV sem texto (foto ou digitalizado): o app não consegue ler. Baixe o CRLV-e digital pelo app do Detran ou preencha em Editar dados.</div>';else if(_fal.length)h+='<div class="g2aviso g2aviso-amb">Não achei no CRLV: '+esc(_fal.join(', '))+'</div>'}
+  if(semAcento(c.combustivel||'').indexOf('gnv')>=0||c.temGnvDoc){
+   h+='<div class="g2sub"><span>GNV</span></div><div class="kv"><b>Vistoria (exercício)</b><span>'+esc(c.gnvExercicio||'—')+'</span><b>Requalificação do cilindro</b><span>'+(c.gnvRequalif?dataBR(c.gnvRequalif):'—')+'</span></div>';
+   h+='<div class="g2btns">'+(c.temGnvDoc?'<button class="btn mini" onclick="verDoc(\''+pk+'/gnv\',\'Vistoria GNV '+esc(fmtPlaca(c.placa))+'\',\''+pk+'\',\'gnv\')">Ver laudo</button>':'')+'<button class="btn mini sec" onclick="pedirArquivo(\''+pk+'/gnv\',\'application/pdf\',\''+pk+'\',\'temGnvDoc\')">'+(c.temGnvDoc?'Substituir':'Anexar')+' laudo do GNV</button></div>';
+  }
+  h+='<div class="g2sub"><span>Dados do veículo</span><button class="g2link" onclick="formCarro(\''+pk+'\')">Editar</button></div><div class="kv">'+
+   '<b>Modelo (CRLV)</b><span>'+esc(c.modeloCRLV||'—')+'</span><b>Motorista atual</b><span>'+(c.motorista?esc(c.motorista):'—')+'</span><b>Ano fab/mod</b><span>'+esc(c.ano||'—')+'</span><b>Cor</b><span>'+esc(c.cor||'—')+'</span><b>Combustível</b><span>'+esc(c.combustivel||'—')+'</span><b>Potência</b><span>'+esc(c.potencia||'—')+'</span>'+
+   '<b>Chassi</b><span style="font-family:Menlo,monospace;font-size:12px">'+esc(c.chassi||'—')+'</span><b>Renavam</b><span>'+esc(c.renavam||'—')+'</span><b>Código do rádio</b><span>'+esc(c.codigoRadio||'—')+'</span>'+
+   '<b>KM de quando alugou</b><span>'+fmtKm(c.kmAtual)+' km</span><b>Proprietário</b><span>'+esc(c.proprietario||'—')+'</span>'+
+   '<b>Valor de referência</b><span>'+(c.valorRef?'R$ '+fmtBRL(c.valorRef):'—')+(c.fipeMes?' · FIPE '+esc(c.fipeMes):'')+'</span><b>Frota</b><span>'+(c.meuCarro?'Frota Hudson':'Frota Fábio')+'</span>'+
+   '<b>Leilão</b><span>'+esc(c.procLeilao||'Não')+'</span><b>Financiado</b><span>'+esc(c.procFinanciado||'Não')+'</span>'+(c.procObs?'<b>Observações</b><span>'+esc(c.procObs)+'</span>':'')+'</div>';
+ }
+ return h;
+}
+/* “⋯” da ficha: o que se usa pouco. Fecha esta folha antes, para cada ação abrir como abria antes. */
+function fichaMais(pk){
+ var c=S.carros[pk];if(!c)return;
+ var ct=c.contratoVigenteId?S.contratos[c.contratoVigenteId]:null;if(ct&&ct.tipo==='venda')ct=null;
+ var X=function(fn){return 'closeSheet(2);'+fn};
+ openSheet('<div class="g2sheetH">'+esc(tituloCarro(c))+' · '+esc(fmtPlaca(c.placa))+'</div>'+
+  '<div class="g2grp">'+_g2Opt('km','Atualizar km','Digitar o km do painel',X('kmRapido(\''+pk+'\')'))+_g2Opt('ofi',c.oficinaDesde?'Situação: na oficina':'Marcar como na oficina','Entrada, saída e dias parado',X('g2Oficina(\''+pk+'\')'))+_g2Opt('nota','Nova observação','Lembrete deste carro',X('obsNova(\''+pk+'\')'))+_g2Opt('chave','Manutenção programada','Ajustar próxima troca de óleo e correia',X('editarProg(\''+pk+'\')'))+'</div>'+
+  '<div class="g2grp">'+_g2Opt('doc','Editar dados do carro','CRLV, motor, status',X('formCarro(\''+pk+'\')'))+_g2Opt('pessoa','Motorista','Trocar o nome do motorista',X('editarMotorista(\''+pk+'\')'))+_g2Opt('troca',(c.meuCarro?'Frota Hudson':'Frota Fábio')+' · trocar','De quem é o carro',X('alternarFrota(\''+pk+'\')'))+_g2Opt('din',c.fipeM?'FIPE vinculada':'Vincular FIPE','Valor de referência',X('fipeFluxo(\''+pk+'\')'))+'</div>'+
+  '<div class="g2grp">'+(ct?_g2Opt('troca','Levar motorista para outro carro','O contrato vai junto',X('prepararTransferenciaContrato(\''+pk+'\')')):_g2Opt('doc','Criar contrato','Para este carro',X('novoContratoPara(\''+pk+'\')')))+_g2Opt('doc','Importar contrato pronto (Word)','Arquivo .docx',X('importarContratoWord(\''+pk+'\')'))+_g2Opt('tag','Registrar compra e venda','Reserva de domínio',X('formVenda(\''+pk+'\',\'\')'))+_g2Opt('din','Termo de devolução','Acerto de contas',X('abrirTermo(\''+pk+'\')'))+'</div>'+
+  (ct?'<div class="g2grp">'+_g2Opt('pare','Encerrar e trocar motorista','Pede confirmação',X('trocarMotorista(\''+pk+'\')'),true)+'</div>':''),2);
+}
+/* ---------- FORMULÁRIOS EM PASSOS (manutenção e contrato) ---------- */
+function _g2Passos(){
+ var f=document.querySelector('#main .v100form');if(!f||f.dataset.g2)return;
+ var ps=[].slice.call(f.children).filter(function(e){return e.classList&&e.classList.contains('v100panel')});
+ if(ps.length<3)return;
+ f.dataset.g2='1';f.classList.add('g2passos');
+ var nomes=ps.map(function(p){var t=p.querySelector('.v100panelTitle');return t?t.textContent:''});
+ var bar=document.createElement('div');bar.className='g2passoBar';
+ bar.innerHTML='<div class="g2passoSeg">'+ps.map(function(){return '<i></i>'}).join('')+'</div><div class="g2passoTx"></div>';
+ ps[0].parentNode.insertBefore(bar,ps[0]);
+ var nav=document.createElement('div');nav.className='g2passoNav';
+ nav.innerHTML='<button type="button" class="btn sec" data-p="-1">Voltar</button><button type="button" class="btn ok" data-p="1">Continuar</button>';
+ ps[ps.length-1].parentNode.insertBefore(nav,ps[ps.length-1].nextSibling);
+ var at=0;
+ function mostra(i){
+  at=Math.max(0,Math.min(ps.length-1,i));
+  ps.forEach(function(p,j){p.classList.toggle('g2passoOn',j===at)});
+  bar.querySelectorAll('.g2passoSeg i').forEach(function(x,j){x.classList.toggle('on',j<=at)});
+  bar.querySelector('.g2passoTx').textContent='Passo '+(at+1)+' de '+ps.length+' · '+nomes[at];
+  nav.children[0].style.display=at?'':'none';nav.style.gridTemplateColumns=at?'auto minmax(0,1fr)':'minmax(0,1fr)';
+  nav.children[1].style.display=at<ps.length-1?'':'none';
+  try{window.scrollTo(0,0)}catch(e){}
+ }
+ nav.addEventListener('click',function(e){var b=e.target.closest('button[data-p]');if(!b)return;var d=+b.dataset.p;
+  if(d>0&&at===0){var sel=f.querySelector('select');if(sel&&!sel.value){toast('Escolha o carro primeiro');return}}
+  mostra(at+d)});
+ bar.querySelectorAll('.g2passoSeg i').forEach(function(x,j){x.addEventListener('click',function(){if(j<at)mostra(j)})});
+ f._g2Mostra=mostra;mostra(0);
+}
+
 /* ===== LEITURA DE .DOCX (contrato pronto feito por fora) =====
    O Word grava o .docx como ZIP comprimido (deflate). O app só sabia ESCREVER zip sem
    compressão, então precisei ensinar a ler: acha word/document.xml dentro do zip,
@@ -4642,7 +5177,7 @@ function atualizarFipe(force){
  (function next(){
   if(i>=pend.length){
    localStorage.setItem('gestao_fipe_dia',d);
-   if(mudou){save();if(TAB===0||TAB===3)render();toast('💰 Valores FIPE do dia aplicados')}
+   if(mudou){save();if(TAB===0||TAB===3||TAB===5)render();toast('💰 Valores FIPE do dia aplicados')}
    return;
   }
   var c=S.carros[pend[i++]];
