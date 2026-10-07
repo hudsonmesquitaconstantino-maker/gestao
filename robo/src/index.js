@@ -601,6 +601,11 @@ async function http(req, env, exec) {
         pediriaNaProximaManha: pedir, semProximaTrocaOleo: semOleo, semKmRegistrado: semKm, marcaNaoReconhecida: semMarca, correiaSemProximaTroca: correiaSemKm, motoristaNovoAConfirmar: novos });
     }
     if (p[2] === 'rodar') { try { return J(await ciclo(ctx)); } catch (e) { return J({ erro: e.message }); } }   /* roda a rodada agora (mesma coisa do relógio de 15 min) */
+    if (p[2] === 'conta') {   /* situação da conta na Meta (revisão da conta, nome comercial, qualidade) */
+      const tenta = async c => { try { return await ctx.wa(c); } catch (e) { return { erro: e.message.slice(0, 300) }; } };
+      return J({ waba: await tenta(`${env.WABA_ID}?fields=name,account_review_status,business_verification_status,ownership_type,status`),
+        numero: await tenta(`${env.PHONE_NUMBER_ID}?fields=display_phone_number,verified_name,name_status,new_name_status,quality_rating,platform_type,code_verification_status,status,messaging_limit_tier,is_official_business_account`) });
+    }
     if (p[2] === 'modelos') {   /* situação das mensagens modelo na Meta */
       try { const j = await ctx.wa(`${env.WABA_ID}/message_templates?fields=name,status,category,language,rejected_reason,quality_score&limit=50`); return J(j.data || j); } catch (e) { return J({ erro: e.message }); }
     }
