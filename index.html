@@ -63,7 +63,7 @@ nav button.on{color:var(--ac)}
 .sheet .sub{margin-bottom:8px}
 #ovAsk{z-index:85}
 /* v179 teclado aberto (iPhone): sem barra de baixo; folha cabe na área visível */
-html.teclado nav{display:none!important}
+html.teclado nav,html.teclado nav.g2nav{display:none!important}
 html.teclado #toast{bottom:12px}
 html.teclado .overlay{top:var(--vvt,0px);bottom:auto;height:var(--vvh,100%)}
 html.teclado .sheet{height:calc(var(--vvh,100dvh) - 10px);border-radius:14px 14px 0 0;padding-bottom:12px}
@@ -1183,7 +1183,7 @@ nav.g2nav button.g2plus:active{transform:scale(.94)}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=185; var APP_DATE='07/10/2026';
+var APP_VER=186; var APP_DATE='07/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -8431,11 +8431,18 @@ boot();render();
    passa a ocupar só a parte visível da tela (acima do teclado), sem "flutuar" nem travar. */
 (function(){
  var vv=window.visualViewport,de=document.documentElement,foco=false,aberto=false,raf=0;
+ /* v186: no app instalado do iPhone (iOS 26) a tela inteira encolhe junto com o teclado, então
+    "altura da janela - área visível" dá ~0 e a barra de baixo subia em cima do teclado.
+    Agora: em celular (toque), campo de texto focado = teclado aberto; e a altura de referência
+    é a maior altura vista sem teclado. */
+ var toque=false;try{toque=window.matchMedia('(pointer:coarse)').matches||('ontouchstart' in window)}catch(e){}
+ var base=window.innerHeight;
  function campo(el){return !!el&&(/^(TEXTAREA|SELECT)$/.test(el.tagName)||(el.tagName==='INPUT'&&!/^(checkbox|radio|file|button|submit|reset|range|color|hidden)$/i.test(el.type||'')))||!!(el&&el.isContentEditable)}
  function aplicar(){
   raf=0;
-  var h=vv?vv.height:window.innerHeight,t=vv?Math.max(0,vv.offsetTop):0,kb=vv?Math.max(0,window.innerHeight-vv.height):0;
-  var agora=foco&&(kb>120||!vv)||kb>150;
+  if(!foco||window.innerHeight>base)base=Math.max(window.innerHeight,foco?base:0);
+  var h=vv?vv.height:window.innerHeight,t=vv?Math.max(0,vv.offsetTop):0,kb=vv?Math.max(0,base-vv.height,window.innerHeight-vv.height):0;
+  var agora=foco&&(toque||kb>120||!vv)||kb>150;
   de.style.setProperty('--vvh',Math.round(h)+'px');
   de.style.setProperty('--vvt',Math.round(t)+'px');
   if(agora!==aberto){
@@ -8447,6 +8454,7 @@ boot();render();
  function agenda(){if(!raf)raf=(window.requestAnimationFrame||setTimeout)(aplicar)}
  if(vv){vv.addEventListener('resize',agenda);vv.addEventListener('scroll',agenda)}
  window.addEventListener('resize',agenda);
+ window.addEventListener('orientationchange',function(){base=0;setTimeout(agenda,400)});
  document.addEventListener('focusin',function(e){if(campo(e.target)){foco=true;agenda();setTimeout(agenda,250)}},true);
  document.addEventListener('focusout',function(){setTimeout(function(){foco=campo(document.activeElement);agenda();setTimeout(agenda,300)},80)},true);
  aplicar();
