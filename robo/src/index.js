@@ -9,7 +9,7 @@
    sem ela, a foto é lida pela IA da própria Cloudflare).
    Este arquivo é público no GitHub: nada de segredo aqui. */
 
-const VERSAO = 'robo-km 3.12';
+const VERSAO = 'robo-km 3.13';
 const DIA = 864e5;
 
 /* ---------------- utilidades ---------------- */
@@ -417,7 +417,8 @@ async function ciclo(ctx, t = Date.now()) {
           r.enviados.push(pk + ':lembrete');
         } catch (e) {
           r.erros.push(`${pk} lembrete: ${e.message}`);
-          upd['estado/' + pk + '/lembreteDe'] = ped; upd['estado/' + pk + '/lembreteErro'] = e.message.slice(0, 200);   /* não repete a cada 15 min */
+          upd['estado/' + pk + '/lembreteErro'] = e.message.slice(0, 200);
+          if (!/não aprovado/.test(e.message)) upd['estado/' + pk + '/lembreteDe'] = ped;   /* erro de verdade: não repete. Modelo ainda em análise: tenta de novo na próxima rodada (até 20h) */
         }
       }
     }
@@ -610,7 +611,11 @@ async function http(req, env, exec) {
       const semMarca = el.filter(([, c]) => !marcaCarro(c)).map(([pk]) => pk), correiaSemKm = el.filter(([, c]) => c.temCorreia && !num(c.proxCorreiaKm)).map(([pk]) => pk);
       const novos = el.filter(([, c]) => c.novo && !c.decidido).map(([pk]) => pk);
       return J({ roboLigado: !!config.ativo, elegiveis: el.length, comNumero: com.length, ligados: lig.length, semNumero: el.filter(([, c]) => !foneEnvio(c.tel)).map(([pk]) => pk),
-        pediriaNaProximaManha: pedir, semProximaTrocaOleo: semOleo, semKmRegistrado: semKm, marcaNaoReconhecida: semMarca, correiaSemProximaTroca: correiaSemKm, motoristaNovoAConfirmar: novos });
+        pediriaNaProximaManha: pedir,
+        pedidosDeHoje: com.map(([pk, c]) => { const m = estado[pk] || {}, ped = Math.max(m.aberto ? num(m.pedidoEm) : 0, num(c.pedidoWhatsEm));
+          if (!ped || dataBRT(ped) !== dataBRT(t)) return null;
+          const foto = num(m.leituraEm) > ped ? 'foto ok' : (m.suspeita && num(m.suspeita.em) > ped ? 'foto suspeita' : (num(m.ultimaMsgEm) > ped ? 'respondeu sem foto' : 'sem resposta'));
+          return pk + ': ' + foto + (num(m.lembreteDe) === ped ? ' · lembrete enviado' : ''); }).filter(Boolean), semProximaTrocaOleo: semOleo, semKmRegistrado: semKm, marcaNaoReconhecida: semMarca, correiaSemProximaTroca: correiaSemKm, motoristaNovoAConfirmar: novos });
     }
     if (p[2] === 'rodar') { try { return J(await ciclo(ctx)); } catch (e) { return J({ erro: e.message }); } }   /* roda a rodada agora (mesma coisa do relógio de 15 min) */
     if (p[2] === 'conta') {   /* situação da conta na Meta: testa campo a campo (a Dualhook libera só alguns) */
