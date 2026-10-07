@@ -636,6 +636,9 @@ async function http(req, env, exec) {
           const foto = num(m.leituraEm) > ped ? 'foto ok' : (m.suspeita && num(m.suspeita.em) > ped ? 'foto suspeita' : (num(m.ultimaMsgEm) > ped ? 'respondeu sem foto' : 'sem resposta'));
           return pk + ': ' + foto + (num(m.lembreteDe) === ped ? ' · lembrete enviado' : ''); }).filter(Boolean), semProximaTrocaOleo: semOleo, semKmRegistrado: semKm, marcaNaoReconhecida: semMarca, correiaSemProximaTroca: correiaSemKm, motoristaNovoAConfirmar: novos });
     }
+    if (p[2] === 'trava') {   /* teste da trava: 1ª = true, 2ª = false */
+      const c = 'travas/_teste/' + Date.now(); const a = await ctx.reivindicar(c, 60e3), b = await ctx.reivindicar(c, 60e3); await ctx.put('travas/_teste', null); return J({ primeira: a, segunda: b });
+    }
     if (p[2] === 'rodar') { try { return J(await ciclo(ctx)); } catch (e) { return J({ erro: e.message }); } }   /* roda a rodada agora (mesma coisa do relógio de 15 min) */
     if (p[2] === 'conta') {   /* situação da conta na Meta: testa campo a campo (a Dualhook libera só alguns) */
       const out = {};
