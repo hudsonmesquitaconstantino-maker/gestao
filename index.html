@@ -1354,7 +1354,7 @@ body{bottom:auto!important;height:var(--appH,100vh)!important}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=204; var APP_DATE='07/10/2026';
+var APP_VER=205; var APP_DATE='07/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -8612,6 +8612,8 @@ function n3Ligado(){try{return localStorage.getItem('n3m')!=='0'}catch(e){return
 function n3Alternar(){try{localStorage.setItem('n3m',n3Ligado()?'0':'1')}catch(e){}toast(n3Ligado()?'Nova tela de manutenção ligada':'Voltou para a tela antiga de manutenção');try{render()}catch(e){}}
 function n3cLigado(){try{return localStorage.getItem('n3c')!=='0'}catch(e){return true}}
 function n3Norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[’']/g,"'").replace(/\s+/g,' ').trim()}
+/* lista de carros das telas de criação: ordem alfabética (A–Z), carros pessoais no fim */
+function n3AZ(){return Object.keys(S.carros).map(function(k){return S.carros[k]}).sort(function(a,b){var pa=(a.status==='pessoal'?1:0)-(b.status==='pessoal'?1:0);if(pa)return pa;return String(tituloCarro(a)).localeCompare(String(tituloCarro(b)),'pt-BR')||fmtPlaca(a.placa).localeCompare(fmtPlaca(b.placa))})}
 function n3Dm(iso){if(!iso)return '';var p=iso.split('-');return p[2]+'/'+p[1]+'/'+p[0].slice(2)}
 
 /* ---------- PASSO A PASSO (serve para manutenção e contrato) ---------- */
@@ -8722,7 +8724,7 @@ function n3DesenhaCarro(){
 }
 function n3ListaCarros(){
  var el=document.getElementById('n3Lista');if(!el)return;var q=n3Norm(N3.busca).replace(/[^a-z0-9 ]/g,'');
- var cs=carrosOrdenados().filter(function(c){if(!q)return true;var t=n3Norm(c.placa+' '+tituloCarro(c)+' '+(c.motorista||'')).replace(/[^a-z0-9 ]/g,'');return q.split(' ').every(function(w){return t.indexOf(w)>=0||t.replace(/ /g,'').indexOf(w)>=0})});
+ var cs=n3AZ().filter(function(c){if(!q)return true;var t=n3Norm(c.placa+' '+tituloCarro(c)+' '+(c.motorista||'')).replace(/[^a-z0-9 ]/g,'');return q.split(' ').every(function(w){return t.indexOf(w)>=0||t.replace(/ /g,'').indexOf(w)>=0})});
  el.innerHTML=cs.map(function(c){var pk=normPlaca(c.placa);
   return '<button class="n3row" onclick="n3Escolher(\''+pk+'\')">'+plateHtml(c.placa)+'<span class="n3rowTx"><b>'+esc(tituloCarro(c))+'</b><small>'+(c.motorista?esc(primNome(c.motorista)):(c.status==='pessoal'?'pessoal':'sem motorista'))+'</small></span><span class="n3chev">›</span></button>'}).join('')||'<div class="n3vazio">Nenhum carro encontrado</div>';
 }
@@ -8879,9 +8881,9 @@ function n3cDesenhaCarro(){
 }
 function n3cListaCarros(){
  var el=document.getElementById('n3cLista');if(!el)return;var q=n3Norm(N3C.busca).replace(/[^a-z0-9 ]/g,'');
- var cs=carrosOrdenados().filter(function(c){if(c.status==='pessoal')return false;if(!q)return true;var t=n3Norm(c.placa+' '+tituloCarro(c)+' '+(c.motorista||'')).replace(/[^a-z0-9 ]/g,'');return q.split(' ').every(function(w){return t.indexOf(w)>=0||t.replace(/ /g,'').indexOf(w)>=0})});
+ var cs=n3AZ().filter(function(c){if(c.status==='pessoal')return false;if(!q)return true;var t=n3Norm(c.placa+' '+tituloCarro(c)+' '+(c.motorista||'')).replace(/[^a-z0-9 ]/g,'');return q.split(' ').every(function(w){return t.indexOf(w)>=0||t.replace(/ /g,'').indexOf(w)>=0})});
  /* parados (prontos para alugar) primeiro: é para eles que se faz contrato novo */
- cs.sort(function(a,b){var pa=(a.status==='parado'&&!a.oficinaDesde)?0:1,pb=(b.status==='parado'&&!b.oficinaDesde)?0:1;return pa-pb});
+ /* v205: ordem alfabética normal (Hudson, 08/10/2026) */
  el.innerHTML=cs.map(function(c){var pk=normPlaca(c.placa),livre=c.status==='parado'&&!c.oficinaDesde;
   return '<button class="n3row" onclick="n3cEscolher(\''+pk+'\')">'+plateHtml(c.placa)+'<span class="n3rowTx"><b>'+esc(tituloCarro(c))+'</b><small>'+(livre?'<span class="n3ok">parado · pronto para alugar</span>':c.oficinaDesde?'na oficina':(c.motorista?'com '+esc(primNome(c.motorista)):esc(c.status||'')))+'</small></span><span class="n3chev">›</span></button>'}).join('')||'<div class="n3vazio">Nenhum carro encontrado</div>';
 }
