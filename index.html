@@ -1293,8 +1293,10 @@ html.teclado .n3nav{visibility:hidden;pointer-events:none}
    Antes: a página inteira rolava e a barra de baixo era "colada" na tela por cima dela; no iPhone
    (app instalado) isso faz a barra tremer/andar ao rolar. Agora: cabeçalho em cima, barra embaixo,
    e SÓ o miolo rola. A barra de baixo faz parte da moldura da tela e não tem como se mexer. */
-html,body{height:100%!important;overflow:hidden!important;overscroll-behavior:none!important}
-body{display:flex!important;flex-direction:column!important;padding-bottom:0!important;position:fixed!important;inset:0!important;width:100%!important;top:0!important}
+html{height:100%!important;overflow:hidden!important;overscroll-behavior:none!important}
+/* v202: no app instalado do iPhone, "altura 100%" é MENOR que a tela (sobrava uma faixa cinza embaixo da barra).
+   O corpo agora é preso nos 4 cantos da tela (topo 0 e fundo 0), sem altura fixa — igual a barra antiga, que encostava no fim. */
+body{display:flex!important;flex-direction:column!important;padding-bottom:0!important;position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;height:auto!important;min-height:0!important;width:auto!important;overflow:hidden!important;overscroll-behavior:none!important}
 body>header{position:relative!important;top:auto!important;flex:0 0 auto;z-index:40}
 main#main{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;padding-bottom:20px!important}
 nav.g2nav{position:relative!important;bottom:auto!important;flex:0 0 auto;z-index:40}
@@ -1308,6 +1310,10 @@ nav.g2nav{position:relative!important;bottom:auto!important;flex:0 0 auto;z-inde
 .sheetwrap>.g2dock{position:relative!important;bottom:auto!important;margin:0!important;flex:0 0 auto;padding:10px 14px calc(10px + env(safe-area-inset-bottom))!important;background:var(--card)!important;border-top:.5px solid var(--bord);box-shadow:none!important;z-index:6}
 html.teclado .sheetwrap>.g2dock{display:none!important}
 html.teclado .overlay .sheetwrap{height:100%!important}
+/* v202: o miolo ocupa a largura toda (antes encolhia no meio da tela em telas com pouco conteúdo, como "Mais") */
+main#main{width:100%!important;max-width:none!important;margin:0!important;box-sizing:border-box!important;align-self:stretch!important;padding-left:max(12px,calc((100% - 640px) / 2))!important;padding-right:max(12px,calc((100% - 640px) / 2))!important}
+/* se o iPhone ainda deixar alguma sobra embaixo, ela fica da cor da barra (não aparece faixa) */
+html{background:#fff!important}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -1341,7 +1347,7 @@ html.teclado .overlay .sheetwrap{height:100%!important}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=201; var APP_DATE='07/10/2026';
+var APP_VER=202; var APP_DATE='07/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
