@@ -1293,10 +1293,11 @@ html.teclado .n3nav{visibility:hidden;pointer-events:none}
    Antes: a página inteira rolava e a barra de baixo era "colada" na tela por cima dela; no iPhone
    (app instalado) isso faz a barra tremer/andar ao rolar. Agora: cabeçalho em cima, barra embaixo,
    e SÓ o miolo rola. A barra de baixo faz parte da moldura da tela e não tem como se mexer. */
-html{height:100%!important;overflow:hidden!important;overscroll-behavior:none!important}
+/* v204: no app instalado do iPhone, 100vh é a ÚNICA medida que inclui a faixa de baixo da tela; e o html não pode cortar (overflow) senão o iPhone recorta a barra */
+html{height:100vh!important;overflow:visible!important;overscroll-behavior:none!important}
 /* v202: no app instalado do iPhone, "altura 100%" é MENOR que a tela (sobrava uma faixa cinza embaixo da barra).
    O corpo agora é preso nos 4 cantos da tela (topo 0 e fundo 0), sem altura fixa — igual a barra antiga, que encostava no fim. */
-body{display:flex!important;flex-direction:column!important;padding-bottom:0!important;position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;height:auto!important;min-height:0!important;width:auto!important;overflow:hidden!important;overscroll-behavior:none!important}
+body{display:flex!important;flex-direction:column!important;padding-bottom:0!important;position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;height:auto!important;min-height:0!important;width:auto!important;overflow:visible!important;overscroll-behavior:none!important}
 body>header{position:relative!important;top:auto!important;flex:0 0 auto;z-index:40}
 main#main{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;padding-bottom:20px!important}
 nav.g2nav{position:relative!important;bottom:auto!important;flex:0 0 auto;z-index:40}
@@ -1314,11 +1315,12 @@ html.teclado .overlay .sheetwrap{height:100%!important}
 main#main{width:100%!important;max-width:none!important;margin:0!important;box-sizing:border-box!important;align-self:stretch!important;padding-left:max(12px,calc((100% - 640px) / 2))!important;padding-right:max(12px,calc((100% - 640px) / 2))!important}
 /* se o iPhone ainda deixar alguma sobra embaixo, ela fica da cor da barra (não aparece faixa) */
 html{background:#fff!important}
+body{background:#F2F3F5!important}
 /* v203: no app instalado do iPhone (iOS 26) a "tela" que o navegador informa termina ~60pt antes do fim real
    quando a página não rola — por isso a barra ficava alta, com um vão embaixo. A altura do app agora é a da
    TELA do aparelho (medida no celular), e a barra encosta no fim como nos apps do iPhone. */
-body{bottom:auto!important;height:var(--appH,100%)!important}
-.overlay{bottom:auto;height:var(--appH,100%)}
+body{bottom:auto!important;height:var(--appH,100vh)!important}
+.overlay{bottom:auto;height:var(--appH,100vh)}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -1352,7 +1354,7 @@ body{bottom:auto!important;height:var(--appH,100%)!important}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=203; var APP_DATE='07/10/2026';
+var APP_VER=204; var APP_DATE='07/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -3357,7 +3359,7 @@ function vMais(){
  var it=[['nota','Observações',nObs+' pendente'+(nObs===1?'':'s'),'go(4)'],['robo','Robô do km',nRob?nRob+' sem responder hoje':'Fotos do painel e respostas','abrirRobo()'],['doc','Novo contrato de locação','Puxa os dados do carro','go(2)'],['carro','Adicionar carro novo','Placa, CRLV e motorista','formCarro()'],['eng','Configurações','Chave, backup e versão','openCfg()']];
  var h='<div class="g2head"><div class="g2titulo">Mais</div></div><div class="g2grp">';
  it.forEach(function(o){h+='<button class="g2opt" onclick="'+o[3]+'"><span class="g2ic">'+G2I[o[0]]+'</span><span class="g2optTx"><b>'+o[1]+'</b><small>'+o[2]+'</small></span>'+G2I.chev+'</button>'});
- h+='</div><div class="g2ver">GuimasCar Gestão · v'+APP_VER+' · '+APP_DATE+'</div>';
+ h+='</div><div class="g2ver">GuimasCar Gestão · v'+APP_VER+' · '+APP_DATE+'<br><small style="opacity:.6">tela '+(screen.height||0)+' · vh '+(function(){try{var d=document.createElement('div');d.style.cssText='position:fixed;top:0;height:100vh;width:1px;visibility:hidden';document.body.appendChild(d);var v=Math.round(d.getBoundingClientRect().height);d.remove();return v}catch(e){return 0}})()+' · janela '+innerHeight+' · corpo '+Math.round(document.body.getBoundingClientRect().height)+'</small></div>';
  return h;
 }
 /* ---------- LANÇAR (+) ---------- */
@@ -9115,14 +9117,10 @@ try{if(typeof TAB!=='undefined'&&(TAB===5||TAB===0)&&S)render()}catch(e){}
 (function(){
  var de=document.documentElement;
  function standalone(){try{return navigator.standalone===true||window.matchMedia('(display-mode: standalone)').matches}catch(e){return false}}
+ /* sem teclado: altura = 100vh (a tela inteira no app instalado). Com teclado: só a parte visível, para nada ficar atrás dele. */
  function fixH(){
-  var h=window.innerHeight,tec=de.classList.contains('teclado');
-  if(standalone()&&!tec){
-   var port=window.innerHeight>=window.innerWidth,sw=screen.width||0,sh=screen.height||0;
-   var tela=port?Math.max(sw,sh):Math.min(sw,sh);
-   if(tela>h&&tela-h<170)h=tela;
-  }
-  de.style.setProperty('--appH',h+'px');
+  if(de.classList.contains('teclado'))de.style.setProperty('--appH',window.innerHeight+'px');
+  else de.style.removeProperty('--appH');
  }
  window.addEventListener('resize',fixH);window.addEventListener('orientationchange',function(){setTimeout(fixH,300)});
  try{new MutationObserver(fixH).observe(de,{attributes:true,attributeFilter:['class']})}catch(e){}
