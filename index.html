@@ -1314,6 +1314,11 @@ html.teclado .overlay .sheetwrap{height:100%!important}
 main#main{width:100%!important;max-width:none!important;margin:0!important;box-sizing:border-box!important;align-self:stretch!important;padding-left:max(12px,calc((100% - 640px) / 2))!important;padding-right:max(12px,calc((100% - 640px) / 2))!important}
 /* se o iPhone ainda deixar alguma sobra embaixo, ela fica da cor da barra (não aparece faixa) */
 html{background:#fff!important}
+/* v203: no app instalado do iPhone (iOS 26) a "tela" que o navegador informa termina ~60pt antes do fim real
+   quando a página não rola — por isso a barra ficava alta, com um vão embaixo. A altura do app agora é a da
+   TELA do aparelho (medida no celular), e a barra encosta no fim como nos apps do iPhone. */
+body{bottom:auto!important;height:var(--appH,100%)!important}
+.overlay{bottom:auto;height:var(--appH,100%)}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -1347,7 +1352,7 @@ html{background:#fff!important}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=202; var APP_DATE='07/10/2026';
+var APP_VER=203; var APP_DATE='07/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -9106,6 +9111,22 @@ try{if(typeof TAB!=='undefined'&&(TAB===5||TAB===0)&&S)render()}catch(e){}
   new MutationObserver(function(){if(b.querySelector('.g2dock'))dock(b,false)}).observe(b,{childList:true,subtree:true})});
  /* ao fechar a janela, some a barra que foi para o rodapé dela */
  var oc=window.closeSheet;if(typeof oc==='function'){window.closeSheet=function(w){var r=oc.apply(this,arguments);try{var b=document.getElementById(w===2?'sheetBody2':'sheetBody');var wr=b&&b.parentNode;if(wr){[].slice.call(wr.querySelectorAll(':scope>.g2dock')).forEach(function(d){wr.removeChild(d)});wr.classList.remove('temDock')}}catch(e){}return r}}
+})();
+(function(){
+ var de=document.documentElement;
+ function standalone(){try{return navigator.standalone===true||window.matchMedia('(display-mode: standalone)').matches}catch(e){return false}}
+ function fixH(){
+  var h=window.innerHeight,tec=de.classList.contains('teclado');
+  if(standalone()&&!tec){
+   var port=window.innerHeight>=window.innerWidth,sw=screen.width||0,sh=screen.height||0;
+   var tela=port?Math.max(sw,sh):Math.min(sw,sh);
+   if(tela>h&&tela-h<170)h=tela;
+  }
+  de.style.setProperty('--appH',h+'px');
+ }
+ window.addEventListener('resize',fixH);window.addEventListener('orientationchange',function(){setTimeout(fixH,300)});
+ try{new MutationObserver(fixH).observe(de,{attributes:true,attributeFilter:['class']})}catch(e){}
+ fixH();setTimeout(fixH,500);
 })();
 
 </script>
