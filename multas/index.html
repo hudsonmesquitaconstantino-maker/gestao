@@ -2195,5 +2195,128 @@ if('serviceWorker' in navigator && location.protocol === 'https:'){
  aplicar();
 })();
 </script>
+<style id="afCss">
+/* ===================== MOLDURA FIXA (mesmo comportamento do Gestão v201–v209) =====================
+   Cabeçalho em cima, barra embaixo, e SÓ o miolo rola. Nada de tela "puxando", barra andando
+   ou teclado empurrando a tela. Somente comportamento — a aparência do app não muda. */
+html.af{height:100vh!important;overflow:visible!important;overscroll-behavior:none!important}
+html.af body{position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:auto!important;height:100vh!important;min-height:0!important;margin:0!important;padding-bottom:0!important;display:flex!important;flex-direction:column!important;overflow:visible!important;overscroll-behavior:none!important}
+html.af body>.afHead{position:relative!important;top:auto!important;flex:0 0 auto!important}
+html.af #afScroll{flex:1 1 auto;min-height:0;width:100%;box-sizing:border-box;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
+/* barra de baixo, janelas e avisos: presos à tela inteira (e não à "janela" do iPhone, que termina antes do fim) */
+html.af body>.afFix{position:absolute!important}
+/* teclado aberto: o app ocupa só a parte visível (acima do teclado); a barra de baixo some */
+html.af.afKb body{height:var(--afVvh,100vh)!important}
+html.af.afKb .afBar{display:none!important}
+html.af.afKb .sheet{max-height:calc(var(--afVvh,100vh) - 12px)!important}
+</style>
+<script id="afJs" data-bar="">
+/* ===================== MOLDURA FIXA — monta a estrutura ===================== */
+(function(){
+ var de=document.documentElement,B=document.body,me=document.currentScript;
+ if(!B||de.classList.contains('af'))return;
+ var BAR=(me&&me.getAttribute('data-bar'))||'';
+ var pb=getComputedStyle(B).paddingBottom;
+ var sc=document.createElement('div');sc.id='afScroll';
+ var hd=null,mover=[];
+ [].slice.call(B.children).forEach(function(e){
+  if(/^(SCRIPT|STYLE|LINK|TEMPLATE|DIALOG|NOSCRIPT)$/.test(e.tagName))return;
+  if(e.tagName==='HEADER'&&!hd){hd=e;e.classList.add('afHead');return}
+  var p=getComputedStyle(e).position;
+  if(p==='fixed'){e.classList.add('afFix');return}
+  if(p==='absolute')return;
+  mover.push(e);
+ });
+ if(!mover.length)return;
+ B.insertBefore(sc,hd?hd.nextSibling:B.firstChild);
+ mover.forEach(function(e){sc.appendChild(e)});
+ sc.style.paddingBottom=pb;
+ if(BAR)[].slice.call(document.querySelectorAll(BAR)).forEach(function(e){e.classList.add('afBar')});
+ de.classList.add('af');
+ /* tudo que o app pedia para "rolar a página" agora rola o miolo */
+ var o1=window.scrollTo,o2=window.scrollBy;
+ window.scrollTo=function(x,y){try{if(x&&typeof x==='object')sc.scrollTo(x);else sc.scrollTop=(Number(y)||0)}catch(e){}};
+ window.scrollBy=function(x,y){try{if(x&&typeof x==='object')sc.scrollBy(x);else sc.scrollTop+=(Number(y)||0)}catch(e){}};
+ try{Object.defineProperty(window,'scrollY',{configurable:true,get:function(){return sc.scrollTop}})}catch(e){}
+ try{Object.defineProperty(window,'pageYOffset',{configurable:true,get:function(){return sc.scrollTop}})}catch(e){}
+ window.__afScroll=sc;
+})();
+/* teclado do iPhone: com campo de texto em foco, o app passa a ocupar só a parte visível da tela */
+(function(){
+ var de=document.documentElement;if(!de.classList.contains('af'))return;
+ var vv=window.visualViewport,foco=false,aberto=false,raf=0;
+ var toque=false;try{toque=window.matchMedia('(pointer:coarse)').matches||('ontouchstart' in window)}catch(e){}
+ var base=window.innerHeight;
+ function campo(el){return !!el&&(/^(TEXTAREA|SELECT)$/.test(el.tagName)||(el.tagName==='INPUT'&&!/^(checkbox|radio|file|button|submit|reset|range|color|hidden)$/i.test(el.type||'')))||!!(el&&el.isContentEditable)}
+ function aplicar(){
+  raf=0;
+  if(!foco||window.innerHeight>base)base=Math.max(window.innerHeight,foco?base:0);
+  var h=vv?vv.height:window.innerHeight,kb=vv?Math.max(0,base-vv.height,window.innerHeight-vv.height):0;
+  var agora=foco&&(toque||kb>120||!vv)||kb>150;
+  var v=Math.round(h)+'px';if(v!==de._afv){de._afv=v;de.style.setProperty('--afVvh',v)}
+  if(agora!==aberto){aberto=agora;de.classList.toggle('afKb',agora)}
+ }
+ function agenda(){if(!raf)raf=(window.requestAnimationFrame||setTimeout)(aplicar)}
+ if(vv){vv.addEventListener('resize',agenda);vv.addEventListener('scroll',agenda)}
+ window.addEventListener('resize',agenda);
+ window.addEventListener('orientationchange',function(){base=0;setTimeout(agenda,400)});
+ document.addEventListener('focusin',function(e){if(campo(e.target)){foco=true;agenda();setTimeout(agenda,250)}},true);
+ document.addEventListener('focusout',function(){setTimeout(function(){foco=campo(document.activeElement);agenda();setTimeout(agenda,300)},80)},true);
+ aplicar();
+})();
+/* o campo em foco fica sempre à vista, rolando só a área dele (miolo ou janela) — sem empurrar a tela */
+(function(){
+ var de=document.documentElement;if(!de.classList.contains('af'))return;
+ var vv=window.visualViewport,raf=0;
+ function campo(el){return el&&(/^(TEXTAREA|SELECT)$/.test(el.tagName)||(el.tagName==='INPUT'&&!/^(checkbox|radio|button|submit|range|color|hidden|file)$/i.test(el.type||'')))}
+ function rolavel(el){for(var p=el.parentElement;p&&p!==document.body;p=p.parentElement){var o=getComputedStyle(p).overflowY;if((o==='auto'||o==='scroll')&&p.scrollHeight>p.clientHeight+1)return p}return null}
+ function mostra(){
+  raf=0;if(!de.classList.contains('afKb'))return;
+  var el=document.activeElement;if(!campo(el))return;var c=rolavel(el);if(!c)return;
+  var cr=c.getBoundingClientRect(),alt=vv?vv.height:window.innerHeight;
+  var r=el.getBoundingClientRect(),baixo=Math.min(cr.bottom,alt)-16,cima=Math.max(cr.top,0)+12;
+  if(r.bottom>baixo)c.scrollTop+=Math.min(r.bottom-baixo+24,r.top-cima);
+  else if(r.top<cima)c.scrollTop-=(cima-r.top)+12;
+ }
+ function agenda(){if(!raf)raf=requestAnimationFrame(mostra)}
+ if(vv){vv.addEventListener('resize',function(){agenda();setTimeout(agenda,120)})}
+ document.addEventListener('focusin',function(){setTimeout(agenda,60);setTimeout(agenda,350)},true);
+ try{new MutationObserver(function(){setTimeout(agenda,30)}).observe(de,{attributes:true,attributeFilter:['class']})}catch(e){}
+})();
+/* o iPhone "empurra" a tela inteira para cima quando o teclado abre: como a página nunca rola
+   (quem rola é o miolo), qualquer empurrão é desfeito na hora — a tela não sobe nem desce */
+(function(){
+ var de=document.documentElement;if(!de.classList.contains('af'))return;
+ var vv=window.visualViewport,se=document.scrollingElement||de,raf=0;
+ var orig=Window.prototype.scrollTo||function(){};
+ function desfaz(){
+  raf=0;
+  var empurrado=(se&&se.scrollTop>0)||(vv&&vv.offsetTop>0.5&&Math.abs((vv.scale||1)-1)<0.01);
+  if(empurrado){try{orig.call(window,0,0)}catch(e){}try{se.scrollTop=0}catch(e){}}
+ }
+ function agenda(){desfaz();if(!raf)raf=requestAnimationFrame(desfaz)}
+ window.addEventListener('scroll',agenda,{passive:true});
+ if(vv){vv.addEventListener('scroll',agenda);vv.addEventListener('resize',function(){agenda();setTimeout(agenda,60);setTimeout(agenda,250)})}
+ document.addEventListener('focusin',function(){setTimeout(agenda,0);setTimeout(agenda,120);setTimeout(agenda,400)},true);
+ document.addEventListener('focusout',function(){setTimeout(agenda,0);setTimeout(agenda,150);setTimeout(agenda,450)},true);
+})();
+/* 1º toque num campo de texto: abre sem o "solavanco" do iPhone (o app mesmo deixa o campo à vista).
+   Datas, listas e chaves seguem normais. Se o campo seleciona tudo ao entrar, a seleção é mantida. */
+(function(){
+ var de=document.documentElement;if(!de.classList.contains('af'))return;
+ function texto(el){return el&&(el.tagName==='TEXTAREA'||(el.tagName==='INPUT'&&/^(text|search|tel|email|url|number|password|)$/i.test(el.type||'')))&&!el.disabled&&!el.readOnly}
+ var t0=null;
+ document.addEventListener('touchstart',function(e){var el=e.target&&e.target.closest?e.target.closest('input,textarea'):null;t0=(texto(el)&&document.activeElement!==el)?{el:el,x:e.touches[0].clientX,y:e.touches[0].clientY}:null},{passive:true,capture:true});
+ document.addEventListener('touchmove',function(e){if(t0){var t=e.touches[0];if(Math.abs(t.clientX-t0.x)>8||Math.abs(t.clientY-t0.y)>8)t0=null}},{passive:true,capture:true});
+ document.addEventListener('touchend',function(e){
+  if(!t0)return;var el=t0.el;t0=null;
+  if(!el.isConnected||document.activeElement===el)return;
+  e.preventDefault();
+  try{el.focus({preventScroll:true})}catch(x){el.focus()}
+  try{if(el.selectionStart===el.selectionEnd){var n=(el.value||'').length;el.setSelectionRange(n,n)}}catch(x){}
+ },{passive:false,capture:true});
+})();
+</script>
+
 </body>
 </html>
