@@ -1267,6 +1267,27 @@ html.teclado .n3nav{visibility:hidden;pointer-events:none}
 .n3card .n3ta{padding:4px 0 12px}
 .n3addCard{display:block;width:100%;margin:0 0 6px;border:1.5px dashed #D2D5DA;border-radius:14px;background:transparent;color:var(--ac);font:600 16px var(--sf);min-height:52px;cursor:pointer}
 .n3grp{border:1px solid #E3E5E9}
+/* v207 · visual mais "sistema": menos arredondado, rótulos normais (não negrito), tamanhos contidos */
+.n3top{margin:2px 2px 10px}.n3top h2{font-size:22px!important;font-weight:700;letter-spacing:-.01em}
+.n3h{margin:18px 4px 6px!important;font-size:12px!important;font-weight:600!important;letter-spacing:.05em!important;color:#6B7079!important}
+.n3h b{font-size:14px!important;font-weight:600!important}
+.n3 .n3f>span{font-size:15px!important;font-weight:400!important;color:#30343B!important}
+.n3 .n3f.n3col>span{font-size:12.5px!important;color:#6B7079!important;font-weight:500!important}
+.n3 .n3f input:not([type=checkbox]),.n3 .n3f select,.n3 .n3f textarea,.n3 .n3ta{font-size:15px!important;color:#12141A!important}
+.n3 .n3f{min-height:46px}
+.n3grp{border-radius:10px!important;box-shadow:none!important;border:1px solid #E1E4E8!important}
+.n3card{border-radius:10px!important;box-shadow:none!important;border:1px solid #E1E4E8!important;margin-bottom:10px!important}
+.n3cardH{min-height:34px!important;background:#F7F8FA!important;border-bottom:1px solid #E9EBEE!important}
+.n3cardH>span{font-size:11.5px!important;letter-spacing:.06em!important;color:#6B7079!important}
+.n3cardH .n3mini{font-size:13px!important;font-weight:500!important}
+.n3addCard{border-radius:10px!important;min-height:46px!important;font-size:15px!important;border-width:1px!important}
+.n3nav{border-radius:12px!important;padding:6px!important}
+.n3nav .btn{min-height:46px!important;border-radius:10px!important;font-size:16px!important;font-weight:600!important}
+.n3carro{padding:10px 12px!important}.n3carroTx b{font-size:15px!important}.n3carroTx small{font-size:13px!important}
+.n3row{min-height:54px!important;padding:7px 12px!important}.n3rowTx b{font-size:15px!important;font-weight:600!important}.n3rowTx small{font-size:13px!important}
+.n3busca input{border-radius:9px!important;min-height:38px!important;font-size:15px!important}
+.n3sw input[type=checkbox]{transform:scale(.88);transform-origin:right center}
+.n3 .n3sw>span{max-width:78%!important}
 /* ===================== v194 — Pendências e Frota ===================== */
 .n4nums{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:2px 0 6px}
 .n4nums button{border:0;background:var(--card);border-radius:14px;padding:12px 8px 10px;text-align:center;font-family:var(--sf);color:var(--tx);box-shadow:0 1px 2px rgba(17,24,39,.04)}
@@ -1330,6 +1351,10 @@ body{background:#F2F3F5!important}
    TELA do aparelho (medida no celular), e a barra encosta no fim como nos apps do iPhone. */
 body{bottom:auto!important;height:var(--appH,100vh)!important}
 .overlay{bottom:auto;height:var(--appH,100vh)}
+/* v207: teclado aberto — o app passa a ocupar exatamente a parte VISÍVEL da tela (acima do teclado).
+   Antes o iPhone "empurrava" a tela inteira para cima: o topo sumia, não dava para subir e, ao tocar no ✓,
+   a tela pulava de volta. Agora quem rola é só o miolo, e o campo em foco é trazido para a vista. */
+html.teclado body{top:var(--vvt,0px)!important;height:var(--vvh,100vh)!important}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -1363,7 +1388,7 @@ body{bottom:auto!important;height:var(--appH,100vh)!important}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=206; var APP_DATE='07/10/2026';
+var APP_VER=207; var APP_DATE='07/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -9129,12 +9154,29 @@ try{if(typeof TAB!=='undefined'&&(TAB===5||TAB===0)&&S)render()}catch(e){}
  function standalone(){try{return navigator.standalone===true||window.matchMedia('(display-mode: standalone)').matches}catch(e){return false}}
  /* sem teclado: altura = 100vh (a tela inteira no app instalado). Com teclado: só a parte visível, para nada ficar atrás dele. */
  function fixH(){
-  if(de.classList.contains('teclado'))de.style.setProperty('--appH',window.innerHeight+'px');
-  else de.style.removeProperty('--appH');
+  de.style.removeProperty('--appH');
  }
  window.addEventListener('resize',fixH);window.addEventListener('orientationchange',function(){setTimeout(fixH,300)});
  try{new MutationObserver(fixH).observe(de,{attributes:true,attributeFilter:['class']})}catch(e){}
  fixH();setTimeout(fixH,500);
+})();
+
+/* v207: com o teclado aberto, o campo em foco fica sempre à vista dentro do miolo (sem empurrar a tela toda) */
+(function(){
+ var vv=window.visualViewport,de=document.documentElement,raf=0;
+ function campo(el){return el&&(/^(TEXTAREA|SELECT)$/.test(el.tagName)||(el.tagName==='INPUT'&&!/^(checkbox|radio|button|submit|range|color|hidden|file)$/i.test(el.type||'')))}
+ function mostra(){
+  raf=0;if(!de.classList.contains('teclado'))return;
+  var el=document.activeElement,m=document.getElementById('main');if(!campo(el)||!m||!m.contains(el))return;
+  var top=vv?vv.offsetTop:0,alt=vv?vv.height:window.innerHeight,hd=document.querySelector('body>header'),hh=hd?hd.getBoundingClientRect().bottom:0;
+  var r=el.getBoundingClientRect(),baixo=top+alt-16,cima=Math.max(hh,top)+12;
+  if(r.bottom>baixo)m.scrollTop+=Math.min(r.bottom-baixo+24,r.top-cima);
+  else if(r.top<cima)m.scrollTop-=(cima-r.top)+12;
+ }
+ function agenda(){if(!raf)raf=requestAnimationFrame(mostra)}
+ if(vv){vv.addEventListener('resize',function(){agenda();setTimeout(agenda,120)})}
+ document.addEventListener('focusin',function(){setTimeout(agenda,60);setTimeout(agenda,350)},true);
+ try{new MutationObserver(function(){setTimeout(agenda,30)}).observe(de,{attributes:true,attributeFilter:['class']})}catch(e){}
 })();
 
 </script>
