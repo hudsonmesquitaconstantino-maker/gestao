@@ -326,6 +326,23 @@ body.mcOn{overflow:hidden}
 .mcOk{width:64px;height:64px;border-radius:32px;background:var(--green-s);color:var(--green);display:grid;place-items:center;font-size:30px;font-weight:800}
 .mcFim h2{margin:4px 0 0;font-size:22px}.mcFim p{margin:0 0 10px;color:var(--mut)}
 @media(min-width:900px){.mcIn{padding-top:28px}}
+
+/* v15 · sem "puxar" a tela além do topo/fim (o cabeçalho subia e aparecia um vão) */
+html,body{overscroll-behavior-y:none}
+body.deb #btnNovaMulta{display:none}
+#btnNovaMulta{white-space:nowrap}
+.brand h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:440px){.hd .logo{display:none}.brand h1{font-size:17px}}
+@media(max-width:400px){.hd .btn{padding-left:11px;padding-right:11px}}
+.nmBusca{width:100%;box-sizing:border-box;border:0;border-radius:10px;background:#E4E6EA;padding:0 14px;min-height:42px;font-size:16px;margin:4px 0 10px;outline:0}
+.nmLista{max-height:60vh;overflow-y:auto;-webkit-overflow-scrolling:touch;border-radius:12px;background:var(--card);border:1px solid var(--line)}
+.nmRow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;border:0;border-bottom:1px solid var(--line);background:none;padding:9px 12px;text-align:left;font:inherit;color:inherit}
+.nmRow:last-child{border-bottom:0}.nmRow .plate{width:96px}.nmRow .plate b{font-size:15px}.nmRow .plate i{font-size:7px;line-height:10px}
+.nmRow small{display:block;color:var(--mut);font-size:13px}.nmRow em{font-style:normal;color:var(--red);font-weight:700;font-size:13px}
+.nmCar{display:flex;gap:12px;align-items:center;margin:2px 0 12px}.nmCar .plate{width:110px}
+.nmF{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.nmF span{font-weight:600}.nmF input[type=date],.nmF input[inputmode]{border:1px solid var(--line);border-radius:10px;padding:0 10px;min-height:42px;font-size:16px;max-width:60%;text-align:right;background:#fff}
+.nmF input[type=checkbox]{width:24px;height:24px}
 </style>
 </head>
 <body>
@@ -333,6 +350,7 @@ body.mcOn{overflow:hidden}
   <div class="hd">
     <div class="logo">GC</div>
     <div class="brand"><h1>Multas da Frota</h1><p id="meta">—</p></div>
+    <button class="btn grn" id="btnNovaMulta" aria-label="Adicionar multa">＋ Multa</button>
     <button class="btn pri" id="btnCopiarTudo">⧉ <span class="lbl-long">Enviar para o grupo</span><span class="lbl-short">Grupo</span></button>
     <div class="menuwrap">
       <button class="btn" id="btnMenu" aria-haspopup="true">Mais ▾</button>
@@ -1468,6 +1486,43 @@ document.addEventListener('click', e => {
   if(a === 'pular'){ const p = mcProximo(v.id); if(p){ MC_ID = p; mcRender(); } else toast('Não há outro carro para conferir'); return; }
   if(a === 'ok'){ v.conferido = isoHoje(); save(); MC_ID = mcProximo(v.id); mcRender(); return; }
 });
+
+
+/* ---------- v15 · ADICIONAR MULTA direto pelo botão do topo: escolhe o carro, data, valor ---------- */
+let NM_BUSCA='';
+function nmLista(){
+  const nmN = x => String(x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const q = nmN(NM_BUSCA||'').replace(/[^a-z0-9 ]/g,'');
+  const l = ordenar(S.veiculos.slice()).filter(v => { if(!q) return true; const t = nmN(v.placa+' '+v.nome+' '+(v.motorista||'')).replace(/[^a-z0-9 ]/g,''); return q.split(' ').every(w => t.includes(w) || t.replace(/ /g,'').includes(w)); });
+  return l.map(v => `<button class="nmRow" data-nm="${v.id}"><div class="plate"><i>BRASIL</i><b>${esc(v.placa||'—')}</b></div><span><b>${esc(v.nome)}</b><small>${esc(v.motorista||'')}</small></span>${v.multas.length?`<em>${v.multas.length}</em>`:''}</button>`).join('') || '<p class="hint" style="padding:12px">Nenhum carro encontrado</p>';
+}
+function abrirNovaMulta(){
+  NM_BUSCA='';
+  const c = modal(`<h2>Adicionar multa</h2><p class="hint">Escolha o carro</p><input class="nmBusca" id="nmBusca" placeholder="Buscar placa, carro ou motorista" autocomplete="off"><div class="nmLista" id="nmLista">${nmLista()}</div><div class="row"><button class="btn" data-close>Cancelar</button></div>`);
+  $('#nmBusca', c).oninput = e => { NM_BUSCA = e.target.value; $('#nmLista', c).innerHTML = nmLista(); };
+  c.onclick = e => { const b = e.target.closest('[data-nm]'); if(b) nmForm(achar(b.dataset.nm)); };
+}
+function nmForm(v){
+  if(!v) return;
+  const c = modal(`<h2>Adicionar multa</h2>
+    <div class="nmCar"><div class="plate"><i>BRASIL</i><b>${esc(v.placa||'—')}</b></div><div><b>${esc(v.nome)}</b><div class="hint">${esc(v.motorista||'')}${v.multas.length?' · '+v.multas.length+' em aberto':''}</div></div></div>
+    <label class="nmF"><span>Data da multa</span><input type="date" id="nmData" max="${isoHoje()}"></label>
+    <label class="nmF"><span>Valor (R$)</span><input id="nmValor" inputmode="decimal" placeholder="opcional"></label>
+    <label class="nmF"><span>Obrigatória para o documento</span><input type="checkbox" id="nmObr"></label>
+    <label class="nmF"><span>Observação</span><input id="nmObs" style="text-align:right;border:1px solid var(--line);border-radius:10px;min-height:42px;padding:0 10px;font-size:16px;max-width:60%" placeholder="opcional"></label>
+    <div class="row" style="margin-top:14px"><button class="btn" id="nmVolta">Trocar carro</button><button class="btn" id="nmMais">Salvar e outra</button><button class="btn pri" id="nmOk">Salvar</button></div>`);
+  const salvar = () => {
+    const d = $('#nmData', c).value; if(!d){ toast('Escolha a data da multa'); $('#nmData', c).focus(); return false; }
+    const m = {id:uid(), data:d, valor:parseValor($('#nmValor', c).value), obs:$('#nmObs', c).value.trim()};
+    if($('#nmObr', c).checked) m.obrig = true;
+    v.multas.push(m); v.multas.sort(cmpData); v.conferido = isoHoje(); save(); refreshCard(v); renderLeve();
+    toast(`Multa de ${br(d)} adicionada · ${v.placa}`); return true;
+  };
+  $('#nmOk', c).onclick = () => { if(salvar()) fechar(); };
+  $('#nmMais', c).onclick = () => { if(salvar()){ $('#nmData', c).value=''; $('#nmValor', c).value=''; $('#nmObs', c).value=''; $('#nmObr', c).checked=false; $('#nmData', c).focus(); } };
+  $('#nmVolta', c).onclick = () => abrirNovaMulta();
+}
+$('#btnNovaMulta').addEventListener('click', abrirNovaMulta);
 
 /* ---------- eventos ---------- */
 $('#list').addEventListener('click', e => {
