@@ -1289,6 +1289,25 @@ html.teclado .n3nav{visibility:hidden;pointer-events:none}
 .n4total{margin:-4px 4px 12px;font-size:15px;color:var(--tx2)}.n4total b{color:var(--tx);font-size:17px}.n4total span{font-size:13.5px}
 .n4semMot{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;margin:2px 0 0;border:0;background:#FFF6EA;border-radius:14px;padding:11px 14px;text-align:left;font-family:var(--sf);color:#7A4B0C}
 .n4semMot b{font-size:16px}.n4semMot span{font-size:14px;color:#8A5300}
+/* ===================== v201 — ESTRUTURA FIXA (padrão de app do iPhone) =====================
+   Antes: a página inteira rolava e a barra de baixo era "colada" na tela por cima dela; no iPhone
+   (app instalado) isso faz a barra tremer/andar ao rolar. Agora: cabeçalho em cima, barra embaixo,
+   e SÓ o miolo rola. A barra de baixo faz parte da moldura da tela e não tem como se mexer. */
+html,body{height:100%!important;overflow:hidden!important;overscroll-behavior:none!important}
+body{display:flex!important;flex-direction:column!important;padding-bottom:0!important;position:fixed!important;inset:0!important;width:100%!important;top:0!important}
+body>header{position:relative!important;top:auto!important;flex:0 0 auto;z-index:40}
+main#main{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;padding-bottom:20px!important}
+nav.g2nav{position:relative!important;bottom:auto!important;flex:0 0 auto;z-index:40}
+.search{top:0!important}
+/* barra "Salvar" dos formulários: grudada no fim da área que rola (logo acima da barra de baixo) */
+.n3nav{bottom:6px!important}
+/* janelas (ficha do carro etc.): ocupam do topo até o fim da tela; a barra de ação fica no rodapé da janela */
+.overlay .sheetwrap{height:calc(100% - 44px)!important;max-height:none!important}
+.overlay .sheetwrap>.sheet{height:auto!important;flex:1 1 auto!important;min-height:0!important}
+.sheetwrap.temDock>.sheet{padding-bottom:16px!important}
+.sheetwrap>.g2dock{position:relative!important;bottom:auto!important;margin:0!important;flex:0 0 auto;padding:10px 14px calc(10px + env(safe-area-inset-bottom))!important;background:var(--card)!important;border-top:.5px solid var(--bord);box-shadow:none!important;z-index:6}
+html.teclado .sheetwrap>.g2dock{display:none!important}
+html.teclado .overlay .sheetwrap{height:100%!important}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -1322,7 +1341,7 @@ html.teclado .n3nav{visibility:hidden;pointer-events:none}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=200; var APP_DATE='07/10/2026';
+var APP_VER=201; var APP_DATE='07/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -9054,6 +9073,34 @@ function n4Busca(){
 }
 /* a 1ª tela é desenhada antes deste trecho carregar: redesenha já com a versão nova */
 try{if(typeof TAB!=='undefined'&&(TAB===5||TAB===0)&&S)render()}catch(e){}
+
+</script>
+<script>
+/* ===================== v201 — ESTRUTURA FIXA: o que rola é o miolo (#main), não a página ===================== */
+(function(){
+ function M(){return document.getElementById('main')}
+ var o1=window.scrollTo,o2=window.scrollBy;
+ /* tudo que o app pedia para "rolar a página" agora rola o miolo */
+ window.scrollTo=function(x,y){var m=M();if(!m)return o1&&o1.apply(window,arguments);try{if(x&&typeof x==='object')m.scrollTo(x);else m.scrollTop=(Number(y)||0)}catch(e){}};
+ window.scrollBy=function(x,y){var m=M();if(!m)return o2&&o2.apply(window,arguments);try{if(x&&typeof x==='object')m.scrollBy(x);else m.scrollTop+=(Number(y)||0)}catch(e){}};
+ try{Object.defineProperty(window,'scrollY',{configurable:true,get:function(){var m=M();return m?m.scrollTop:0}})}catch(e){}
+ try{Object.defineProperty(window,'pageYOffset',{configurable:true,get:function(){var m=M();return m?m.scrollTop:0}})}catch(e){}
+ /* a página não rola mais, então não precisa "travar" o fundo quando abre uma janela */
+ window.syncLock=function(){try{document.documentElement.classList.toggle('ovAberto',document.querySelectorAll('.overlay.open').length>0)}catch(e){}};
+ /* barra de ação da ficha ("Lançar manutenção"): vai para o rodapé da janela, fixa, sempre no fim da tela */
+ function limpa(wrap){[].slice.call(wrap.children).forEach(function(ch){if(ch.classList&&ch.classList.contains('g2dock'))wrap.removeChild(ch)});wrap.classList.remove('temDock')}
+ function dock(body,trocouTudo){
+  if(!body)return;var wrap=body.parentNode;if(!wrap||!wrap.classList||!wrap.classList.contains('sheetwrap'))return;
+  var novo=body.querySelector('.g2dock');
+  if(novo||trocouTudo)limpa(wrap);
+  if(novo){wrap.appendChild(novo);wrap.classList.add('temDock')}
+ }
+ var os=window.openSheet;if(typeof os==='function'){window.openSheet=function(html,w){var r=os.apply(this,arguments);try{dock(document.getElementById(w===2?'sheetBody2':'sheetBody'),true)}catch(e){}return r}}
+ ['sheetBody','sheetBody2'].forEach(function(id){var b=document.getElementById(id);if(!b||!window.MutationObserver)return;
+  new MutationObserver(function(){if(b.querySelector('.g2dock'))dock(b,false)}).observe(b,{childList:true,subtree:true})});
+ /* ao fechar a janela, some a barra que foi para o rodapé dela */
+ var oc=window.closeSheet;if(typeof oc==='function'){window.closeSheet=function(w){var r=oc.apply(this,arguments);try{var b=document.getElementById(w===2?'sheetBody2':'sheetBody');var wr=b&&b.parentNode;if(wr){[].slice.call(wr.querySelectorAll(':scope>.g2dock')).forEach(function(d){wr.removeChild(d)});wr.classList.remove('temDock')}}catch(e){}return r}}
+})();
 
 </script>
 <script>
