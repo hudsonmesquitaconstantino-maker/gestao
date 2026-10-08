@@ -2199,14 +2199,17 @@ if('serviceWorker' in navigator && location.protocol === 'https:'){
 /* ===================== MOLDURA FIXA (mesmo comportamento do Gestão v201–v209) =====================
    Cabeçalho em cima, barra embaixo, e SÓ o miolo rola. Nada de tela "puxando", barra andando
    ou teclado empurrando a tela. Somente comportamento — a aparência do app não muda. */
-html.af{height:100vh!important;overflow:visible!important;overscroll-behavior:none!important}
-html.af body{position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:auto!important;height:100vh!important;min-height:0!important;margin:0!important;padding-bottom:0!important;display:flex!important;flex-direction:column!important;overflow:visible!important;overscroll-behavior:none!important}
+html.af{height:100%!important;overflow:visible!important;overscroll-behavior:none!important}
+html.af.afVH{height:100vh!important}
+html.af body{position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;height:auto!important;min-height:0!important;margin:0!important;padding-bottom:0!important;display:flex!important;flex-direction:column!important;overflow:visible!important;overscroll-behavior:none!important}
 html.af body>.afHead{position:relative!important;top:auto!important;flex:0 0 auto!important}
 html.af #afScroll{flex:1 1 auto;min-height:0;width:100%;box-sizing:border-box;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
 /* barra de baixo, janelas e avisos: presos à tela inteira (e não à "janela" do iPhone, que termina antes do fim) */
 html.af body>.afFix{position:absolute!important}
 /* teclado aberto: o app ocupa só a parte visível (acima do teclado); a barra de baixo some */
-html.af.afKb body{height:var(--afVvh,100vh)!important}
+/* app que desenha por baixo da barra de status (hora/bateria): a altura certa é a da tela inteira */
+html.af.afVH body{bottom:auto!important;height:100vh!important}
+html.af.afKb body{bottom:auto!important;height:var(--afVvh,100vh)!important}
 html.af.afKb .afBar{display:none!important}
 html.af.afKb .sheet{max-height:calc(var(--afVvh,100vh) - 12px)!important}
 </style>
@@ -2232,6 +2235,12 @@ html.af.afKb .sheet{max-height:calc(var(--afVvh,100vh) - 12px)!important}
  mover.forEach(function(e){sc.appendChild(e)});
  sc.style.paddingBottom=pb;
  if(BAR)[].slice.call(document.querySelectorAll(BAR)).forEach(function(e){e.classList.add('afBar')});
+ /* Estes apps começam ABAIXO da barra de status do iPhone: a altura certa é a da área do app (preso em cima e embaixo).
+    "100vh" só vale quando o app desenha por baixo da barra de status (como o Gestão) — senão sobra para fora da tela e corta a barra de baixo. */
+ var pr=document.createElement('div');pr.style.cssText='position:absolute;visibility:hidden;padding-top:env(safe-area-inset-top)';B.appendChild(pr);
+ var topo=pr.getBoundingClientRect().height;B.removeChild(pr);
+ var sa=false;try{sa=navigator.standalone===true||matchMedia('(display-mode: standalone)').matches}catch(e){}
+ if(sa&&topo>0)de.classList.add('afVH');
  de.classList.add('af');
  /* tudo que o app pedia para "rolar a página" agora rola o miolo */
  var o1=window.scrollTo,o2=window.scrollBy;
