@@ -2327,6 +2327,34 @@ html.af.afKb .sheet{max-height:calc(var(--afVvh,100vh) - 12px)!important}
   try{if(el.selectionStart===el.selectionEnd){var n=(el.value||'').length;el.setSelectionRange(n,n)}}catch(x){}
  },{passive:false,capture:true});
 })();
+/* travar/destravar (e qualquer troca de modo da tela): o que aparece/some na lista NÃO pode fazer a tela pular.
+   Guarda o que está no topo da área visível e, depois da troca, deixa exatamente no mesmo lugar. */
+(function(){
+ var de=document.documentElement,sc=window.__afScroll;if(!de.classList.contains('af')||!sc)return;
+ var marcas=[],raf=0;
+ function marca(){
+  raf=0;var novas=[],r=sc.getBoundingClientRect();if(!r.height)return;
+  for(var y=r.top+6;y<Math.min(r.bottom,r.top+360);y+=36){
+   [r.left+24,r.left+r.width/2].forEach(function(x){
+    /* por baixo de janelas abertas (ex.: "Destravar edição") também vale: pega o que está na lista naquele ponto */
+    var el=(document.elementsFromPoint?document.elementsFromPoint(x,y):[document.elementFromPoint(x,y)]).filter(function(e){return e&&e!==sc&&sc.contains(e)})[0];
+    if(el){var t=el.getBoundingClientRect().top;novas.push([el,t])}
+   });
+  }
+  if(novas.length)marcas=novas;
+ }
+ function agenda(){if(!raf)raf=requestAnimationFrame(marca)}
+ sc.addEventListener('scroll',agenda,{passive:true});
+ document.addEventListener('touchstart',marca,{passive:true,capture:true});
+ document.addEventListener('pointerdown',marca,{passive:true,capture:true});
+ function segura(){
+  for(var i=0;i<marcas.length;i++){var el=marcas[i][0];
+   if(el.isConnected&&el.getClientRects().length){var d=el.getBoundingClientRect().top-marcas[i][1];if(Math.abs(d)>=1)sc.scrollTop+=d;break}}
+  marca();
+ }
+ try{new MutationObserver(segura).observe(document.body,{attributes:true,attributeFilter:['class']})}catch(e){}
+ setTimeout(marca,300);
+})();
 </script>
 
 </body>
