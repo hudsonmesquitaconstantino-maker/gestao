@@ -336,6 +336,12 @@ body.deb #btnNovaMulta{display:none}
 @media(max-width:400px){.hd .btn{padding-left:11px;padding-right:11px}}
 .nmBusca{width:100%;box-sizing:border-box;border:0;border-radius:10px;background:#E4E6EA;padding:0 14px;min-height:42px;font-size:16px;margin:4px 0 10px;outline:0}
 .nmLista{max-height:60vh;overflow-y:auto;-webkit-overflow-scrolling:touch;border-radius:12px;background:var(--card);border:1px solid var(--line)}
+/* v20 · escolher o carro: título, busca e Cancelar ficam parados; SÓ a lista de carros rola (antes a janela inteira rolava
+   junto com a lista e "travava"). A janela nunca passa da parte visível da tela (com ou sem teclado). */
+html.af dialog{max-height:calc(var(--afVvh,100vh) - 24px)}
+.dlg-in.nmPick{display:flex;flex-direction:column;box-sizing:border-box;max-height:calc(var(--afVvh,100vh) - 24px)}
+.dlg-in.nmPick>h2,.dlg-in.nmPick>.hint,.dlg-in.nmPick>.nmBusca,.dlg-in.nmPick>.row{flex:0 0 auto}
+.dlg-in.nmPick .nmLista{flex:1 1 auto;min-height:0;max-height:none;overscroll-behavior:none}
 .nmRow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;border:0;border-bottom:1px solid var(--line);background:none;padding:9px 12px;text-align:left;font:inherit;color:inherit}
 .nmRow:last-child{border-bottom:0}.nmRow .plate{width:96px}.nmRow .plate b{font-size:15px}.nmRow .plate i{font-size:7px;line-height:10px}
 .nmRow small{display:block;color:var(--mut);font-size:13px}.nmRow em{font-style:normal;color:var(--red);font-weight:700;font-size:13px}
@@ -1299,7 +1305,7 @@ function toast(msg, comDesfazer){
   el.classList.add('on'); clearTimeout(tt);
   tt = setTimeout(() => el.classList.remove('on'), comDesfazer ? 6500 : 2200);
 }
-function modal(html){ const d = $('#dlg'); d.querySelector('.dlg-in').onclick = null; d.querySelector('.dlg-in').innerHTML = html; if(!d.open) d.showModal(); return d.querySelector('.dlg-in'); }
+function modal(html){ const d = $('#dlg'); d.querySelector('.dlg-in').onclick = null; d.querySelector('.dlg-in').className = 'dlg-in'; d.querySelector('.dlg-in').innerHTML = html; if(!d.open) d.showModal(); return d.querySelector('.dlg-in'); }
 function fechar(){ $('#dlg').close(); }
 function confirmar(msg, botao, cb){
   const c = modal(`<h2>Confirmar</h2><p class="hint" style="font-size:14px">${msg}</p><div class="row"><button class="btn" data-close>Cancelar</button><button class="btn pri" id="okConf">${botao}</button></div>`);
@@ -1498,9 +1504,16 @@ function nmLista(){
 }
 function abrirNovaMulta(){
   NM_BUSCA='';
-  const c = modal(`<h2>Adicionar multa</h2><p class="hint">Escolha o carro</p><input class="nmBusca" id="nmBusca" placeholder="Buscar placa, carro ou motorista" autocomplete="off"><div class="nmLista" id="nmLista">${nmLista()}</div><div class="row"><button class="btn" data-close>Cancelar</button></div>`);
+  const c = modal(`<h2 tabindex="-1" autofocus style="outline:0">Adicionar multa</h2><p class="hint">Escolha o carro</p><input class="nmBusca" id="nmBusca" placeholder="Buscar placa, carro ou motorista" autocomplete="off"><div class="nmLista" id="nmLista">${nmLista()}</div><div class="row"><button class="btn" data-close>Cancelar</button></div>`);
   $('#nmBusca', c).oninput = e => { NM_BUSCA = e.target.value; $('#nmLista', c).innerHTML = nmLista(); };
   c.onclick = e => { const b = e.target.closest('[data-nm]'); if(b) nmForm(achar(b.dataset.nm)); };
+  /* v20 · abre SEM teclado (o foco não vai para a busca sozinho); a busca só abre o teclado se você tocar nela */
+  c.classList.add('nmPick');
+  const bu = $('#nmBusca', c); if(document.activeElement === bu) bu.blur();
+  /* arrastar a lista fecha o teclado (igual aos apps do iPhone) */
+  const li = $('#nmLista', c); let y0 = null;
+  li.addEventListener('touchstart', e => { y0 = e.touches[0].clientY; }, {passive:true});
+  li.addEventListener('touchmove', e => { if(y0 !== null && Math.abs(e.touches[0].clientY - y0) > 10 && document.activeElement === bu){ bu.blur(); y0 = null; } }, {passive:true});
 }
 function nmForm(v){
   if(!v) return;
