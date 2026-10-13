@@ -1391,6 +1391,18 @@ html.teclado .n3nav{visibility:hidden;pointer-events:none}
 .e3dock{grid-template-columns:minmax(0,1fr) auto!important}
 .n3dupla{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important}
 .n3dupla input{min-width:0!important}
+/* v215 · escolha da divisão antes do relatório em PDF */
+.mpdfEsc{position:fixed;inset:0;z-index:400;background:rgba(17,24,39,.42);display:flex;align-items:center;justify-content:center;padding:16px}
+.mpdfCard{width:100%;max-width:400px;background:#fff;border-radius:14px;padding:18px 16px 12px;box-shadow:0 20px 60px rgba(0,0,0,.25);font-family:var(--sf);color:#12141A}
+.mpdfCard h3{margin:0 0 4px;font-size:18px;font-weight:700}
+.mpdfCard p{margin:0 0 14px;font-size:15px;color:#4B515A}
+.mpdfOp{display:block;width:100%;text-align:left;border:1px solid #D6D9DE;background:#F7F8FA;border-radius:10px;padding:12px 14px;margin:0 0 8px;font-family:inherit;cursor:pointer}
+.mpdfOp b{display:block;font-size:16px;font-weight:600;color:#12141A}.mpdfOp small{display:block;font-size:13px;color:#6B7079;margin-top:2px}
+.mpdfOp:active{background:#EEF0F3}
+.mpdfOutra{display:flex;align-items:center;gap:8px;padding:6px 2px 4px;font-size:13.5px;color:#4B515A}
+.mpdfOutra span{flex:1}.mpdfOutra input{width:58px;border:1px solid #D6D9DE;border-radius:8px;padding:8px;font-size:16px;text-align:center}
+.mpdfOutra button{border:0;background:#1C1C1E;color:#fff;border-radius:8px;padding:9px 12px;font:600 14px var(--sf)}
+.mpdfX{display:block;width:100%;border:0;background:none;color:#C27A16;font:600 15px var(--sf);padding:12px 0 4px;cursor:pointer}
 /* ===================== v194 — Pendências e Frota ===================== */
 .n4nums{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:2px 0 6px}
 .n4nums button{border:0;background:var(--card);border-radius:14px;padding:12px 8px 10px;text-align:center;font-family:var(--sf);color:var(--tx);box-shadow:0 1px 2px rgba(17,24,39,.04)}
@@ -1494,7 +1506,7 @@ html.teclado .overlay{top:0!important}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=214; var APP_DATE='13/10/2026';
+var APP_VER=215; var APP_DATE='13/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -9260,15 +9272,15 @@ function n3KmInfo(){
    Folha A4 única: se a manutenção for grande, o documento inteiro é reduzido na proporção para caber em UMA
    página (igual ao termo); só se ficar pequeno demais (abaixo de 70%) ele continua em outra página. */
 function _mpdfNum(m){return 'MN-'+String(m.id||'').replace(/^mn_?/,'').toUpperCase().slice(-6)}
-function _mpdfFileName(m,c){return 'Relatorio-Manutencao-'+fmtPlaca(c&&c.placa||'VEICULO')+'-'+String(m.dataFim||m.dataIni||hoje()).split('-').reverse().join('-')+'.pdf'}
-function _mpdfEscala(m,c){
+function _mpdfFileName(m,c,div){return 'Relatorio-Manutencao-'+(div?'Dividida-':'')+fmtPlaca(c&&c.placa||'VEICULO')+'-'+String(m.dataFim||m.dataIni||hoje()).split('-').reverse().join('-')+'.pdf'}
+function _mpdfEscala(m,c,div){
  try{var J=window.jspdf&&window.jspdf.jsPDF;if(!J)return 1;var MIN=0.7,s=1;
   for(var i=0;i<6;i++){var d=new J({orientation:'portrait',unit:'mm',format:[210/s,4000],compress:true,putOnlyUsedFonts:true});
-   var h=_mpdfBuild(d,m,c,{medir:true,escala:s});if(h<=297/s-24)return s;var ns=297/(h+24);if(ns<=MIN)return MIN;s=Math.min(s,ns)*0.995}
+   var h=_mpdfBuild(d,m,c,{medir:true,escala:s,div:div});if(h<=297/s-24)return s;var ns=297/(h+24);if(ns<=MIN)return MIN;s=Math.min(s,ns)*0.995}
   return Math.max(MIN,s)}catch(e){return 1}
 }
 function _mpdfBuild(doc,m,carro,_o){
- _o=_o||{};var ESC=_o.escala||(_o.medir?1:_mpdfEscala(m,carro));
+ _o=_o||{};var DIV=Math.max(0,Math.min(100,Number(_o.div)||0)),ESC=_o.escala||(_o.medir?1:_mpdfEscala(m,carro,DIV));
  var C={navy:[5,37,82],teal:[0,157,158],gold:[242,169,0],text:[28,35,45],muted:[103,113,124],grid:[218,225,231],pale:[235,248,247],paleGold:[255,247,229],white:[255,255,255],soft:[247,249,251]};
  var PW=210/ESC,PH=297/ESC,M=9,W=PW-18,BOT=_o.medir?1e6:PH-9,y=0;
  if(ESC!==1&&!_o.medir){doc.addPage([PW,PH],'portrait');doc.deletePage(1);doc.setPage(1)}
@@ -9288,7 +9300,7 @@ function _mpdfBuild(doc,m,carro,_o){
   }else{
    try{doc.addImage(TERMO_LOGO_DATA,'PNG',M,6,55,16.1)}catch(e){}
    font(15,'bold',C.navy);doc.text(['RELATÓRIO DE','MANUTENÇÃO'],74,11.5,{lineHeightFactor:1.05});
-   font(7.2,'normal',C.teal);doc.text('Registro de serviço executado',PW-M,23,{align:'right'});
+   font(7.2,DIV?'bold':'normal',C.teal);doc.text(DIV?'Manutenção dividida · '+(100-DIV)+'% GuimasCar / '+DIV+'% motorista':'Registro de serviço executado',PW-M,23,{align:'right'});
    fill(C.navy);doc.rect(M,27,W-25,0.8,'F');fill(C.teal);doc.rect(PW-M-25,27,18,0.8,'F');fill(C.gold);doc.rect(PW-M-7,27,7,0.8,'F');
    y=30;info();
   }
@@ -9374,13 +9386,39 @@ function _mpdfBuild(doc,m,carro,_o){
   for(var i=1;i<=n;i++){doc.setPage(i);line(C.grid);doc.line(M,PH-5,PW-M,PH-5);font(5.8,'normal',C.muted);
    doc.text('GuimasCar · Relatório de manutenção · '+fmtPlaca(carro.placa),M,PH-2);doc.text('Página '+i+' de '+n,PW-M,PH-2,{align:'right'})}
  }
- header(false);parts();labor();total();proximas();nota();
+ function divisao(){
+  if(!DIV)return;
+  var tot=tp+tm,vm=Math.round(tot*DIV)/100,vg=Math.round((tot-vm)*100)/100,nome=_tpdfSafe(m.motorista||'motorista');
+  ensure(26);
+  fill(C.teal);doc.roundedRect(M,y,W,6.3,1.1,1.1,'F');font(9.3,'bold',C.white);doc.text('DIVISÃO DA MANUTENÇÃO',M+3,y+4.5);doc.text((100-DIV)+'% / '+DIV+'%',M+W-3,y+4.5,{align:'right'});y+=6.3;
+  font(7.4,'normal',C.text);doc.text('GuimasCar ('+(100-DIV)+'%)',M+3,y+4.8);font(7.8,'bold',C.text);doc.text(_tpdfMoney(vg),M+W-3,y+4.8,{align:'right'});
+  line(C.grid);doc.line(M,y+7,M+W,y+7);y+=7;
+  fill(C.gold);doc.rect(M,y,W,9,'F');font(8.2,'bold',C.white);var rot=split('A CARGO DO MOTORISTA '+nome.toUpperCase()+' ('+DIV+'%)',W-50,8.2,'bold');doc.text(rot.slice(0,1),M+3,y+5.9);
+  font(12,'bold',C.white);doc.text(_tpdfMoney(vm),M+W-3,y+6.2,{align:'right'});y+=12;
+ }
+ header(false);parts();labor();total();divisao();proximas();nota();
  if(_o.medir)return y;
  footerAll();
  doc.setProperties({title:'Relatório de Manutenção - '+fmtPlaca(carro.placa),subject:'Relatório de manutenção',author:'GuimasCar',creator:'GuimasCar Gestão'});
  return doc;
 }
 function verTermoManut(id){
+ /* v215: antes de gerar, pergunta se a manutenção foi dividida com o motorista */
+ var m=S.manutencoes&&S.manutencoes[id];if(!m){toast('Manutenção não encontrada');return}
+ var nome=primNome(m.motorista||'')||'o motorista',tot=Number(m.total)||0;
+ var old=document.getElementById('mpdfEsc');if(old)old.remove();
+ var d=document.createElement('div');d.id='mpdfEsc';d.className='mpdfEsc';
+ d.innerHTML='<div class="mpdfCard"><h3>Relatório de manutenção</h3><p>Esta manutenção foi dividida com '+esc(nome)+'?</p>'+
+  '<button class="mpdfOp" onclick="_mpdfEscolha(\''+id+'\',0)"><b>Não foi dividida</b><small>Só o registro do serviço · total R$ '+fmtBRL(tot)+'</small></button>'+
+  '<button class="mpdfOp" onclick="_mpdfEscolha(\''+id+'\',50)"><b>Dividida 50% / 50%</b><small>'+esc(nome)+' paga R$ '+fmtBRL(Math.round(tot*50)/100)+'</small></button>'+
+  '<div class="mpdfOutra"><span>Outra divisão: '+esc(nome)+' paga</span><input id="mpdfPct" inputmode="numeric" maxlength="3" placeholder="%"><button onclick="_mpdfEscolha(\''+id+'\',parseInt(document.getElementById(\'mpdfPct\').value,10)||0)">Gerar</button></div>'+
+  '<button class="mpdfX" onclick="document.getElementById(\'mpdfEsc\').remove()">Cancelar</button></div>';
+ d.addEventListener('click',function(e){if(e.target===d)d.remove()});
+ document.body.appendChild(d);
+}
+function _mpdfEscolha(id,div){
+ var e=document.getElementById('mpdfEsc');if(e)e.remove();
+ div=Math.max(0,Math.min(100,Number(div)||0));
  var m=S.manutencoes&&S.manutencoes[id];if(!m){toast('Manutenção não encontrada');return}
  var c=S.carros&&S.carros[m.carro]||{nome:m.carro,placa:m.carro,motor:''};
  if(window._mpdfBusy){toast('PDF já está sendo preparado');return}
@@ -9388,8 +9426,8 @@ function verTermoManut(id){
  garantirJspdf().then(function(){
   if(!(window.jspdf&&window.jspdf.jsPDF))throw new Error('Gerador PDF indisponível');
   var doc=new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true,putOnlyUsedFonts:true});
-  _mpdfBuild(doc,m,c);
-  var blob=doc.output('blob'),nome=_mpdfFileName(m,c);
+  _mpdfBuild(doc,m,c,{div:div});
+  var blob=doc.output('blob'),nome=_mpdfFileName(m,c,div);
   return blobB64(blob).then(function(b64){abrirPdf(b64,nome.replace(/\.pdf$/i,''),{fileName:nome,share:true,boost:2,light:true})});
  }).catch(function(e){toast('⚠️ Não consegui gerar o PDF: '+(e&&e.message?e.message:e))})
  .then(function(){window._mpdfBusy=false},function(){window._mpdfBusy=false});
