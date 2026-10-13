@@ -1494,7 +1494,7 @@ html.teclado .overlay{top:0!important}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=213; var APP_DATE='13/10/2026';
+var APP_VER=214; var APP_DATE='13/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -7473,7 +7473,7 @@ function verManut(id){
  });
  if(m.total>0)h+='<div class="v102grandTotal"><span>Total da manutenção</span><strong>R$ '+fmtBRL(m.total)+'</strong></div>';
  openSheet(h+
-  '<div class="v102actionbar"><button class="btn ok v102primary" onclick="verTermoManut(\''+id+'\')">📄 Termo de manutenção (PDF)</button>'+
+  '<div class="v102actionbar"><button class="btn ok v102primary" onclick="verTermoManut(\''+id+'\')">📄 Relatório de manutenção (PDF)</button>'+
   '<button class="btn sec" onclick="editarManut(\''+id+'\')">✏️ Editar manutenção</button>'+
   '<button class="btn sec" onclick="copiarManut(\''+id+'\')">📋 Copiar para WhatsApp</button>'+
   '<button class="btn red" onclick="excluirManut(\''+id+'\')">🗑 Excluir manutenção</button>'+
@@ -9254,13 +9254,13 @@ function n3KmInfo(){
  el.innerHTML=(v&&v<u-100?'<span class="n3alerta">⚠️ Menor que o último km registrado ('+fmtKm(u)+' km'+(d?' em '+d:'')+'). Confira.</span>':'Último km registrado: <b>'+fmtKm(u)+' km</b>'+(d?' em '+d:''));
 }
 
-/* ===================== v213 · TERMO DE MANUTENÇÃO EM PDF =====================
+/* ===================== v213 · RELATÓRIO DE MANUTENÇÃO EM PDF (v214: nome e dias entre parênteses) =====================
    Pedido do Hudson (13/10/2026): em toda manutenção, gerar um documento profissional no mesmo padrão
    do Termo de Devolução (logo GuimasCar, faixas azul/verde/dourado), para enviar no lugar do texto do WhatsApp.
    Folha A4 única: se a manutenção for grande, o documento inteiro é reduzido na proporção para caber em UMA
    página (igual ao termo); só se ficar pequeno demais (abaixo de 70%) ele continua em outra página. */
 function _mpdfNum(m){return 'MN-'+String(m.id||'').replace(/^mn_?/,'').toUpperCase().slice(-6)}
-function _mpdfFileName(m,c){return 'Termo-Manutencao-'+fmtPlaca(c&&c.placa||'VEICULO')+'-'+String(m.dataFim||m.dataIni||hoje()).split('-').reverse().join('-')+'.pdf'}
+function _mpdfFileName(m,c){return 'Relatorio-Manutencao-'+fmtPlaca(c&&c.placa||'VEICULO')+'-'+String(m.dataFim||m.dataIni||hoje()).split('-').reverse().join('-')+'.pdf'}
 function _mpdfEscala(m,c){
  try{var J=window.jspdf&&window.jspdf.jsPDF;if(!J)return 1;var MIN=0.7,s=1;
   for(var i=0;i<6;i++){var d=new J({orientation:'portrait',unit:'mm',format:[210/s,4000],compress:true,putOnlyUsedFonts:true});
@@ -9282,12 +9282,12 @@ function _mpdfBuild(doc,m,carro,_o){
  function header(cont){
   if(cont){
    try{doc.addImage(TERMO_LOGO_DATA,'PNG',M,6,38,11.1)}catch(e){}
-   font(10.5,'bold',C.navy);doc.text('TERMO DE MANUTENÇÃO',54,11.5);
+   font(10.5,'bold',C.navy);doc.text('RELATÓRIO DE MANUTENÇÃO',54,11.5);
    font(6.8,'normal',C.teal);doc.text('Continuação · '+fmtPlaca(carro.placa),PW-M,17,{align:'right'});
    fill(C.navy);doc.rect(M,21,W-24,0.8,'F');fill(C.teal);doc.rect(PW-M-24,21,17,0.8,'F');fill(C.gold);doc.rect(PW-M-7,21,7,0.8,'F');y=26;
   }else{
    try{doc.addImage(TERMO_LOGO_DATA,'PNG',M,6,55,16.1)}catch(e){}
-   font(15,'bold',C.navy);doc.text(['TERMO DE','MANUTENÇÃO'],74,11.5,{lineHeightFactor:1.05});
+   font(15,'bold',C.navy);doc.text(['RELATÓRIO DE','MANUTENÇÃO'],74,11.5,{lineHeightFactor:1.05});
    font(7.2,'normal',C.teal);doc.text('Registro de serviço executado',PW-M,23,{align:'right'});
    fill(C.navy);doc.rect(M,27,W-25,0.8,'F');fill(C.teal);doc.rect(PW-M-25,27,18,0.8,'F');fill(C.gold);doc.rect(PW-M-7,27,7,0.8,'F');
    y=30;info();
@@ -9301,7 +9301,7 @@ function _mpdfBuild(doc,m,carro,_o){
   cell('Veículo',_tpdfSafe((carro.nome||'')+' '+(carro.motor||'')),x,y,w/2,false);
   cell('Placa',fmtPlaca(carro.placa),mid,y,w/2,true);
   cell('Motorista',_tpdfSafe(m.motorista||'-'),x,y+row,w/2,true);
-  cell('Período',(fim&&fim!==ini?dataBR(ini)+' a '+dataBR(fim):dataBR(ini))+(dias>1?' - '+dias+' dias parado':''),mid,y+row,w/2,false);
+  cell('Período',(fim&&fim!==ini?dataBR(ini)+' a '+dataBR(fim):dataBR(ini))+(dias>1?' ('+dias+' dias parado)':''),mid,y+row,w/2,false);
   cell('Odômetro',m.odometro?fmtKm(m.odometro)+' km':'-',x,y+row*2,w/2,false);
   cell('Emissão',dataBR(hoje()),mid,y+row*2,w/2,false);
   y+=h+3;
@@ -9333,11 +9333,11 @@ function _mpdfBuild(doc,m,carro,_o){
    var sv=(Array.isArray(b.servicos)?b.servicos:String(b.servicos||'').split('\n')).map(function(s){return _tpdfSafe(s)}).filter(Boolean);
    var linhas=[];sv.forEach(function(s){split('- '+s,W-12,7.1,'normal').forEach(function(z){linhas.push(z)})});
    var head=_tpdfSafe((b.titulo||'Mecânico')+(b.nome?' - '+b.nome:'')),bi=b.dataIni||'',bf=b.dataFim||bi;
-   var quando=bi?(bf&&bf!==bi?dataBR(bi)+' a '+dataBR(bf):dataBR(bi)):'';
+   var quando=bi?(bf&&bf!==bi?dataBR(bi)+' a '+dataBR(bf)+' ('+_diasTxt(bi,bf)+')':dataBR(bi)):'';
    var rh=7.2+linhas.length*3.15+2;
    if(y+rh>BOT-12){newPage();sec('2. MÃO DE OBRA E SERVIÇOS - CONTINUAÇÃO')}
    rect(M,y,W,6.4,C.soft);font(7.8,'bold',C.navy);doc.text(head,M+3,y+4.4);
-   if(quando){font(6.6,'normal',C.muted);doc.text(quando,M+W-34,y+4.4,{align:'right'})}
+   if(quando){font(6.6,'normal',C.muted);doc.text(quando,M+W-30,y+4.4,{align:'right'})}
    font(7.8,'bold',C.text);doc.text(Number(tNum(b.valor))>0?_tpdfMoney(tNum(b.valor)):'-',M+W-3,y+4.4,{align:'right'});
    var yy=y+6.4;
    if(linhas.length){font(7.1,'normal',C.text);doc.text(linhas,M+5,yy+3.9,{lineHeightFactor:1.08});yy+=linhas.length*3.15+2}
@@ -9372,19 +9372,19 @@ function _mpdfBuild(doc,m,carro,_o){
  function footerAll(){
   var n=doc.getNumberOfPages();
   for(var i=1;i<=n;i++){doc.setPage(i);line(C.grid);doc.line(M,PH-5,PW-M,PH-5);font(5.8,'normal',C.muted);
-   doc.text('GuimasCar · Termo de manutenção · '+fmtPlaca(carro.placa),M,PH-2);doc.text('Página '+i+' de '+n,PW-M,PH-2,{align:'right'})}
+   doc.text('GuimasCar · Relatório de manutenção · '+fmtPlaca(carro.placa),M,PH-2);doc.text('Página '+i+' de '+n,PW-M,PH-2,{align:'right'})}
  }
  header(false);parts();labor();total();proximas();nota();
  if(_o.medir)return y;
  footerAll();
- doc.setProperties({title:'Termo de Manutenção - '+fmtPlaca(carro.placa),subject:'Termo de manutenção',author:'GuimasCar',creator:'GuimasCar Gestão'});
+ doc.setProperties({title:'Relatório de Manutenção - '+fmtPlaca(carro.placa),subject:'Relatório de manutenção',author:'GuimasCar',creator:'GuimasCar Gestão'});
  return doc;
 }
 function verTermoManut(id){
  var m=S.manutencoes&&S.manutencoes[id];if(!m){toast('Manutenção não encontrada');return}
  var c=S.carros&&S.carros[m.carro]||{nome:m.carro,placa:m.carro,motor:''};
  if(window._mpdfBusy){toast('PDF já está sendo preparado');return}
- window._mpdfBusy=true;toast('📄 Gerando termo de manutenção…');
+ window._mpdfBusy=true;toast('📄 Gerando relatório de manutenção…');
  garantirJspdf().then(function(){
   if(!(window.jspdf&&window.jspdf.jsPDF))throw new Error('Gerador PDF indisponível');
   var doc=new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true,putOnlyUsedFonts:true});
