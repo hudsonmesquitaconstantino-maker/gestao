@@ -316,7 +316,16 @@ body.mcOn{overflow:hidden}
 .mcDatas{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .mcData{font-size:13px;font-weight:600;background:var(--red-s);color:var(--red);border-radius:6px;padding:3px 8px;font-variant-numeric:tabular-nums}
 .mcData.obr{background:#FFF1DC;color:#8A5300}
+button.mcData{border:0;font-family:inherit;cursor:pointer}
 .mcAddRow{display:flex;gap:8px;margin-top:6px}
+/* v22 · nova multa na consulta: data + valor lado a lado, obrigatória e o botão embaixo */
+.mcAddGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.mcF{display:flex;flex-direction:column;gap:4px;min-width:0}
+.mcF span{font-size:12px;font-weight:600;color:var(--mut)}
+.mcF input{width:100%;box-sizing:border-box;min-width:0;border:1px solid var(--line);border-radius:10px;padding:0 10px;min-height:44px;font-size:16px;background:#fff;font-family:inherit}
+.mcAddRow2{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
+.mcObr{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--ink)}
+.mcObr input{width:20px;height:20px}
 .mcAddRow input{flex:1;min-width:0;border:1px solid var(--line);border-radius:10px;padding:0 10px;min-height:44px;font-size:16px;background:#fff}
 .mcPe{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;margin-top:auto;position:sticky;bottom:0;padding:10px 0 calc(4px + env(safe-area-inset-bottom));background:linear-gradient(to top,var(--bg) 75%,rgba(242,243,245,0))}
 .mcBig{min-height:52px;font-size:16px;justify-content:center}
@@ -1438,7 +1447,7 @@ function fazerBackup(){
 
 /* ---------- v2 · MODO CONSULTA (rotina de segunda): um carro por vez, em tela cheia ----------
    Mesmos dados e mesmas regras: só marca "conferido hoje", copia Renavam/CPF/placa e
-   adiciona multa nova (sem valor, como sempre). Valor, obrigatória e baixa continuam no cartão. */
+   adiciona multa nova com data e valor (v22). Baixa continua no cartão. */
 let MC_ID = null, RES_ABERTO = false;
 const obrSemValor = v => v.multas.filter(m => m.obrig && m.valor == null).length;
 function mcLista(){ return ordenar(S.veiculos.slice()); }
@@ -1464,7 +1473,7 @@ function mcRender(){
     return;
   }
   const t = tot(v);
-  const datas = v.multas.map(m => `<span class="mcData${m.obrig ? ' obr' : ''}">${br(m.data)}${m.obrig ? ' · obrig.' : ''}</span>`).join('');
+  const datas = v.multas.map(m => `<button class="mcData${m.obrig ? ' obr' : ''}" data-mc="val" data-fid="${m.id}">${br(m.data)} · ${m.valor != null ? money(m.valor) : 'sem valor ✎'}${m.obrig ? ' · obrig.' : ''}</button>`).join('');
   const linha = (rot, val) => `<button class="mcCp" data-mc="cp" data-v="${esc(val)}"><small>${esc(rot)}</small><b>${esc(val || '—')}</b><span>Copiar</span></button>`;
   $('#mc .mcIn').innerHTML = topo + `
     <div class="mcCar">
@@ -1472,7 +1481,10 @@ function mcRender(){
         <div><div class="mcNome">${esc(v.nome)}</div><div class="sub"><span class="tg ${v.frota}">${v.frota === 'hudson' ? 'Frota Hudson' : 'Frota Fábio'}</span>${motoristaTag(v)}</div></div></div>
       <div class="mcCopias">${linha('Renavam', v.renavam)}${linha(v.docTipo || 'CPF', v.doc)}${linha('Placa', v.placa)}</div>
       <div class="mcMultas"><div class="mcK">${t.n ? t.n + (t.n === 1 ? ' multa em aberto' : ' multas em aberto') : 'Nenhuma multa em aberto'}</div>${datas ? `<div class="mcDatas">${datas}</div>` : ''}</div>
-      <div class="mcAdd"><label class="mcK" for="mcData">Apareceu multa nova?</label><div class="mcAddRow"><input type="date" id="mcData" max="${isoHoje()}"><button class="btn" data-mc="add">＋ Adicionar</button></div></div>
+      <div class="mcAdd"><div class="mcK">Apareceu multa nova?</div>
+        <div class="mcAddGrid"><label class="mcF"><span>Data</span><input type="date" id="mcData" max="${isoHoje()}"></label>
+        <label class="mcF"><span>Valor (R$)</span><input id="mcValor" inputmode="decimal" placeholder="opcional" autocomplete="off"></label></div>
+        <div class="mcAddRow2"><label class="mcObr"><input type="checkbox" id="mcObr"> Obrigatória p/ documento</label><button class="btn" data-mc="add">＋ Adicionar</button></div></div>
     </div>
     <div class="mcPe"><button class="btn mcPular" data-mc="pular">Pular</button><button class="btn grn mcBig" data-mc="ok">${t.n ? 'Conferido' : 'Sem multa'} ✓ · próximo</button></div>`;
 }
@@ -1486,8 +1498,20 @@ document.addEventListener('click', e => {
   if(a === 'add'){
     const d = ($('#mcData') || {}).value;
     if(!d){ toast('Escolha a data da multa'); return; }
-    v.multas.push({id:uid(), data:d, valor:null, obs:''}); v.multas.sort(cmpData); v.conferido = isoHoje();
-    save(); mcRender(); toast(`Multa de ${br(d)} adicionada`); return;
+    /* v22 · valor (e obrigatória) já na consulta — não precisa voltar no cartão depois */
+    const val = parseValor(($('#mcValor') || {}).value), m = {id:uid(), data:d, valor:val, obs:''};
+    if(($('#mcObr') || {}).checked) m.obrig = true;
+    v.multas.push(m); v.multas.sort(cmpData); v.conferido = isoHoje();
+    save(); mcRender(); toast(`Multa de ${br(d)}${val != null ? ' · ' + money(val) : ''} adicionada`); return;
+  }
+  if(a === 'val'){
+    /* v22 · tocar numa multa da lista: coloca/corrige o valor ali mesmo */
+    const m = v.multas.find(x => x.id === b.dataset.fid); if(!m) return;
+    const c = modal(`<h2>Valor da multa</h2><p class="hint">${esc(v.placa || '')} · multa de ${br(m.data)}</p>
+      <label class="nmF"><span>Valor (R$)</span><input id="mvValor" inputmode="decimal" placeholder="ex.: 195,23" value="${m.valor != null ? num2(m.valor) : ''}" style="text-align:right;border:1px solid var(--line);border-radius:10px;min-height:42px;padding:0 10px;font-size:16px;max-width:55%"></label>
+      <div class="row" style="margin-top:14px"><button class="btn" data-close>Cancelar</button><button class="btn pri" id="mvOk">Salvar</button></div>`);
+    $('#mvOk', c).onclick = () => { m.valor = parseValor($('#mvValor', c).value); save(); fechar(); mcRender(); toast(m.valor != null ? 'Valor salvo · ' + money(m.valor) : 'Valor removido'); };
+    return;
   }
   if(a === 'pular'){ const p = mcProximo(v.id); if(p){ MC_ID = p; mcRender(); } else toast('Não há outro carro para conferir'); return; }
   if(a === 'ok'){ v.conferido = isoHoje(); save(); MC_ID = mcProximo(v.id); mcRender(); return; }
