@@ -1288,6 +1288,32 @@ html.teclado .n3nav{visibility:hidden;pointer-events:none}
 .n3busca input{border-radius:9px!important;min-height:38px!important;font-size:15px!important}
 .n3sw input[type=checkbox]{transform:scale(.88);transform-origin:right center}
 .n3 .n3sw>span{max-width:78%!important}
+/* ===================== v210 · manutenção: lista limpa + um item aberto por vez ===================== */
+.n3lista{border-radius:10px}
+.n3it{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;width:100%;border:0;border-bottom:.5px solid var(--bord);background:none;padding:10px 12px 10px 16px;min-height:52px;text-align:left;font-family:var(--sf);color:var(--tx);cursor:pointer}
+.n3it:active{background:#F2F3F5}
+.n3itTx{min-width:0}
+.n3itTx b{display:block;font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.n3itTx small{display:block;font-size:13px;color:var(--tx2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.n3itF{font-weight:400;color:var(--tx2)}
+.n3itV{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.n3itV i{font-style:normal;font-weight:400;color:#A3A8AF;font-size:13.5px}
+.n3tag{font-style:normal;margin-left:6px;font-size:11.5px;font-weight:600;color:#8A5300;background:#FFF1DC;border-radius:4px;padding:1px 5px}
+.n3itAdd{display:block;width:100%;border:0;background:none;text-align:left;color:var(--ac);font:600 15px var(--sf);padding:0 16px;min-height:48px;cursor:pointer}
+.n3itAdd:active{background:#F2F3F5}
+/* o item aberto: destacado, com os campos e os botões Remover / OK */
+.n3ed{background:#FBFBFC;border-bottom:.5px solid var(--bord);box-shadow:inset 3px 0 0 var(--ac)}
+.n3ed .n3f{background:transparent}
+.n3ed .n3ta{min-height:24px}
+.n3maisEd{margin:0;border-bottom:.5px solid var(--bord)}
+.n3maisEd summary{padding:10px 16px;font-size:13.5px}
+.n3maisEd[open] summary{border-bottom:.5px solid var(--bord)}
+.n3maisEd .n3f{border-bottom:.5px solid var(--bord)}.n3maisEd .n3f:last-child{border-bottom:0}
+.n3edBar{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px 10px 16px}
+.n3edX{border:0;background:none;color:var(--red);font:500 14.5px var(--sf);padding:8px 0;cursor:pointer}
+.n3edOk{border:0;background:#1C1C1E;color:#fff;font:600 15px var(--sf);border-radius:8px;min-height:38px;padding:0 22px;cursor:pointer}
+.n3totF{margin-top:18px}
+.n3maisF{margin:4px 0 0}.n3maisF summary{padding:8px 4px}.n3maisF .n3grp{margin-top:4px}
 /* ===================== v194 — Pendências e Frota ===================== */
 .n4nums{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:2px 0 6px}
 .n4nums button{border:0;background:var(--card);border-radius:14px;padding:12px 8px 10px;text-align:center;font-family:var(--sf);color:var(--tx);box-shadow:0 1px 2px rgba(17,24,39,.04)}
@@ -1391,7 +1417,7 @@ html.teclado .overlay{top:0!important}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=209; var APP_DATE='07/10/2026';
+var APP_VER=210; var APP_DATE='13/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -8667,7 +8693,8 @@ function n3Passo(id,d,abs){
   var bb=document.getElementById(id+'Barra');if(bb)bb.hidden=true;
   var nv=document.getElementById(id+'Nav');if(nv){nv.hidden=!tem;nv.children[0].hidden=true;nv.classList.add('so1');nv.children[1].textContent=cfg.fim}
   if(cfg.ao)try{cfg.ao(-1)}catch(e){}
-  if(abs&&d===0)try{window.scrollTo(0,0)}catch(e){}
+  /* v210: toda troca de tela (escolher o carro, trocar, abrir) começa do TOPO — antes mantinha a rolagem da lista e abria no meio */
+  if(abs)try{window.scrollTo(0,0);var mn=document.getElementById('main');if(mn)mn.scrollTop=0}catch(e){}
   return;
  }
  if(!abs&&d>0&&cfg.at===n-1){cfg.salvar();return}
@@ -8691,8 +8718,8 @@ function vManutN3(){
  var temRasc=rasc&&(rasc.MP||[]).concat(rasc.MB||[]).some(function(x){return (x.valor||x.desc||x.servicos||x.nome||'').toString().trim()});
  if(temRasc){MP=rasc.MP||[];MB=rasc.MB||[];MFROTA=(rasc.frota==='hudson'||rasc.frota==='fabio')?rasc.frota:'';MFROTA_PK=rasc.carro||'';N3.pk=rasc.carro||''}
  else if(!MP.length&&!MB.length){N3.pk=N3.pk&&S.carros[N3.pk]?N3.pk:''}
- if(!MP.length)MP=[{valor:'',desc:'',loja:'',data:'',pendenteFinanceiro:false}];
- if(!MB.length)MB=[{titulo:'',nome:'',valor:'',servicos:'',dataIni:'',dataFim:'',pendenteFinanceiro:false}];
+ /* v210: começa sem peça e sem profissional em branco — você adiciona o que precisar */
+ MP=MP.filter(n3Tem.p);MB=MB.filter(n3Tem.b);N3.ed='';
  var passoAntes=(N3P.n3m&&N3P.n3m.at)||0;
  N3P.n3m={unica:1,temCarro:function(){return !!N3.pk},at:0,nomes:N3M_NOMES,fim:'Salvar manutenção',salvar:n3Salvar,
   pode:function(at){if(at===0&&!N3.pk){toast('Escolha o carro');return false}return true},
@@ -8718,12 +8745,11 @@ function vManutN3(){
   /* 3 · peças */
   '<section class="n3passo" hidden><div class="n3h">Peças <b id="mTotP">R$ 0,00</b></div><div id="n3Pecas"></div></section>'+
   /* 4 · mão de obra */
-  '<section class="n3passo" hidden><div class="n3h">Mão de obra <b id="mTotM">R$ 0,00</b></div><div id="n3Blocos"></div>'+
-   '<button class="n3addCard" onclick="n3NovoBloco()">＋ Adicionar outro profissional</button></section>'+
+  '<section class="n3passo" hidden><div class="n3h">Mão de obra <b id="mTotM">R$ 0,00</b></div><div id="n3Blocos"></div></section>'+
   /* 5 · conferir e salvar */
-  '<section class="n3passo" hidden><div class="n3h">Fechamento</div>'+
-   '<div class="n3grp"><label class="n3f"><span>Data das peças <small>competência no fechamento</small></span><input type="date" id="mPecasData" value="'+hoje()+'" onchange="mRasc();n3DesenhaPecas()"></label></div>'+
-   '<div class="n3grp n3tot"><div class="n3f"><span>Total</span><b id="mTotG">R$ 0,00</b></div></div></section>'+
+  '<section class="n3passo" hidden>'+
+   '<div class="n3grp n3tot n3totF"><div class="n3f"><span>Total da manutenção</span><b id="mTotG">R$ 0,00</b></div></div>'+
+   '<details class="n3mais n3maisF"><summary>Ajustes do fechamento</summary><div class="n3grp"><label class="n3f"><span>Mês das peças <small>em que fechamento elas entram</small></span><input type="date" id="mPecasData" value="'+hoje()+'" onchange="mRasc();n3DesenhaPecas()"></label></div></details></section>'+
   n3PassoNav('n3m')+
  '</div>';
  setTimeout(function(){
@@ -8780,44 +8806,104 @@ function n3DataMudou(){
  mRasc();
 }
 
-/* ---------- 3 · PEÇAS ---------- */
-function n3TiraPecaVazia(){MP=MP.filter(function(p){return String(p.desc||'').trim()||parseBRL(p.valor)>0})}
-/* v206: cada peça é um cartão separado (antes parecia tudo um bloco só) */
-function n3DesenhaPecas(){
- var el=document.getElementById('n3Pecas');if(!el)return;
+/* ---------- 3 e 4 · PEÇAS e MÃO DE OBRA (v210) ----------
+   Pedido do Hudson (13/10/2026): os cartões sempre abertos confundiam na hora de escrever.
+   Agora é uma LISTA limpa (descrição à esquerda, valor à direita). Toque num item para editar:
+   só ele abre, com poucos campos; "OK" fecha. Datas e "contabilizar" ficam em "Mais opções".
+   Os dados continuam os MESMOS (MP = peças, MB = mão de obra) e salvam pelo MESMO gerarManut. */
+var n3Tem={p:function(x){return x&&(String(x.desc||'').trim()||parseBRL(x.valor)>0)},
+ b:function(x){return x&&(String(x.nome||'').trim()||String(x.servicos||'').trim()||parseBRL(x.valor)>0)}};
+function n3TiraPecaVazia(){MP=MP.filter(n3Tem.p)}
+function n3R$(v){var n=parseBRL(v);return n>0?'R$ '+fmtBRL(n):''}
+function n3Fecha(){
+ /* fecha o item aberto; se ficou em branco, some da lista */
+ var k=N3.ed||'';N3.ed='';
+ if(k.charAt(0)==='p'){var i=+k.slice(1);if(MP[i]&&!n3Tem.p(MP[i]))MP.splice(i,1)}
+ if(k.charAt(0)==='b'){var j=+k.slice(1);if(MB[j]&&!n3Tem.b(MB[j]))MB.splice(j,1)}
+}
+function n3Abre(k){
+ if(N3.ed===k){n3Fecha();n3DesenhaItens();mRasc();return}
+ var t=k.charAt(0),i=+k.slice(1),a=N3.ed||'',nA=(t==='p'?MP:MB).length;
+ n3Fecha();
+ /* se o item que fechou estava em branco e antes deste na mesma lista, ele saiu: o índice anda uma casa */
+ if((t==='p'?MP:MB).length<nA&&a.charAt(0)===t&&+a.slice(1)<i)i--;
+ N3.ed=t+i;n3DesenhaItens();mRasc();n3MostraEd(false);
+}
+function n3Novo(t){
+ n3Fecha();
+ if(t==='p'){MP.push({valor:'',desc:'',loja:'',data:'',pendenteFinanceiro:false});N3.ed='p'+(MP.length-1)}
+ else{MB.push({titulo:'',nome:'',valor:'',servicos:'',dataIni:'',dataFim:'',pendenteFinanceiro:false});N3.ed='b'+(MB.length-1)}
+ n3DesenhaItens();mRasc();n3MostraEd(true);
+}
+function n3Remove(){
+ var k=N3.ed||'';N3.ed='';
+ if(k.charAt(0)==='p')MP.splice(+k.slice(1),1);
+ if(k.charAt(0)==='b')MB.splice(+k.slice(1),1);
+ n3DesenhaItens();mRasc();
+}
+function n3Ok(){n3Fecha();n3DesenhaItens();mRasc()}
+function n3MostraEd(foca){
+ var ed=document.querySelector('.n3ed');if(!ed)return;
+ /* foco no 1º campo dentro do toque (o iPhone só abre o teclado assim), sem o "pulo" da tela */
+ if(foca){var f=ed.querySelector('textarea,input');if(f)try{f.focus({preventScroll:true})}catch(e){f.focus()}}
+ var mn=document.getElementById('main');if(!mn)return;
+ var r=ed.getBoundingClientRect(),m=mn.getBoundingClientRect(),hd=document.querySelector('body>header'),top=Math.max(m.top,hd?hd.getBoundingClientRect().bottom:0)+8;
+ if(r.top<top)mn.scrollTop-=(top-r.top);
+ else{var limite=(window.visualViewport?window.visualViewport.height:innerHeight)-(document.documentElement.classList.contains('teclado')?16:150);if(r.top>limite-120)mn.scrollTop+=Math.min(r.top-top,r.top-(limite-260))}
+}
+function n3EdPeca(p,i){
  var pad=(document.getElementById('mPecasData')||{}).value||hoje();
- var h='';MP.forEach(function(p,i){
-  h+='<div class="n3card"><div class="n3cardH"><span>Peça '+(i+1)+'</span>'+(MP.length>1?'<button class="n3mini n3x" onclick="MP.splice('+i+',1);n3DesenhaPecas();mRasc()">Remover</button>':'')+'</div>'+
-   '<label class="n3f n3col"><span>Descrição</span><textarea rows="1" class="n3ta" oninput="MP['+i+'].desc=this.value;taGrow(this);mRasc()" autocomplete="off" autocapitalize="sentences">'+esc(p.desc)+'</textarea></label>'+
-   '<label class="n3f"><span>Valor (R$)</span><input inputmode="decimal" value="'+esc(p.valor)+'" oninput="MP['+i+'].valor=this.value;mTotais()"></label>'+
-   '<label class="n3f"><span>Loja</span><input value="'+esc(p.loja)+'" oninput="MP['+i+'].loja=this.value;mRasc()"></label>'+
+ return '<div class="n3ed">'+
+  '<label class="n3f n3col"><span>Peça</span><textarea rows="1" class="n3ta" placeholder="ex.: filtro de óleo" oninput="MP['+i+'].desc=this.value;taGrow(this);mRasc()" autocomplete="off" autocapitalize="sentences">'+esc(p.desc)+'</textarea></label>'+
+  '<label class="n3f"><span>Valor (R$)</span><input inputmode="decimal" autocomplete="off" value="'+esc(p.valor)+'" oninput="MP['+i+'].valor=this.value;mTotais()"></label>'+
+  '<label class="n3f"><span>Loja</span><input autocomplete="off" value="'+esc(p.loja)+'" oninput="MP['+i+'].loja=this.value;mRasc()"></label>'+
+  '<details class="n3mais n3maisEd"><summary>Mais opções</summary>'+
    '<label class="n3f"><span>Data desta peça</span><input type="date" value="'+esc(p.data||pad)+'" onchange="MP['+i+'].data=this.value;mRasc()"></label>'+
    '<label class="n3f n3sw"><span>Contabilizar no fechamento</span><input type="checkbox"'+(p.pendenteFinanceiro?'':' checked')+' onchange="MP['+i+'].pendenteFinanceiro=!this.checked;mRasc()"></label>'+
-  '</div>'});
- el.innerHTML=h+'<button class="n3addCard" onclick="MP.push({valor:\'\',desc:\'\',loja:\'\',data:\'\',pendenteFinanceiro:false});n3DesenhaPecas();var t=document.querySelectorAll(\'#n3Pecas .n3ta\');if(t.length)t[t.length-1].focus()">＋ Adicionar outra peça</button>';
- setTimeout(function(){document.querySelectorAll('#n3Pecas .n3ta').forEach(taGrow)},10);
- mTotais();
+  '</details>'+
+  '<div class="n3edBar"><button type="button" class="n3edX" onclick="n3Remove()">Remover</button><button type="button" class="n3edOk" onclick="n3Ok()">OK</button></div>'+
+ '</div>';
 }
-
-/* ---------- 4 · MÃO DE OBRA ---------- */
-function n3DesenhaBlocos(){
- var el=document.getElementById('n3Blocos');if(!el)return;
+function n3EdBloco(b,i){
  var ini=(document.getElementById('mIni')||{}).value||hoje(),fim=(document.getElementById('mFim')||{}).value||ini;
- var h='';MB.forEach(function(b,i){
-  h+='<div class="n3card n3bloco"><div class="n3cardH"><span>Profissional '+(i+1)+'</span>'+(MB.length>1?'<button class="n3mini n3x" onclick="MB.splice('+i+',1);n3DesenhaBlocos();mRasc()">Remover</button>':'')+'</div>'+
-   '<label class="n3f"><span>Quem fez</span><input value="'+esc(b.nome)+'" oninput="MB['+i+'].nome=this.value;mRasc()"></label>'+
-   '<label class="n3f"><span>Função</span><input value="'+esc(b.titulo)+'" placeholder="Mecânico" oninput="MB['+i+'].titulo=this.value;mRasc()"></label>'+
-   '<label class="n3f"><span>Valor (R$)</span><input inputmode="decimal" value="'+esc(b.valor)+'" oninput="MB['+i+'].valor=this.value;mTotais()"></label>'+
-   '<label class="n3f n3col"><span>Serviços realizados <small>um por linha</small></span><textarea rows="3" oninput="MB['+i+'].servicos=this.value;taGrow(this);mRasc()">'+esc(b.servicos)+'</textarea></label>'+
+ return '<div class="n3ed">'+
+  '<label class="n3f"><span>Quem fez</span><input autocomplete="off" value="'+esc(b.nome)+'" oninput="MB['+i+'].nome=this.value;mTotais()"></label>'+
+  '<label class="n3f"><span>Função</span><input autocomplete="off" value="'+esc(b.titulo)+'" placeholder="Mecânico" oninput="MB['+i+'].titulo=this.value;mRasc()"></label>'+
+  '<label class="n3f"><span>Valor (R$)</span><input inputmode="decimal" autocomplete="off" value="'+esc(b.valor)+'" oninput="MB['+i+'].valor=this.value;mTotais()"></label>'+
+  '<label class="n3f n3col"><span>O que foi feito <small>um serviço por linha</small></span><textarea rows="2" oninput="MB['+i+'].servicos=this.value;taGrow(this);mRasc()">'+esc(b.servicos)+'</textarea></label>'+
+  '<details class="n3mais n3maisEd"><summary>Mais opções</summary>'+
    '<label class="n3f"><span>Início deste serviço</span><input type="date" value="'+esc(b.dataIni||ini)+'" onchange="MB['+i+'].dataIni=this.value;mRasc()"></label>'+
    '<label class="n3f"><span>Final / competência</span><input type="date" value="'+esc(b.dataFim||fim)+'" onchange="MB['+i+'].dataFim=this.value;mRasc()"></label>'+
    '<label class="n3f n3sw"><span>Contabilizar no fechamento</span><input type="checkbox"'+(b.pendenteFinanceiro?'':' checked')+' onchange="MB['+i+'].pendenteFinanceiro=!this.checked;mRasc()"></label>'+
-  '</div>'});
- el.innerHTML=h;
- setTimeout(function(){document.querySelectorAll('#n3Blocos textarea').forEach(taGrow)},10);
+  '</details>'+
+  '<div class="n3edBar"><button type="button" class="n3edX" onclick="n3Remove()">Remover</button><button type="button" class="n3edOk" onclick="n3Ok()">OK</button></div>'+
+ '</div>';
+}
+function n3LinhaPeca(p,i){
+ var pend=p.pendenteFinanceiro?'<em class="n3tag">não contabiliza</em>':'';
+ return '<button type="button" class="n3it" onclick="n3Abre(\'p'+i+'\')"><span class="n3itTx"><b>'+esc(String(p.desc||'').trim()||'Peça sem nome')+'</b>'+((p.loja||pend)?'<small>'+esc(p.loja||'')+pend+'</small>':'')+'</span><span class="n3itV">'+(n3R$(p.valor)||'<i>sem valor</i>')+'</span><span class="n3chev">›</span></button>';
+}
+function n3LinhaBloco(b,i){
+ var sv=String(b.servicos||'').split('\n').map(function(x){return x.trim()}).filter(Boolean);
+ var pend=b.pendenteFinanceiro?'<em class="n3tag">não contabiliza</em>':'';
+ var v=parseBRL(b.valor)||valorDoBloco(b.nome);
+ return '<button type="button" class="n3it" onclick="n3Abre(\'b'+i+'\')"><span class="n3itTx"><b>'+esc(String(b.nome||'').trim()||'Profissional')+(b.titulo?' <span class="n3itF">· '+esc(b.titulo)+'</span>':'')+'</b>'+((sv.length||pend)?'<small>'+esc(sv.slice(0,2).join(' · '))+(sv.length>2?' +'+(sv.length-2):'')+pend+'</small>':'')+'</span><span class="n3itV">'+(v>0?'R$ '+fmtBRL(v):'<i>sem valor</i>')+'</span><span class="n3chev">›</span></button>';
+}
+function n3DesenhaItens(){
+ var ep=document.getElementById('n3Pecas'),eb=document.getElementById('n3Blocos');
+ if(ep){var h='<div class="n3grp n3lista">';
+  MP.forEach(function(p,i){h+=N3.ed==='p'+i?n3EdPeca(p,i):n3LinhaPeca(p,i)});
+  h+='<button type="button" class="n3itAdd" onclick="n3Novo(\'p\')">＋ Adicionar peça</button></div>';ep.innerHTML=h}
+ if(eb){var g='<div class="n3grp n3lista">';
+  MB.forEach(function(b,i){g+=N3.ed==='b'+i?n3EdBloco(b,i):n3LinhaBloco(b,i)});
+  g+='<button type="button" class="n3itAdd" onclick="n3Novo(\'b\')">＋ Adicionar mão de obra</button></div>';eb.innerHTML=g}
+ setTimeout(function(){document.querySelectorAll('.n3ed textarea').forEach(taGrow)},10);
  mTotais();
 }
-function n3NovoBloco(){MB.push({titulo:'',nome:'',valor:'',servicos:'',dataIni:'',dataFim:'',pendenteFinanceiro:false});n3DesenhaBlocos();mRasc();setTimeout(function(){var t=document.querySelectorAll('#n3Blocos .n3bloco');var x=t[t.length-1];if(x){try{x.scrollIntoView({block:'start',behavior:'smooth'});x.querySelector('input').focus()}catch(e){}}},40)}
+/* nomes antigos continuam funcionando (outras partes do app chamam estes) */
+function n3DesenhaPecas(){n3DesenhaItens()}
+function n3DesenhaBlocos(){n3DesenhaItens()}
+function n3NovoBloco(){n3Novo('b')}
 
 /* ---------- 5 · CONFERIR ---------- */
 function n3DesenhaRevisao(){
@@ -8835,7 +8921,7 @@ function n3DesenhaRevisao(){
 /* ---------- SALVAR: a mesma gravação de sempre, e abre a manutenção pronta ---------- */
 function n3Salvar(){
  var antes={};Object.keys(S.manutencoes||{}).forEach(function(k){antes[k]=1});
- var bkP=MP.slice();n3TiraPecaVazia();
+ n3Fecha();n3DesenhaItens();var bkP=MP.slice();n3TiraPecaVazia();
  gerarManut();
  var novo='';Object.keys(S.manutencoes||{}).forEach(function(k){if(!antes[k])novo=k});
  if(!novo){MP=bkP;return}
