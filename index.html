@@ -1403,6 +1403,8 @@ html.teclado .n3nav{visibility:hidden;pointer-events:none}
 .mpdfOutra span{flex:1}.mpdfOutra input{width:58px;border:1px solid #D6D9DE;border-radius:8px;padding:8px;font-size:16px;text-align:center}
 .mpdfOutra button{border:0;background:#1C1C1E;color:#fff;border-radius:8px;padding:9px 12px;font:600 14px var(--sf)}
 .mpdfX{display:block;width:100%;border:0;background:none;color:#C27A16;font:600 15px var(--sf);padding:12px 0 4px;cursor:pointer}
+/* v217 · há quantos dias foi a manutenção */
+.haChip{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:#EEF0F3;color:#5B616A;font-size:.78em;font-weight:600;white-space:nowrap;vertical-align:middle}
 /* ===================== v194 — Pendências e Frota ===================== */
 .n4nums{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:2px 0 6px}
 .n4nums button{border:0;background:var(--card);border-radius:14px;padding:12px 8px 10px;text-align:center;font-family:var(--sf);color:var(--tx);box-shadow:0 1px 2px rgba(17,24,39,.04)}
@@ -1512,7 +1514,7 @@ html.teclado .overlay{top:0!important}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=216; var APP_DATE='13/10/2026';
+var APP_VER=217; var APP_DATE='13/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -2931,7 +2933,7 @@ function grupoRodas(c,pref,titulo){
     var abre=(v&&v.mid&&S.manutencoes&&S.manutencoes[v.mid]);
     h+='<div class="kv'+(abre?' tap':'')+'" style="padding-left:14px;opacity:.9"'+
       (abre?' onclick="verManut(\''+v.mid+'\')"':'')+'><b style="font-weight:400">'+p[1]+'</b><span>'+
-      (v&&(v.km||v.data)?((v.km?fmtKm(v.km)+' km':'')+(v.km&&v.data?' · ':'')+(v.data?dataBR(v.data):'')):'—')+
+      (v&&(v.km||v.data)?((v.km?fmtKm(v.km)+' km':'')+(v.km&&v.data?' · ':'')+(v.data?dataBR(v.data)+_haCurto(v.data):'')):'—')+
       (abre?' <span style="opacity:.45">›</span>':'')+'</span></div>';
   });
   return h+'</details>';
@@ -3154,7 +3156,7 @@ function grupoCatalogo(pk){
   h+='<div class="kv'+(abre?' tap':'')+'" style="padding-left:14px"'+
      (abre?' onclick="verManut(\''+it.mid+'\')"':'')+'><b style="font-weight:400">'+esc(it.nome)+
      (it.lado?' <span class="sub" style="opacity:.65">'+esc(it.lado)+'</span>':'')+'</b><span>'+
-     (it.km?fmtKm(it.km)+' km':'')+(it.km&&it.data?' · ':'')+(it.data?dataBR(it.data):'')+
+     (it.km?fmtKm(it.km)+' km':'')+(it.km&&it.data?' · ':'')+(it.data?dataBR(it.data)+_haCurto(it.data):'')+
      (abre?' <span style="opacity:.45">›</span>':'')+'</span></div>';
  });
  return h+'</div></details>';
@@ -3209,7 +3211,7 @@ function _fichaV180(pk){window._fichaPk=pk;
    function _ult(u){
     if(!u||!(u.km||u.data))return '';
     return '<div class="sub" style="text-align:right;margin:-2px 0 4px">última: '+
-      (u.km?fmtKm(u.km)+' km':'')+(u.km&&u.data?' · ':'')+(u.data?dataBR(u.data):'')+
+      (u.km?fmtKm(u.km)+' km':'')+(u.km&&u.data?' · ':'')+(u.data?dataBR(u.data)+_haCurto(u.data):'')+
       (u.src==='manual'?' <span style="opacity:.7">(manual)</span>':'')+'</div>';
    }
   h+='<div class="kv"><b>🛢 Óleo'+(c.oleoTipo?' ('+esc(c.oleoTipo)+')':'')+'</b><span>'+(c.proxOleoKm?('próxima: '+fmtKm(c.proxOleoKm)+' km'+(km?(fo<=0?' · <span style="color:var(--warn)">VENCIDO</span>':' · faltam '+fmtKm(fo)+' km'):'')):'—')+'</span></div>';
@@ -3221,14 +3223,14 @@ function _fichaV180(pk){window._fichaPk=pk;
   }else {
    var _ucmd=(c.ultTrocas||{}).comando;
    h+='<div class="kv"><b>⛓ Corrente de comando</b><span>'+
-     (_ucmd&&(_ucmd.km||_ucmd.data)?((_ucmd.km?fmtKm(_ucmd.km)+' km':'')+(_ucmd.km&&_ucmd.data?' · ':'')+(_ucmd.data?dataBR(_ucmd.data):'')):'—')+'</span></div>';
+     (_ucmd&&(_ucmd.km||_ucmd.data)?((_ucmd.km?fmtKm(_ucmd.km)+' km':'')+(_ucmd.km&&_ucmd.data?' · ':'')+(_ucmd.data?dataBR(_ucmd.data)+_haCurto(_ucmd.data):'')):'—')+'</span></div>';
   }
   var COMPS=[['vela','🔥 Vela'],['cabos','🔥 Cabos de vela'],['embreagem','⚙️ Embreagem'],['bateria','🔋 Bateria'],['alternador','⚡ Alternador'],['arranque','🔑 Arranque'],['freios','🛑 Freios (pastilha)'],['ventoinha','❄️ Ventoinha'],['radiador','🌡 Radiador'],['caixaDir','🎯 Caixa de direção'],['bombaAgua','💧 Bomba d\'água'],['motor','🔩 Motor (cabeçote/bloco)']];
   h+='<details class="v99details"><summary class="v99summary"><span>🧰 Histórico por componente</span><span>componentes ›</span></summary><div class="v99detailbody"><div class="sect">Componentes <span class="x" style="display:inline;padding:0 6px" onclick="editarTrocas(\''+pk+'\')">✎</span></div>';
   COMPS.forEach(function(par){
    if(par[0]==='correia'&&!c.temCorreia)return;
    var u=(c.ultTrocas||{})[par[0]];
-   var val=(u&&(u.km||u.data)?((u.km?fmtKm(u.km)+' km':'')+(u.km&&u.data?' · ':'')+(u.data?dataBR(u.data):'')):'—');
+   var val=(u&&(u.km||u.data)?((u.km?fmtKm(u.km)+' km':'')+(u.km&&u.data?' · ':'')+(u.data?dataBR(u.data)+_haCurto(u.data):'')):'—');
    /* Se sabemos qual manutenção gerou esta troca, a linha abre direto nela. */
    var abre=(u&&u.mid&&S.manutencoes&&S.manutencoes[u.mid]);
    h+='<div class="kv'+(abre?' tap':'')+'"'+(abre?' onclick="verManut(\''+u.mid+'\')"':'')+'>'+
@@ -3348,7 +3350,7 @@ h+='<div class="sect">Devolução do carro</div>';
  if(!mans.length)h+='<div class="sub">Nenhuma manutenção registrada.</div>';
  mans.forEach(function(m){
   h+='<div class="card tap" style="margin:0 0 6px" onclick="verManut(\''+m.id+'\')"><div class="row"><div class="grow">'+
-   '<div class="tit" style="font-size:14px">'+esc(periodoTexto(m.dataIni,m.dataFim))+_diasChip(m.dataIni,m.dataFim)+'</div>'+
+   '<div class="tit" style="font-size:14px">'+esc(periodoTexto(m.dataIni,m.dataFim))+_diasChip(m.dataIni,m.dataFim)+_haChip(m)+'</div>'+
    '<div class="sub">'+esc(primNome(m.motorista))+(m.odometro>0?' · '+fmtKm(m.odometro)+' km':'')+'</div></div>'+
    '<div style="color:var(--warn);font-weight:800">R$ '+fmtBRL(m.total)+'</div></div></div>';
  });
@@ -3582,7 +3584,7 @@ function _g2Barra(nome,txt,cls,pct,cor,sub,on){
 }
 function _g2Saude(c,pk){
  var km=_g2Km(c),h='',VERM='var(--red)',AMA='var(--ac)',VERD='var(--ok)';
- function ult(u){return u&&(u.km||u.data)?'última: '+(u.km?fmtKm(u.km)+' km':'')+(u.km&&u.data?' · ':'')+(u.data?dataBR(u.data):''):''}
+ function ult(u){return u&&(u.km||u.data)?'última: '+(u.km?fmtKm(u.km)+' km':'')+(u.km&&u.data?' · ':'')+(u.data?dataBR(u.data)+_haCurto(u.data):''):''}
  if(c.proxOleoKm&&km){var f=c.proxOleoKm-km,iv=Number(c.oleoIntervalo)||10000;
   h+=_g2Barra('Óleo'+(c.oleoTipo?' <small>'+esc(c.oleoTipo)+'</small>':''),f<=0?'passou '+fmtKm(-f)+' km':'faltam '+fmtKm(f)+' km',f<=0?'g2red':f<=2000?'g2amb':'',f/iv*100,f<=0?VERM:f<=2000?AMA:VERD,'troca aos '+fmtKm(c.proxOleoKm)+' km'+(ult((c.ultTrocas||{}).oleo)?' · '+ult((c.ultTrocas||{}).oleo):''),'editarProg(\''+pk+'\')')}
  else h+=_g2Barra('Óleo',c.proxOleoKm?'sem km':'sem previsão','',4,'var(--bord)','','editarProg(\''+pk+'\')');
@@ -3626,7 +3628,7 @@ function fichaTab(t){
  try{if(window.growAll)growAll(b)}catch(e){}
 }
 function _g2ManRow(m){
- return '<div class="g2row g2rowM tap" onclick="verManut(\''+m.id+'\')"><div class="g2rowTx"><div class="g2t">'+esc(periodoTexto(m.dataIni,m.dataFim))+_diasChip(m.dataIni,m.dataFim)+'</div><div class="g2s">'+esc(primNome(m.motorista))+(m.odometro>0?' · '+fmtKm(m.odometro)+' km':'')+'</div></div><div class="g2val">R$ '+fmtBRL(m.total)+'</div></div>';
+ return '<div class="g2row g2rowM tap" onclick="verManut(\''+m.id+'\')"><div class="g2rowTx"><div class="g2t">'+esc(periodoTexto(m.dataIni,m.dataFim))+_diasChip(m.dataIni,m.dataFim)+_haChip(m)+'</div><div class="g2s">'+esc(primNome(m.motorista))+(m.odometro>0?' · '+fmtKm(m.odometro)+' km':'')+'</div></div><div class="g2val">R$ '+fmtBRL(m.total)+'</div></div>';
 }
 function _fichaTabHtml(pk,T){
  var c=S.carros[pk];if(!c)return '';
@@ -3647,7 +3649,7 @@ function _fichaTabHtml(pk,T){
   if(!c.temCorreia)COMPS.unshift(['comando','Corrente de comando']);
   h+='<div class="g2sub" id="g2Pecas"><span>Peças trocadas</span><button class="g2link" onclick="editarTrocas(\''+pk+'\')">Corrigir</button></div><div class="card g2pecas" style="margin:0 0 8px">';
   COMPS.forEach(function(par){var u=(c.ultTrocas||{})[par[0]];
-   var val=(u&&(u.km||u.data)?((u.km?fmtKm(u.km)+' km':'')+(u.km&&u.data?' · ':'')+(u.data?dataBR(u.data):'')):'—');
+   var val=(u&&(u.km||u.data)?((u.km?fmtKm(u.km)+' km':'')+(u.km&&u.data?' · ':'')+(u.data?dataBR(u.data)+_haCurto(u.data):'')):'—');
    var abre=(u&&u.mid&&S.manutencoes&&S.manutencoes[u.mid]);
    h+='<div class="kv'+(abre?' tap':'')+'"'+(abre?' onclick="verManut(\''+u.mid+'\')"':'')+'><b>'+par[1]+'</b><span>'+val+(abre?' <span style="opacity:.45">›</span>':'')+'</span></div>'});
   h+=grupoRodas(c,'pneu','Pneus')+grupoRodas(c,'amort','Amortecedores')+grupoRodas(c,'mola','Molas');
@@ -5861,7 +5863,7 @@ function tImportRenderLista(){
   var ck=!!TIMP_SEL[m.id];
   var ix=a.indexOf(m);
   h+='<div id="v138card_'+ix+'" class="v137impMaint'+(ck?' selected':'')+'"><button type="button" id="v138pick_'+ix+'" class="v138pickTop'+(ck?' on':'')+'" onclick="tImportToggleOne(\''+esc(m.id)+'\','+ix+')"><span class="v138check">'+(ck?'✓':'')+'</span><span class="grow">'+
-    '<span class="tit">'+esc(periodoTexto(m.dataIni,m.dataFim)||_tImpOrigemLabel(m))+_diasChip(m.dataIni,m.dataFim)+'</span>'+
+    '<span class="tit">'+esc(periodoTexto(m.dataIni,m.dataFim)||_tImpOrigemLabel(m))+_diasChip(m.dataIni,m.dataFim)+_haChip(m)+'</span>'+
     '<span class="sub" style="display:block">'+esc(primNome(m.motorista||''))+(m.odometro?' · '+fmtKm(m.odometro)+' km':'')+' · R$ '+fmtBRL(m.total||0)+' · '+(m.pecas||[]).length+' peça'+((m.pecas||[]).length===1?'':'s')+' · '+(m.blocos||[]).length+' bloco'+((m.blocos||[]).length===1?'':'s')+'</span>'+
     '<span class="v138pickText">'+(ck?'Selecionada':'Toque para selecionar')+'</span></span></button><details><summary>Ver itens desta manutenção</summary><div class="v137impPreview">'+_tImpResumoHtml(m)+'</div></details></div>';
  });
@@ -7359,7 +7361,7 @@ function editarManut(id){
  if(!EP.length)EP=[{valor:'',desc:'',loja:'',data:'',pendenteFinanceiro:false}];
  if(!EB.length)EB=[{titulo:'Mecânico',nome:'',valor:'',servicos:'',dataIni:'',dataFim:'',pendenteFinanceiro:false}];
  var c=S.carros[m.carro]||{nome:m.carro,placa:m.carro,motor:''};
- var h='<div class="v105editFlow"><div class="v102sheetHero"><div class="v102sheetIcon">✎</div><div><div class="v102eyebrow">MANUTENÇÃO · EDIÇÃO</div><h3>Editar manutenção</h3><div class="sub">'+esc(tituloCarro(c))+' · '+esc(fmtPlaca(c.placa))+' · '+esc(periodoTexto(m.dataIni,m.dataFim))+_diasChip(m.dataIni,m.dataFim)+'</div></div></div>'+
+ var h='<div class="v105editFlow"><div class="v102sheetHero"><div class="v102sheetIcon">✎</div><div><div class="v102eyebrow">MANUTENÇÃO · EDIÇÃO</div><h3>Editar manutenção</h3><div class="sub">'+esc(tituloCarro(c))+' · '+esc(fmtPlaca(c.placa))+' · '+esc(periodoTexto(m.dataIni,m.dataFim))+_diasChip(m.dataIni,m.dataFim)+_haChip(m)+'</div></div></div>'+
   '<div class="v102panel"><div class="v102panelHead"><span>🚗</span><div><b>Serviço registrado</b><small>Corrija os dados sem alterar o histórico fora deste lançamento.</small></div></div>'+
   '<label>Motorista</label><input id="edMot" value="'+esc(m.motorista||'')+'">'+
   '<div class="grid2"><div><label>Data de início</label><input type="date" id="edIni" onchange="edDesenha()" value="'+esc(m.dataIni||'')+'"></div>'+
@@ -7462,7 +7464,7 @@ function salvarEdicaoManut(){
 function verManut(id){
  var m=S.manutencoes[id];if(!m)return;
  var c=S.carros[m.carro]||{nome:m.carro,placa:m.carro,motor:''};
- var h='<div class="v102sheetHero"><div class="v102sheetIcon">🔧</div><div><div class="v102eyebrow">HISTÓRICO</div><h3>'+esc(tituloCarro(c))+'</h3><div class="sub">'+esc(fmtPlaca(c.placa))+' · '+esc(periodoTexto(m.dataIni,m.dataFim))+_diasChip(m.dataIni,m.dataFim)+'</div></div></div>'+
+ var h='<div class="v102sheetHero"><div class="v102sheetIcon">🔧</div><div><div class="v102eyebrow">HISTÓRICO</div><h3>'+esc(tituloCarro(c))+'</h3><div class="sub">'+esc(fmtPlaca(c.placa))+' · '+esc(periodoTexto(m.dataIni,m.dataFim))+_diasChip(m.dataIni,m.dataFim)+_haChip(m)+'</div></div></div>'+
   '<div class="v102maintTop"><div>'+plateHtml(c.placa)+'</div><div class="grow"><small>Motorista</small><strong>'+(m.motorista?esc(m.motorista):'—')+'</strong><small>Odômetro</small><strong>'+(m.odometro?fmtKm(m.odometro)+' km':'—')+'</strong></div></div>';
  if(m.origem==='whatsapp')h+='<div class="v102info">Este lançamento veio do histórico importado do WhatsApp.</div>';
  if(m.frotaFechamento)h+='<div class="v102info"><b>Fechamento financeiro:</b> '+_rotuloFrotaFinanceira(m.frotaFechamento)+' · atribuição manual deste lançamento.</div>';
@@ -7947,7 +7949,7 @@ function vHistorico(){
   var db=semAcento(m.motorista+' '+m.carro+' '+fmtPlaca(m.carro)+' '+(c.nome||'')+' '+tituloCarro(c)+' '+mTexto(m));
   h+='<div class="card tap" data-hbusca="'+esc(db)+'" onclick="verManut(\''+m.id+'\')"><div class="row">'+plateHtml(c.placa)+
    '<div class="grow"><div class="tit" style="font-size:14px">'+esc(tituloCarro(c))+'</div>'+
-   '<div class="sub">'+esc(periodoTexto(m.dataIni,m.dataFim))+_diasChip(m.dataIni,m.dataFim)+' · '+esc(primNome(m.motorista))+'</div></div>'+
+   '<div class="sub">'+esc(periodoTexto(m.dataIni,m.dataFim))+_diasChip(m.dataIni,m.dataFim)+_haChip(m)+' · '+esc(primNome(m.motorista))+'</div></div>'+
    '<div style="color:var(--warn);font-weight:800">R$ '+fmtBRL(m.total)+'</div></div></div>';
  });
  return h;
@@ -9438,6 +9440,13 @@ function _mpdfEscolha(id,div){
  }).catch(function(e){toast('⚠️ Não consegui gerar o PDF: '+(e&&e.message?e.message:e))})
  .then(function(){window._mpdfBusy=false},function(){window._mpdfBusy=false});
 }
+
+/* v217 · "há quantos dias" ao lado da data de cada manutenção (pedido do Hudson 13/10/2026):
+   conta a partir do fim da manutenção até hoje. */
+function _haDias(iso){var re=/^\d{4}-\d{2}-\d{2}$/;if(!iso||!re.test(iso))return -1;var n=diasEntre(iso,hoje());return n<0?-1:n}
+function _haTxt(n){return n<0?'':(n===0?'hoje':(n===1?'ontem':'há '+n+' dias'))}
+function _haChip(m){var n=_haDias(m&&(m.dataFim||m.dataIni));var t=_haTxt(n);return t?' <span class="haChip">'+t+'</span>':''}
+function _haCurto(iso){var t=_haTxt(_haDias(iso));return t?' ('+t+')':''}
 
 </script>
 <script>
