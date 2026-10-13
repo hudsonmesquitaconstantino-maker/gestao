@@ -1314,6 +1314,40 @@ html.teclado .n3nav{visibility:hidden;pointer-events:none}
 .n3edOk{border:0;background:#1C1C1E;color:#fff;font:600 15px var(--sf);border-radius:8px;min-height:38px;padding:0 22px;cursor:pointer}
 .n3totF{margin-top:18px}
 .n3maisF{margin:4px 0 0}.n3maisF summary{padding:8px 4px}.n3maisF .n3grp{margin-top:4px}
+/* ===================== v211 · campos de formulário de verdade (só na manutenção) =====================
+   Hudson: "fundo branco no branco" e cada campo digitando num canto (descrição à esquerda, valor na ponta direita).
+   Agora: nome do campo EM CIMA, caixa de digitar com borda e fundo próprio, tudo alinhado à esquerda. */
+#n3m label.n3f:not(.n3sw){display:flex!important;flex-direction:column!important;align-items:stretch!important;justify-content:flex-start!important;gap:6px;padding:10px 14px!important;min-height:0!important;border-bottom:0!important}
+#n3m label.n3f:not(.n3sw)>span{max-width:none!important;padding:0!important;font-size:13px!important;font-weight:600!important;color:#4B515A!important;line-height:1.2}
+#n3m label.n3f:not(.n3sw)>span small{display:inline;margin-left:4px;font-weight:400;color:#7A808A;font-size:12px}
+#n3m label.n3f:not(.n3sw) input:not([type=checkbox]),#n3m label.n3f:not(.n3sw) textarea,#n3m label.n3f:not(.n3sw) select{
+ width:100%!important;box-sizing:border-box!important;text-align:left!important;direction:ltr!important;
+ background:#F3F4F6!important;border:1px solid #D6D9DE!important;border-radius:8px!important;
+ padding:11px 12px!important;min-height:46px!important;font-size:16px!important;color:#12141A!important;line-height:1.35!important;
+ -webkit-appearance:none;appearance:none;transition:border-color .15s,background .15s,box-shadow .15s}
+#n3m label.n3f:not(.n3sw) input:focus,#n3m label.n3f:not(.n3sw) textarea:focus,#n3m label.n3f:not(.n3sw) select:focus{
+ outline:0!important;background:#fff!important;border-color:#C27A16!important;box-shadow:0 0 0 3px rgba(194,122,22,.16)!important}
+#n3m label.n3f:not(.n3sw) input[type=date]{display:block!important}
+#n3m label.n3f:not(.n3sw) input[type=date]::-webkit-date-and-time-value{text-align:left!important}
+#n3m label.n3f.n3col{padding-top:10px!important}
+#n3m .n3grp>label.n3f:first-child{padding-top:14px!important}
+#n3m .n3grp>label.n3f:last-child{padding-bottom:14px!important}
+/* chaves (liga/desliga) continuam na linha, com separador */
+#n3m label.n3sw{border-top:.5px solid var(--bord)!important;padding:4px 14px!important}
+#n3m .n3grp>label.n3sw:first-child{border-top:0!important}
+#n3m .n3info:not(:empty){border-bottom:0!important}
+/* dois campos lado a lado (valor + loja; quem fez + função) */
+.n3dupla{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.n3dupla>label.n3f:first-child{padding-right:6px!important}.n3dupla>label.n3f:last-child{padding-left:6px!important}
+/* item aberto: painel cinza-claro, caixas brancas — destaca bem do resto da página */
+#n3m .n3ed{background:#F4F5F7!important;box-shadow:inset 3px 0 0 #C27A16!important;padding:4px 0 2px}
+#n3m .n3ed label.n3f:not(.n3sw) input:not([type=checkbox]),#n3m .n3ed label.n3f:not(.n3sw) textarea{background:#fff!important}
+#n3m .n3ed .n3maisEd{border-bottom:0;margin:2px 0 0}
+#n3m .n3ed .n3maisEd summary{padding:8px 14px}
+#n3m .n3ed .n3maisEd[open] summary{border-bottom:0}
+#n3m .n3ed .n3edBar{padding:6px 14px 12px}
+#n3m .n3ed .n3ta{min-height:46px!important;overflow:hidden}
+#n3m [hidden],#n3m label.n3f[hidden]{display:none!important}
 /* ===================== v194 — Pendências e Frota ===================== */
 .n4nums{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:2px 0 6px}
 .n4nums button{border:0;background:var(--card);border-radius:14px;padding:12px 8px 10px;text-align:center;font-family:var(--sf);color:var(--tx);box-shadow:0 1px 2px rgba(17,24,39,.04)}
@@ -1417,7 +1451,7 @@ html.teclado .overlay{top:0!important}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=210; var APP_DATE='13/10/2026';
+var APP_VER=211; var APP_DATE='13/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -8854,9 +8888,9 @@ function n3MostraEd(foca){
 function n3EdPeca(p,i){
  var pad=(document.getElementById('mPecasData')||{}).value||hoje();
  return '<div class="n3ed">'+
-  '<label class="n3f n3col"><span>Peça</span><textarea rows="1" class="n3ta" placeholder="ex.: filtro de óleo" oninput="MP['+i+'].desc=this.value;taGrow(this);mRasc()" autocomplete="off" autocapitalize="sentences">'+esc(p.desc)+'</textarea></label>'+
-  '<label class="n3f"><span>Valor (R$)</span><input inputmode="decimal" autocomplete="off" value="'+esc(p.valor)+'" oninput="MP['+i+'].valor=this.value;mTotais()"></label>'+
-  '<label class="n3f"><span>Loja</span><input autocomplete="off" value="'+esc(p.loja)+'" oninput="MP['+i+'].loja=this.value;mRasc()"></label>'+
+  '<label class="n3f n3col"><span>Descrição da peça</span><textarea rows="1" class="n3ta" oninput="MP['+i+'].desc=this.value;taGrow(this);mRasc()" autocomplete="off" autocapitalize="sentences">'+esc(p.desc)+'</textarea></label>'+
+  '<div class="n3dupla"><label class="n3f"><span>Valor (R$)</span><input inputmode="decimal" autocomplete="off" value="'+esc(p.valor)+'" oninput="MP['+i+'].valor=this.value;mTotais()"></label>'+
+  '<label class="n3f"><span>Loja</span><input autocomplete="off" value="'+esc(p.loja)+'" oninput="MP['+i+'].loja=this.value;mRasc()"></label></div>'+
   '<details class="n3mais n3maisEd"><summary>Mais opções</summary>'+
    '<label class="n3f"><span>Data desta peça</span><input type="date" value="'+esc(p.data||pad)+'" onchange="MP['+i+'].data=this.value;mRasc()"></label>'+
    '<label class="n3f n3sw"><span>Contabilizar no fechamento</span><input type="checkbox"'+(p.pendenteFinanceiro?'':' checked')+' onchange="MP['+i+'].pendenteFinanceiro=!this.checked;mRasc()"></label>'+
@@ -8867,8 +8901,8 @@ function n3EdPeca(p,i){
 function n3EdBloco(b,i){
  var ini=(document.getElementById('mIni')||{}).value||hoje(),fim=(document.getElementById('mFim')||{}).value||ini;
  return '<div class="n3ed">'+
-  '<label class="n3f"><span>Quem fez</span><input autocomplete="off" value="'+esc(b.nome)+'" oninput="MB['+i+'].nome=this.value;mTotais()"></label>'+
-  '<label class="n3f"><span>Função</span><input autocomplete="off" value="'+esc(b.titulo)+'" placeholder="Mecânico" oninput="MB['+i+'].titulo=this.value;mRasc()"></label>'+
+  '<div class="n3dupla"><label class="n3f"><span>Quem fez</span><input autocomplete="off" value="'+esc(b.nome)+'" oninput="MB['+i+'].nome=this.value;mTotais()"></label>'+
+  '<label class="n3f"><span>Função</span><input autocomplete="off" value="'+esc(b.titulo)+'" placeholder="Mecânico" oninput="MB['+i+'].titulo=this.value;mRasc()"></label></div>'+
   '<label class="n3f"><span>Valor (R$)</span><input inputmode="decimal" autocomplete="off" value="'+esc(b.valor)+'" oninput="MB['+i+'].valor=this.value;mTotais()"></label>'+
   '<label class="n3f n3col"><span>O que foi feito <small>um serviço por linha</small></span><textarea rows="2" oninput="MB['+i+'].servicos=this.value;taGrow(this);mRasc()">'+esc(b.servicos)+'</textarea></label>'+
   '<details class="n3mais n3maisEd"><summary>Mais opções</summary>'+
