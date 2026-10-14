@@ -1481,6 +1481,26 @@ body{bottom:auto!important;height:var(--appH,100vh)!important}
    Agora o app NÃO acompanha o empurrão: ele é desfeito na hora (tela presa no topo) e só a altura encolhe até o teclado. */
 html.teclado body{top:0!important;height:var(--vvh,100vh)!important}
 html.teclado .overlay{top:0!important}
+/* v219 — CNH no contrato */
+.cnh7{margin-bottom:12px}
+.cnh7add{display:flex;align-items:center;gap:12px;width:100%;padding:14px;border:1.5px dashed #C7CBD1;border-radius:14px;background:#fff;text-align:left;font:inherit;color:inherit}
+.cnh7ic{font-size:26px;line-height:1}
+.cnh7tx{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+.cnh7tx b{font-size:15px}.cnh7tx small{color:var(--tx2,#6b7280);font-size:12.5px;line-height:1.35}
+.cnh7top{display:flex;align-items:center;gap:12px;padding:12px}
+.cnh7th{width:64px;height:44px;object-fit:cover;border-radius:8px;flex:none;background:#EEF0F3}
+.cnh7pdf{display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#B42318}
+.cnh7bar{height:3px;margin:0 12px 12px;border-radius:3px;background:#EEF0F3;overflow:hidden}
+.cnh7bar i{display:block;height:100%;width:40%;background:#C77A16;border-radius:3px;animation:cnh7an 1.1s ease-in-out infinite}
+@keyframes cnh7an{0%{transform:translateX(-100%)}100%{transform:translateX(260%)}}
+.cnh7lido{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px 12px;padding:0 12px 12px}
+.cnh7lido div{display:flex;flex-direction:column;min-width:0}
+.cnh7lido span{font-size:11px;color:var(--tx2,#6b7280);text-transform:uppercase;letter-spacing:.03em}
+.cnh7lido b{font-size:14px;overflow-wrap:anywhere}
+.cnh7lido div:first-child{grid-column:1/-1}
+.cnh7lido em{font-style:normal;font-weight:500;color:#B42318}
+.cnh7nota{padding:0 12px 12px;font-size:12.5px;color:var(--tx2,#6b7280)}
+.cnh7 .n3alertaBox{margin:0 12px 12px}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -1514,7 +1534,7 @@ html.teclado .overlay{top:0!important}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=218; var APP_DATE='14/10/2026';
+var APP_VER=219; var APP_DATE='14/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -5637,7 +5657,7 @@ function excluirContrato(id){
  var x=S.contratos[id];if(!x)return;
  ask('Excluir contrato de '+primNome(x.locatario.nome)+'?','Sai dos contratos anteriores deste carro e os arquivos dele saem da nuvem. O contrato vigente não é afetado.','Excluir',function(){
   try{DOCSREF.child(x.carro+'/ct/'+id).remove()}catch(e){}
-  idbDel(x.carro+'/ct/'+id+'/docx');idbDel(x.carro+'/ct/'+id+'/pdf');
+  idbDel(x.carro+'/ct/'+id+'/docx');idbDel(x.carro+'/ct/'+id+'/pdf');idbDel(x.carro+'/ct/'+id+'/cnh');
   var pk=x.carro;S.apagados[id]=Date.now();delete S.contratos[id];save();ficha(pk);toast('🗑 Contrato excluído');
  });
 }
@@ -9942,6 +9962,327 @@ try{if(typeof TAB!=='undefined'&&(TAB===5||TAB===0)&&S)render()}catch(e){}
  /* Leitor novo => todos os CRLVs já anexados são relidos uma vez, sozinhos. */
  try{LEITOR_VER=94}catch(e){}
 })();
+
+</script>
+<script>
+/* ===== v219 — CNH DO MOTORISTA NO CONTRATO =====
+   Pedido do Hudson (14/10/2026): na criação do contrato, começar pela CNH do motorista.
+   - Anexa foto (câmera/galeria) ou PDF da CNH digital.
+   - O app LÊ a CNH e preenche nome completo, CPF, RG + órgão, nº da CNH e validade
+     (e guarda nascimento e categoria). CPF e nº da CNH são conferidos pelo dígito
+     verificador: se a leitura errou um número, o app avisa em vez de aceitar calado.
+   - A CNH fica GUARDADA NO CONTRATO (nuvem): ver/baixar a qualquer hora, e quando o
+     contrato é encerrado ela vai junto para os contratos anteriores.
+   - Contratos já existentes ganham o botão "Anexar CNH".
+   Leitura: PDF com texto -> texto direto. Foto ou PDF escaneado -> OCR (Tesseract, português),
+   tentando as 4 rotações se a foto estiver de lado. */
+var CNH7={doc:null,dados:null,lendo:false,msg:''};
+var CNH7_TESS='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+var CNH7_OPT={workerPath:'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js',
+ corePath:'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1',
+ langPath:'https://cdn.jsdelivr.net/npm/@tesseract.js-data/por@1.0.0/4.0.0_best_int'};
+
+/* ---------- conferência de números ---------- */
+function cnh7CpfOk(d){d=String(d||'').replace(/\D/g,'');if(d.length!==11||/^(\d)\1{10}$/.test(d))return false;
+ var s=0,i;for(i=0;i<9;i++)s+=+d[i]*(10-i);var r=(s*10)%11;if(r===10)r=0;if(r!==+d[9])return false;
+ s=0;for(i=0;i<10;i++)s+=+d[i]*(11-i);r=(s*10)%11;if(r===10)r=0;return r===+d[10]}
+function cnh7RegOk(d){d=String(d||'').replace(/\D/g,'');if(d.length!==11||/^(\d)\1{10}$/.test(d))return false;
+ var v=0,i,j;for(i=0,j=9;i<9;i++,j--)v+=+d[i]*j;var dsc=0,v1=v%11;if(v1>=10){v1=0;dsc=2}
+ v=0;for(i=0,j=1;i<9;i++,j++)v+=+d[i]*j;var x=v%11,v2=x>=10?0:x-dsc;if(v2<0)v2+=11;if(v2>=10)v2=0;
+ return ''+v1+v2===d.slice(-2)}
+
+/* ---------- leitura do texto da CNH (OCR ou PDF) ---------- */
+function cnh7Parse(texto){
+ var raw=String(texto||'');
+ var U=semAcento(raw).toUpperCase().replace(/\r/g,'');
+ /* OCR troca letra por número dentro de blocos numéricos: O->0, I/L->1, S->5, B->8 */
+ function digitos(s){return s.replace(/[OQD]/g,'0').replace(/[IL|]/g,'1').replace(/S/g,'5').replace(/B/g,'8').replace(/Z/g,'2')}
+ var linhas=U.split('\n').map(function(l){return l.replace(/\s+/g,' ').trim()}).filter(Boolean);
+ /* as mesmas linhas COM acento, para o nome sair certo (JOÃO, não JOAO) */
+ var linhasA=raw.toUpperCase().replace(/\r/g,'').split('\n').map(function(l){return l.replace(/\s+/g,' ').trim()}).filter(Boolean);
+ if(linhasA.length!==linhas.length)linhasA=linhas;
+ var flat=linhas.join(' ');
+ var o={avisos:[]};
+
+ /* CPF: 000.000.000-00, conferido pelo dígito */
+ var reCpf=/([0-9OQDILSBZ]{3})[.,\s]?([0-9OQDILSBZ]{3})[.,\s]?([0-9OQDILSBZ]{3})\s?[-–.,]?\s?([0-9OQDILSBZ]{2})(?![0-9])/g,m,cpfs=[];
+ while((m=reCpf.exec(flat))){var c=digitos(m[1]+m[2]+m[3]+m[4]);if(/^\d{11}$/.test(c))cpfs.push(c)}
+ var cpfOk=cpfs.filter(cnh7CpfOk);
+ /* o CPF vem rotulado; se houver mais de um válido, o mais perto do rótulo */
+ var pCpf=flat.search(/\bCPF\b/);
+ if(cpfOk.length){o.cpf=cpfOk[0];if(pCpf>=0&&cpfOk.length>1){var best=null,bd=1e9;cpfOk.forEach(function(v){var p=flat.replace(/[^0-9OQDILSBZ]/g,function(ch){return ch}).indexOf(v);var dd=Math.abs(p-pCpf);if(p>=0&&dd<bd){bd=dd;best=v}});if(best)o.cpf=best}}
+ else if(cpfs.length){o.cpf=cpfs[0];o.avisos.push('CPF lido não confere (dígito) — confira')}
+
+ /* Nº de REGISTRO da CNH: 11 dígitos, diferente do CPF */
+ var reReg=/(?:^|[^0-9])([0-9OQDILSBZ]{11})(?![0-9])/g,regs=[];
+ while((m=reReg.exec(flat))){var r=digitos(m[1]);if(/^\d{11}$/.test(r)&&r!==o.cpf)regs.push(r)}
+ var mLab=flat.match(/REGISTRO\D{0,25}([0-9OQDILSBZ]{11})/);
+ var regLab=mLab?digitos(mLab[1]):'';
+ var regOk=regs.filter(cnh7RegOk);
+ if(regLab&&/^\d{11}$/.test(regLab)&&regLab!==o.cpf){o.cnh=regLab;if(!cnh7RegOk(regLab))o.avisos.push('Nº da CNH lido não confere (dígito) — confira')}
+ else if(regOk.length)o.cnh=regOk[0];
+ else if(regs.length){o.cnh=regs[0];o.avisos.push('Nº da CNH lido não confere (dígito) — confira')}
+
+ /* DATAS: validade é sempre a maior; nascimento a menor */
+ var reD=/([0-3OQDILZ][0-9OQDILSBZ])\s?[\/.\-]\s?([01OIL][0-9OQDILSBZ])\s?[\/.\-]\s?((?:19|20)[0-9OQDILSBZ]{2})/g,ds=[];
+ while((m=reD.exec(flat))){var dd=digitos(m[1]),mm=digitos(m[2]),aa=digitos(m[3]);var iso=aa+'-'+mm+'-'+dd;
+  if(+mm>=1&&+mm<=12&&+dd>=1&&+dd<=31&&ds.indexOf(iso)<0)ds.push(iso)}
+ ds.sort();
+ if(ds.length){
+  var anoHoje=new Date().getFullYear();
+  var nasc=ds.filter(function(x){var a=+x.slice(0,4);return a<=anoHoje-17&&a>=anoHoje-95});
+  if(nasc.length)o.nasc=nasc[0];
+  var ult=ds[ds.length-1];if(ult!==o.nasc&&+ult.slice(0,4)>=anoHoje-6)o.validade=ult;
+  /* (rótulo não serve: no modelo novo "VALIDADE" vem antes da data de EMISSÃO.
+     A validade é sempre a data mais distante do documento.) */
+ }
+
+ /* NOME: linha depois do rótulo NOME (modelo antigo "NOME", novo "1 NOME E SOBRENOME") */
+ function nomeLimpo(s){s=String(s||'').replace(/0/g,'O').replace(/1/g,'I').replace(/5/g,'S').replace(/8/g,'B').replace(/[^A-ZÀ-ÖØ-Ý ]/g,' ').replace(/\s+/g,' ').trim();
+  s=s.replace(/^(?:E SOBRENOME|SOBRENOME|NOME SOCIAL|NOME)\s+/,'').trim();
+  var w=s.split(' ').filter(function(x){return x.length>=2||/^(E|D|DA|DE|DO)$/.test(x)});
+  if(w.length<2)return '';
+  var ruido=/^(REPUBLICA|FEDERATIVA|BRASIL|MINISTERIO|DEPARTAMENTO|NACIONAL|TRANSITO|CARTEIRA|HABILITACAO|DOC|IDENTIDADE|ORG|EMISSOR|CPF|DATA|NASCIMENTO|FILIACAO|PERMISSAO|ACC|CAT|HAB|REGISTRO|VALIDADE|EMISSAO|LOCAL|OBSERVACOES|ASSINATURA|PORTADOR|SECRETARIA|SENATRAN|DENATRAN|DETRAN|DRIVER|LICENSE|PERMISO|CONDUCCION)$/;
+  if(w.some(function(x){return ruido.test(semAcento(x).toUpperCase())}))return '';
+  return w.join(' ')}
+ for(var i=0;i<linhas.length&&!o.nome;i++){
+  if(/\bNOME\b/.test(linhas[i])&&!/NOME SOCIAL\s*$/.test(linhas[i])){
+   var resto=linhasA[i].replace(/^.*?\bNOME\b(?:\s+E\s+SOBRENOME)?/,'');
+   var cand=nomeLimpo(resto)||nomeLimpo(linhasA[i+1])||'';
+   if(!cand&&linhasA[i+2])cand=nomeLimpo(linhasA[i+2]);
+   if(cand)o.nome=cand;
+  }
+ }
+ if(!o.nome){var flatA=linhasA.join(' ');var mn=flatA.match(/\bNOME(?:\s+E\s+SOBRENOME)?\s+([A-ZÀ-Ý][A-ZÀ-Ý ]{5,60}?)\s+(?:DOC|DATA|CPF|FILIA|PERMISS|ACC|CAT|N[O°º]?\s*REGISTRO|\d)/);if(mn)o.nome=nomeLimpo(mn[1])}
+
+ /* RG + órgão emissor + UF: "123456789 DETRAN RJ" / "12.345.678-9 SSP RJ" */
+ var ORG='DETRAN|SSP|IFP|DIC|PC|SDS|SESP|SEJUSP|SESPDS|IIRGD|IGP|PCRJ|SESPDC|SSPDS|SEDS|SECC|PM|MD|MEX|MAER|MM|DPF|CNT|OAB|CRM|CREA|IPF|DGPC|SJS|SJTC|SPTC|POLITEC|SEPC|ITEP|IML|ITB|SSPRJ';
+ var reRg=new RegExp('([0-9OQDILSBZ][0-9OQDILSBZX.\\-]{3,16})\\s*[\\-/]?\\s*('+ORG+')\\s*[\\-/]?\\s*([A-Z]{2})\\b');
+ var pRg=flat.search(/IDENTIDADE|DOC\.?\s*IDENT/);
+ var zona=pRg>=0?flat.slice(pRg,pRg+160):flat;
+ var mr=zona.match(reRg)||flat.match(reRg);
+ if(mr){var num=mr[1].replace(/[^0-9X.\-]/g,function(ch){return ch}).replace(/[OQDILSBZ]/g,function(ch){return digitos(ch)});
+  if(num.replace(/\D/g,'')!==o.cpf){o.rg=num.replace(/[.\-]+$/,'');o.rgOrg=mr[2]+'/'+mr[3]}}
+
+ /* categoria: A, B, AB, C, D, E, AC, AD, AE */
+ var mc=flat.match(/CAT\.?\s*HAB\.?\D{0,40}?\b(AB|AC|AD|AE|A|B|C|D|E)\b/);if(mc)o.cat=mc[1];
+ return o;
+}
+
+/* ---------- OCR ---------- */
+function cnh7Script(src){return new Promise(function(ok,no){if(window.Tesseract)return ok();var s=document.createElement('script');s.src=src;s.onload=function(){ok()};s.onerror=function(){no(new Error('sem internet para carregar o leitor'))};document.head.appendChild(s)})}
+function cnh7Canvas(fonte,giro,maxLado){
+ var w=fonte.naturalWidth||fonte.width,h=fonte.naturalHeight||fonte.height,esc=Math.min(1,(maxLado||2200)/Math.max(w,h));
+ /* foto pequena: amplia (OCR erra menos com letra grande) */
+ if(Math.max(w,h)<1400)esc=1400/Math.max(w,h);
+ var W=Math.round(w*esc),H=Math.round(h*esc),cv=document.createElement('canvas');
+ var gira=(giro===90||giro===270);cv.width=gira?H:W;cv.height=gira?W:H;
+ var x=cv.getContext('2d');x.save();x.translate(cv.width/2,cv.height/2);x.rotate(giro*Math.PI/180);x.drawImage(fonte,-W/2,-H/2,W,H);x.restore();
+ /* cinza + contraste: o fundo verde/amarelo da CNH atrapalha o OCR */
+ try{var im=x.getImageData(0,0,cv.width,cv.height),d=im.data;for(var i=0;i<d.length;i+=4){var g=0.3*d[i]+0.59*d[i+1]+0.11*d[i+2];g=(g-128)*1.35+128;g=g<0?0:g>255?255:g;d[i]=d[i+1]=d[i+2]=g}x.putImageData(im,0,0)}catch(e){}
+ return cv;
+}
+function cnh7Pontos(o){return (o.nome?3:0)+(o.cpf&&cnh7CpfOk(o.cpf)?3:(o.cpf?1:0))+(o.cnh&&cnh7RegOk(o.cnh)?2:(o.cnh?1:0))+(o.validade?1:0)+(o.rg?1:0)}
+function cnh7Ocr(fonte,status){
+ return cnh7Script(CNH7_TESS).then(function(){
+  return Tesseract.createWorker('por',1,CNH7_OPT);
+ }).then(function(wk){
+  var giros=[0,90,270,180],melhor=null,txtMelhor='';
+  function tenta(k){
+   if(k>=giros.length)return Promise.resolve();
+   if(status)status(k?'A foto parece de lado — tentando girar ('+(k+1)+'/4)…':'Lendo a CNH…');
+   return wk.recognize(cnh7Canvas(fonte,giros[k])).then(function(r){
+    var t=(r&&r.data&&r.data.text)||'',o=cnh7Parse(t);
+    if(!melhor||cnh7Pontos(o)>cnh7Pontos(melhor)){melhor=o;txtMelhor=t}
+    if(cnh7Pontos(melhor)>=8)return;           /* já achou o principal: para */
+    return tenta(k+1);
+   });
+  }
+  return tenta(0).then(function(){try{wk.terminate()}catch(e){}melhor=melhor||{avisos:[]};melhor._texto=txtMelhor;return melhor},
+   function(e){try{wk.terminate()}catch(x){}throw e});
+ });
+}
+function cnh7Img(b64,mime){return new Promise(function(ok,no){var im=new Image();im.onload=function(){ok(im)};im.onerror=function(){no(new Error('imagem inválida'))};im.src='data:'+mime+';base64,'+b64})}
+/* PDF: texto direto; se for só imagem, renderiza a 1ª página e faz OCR */
+function cnh7LerPdf(b64,status){
+ var buf=b64ToU8(b64).buffer;
+ return impTextoPdf(buf.slice(0)).then(function(txt){
+  var o=cnh7Parse(txt||'');
+  if(cnh7Pontos(o)>=6){o._texto=txt;return o}
+  return garantirPdfjs().then(function(){return pdfjsLib.getDocument({data:b64ToU8(b64)}).promise}).then(function(pdf){return pdf.getPage(1)}).then(function(pg){
+   var vp=pg.getViewport({scale:2.5}),cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;
+   return pg.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise.then(function(){return cnh7Ocr(cv,status)});
+  });
+ });
+}
+/* foto grande -> JPEG leve para guardar na nuvem (mantém leitura nítida) */
+function cnh7Compacta(im){var cv=cnh7CanvasCor(im,1800);return cv.toDataURL('image/jpeg',0.85).split(',')[1]}
+function cnh7CanvasCor(im,maxL){var w=im.naturalWidth,h=im.naturalHeight,e=Math.min(1,maxL/Math.max(w,h)),cv=document.createElement('canvas');cv.width=Math.round(w*e);cv.height=Math.round(h*e);cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);return cv}
+
+/* ---------- arquivo escolhido -> lê -> preenche ---------- */
+function cnh7Arquivo(f,cb){
+ var r=new FileReader();
+ r.onload=function(){
+  var b64=String(r.result).split(',')[1],mime=f.type||(/\.pdf$/i.test(f.name)?'application/pdf':'image/jpeg');
+  var ehPdf=/pdf/i.test(mime);
+  var p=ehPdf?Promise.resolve({b64:b64,mime:'application/pdf',name:f.name||'CNH.pdf'}):
+   cnh7Img(b64,mime).then(function(im){return {b64:cnh7Compacta(im),mime:'image/jpeg',name:(String(f.name||'CNH').replace(/\.[a-z0-9]+$/i,''))+'.jpg',im:im}});
+  p.then(function(doc){cb(null,doc)},function(e){cb(e)});
+ };
+ r.onerror=function(){cb(new Error('não consegui abrir o arquivo'))};
+ r.readAsDataURL(f);
+}
+function cnh7Ler(doc,status){
+ if(/pdf/i.test(doc.mime))return cnh7LerPdf(doc.b64,status);
+ return (doc.im?Promise.resolve(doc.im):cnh7Img(doc.b64,doc.mime)).then(function(im){return cnh7Ocr(im,status)});
+}
+
+/* ---------- tela do contrato: bloco CNH no topo do passo Motorista ---------- */
+function cnh7Card(){
+ var d=CNH7.dados,doc=CNH7.doc,h='<div class="n3grp cnh7" id="cnh7Box">';
+ if(!doc){
+  h+='<button class="cnh7add" onclick="cnh7Escolher()"><span class="cnh7ic">🪪</span><span class="cnh7tx"><b>Começar pela CNH do motorista</b><small>Foto ou PDF — o app lê e preenche nome, CPF, RG, nº e validade</small></span><span class="n3chev">›</span></button>';
+ }else{
+  var thumb=/pdf/i.test(doc.mime)?'<span class="cnh7th cnh7pdf">PDF</span>':'<img class="cnh7th" src="data:'+doc.mime+';base64,'+doc.b64+'" alt="">';
+  h+='<div class="cnh7top">'+thumb+'<div class="cnh7tx"><b>CNH anexada</b><small>'+(CNH7.lendo?esc(CNH7.msg||'Lendo…'):(d?'Vai ficar guardada neste contrato':'Não consegui ler — preencha abaixo'))+'</small></div><button class="n3mini" onclick="cnh7Escolher()">Trocar</button></div>';
+  if(CNH7.lendo)h+='<div class="cnh7bar"><i></i></div>';
+  if(d&&!CNH7.lendo){
+   var L=[['Nome',d.nome],['CPF',d.cpf?showCPF(d.cpf):''],['RG',d.rg?(d.rg+(d.rgOrg?' · '+d.rgOrg:'')):''],['Nº da CNH',d.cnh],['Validade',d.validade?dataBR(d.validade):''],['Nascimento',d.nasc?dataBR(d.nasc):''],['Categoria',d.cat]];
+   h+='<div class="cnh7lido">'+L.map(function(x){return '<div><span>'+x[0]+'</span><b>'+(x[1]?esc(x[1]):'<em>não li</em>')+'</b></div>'}).join('')+'</div>';
+   if(d.avisos&&d.avisos.length)h+='<div class="n3info n3alertaBox">'+d.avisos.map(esc).join('<br>')+'</div>';
+   if(d.validade&&d.validade<hoje())h+='<div class="n3info n3alertaBox">⚠️ CNH vencida em '+dataBR(d.validade)+'.</div>';
+   if(CNH7.antigo)h+='<div class="cnh7nota">✓ Já foi motorista: endereço e telefone vieram do último contrato de '+esc(CNH7.antigo)+'.</div>';
+   h+='<div class="cnh7nota">Confira os campos abaixo com a foto antes de gerar.</div>';
+  }
+ }
+ return h+'</div>';
+}
+function cnh7Desenha(){var b=document.getElementById('cnh7Box');if(b)b.outerHTML=cnh7Card()}
+function cnh7Escolher(){
+ var inp=document.createElement('input');inp.type='file';inp.accept='image/*,application/pdf';
+ inp.style.cssText='position:fixed;left:-9999px;top:0;opacity:0;width:1px;height:1px';document.body.appendChild(inp);
+ inp.onchange=function(){var f=inp.files&&inp.files[0];setTimeout(function(){if(inp.parentNode)inp.parentNode.removeChild(inp)},1000);if(!f)return;
+  CNH7.lendo=true;CNH7.msg='Abrindo…';CNH7.dados=null;CNH7.antigo='';CNH7.doc={b64:'',mime:f.type||'image/jpeg'};
+  cnh7Arquivo(f,function(err,doc){
+   if(err){CNH7.lendo=false;CNH7.doc=null;cnh7Desenha();toast('⚠️ '+err.message);return}
+   CNH7.doc=doc;CNH7.msg='Lendo a CNH…';cnh7Desenha();
+   cnh7Ler(doc,function(m){CNH7.msg=m;var s=document.querySelector('#cnh7Box .cnh7tx small');if(s)s.textContent=m}).then(function(d){
+    CNH7.lendo=false;CNH7.dados=d;delete CNH7.doc.im;cnh7Preenche(d);cnh7Desenha();
+    var n=['nome','cpf','rg','cnh','validade'].filter(function(k){return d[k]}).length;
+    toast(n?'🪪 CNH lida — '+n+' de 5 dados preenchidos. Confira.':'🪪 CNH guardada, mas não consegui ler. Preencha os dados.');
+   }).catch(function(e){CNH7.lendo=false;CNH7.dados=null;if(CNH7.doc)delete CNH7.doc.im;cnh7Desenha();toast('🪪 CNH guardada. Leitura falhou ('+e.message+') — preencha os dados.')});
+  });
+ };
+ inp.click();
+}
+/* Preenche o formulário. Campo vazio recebe direto; campo já preenchido (motorista antigo)
+   é substituído pela CNH nova, porque a CNH é o documento mais recente. */
+function cnh7Preenche(d){
+ var set=function(id,v){var e=document.getElementById(id);if(e&&v){e.value=v;try{e.dispatchEvent(new Event('input',{bubbles:true}))}catch(x){}}};
+ if(d.nome)set('ncNome',d.nome);
+ if(d.cpf)set('ncCpf',showCPF(d.cpf));
+ if(d.rg)set('ncRgNum',d.rg);
+ if(d.rgOrg)set('ncRgOrg',d.rgOrg);
+ if(d.cnh)set('ncCnh',d.cnh);
+ if(d.validade)set('ncCnhVal',d.validade);
+ /* motorista que já teve contrato (mesmo CPF): traz endereço e telefone do último contrato,
+    só nos campos vazios — a CNH manda nos dados pessoais, o contrato antigo no endereço */
+ try{if(d.cpf){var ant=n3cMotoristas().filter(function(x){return String((x.locatario||{}).cpf||'').replace(/\D/g,'')===d.cpf})[0];
+  if(ant){var l=ant.locatario||{},end=separaEndereco(l.endereco||''),vz=function(id,v){var e=document.getElementById(id);if(e&&!String(e.value||'').trim()&&v)e.value=v};
+   vz('ncRua',end.rua);vz('ncNum',end.num);vz('ncCompl',end.compl);vz('ncBairro',end.bairro);vz('ncCidade',end.cidade);vz('ncUf',end.uf);vz('ncCep',l.cep?showCEP(l.cep):'');vz('ncTel',l.tel?showTel(l.tel):'');
+   var cep=document.getElementById('ncCep');if(cep)cep.dataset.ok=cep.value.replace(/\D/g,'');
+   CNH7.antigo=primNome(l.nome)+(ant.inicio?' (contrato de '+dataBR(ant.inicio)+')':'');}}}catch(e){}
+ try{n3cDesenhaMot();n3cInfo();ncResumo()}catch(e){}
+}
+function cnh7Reset(){CNH7.doc=null;CNH7.dados=null;CNH7.lendo=false;CNH7.msg='';CNH7.antigo=''}
+
+/* bloco CNH entra no topo do passo Motorista */
+(function(){var o=window.n3cDesenhaMot;if(typeof o!=='function'||o._cnh7)return;
+ var w=function(){var r=o.apply(this,arguments);try{var el=document.getElementById('n3cMot');if(el&&!document.getElementById('cnh7Box'))el.insertAdjacentHTML('beforebegin',cnh7Card())}catch(e){}return r};
+ w._cnh7=1;window.n3cDesenhaMot=w;})();
+/* formulário novo do zero: CNH anterior não fica "presa" */
+(function(){var o=window.vContratoN3;if(typeof o!=='function'||o._cnh7)return;
+ var w=function(){if(!document.getElementById('n3c'))cnh7Reset();return o.apply(this,arguments)};w._cnh7=1;window.vContratoN3=w;})();
+
+/* ---------- ao gerar o contrato: guarda a CNH no contrato ---------- */
+function cnh7SubirDoc(path,doc){
+ var d={b64:doc.b64,name:doc.name||'CNH',mime:doc.mime,size:Math.round(doc.b64.length*0.75),em:Date.now()};
+ try{idbSet(path,d)}catch(e){}
+ if(!DOCSREF)return Promise.reject(new Error('sem nuvem'));
+ return DOCSREF.child(path).set(d);
+}
+(function(){var o=window.gerarContrato;if(typeof o!=='function'||o._cnh7)return;
+ var w=function(){
+  var antes={};Object.keys(S.contratos||{}).forEach(function(k){antes[k]=1});
+  var doc=CNH7.doc&&CNH7.doc.b64?CNH7.doc:null,dados=CNH7.dados,motAnt=N3C&&N3C.mot;
+  var r=o.apply(this,arguments);
+  try{
+   var novo=Object.keys(S.contratos||{}).filter(function(k){return !antes[k]})[0];
+   if(novo){var ct=S.contratos[novo],pk=ct.carro;
+    if(dados){ct.locatario=ct.locatario||{};if(dados.nasc)ct.locatario.nasc=dados.nasc;if(dados.cat)ct.locatario.cnhCat=dados.cat}
+    if(doc){
+     ct.temCnh=true;ct.cnhMime=doc.mime;
+     cnh7SubirDoc(pk+'/ct/'+novo+'/cnh',doc).then(function(){_touchContrato(ct);save();toast('🪪 CNH guardada no contrato')}).catch(function(e){toast('⚠️ CNH não subiu para a nuvem ('+e.message+'). Anexe de novo pela ficha.')});
+    }else if(motAnt&&S.contratos[motAnt]&&S.contratos[motAnt].temCnh){
+     /* motorista que já teve contrato: reaproveita a CNH que já estava guardada */
+     var old=S.contratos[motAnt];
+     pegarDoc(old.carro+'/ct/'+motAnt+'/cnh').then(function(d){if(!d||!d.b64)return;
+      return cnh7SubirDoc(pk+'/ct/'+novo+'/cnh',{b64:d.b64,mime:d.mime,name:d.name}).then(function(){ct.temCnh=true;ct.cnhMime=d.mime;_touchContrato(ct);save();toast('🪪 CNH do contrato anterior reaproveitada')})}).catch(function(){});
+    }
+    _touchContrato(ct);save();
+   }
+  }catch(e){}
+  cnh7Reset();
+  return r;
+ };
+ w._cnh7=1;window.gerarContrato=w;})();
+
+/* ---------- em qualquer contrato (vigente ou anterior): ver / baixar / anexar CNH ---------- */
+function verCnh(ctId){
+ var ct=S.contratos[ctId];if(!ct)return;var path=ct.carro+'/ct/'+ctId+'/cnh',nome='CNH '+primNome((ct.locatario||{}).nome||'');
+ toast('🪪 Abrindo a CNH…');
+ pegarDoc(path).then(function(d){
+  if(!d||!d.b64){toast('CNH não encontrada na nuvem');return}
+  if(/pdf/i.test(d.mime||'')){abrirPdf(d.b64,nome);return}
+  var l=ct.locatario||{};
+  openSheet('<h3>'+esc(nome)+'</h3><p class="sub">'+esc(l.nome||'')+(l.cpf?' · CPF '+esc(showCPF(l.cpf)):'')+'</p>'+
+   '<img src="data:'+(d.mime||'image/jpeg')+';base64,'+d.b64+'" style="width:100%;border-radius:12px;display:block;margin:10px 0" alt="CNH">'+
+   '<div class="g2btns"><button class="btn sec" onclick="baixarDoc(\''+path+'\',\''+esc(nome)+'.jpg\')">⬇️ Baixar</button><button class="btn sec" onclick="anexarCnh(\''+ctId+'\')">Trocar CNH</button></div>',2);
+ }).catch(function(e){toast('⚠️ '+e.message)});
+}
+function anexarCnh(ctId){
+ var ct=S.contratos[ctId];if(!ct)return;
+ var inp=document.createElement('input');inp.type='file';inp.accept='image/*,application/pdf';
+ inp.style.cssText='position:fixed;left:-9999px;top:0;opacity:0;width:1px;height:1px';document.body.appendChild(inp);
+ inp.onchange=function(){var f=inp.files&&inp.files[0];setTimeout(function(){if(inp.parentNode)inp.parentNode.removeChild(inp)},1000);if(!f)return;
+  toast('🪪 Guardando a CNH…');
+  cnh7Arquivo(f,function(err,doc){if(err){toast('⚠️ '+err.message);return}
+   cnh7SubirDoc(ct.carro+'/ct/'+ctId+'/cnh',doc).then(function(){
+    ct.temCnh=true;ct.cnhMime=doc.mime;_touchContrato(ct);save();try{closeSheet(2)}catch(e){}try{ficha(ct.carro)}catch(e){}
+    toast('🪪 CNH guardada no contrato — lendo para completar o que faltar…');
+    /* completa no contrato só o que estiver VAZIO (nada já digitado é trocado) */
+    cnh7Ler(doc).then(function(d){var l=ct.locatario=ct.locatario||{},mud=[];
+     if(!l.cpf&&d.cpf){l.cpf=showCPF(d.cpf);mud.push('CPF')}
+     if(!l.cnh&&d.cnh){l.cnh=d.cnh;mud.push('nº da CNH')}
+     if(!l.cnhVal&&d.validade){l.cnhVal=d.validade;mud.push('validade')}
+     if(!l.nasc&&d.nasc){l.nasc=d.nasc}
+     if(!l.cnhCat&&d.cat){l.cnhCat=d.cat}
+     if(d.validade&&l.cnhVal&&d.validade>l.cnhVal){l.cnhVal=d.validade;mud.push('validade (CNH nova)')}
+     _touchContrato(ct);save();try{ficha(ct.carro)}catch(e){}
+     if(mud.length)toast('🪪 Completei no contrato: '+mud.join(', '));
+    }).catch(function(){});
+   }).catch(function(e){toast('⚠️ Falha ao guardar ('+e.message+')')});
+  });
+ };
+ inp.click();
+}
+(function(){var o=window.docBtns;if(typeof o!=='function'||o._cnh7)return;
+ var w=function(ct){var h=o.apply(this,arguments);if(!ct||(ct.tipo&&ct.tipo!=='locacao'))return h;
+  var l=ct.locatario||{},venc=l.cnhVal&&l.cnhVal<hoje()&&ct.status==='vigente';
+  h+=ct.temCnh?'<button class="btn mini'+(venc?' red':'')+'" onclick="verCnh(\''+ct.id+'\')">🪪 CNH'+(venc?' (vencida)':'')+'</button>':
+   '<button class="btn mini sec" onclick="anexarCnh(\''+ct.id+'\')">🪪 Anexar CNH</button>';
+  return h};
+ w._cnh7=1;window.docBtns=w;})();
 
 </script>
 </body>
