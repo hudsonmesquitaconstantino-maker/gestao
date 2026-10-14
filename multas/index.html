@@ -2395,6 +2395,35 @@ html.af.afKb .sheet{max-height:calc(var(--afVvh,100vh) - 12px)!important}
  try{new MutationObserver(segura).observe(document.body,{attributes:true,attributeOldValue:true,attributeFilter:['class']})}catch(e){}
  setTimeout(marca,300);
 })();
+/* ===== fim da lista nunca atrás da barra de baixo =====
+   O espaço do fim era copiado UMA vez na abertura (ex.: 90px). No iPhone a barra flutuante
+   fica acima do indicador de início (≈34px a mais) e esse valor às vezes ainda não existe
+   na abertura — o último lançamento ficava cortado atrás da barra. Agora o espaço é medido
+   da própria barra (altura + distância do fundo) e reajustado sempre que ela muda. */
+(function(){
+ var de=document.documentElement;if(!de.classList.contains('af'))return;
+ var sc=window.__afScroll,me=document.getElementById('afJs'),BAR=me&&me.getAttribute('data-bar');if(!sc||!BAR)return;
+ var base=parseFloat(sc.style.paddingBottom)||0;
+ function fundo(){
+  try{
+   if(de.classList.contains('afKb'))return;              /* teclado aberto: barra escondida */
+   var b=document.querySelector(BAR);if(!b)return;
+   var r=b.getBoundingClientRect();if(!r.height)return;
+   var cr=sc.getBoundingClientRect();
+   var v=Math.max(base,Math.ceil(cr.bottom-r.top+16));
+   if(Math.abs((parseFloat(sc.style.paddingBottom)||0)-v)>1)sc.style.paddingBottom=v+'px';
+  }catch(e){}
+ }
+ fundo();setTimeout(fundo,250);setTimeout(fundo,1200);setTimeout(fundo,3000);
+ addEventListener('resize',fundo);addEventListener('orientationchange',function(){setTimeout(fundo,350)});
+ addEventListener('pageshow',function(){setTimeout(fundo,200)});
+ document.addEventListener('visibilitychange',function(){if(!document.hidden)setTimeout(fundo,200)});
+ try{new ResizeObserver(fundo).observe(document.querySelector(BAR))}catch(e){}
+ try{if(window.visualViewport)visualViewport.addEventListener('resize',function(){setTimeout(fundo,60)})}catch(e){}
+ try{new MutationObserver(function(){setTimeout(fundo,30)}).observe(document.body,{attributes:true,attributeFilter:['class']})}catch(e){}
+ try{new MutationObserver(function(){setTimeout(fundo,30)}).observe(de,{attributes:true,attributeFilter:['class']})}catch(e){}
+ window.__afFundo=fundo;
+})();
 </script>
 
 </body>
