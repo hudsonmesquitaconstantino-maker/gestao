@@ -1534,7 +1534,7 @@ html.teclado .overlay{top:0!important}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=220; var APP_DATE='14/10/2026';
+var APP_VER=221; var APP_DATE='14/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -2746,11 +2746,21 @@ function salvarChave(){
 }
 
 /* ---------- auto-update (mecanismo v14/v15 do Semanal) ---------- */
+/* tem algo sendo preenchido? (contrato, manutenção, folha de edição ou campo com teclado aberto) */
+function _telaOcupada(){
+ try{
+  if(TAB===1||TAB===2)return true;
+  if(_gestaoFormDirty)return true;
+  var a=document.activeElement;if(a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.tagName==='SELECT'))return true;
+  var s2=document.getElementById('ovSheet2');if(s2&&s2.classList.contains('open'))return true;
+ }catch(e){}
+ return false;
+}
 function safeToReload(){
  try{if(typeof GSYNC!=='undefined'&&GSYNC&&GSYNC.pushInFlight)return false;
   var a=document.activeElement;
   if(a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.tagName==='SELECT'||a.isContentEditable))return false;
-  if(_gestaoFormDirty)return false;
+  if(_gestaoFormDirty||TAB===1||TAB===2)return false;
   if(window._termoPdfBusy)return false;
   var ovs=document.querySelectorAll('.overlay.open');if(ovs&&ovs.length)return false;
  }catch(e){}
@@ -5119,7 +5129,7 @@ function varrerDocsAuto(opt){
  var mud=0,i=0,st=opt.stat?document.getElementById(opt.stat):null;
  function fim(){
   _docVarr.rodando=false;
-  if(mud){save();if(window._fichaPk)ficha(window._fichaPk);render();toast('📄 '+mud+' documento(s) lido(s)')}
+  if(mud){save();if(!_telaOcupada()){if(window._fichaPk)ficha(window._fichaPk);render();if(opt.force)toast('📄 '+mud+' documento(s) lido(s)')}}
   else if(opt.force)toast('📄 Documento lido — nenhum dado novo para atualizar');
   if(st)st.textContent=mud?('✅ '+mud+' documento(s) atualizado(s).'):'✅ Nada novo para ler — tudo já estava lido.';
  }
@@ -10104,7 +10114,7 @@ function cnh7Ocr(fonte,status){
    if(status)status(k?'A foto parece de lado — tentando girar ('+(k+1)+'/4)…':'Lendo a CNH…');
    return wk.recognize(cnh7Canvas(fonte,giros[k])).then(function(r){
     var t=(r&&r.data&&r.data.text)||'',o=cnh7Parse(t);
-    if(!melhor||cnh7Pontos(o)>cnh7Pontos(melhor)){melhor=o;txtMelhor=t}
+    if(!melhor||cnh7Pontos(o)>cnh7Pontos(melhor)){melhor=o;txtMelhor=t;melhor._giro=giros[k]}
     if(cnh7Pontos(melhor)>=8)return;           /* já achou o principal: para */
     return tenta(k+1);
    });
@@ -10128,6 +10138,14 @@ function cnh7LerPdf(b64,status){
 }
 /* foto grande -> JPEG leve para guardar na nuvem (mantém leitura nítida) */
 function cnh7Compacta(im){var cv=cnh7CanvasCor(im,1800);return cv.toDataURL('image/jpeg',0.85).split(',')[1]}
+/* guarda a CNH EM PÉ: gira a foto colorida pelo mesmo ângulo que fez a leitura dar certo */
+function cnh7Endireita(doc,giro){
+ if(!doc||!doc.im||!giro)return doc;
+ var im=doc.im,w=im.naturalWidth,h=im.naturalHeight,e=Math.min(1,1800/Math.max(w,h)),W=Math.round(w*e),H=Math.round(h*e);
+ var cv=document.createElement('canvas'),gira=(giro===90||giro===270);cv.width=gira?H:W;cv.height=gira?W:H;
+ var x=cv.getContext('2d');x.translate(cv.width/2,cv.height/2);x.rotate(giro*Math.PI/180);x.drawImage(im,-W/2,-H/2,W,H);
+ doc.b64=cv.toDataURL('image/jpeg',0.85).split(',')[1];doc.endireitada=giro;return doc;
+}
 function cnh7CanvasCor(im,maxL){var w=im.naturalWidth,h=im.naturalHeight,e=Math.min(1,maxL/Math.max(w,h)),cv=document.createElement('canvas');cv.width=Math.round(w*e);cv.height=Math.round(h*e);cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);return cv}
 
 /* ---------- arquivo escolhido -> lê -> preenche ---------- */
@@ -10178,7 +10196,8 @@ function cnh7Escolher(){
    if(err){CNH7.lendo=false;CNH7.doc=null;cnh7Desenha();toast('⚠️ '+err.message);return}
    CNH7.doc=doc;CNH7.msg='Lendo a CNH…';cnh7Desenha();
    cnh7Ler(doc,function(m){CNH7.msg=m;var s=document.querySelector('#cnh7Box .cnh7tx small');if(s)s.textContent=m}).then(function(d){
-    CNH7.lendo=false;CNH7.dados=d;delete CNH7.doc.im;cnh7Preenche(d);cnh7Desenha();
+    CNH7.lendo=false;CNH7.dados=d;cnh7Endireita(CNH7.doc,d&&d._giro);delete CNH7.doc.im;cnh7Preenche(d);cnh7Desenha();
+    if(CNH7.doc.endireitada)setTimeout(function(){toast('↻ A CNH estava de lado — guardei em pé')},1800);
     var n=['nome','cpf','rg','cnh','validade'].filter(function(k){return d[k]}).length;
     toast(n?'🪪 CNH lida — '+n+' de 5 dados preenchidos. Confira.':'🪪 CNH guardada, mas não consegui ler. Preencha os dados.');
    }).catch(function(e){CNH7.lendo=false;CNH7.dados=null;if(CNH7.doc)delete CNH7.doc.im;cnh7Desenha();toast('🪪 CNH guardada. Leitura falhou ('+e.message+') — preencha os dados.')});
@@ -10266,22 +10285,25 @@ function anexarCnh(ctId){
  var inp=document.createElement('input');inp.type='file';inp.accept='image/*,application/pdf';
  inp.style.cssText='position:fixed;left:-9999px;top:0;opacity:0;width:1px;height:1px';document.body.appendChild(inp);
  inp.onchange=function(){var f=inp.files&&inp.files[0];setTimeout(function(){if(inp.parentNode)inp.parentNode.removeChild(inp)},1000);if(!f)return;
-  toast('🪪 Guardando a CNH…');
+  toast('🪪 Lendo a CNH…');
   cnh7Arquivo(f,function(err,doc){if(err){toast('⚠️ '+err.message);return}
-   cnh7SubirDoc(ct.carro+'/ct/'+ctId+'/cnh',doc).then(function(){
-    ct.temCnh=true;ct.cnhMime=doc.mime;_touchContrato(ct);save();try{closeSheet(2)}catch(e){}try{ficha(ct.carro)}catch(e){}
-    toast('🪪 CNH guardada no contrato — lendo para completar o que faltar…');
-    /* completa no contrato só o que estiver VAZIO (nada já digitado é trocado) */
-    cnh7Ler(doc).then(function(d){var l=ct.locatario=ct.locatario||{},mud=[];
-     if(!l.cpf&&d.cpf){l.cpf=showCPF(d.cpf);mud.push('CPF')}
-     if(!l.cnh&&d.cnh){l.cnh=d.cnh;mud.push('nº da CNH')}
-     if(!l.cnhVal&&d.validade){l.cnhVal=d.validade;mud.push('validade')}
-     if(!l.nasc&&d.nasc){l.nasc=d.nasc}
-     if(!l.cnhCat&&d.cat){l.cnhCat=d.cat}
-     if(d.validade&&l.cnhVal&&d.validade>l.cnhVal){l.cnhVal=d.validade;mud.push('validade (CNH nova)')}
-     _touchContrato(ct);save();try{ficha(ct.carro)}catch(e){}
-     if(mud.length)toast('🪪 Completei no contrato: '+mud.join(', '));
-    }).catch(function(){});
+   /* lê primeiro (para saber se está de lado), guarda em pé, depois completa o contrato */
+   cnh7Ler(doc).then(function(d){return d},function(){return null}).then(function(d){
+    cnh7Endireita(doc,d&&d._giro);delete doc.im;
+    return cnh7SubirDoc(ct.carro+'/ct/'+ctId+'/cnh',doc).then(function(){
+     ct.temCnh=true;ct.cnhMime=doc.mime;
+     var l=ct.locatario=ct.locatario||{},mud=[];
+     if(d){
+      if(!l.cpf&&d.cpf){l.cpf=showCPF(d.cpf);mud.push('CPF')}
+      if(!l.cnh&&d.cnh){l.cnh=d.cnh;mud.push('nº da CNH')}
+      if(!l.cnhVal&&d.validade){l.cnhVal=d.validade;mud.push('validade')}
+      else if(d.validade&&l.cnhVal&&d.validade>l.cnhVal){l.cnhVal=d.validade;mud.push('validade (CNH nova)')}
+      if(!l.nasc&&d.nasc)l.nasc=d.nasc;
+      if(!l.cnhCat&&d.cat)l.cnhCat=d.cat;
+     }
+     _touchContrato(ct);save();try{closeSheet(2)}catch(e){}try{ficha(ct.carro)}catch(e){}
+     toast('🪪 CNH guardada no contrato'+(doc.endireitada?' (estava de lado — guardei em pé)':'')+(mud.length?' · completei: '+mud.join(', '):''));
+    });
    }).catch(function(e){toast('⚠️ Falha ao guardar ('+e.message+')')});
   });
  };
