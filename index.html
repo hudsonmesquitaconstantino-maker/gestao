@@ -1534,7 +1534,7 @@ html.teclado .overlay{top:0!important}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=221; var APP_DATE='14/10/2026';
+var APP_VER=222; var APP_DATE='14/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -3733,13 +3733,13 @@ function _fichaTabHtml(pk,T){
    _g2Opt('din','Termo de devolução','Acerto de contas na saída do motorista','abrirTermo(\''+pk+'\')')+'</div>';
  }else{
   h+='<div class="g2sub"><span>Documento CRLV</span><span>'+(c.exercicioCRLV?'exercício '+esc(c.exercicioCRLV):'')+'</span></div>';
-  h+='<div class="g2btns">'+(c.temCrlv?'<button class="btn mini" onclick="verDoc(\''+pk+'/crlv\',\'CRLV '+esc(fmtPlaca(c.placa))+'\')">Ver PDF</button>':'')+'<button class="btn mini sec" onclick="pedirArquivo(\''+pk+'/crlv\',\'application/pdf\',\''+pk+'\')">'+(c.temCrlv?'Substituir':'Anexar')+' CRLV</button>'+
+  h+='<div class="g2btns">'+(c.temCrlv?'<button class="btn mini ok" onclick="enviarDoc(\''+pk+'/crlv\',\''+pk+'\')">📤 Enviar CRLV</button><button class="btn mini" onclick="verDoc(\''+pk+'/crlv\',\'CRLV '+esc(fmtPlaca(c.placa))+'\',\''+pk+'\',\'crlv\')">Ver PDF</button>':'')+'<button class="btn mini sec" onclick="pedirArquivo(\''+pk+'/crlv\',\'application/pdf\',\''+pk+'\')">'+(c.temCrlv?'Substituir':'Anexar')+' CRLV</button>'+
    ((c.temCrlv||c.temGnvDoc)?'<button class="btn mini sec" onclick="varrerDocsAuto({pk:\''+pk+'\',force:true})">Reler documentos</button>':'')+'</div>';
   if(!c.temCrlv)h+='<div class="g2vazio">Nenhum CRLV anexado.</div>';
   if(c.temCrlv){var _fal=faltaDoCrlv(c);if(c.crlvSemTexto)h+='<div class="g2aviso g2aviso-amb">CRLV sem texto (foto ou digitalizado): o app não consegue ler. Baixe o CRLV-e digital pelo app do Detran ou preencha em Editar dados.</div>';else if(_fal.length)h+='<div class="g2aviso g2aviso-amb">Não achei no CRLV: '+esc(_fal.join(', '))+'</div>';else if(!c.motorCodigo&&/_L(9[4-9]|\d{3})$/.test(String(c.lidoCrlv||'')))h+='<div class="g2aviso g2aviso-amb">O CRLV não trouxe o código do motor de forma legível. Se precisar, preencha em Editar.</div>'}
   if(semAcento(c.combustivel||'').indexOf('gnv')>=0||c.temGnvDoc){
    h+='<div class="g2sub"><span>GNV</span></div><div class="kv"><b>Vistoria (exercício)</b><span>'+esc(c.gnvExercicio||'—')+'</span><b>Requalificação do cilindro</b><span>'+(c.gnvRequalif?dataBR(c.gnvRequalif):'—')+'</span></div>';
-   h+='<div class="g2btns">'+(c.temGnvDoc?'<button class="btn mini" onclick="verDoc(\''+pk+'/gnv\',\'Vistoria GNV '+esc(fmtPlaca(c.placa))+'\',\''+pk+'\',\'gnv\')">Ver laudo</button>':'')+'<button class="btn mini sec" onclick="pedirArquivo(\''+pk+'/gnv\',\'application/pdf\',\''+pk+'\',\'temGnvDoc\')">'+(c.temGnvDoc?'Substituir':'Anexar')+' laudo do GNV</button></div>';
+   h+='<div class="g2btns">'+(c.temGnvDoc?'<button class="btn mini ok" onclick="enviarDoc(\''+pk+'/gnv\',\''+pk+'\')">📤 Enviar laudo</button><button class="btn mini" onclick="verDoc(\''+pk+'/gnv\',\'Vistoria GNV '+esc(fmtPlaca(c.placa))+'\',\''+pk+'\',\'gnv\')">Ver laudo</button>':'')+'<button class="btn mini sec" onclick="pedirArquivo(\''+pk+'/gnv\',\'application/pdf\',\''+pk+'\',\'temGnvDoc\')">'+(c.temGnvDoc?'Substituir':'Anexar')+' laudo do GNV</button></div>';
   }
   h+='<div class="g2sub"><span>Dados do veículo</span><button class="g2link" onclick="formCarro(\''+pk+'\')">Editar</button></div><div class="kv">'+
    '<b>Modelo (CRLV)</b><span>'+esc(c.modeloCRLV||'—')+'</span><b>Motorista atual</b><span>'+(c.motorista?esc(c.motorista):'—')+'</span><b>Ano fab/mod</b><span>'+esc(c.ano||'—')+'</span><b>Cor</b><span>'+esc(c.cor||'—')+'</span><b>Combustível</b><span>'+esc(c.combustivel||'—')+'</span><b>Potência</b><span>'+esc(c.potencia||'—')+'</span>'+
@@ -10273,11 +10273,12 @@ function verCnh(ctId){
  toast('🪪 Abrindo a CNH…');
  pegarDoc(path).then(function(d){
   if(!d||!d.b64){toast('CNH não encontrada na nuvem');return}
-  if(/pdf/i.test(d.mime||'')){abrirPdf(d.b64,nome);return}
+  try{DOCMEM[path]=d}catch(e){}
+  if(/pdf/i.test(d.mime||'')){abrirPdf(d.b64,nome,{share:true,fileName:(typeof _docNome==='function'?_docNome(path,ct.carro,d.mime):nome+'.pdf')});return}
   var l=ct.locatario||{};
   openSheet('<h3>'+esc(nome)+'</h3><p class="sub">'+esc(l.nome||'')+(l.cpf?' · CPF '+esc(showCPF(l.cpf)):'')+'</p>'+
    '<img src="data:'+(d.mime||'image/jpeg')+';base64,'+d.b64+'" style="width:100%;border-radius:12px;display:block;margin:10px 0" alt="CNH">'+
-   '<div class="g2btns"><button class="btn sec" onclick="baixarDoc(\''+path+'\',\''+esc(nome)+'.jpg\')">⬇️ Baixar</button><button class="btn sec" onclick="anexarCnh(\''+ctId+'\')">Trocar CNH</button></div>',2);
+   '<div class="g2btns"><button class="btn ok" onclick="enviarDoc(\''+path+'\',\''+ct.carro+'\')">📤 Enviar</button><button class="btn sec" onclick="baixarDoc(\''+path+'\',\''+esc(nome)+'.jpg\')">⬇️ Baixar</button><button class="btn sec" onclick="anexarCnh(\''+ctId+'\')">Trocar CNH</button></div>',2);
  }).catch(function(e){toast('⚠️ '+e.message)});
 }
 function anexarCnh(ctId){
@@ -10316,6 +10317,109 @@ function anexarCnh(ctId){
    '<button class="btn mini sec" onclick="anexarCnh(\''+ct.id+'\')">🪪 Anexar CNH</button>';
   return h};
  w._cnh7=1;window.docBtns=w;})();
+
+</script>
+<script>
+/* ===== v222 — ENVIAR DOCUMENTO AO MOTORISTA (só o arquivo, nome pela placa) =====
+   Pedido do Hudson (14/10/2026, greve do Detran-RJ: CNH digital/CDT fora do ar e precisou mandar o
+   CRLV do Grand Siena LSK pelo Gestão). Antes: "Ver PDF" não tinha botão de enviar; o que ia
+   para o WhatsApp era link/texto estranho, e o compartilhar de outras telas mandava junto um
+   texto (título). Agora:
+   - botão "Enviar" ao lado de cada documento (CRLV, laudo do GNV, contrato em PDF, CNH);
+   - vai SÓ O ARQUIVO (nenhum texto junto);
+   - nome do arquivo pela placa: "LSK-2B23 CRLV.pdf", "LSK-2B23 GNV.pdf",
+     "LSK-2B23 Contrato ODILON.pdf", "LSK-2B23 CNH ODILON.jpg";
+   - o documento é pré-carregado quando a ficha abre, para o iPhone abrir o "Enviar" na hora
+     (o iPhone só deixa compartilhar logo depois do toque). */
+var DOCMEM={};
+function _docNome(path,pk,mime){
+ var p=String(path||''),placa=fmtPlaca((S.carros[pk]||{}).placa||pk||'')||pk||'',rot='Documento',m;
+ if(/\/crlv$/.test(p))rot='CRLV';
+ else if(/\/gnv$/.test(p))rot='GNV';
+ else if((m=p.match(/\/ct\/([^\/]+)\/(pdf|docx|cnh)$/))){var ct=S.contratos[m[1]]||{},nm=primNome((ct.locatario||{}).nome||'');
+  rot=(m[2]==='cnh'?'CNH':(ct.tipo==='venda'?'Compra e venda':'Contrato'))+(nm?' '+nm:'')}
+ var ext=/pdf/i.test(mime||'')?'pdf':(/word|docx/i.test(mime||'')?'docx':(/png/i.test(mime||'')?'png':(/image/i.test(mime||'')?'jpg':'pdf')));
+ return (placa+' '+rot).replace(/[\\\/:*?"<>|]+/g,'-').replace(/\s+/g,' ').trim()+'.'+ext;
+}
+function _docPre(path,pk){
+ if(DOCMEM[path])return;
+ try{pegarDoc(path,pk).then(function(d){if(d&&d.b64)DOCMEM[path]=d}).catch(function(){})}catch(e){}
+}
+function _docFile(d,nome){
+ var bin=atob(d.b64),u=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
+ var mime=d.mime||'application/pdf';
+ return {blob:new Blob([u],{type:mime}),file:(function(){try{return new File([u],nome,{type:mime})}catch(e){return null}})()};
+}
+/* compartilha SÓ o arquivo: sem title/text (no WhatsApp o title vira mensagem) */
+function _docShare(d,nome){
+ var f=_docFile(d,nome);
+ if(navigator.share&&f.file&&(!navigator.canShare||navigator.canShare({files:[f.file]}))){
+  return navigator.share({files:[f.file]}).then(function(){return true},function(e){if(e&&e.name==='AbortError')return true;throw e});
+ }
+ _pdfShareFallback(f.blob,nome);return Promise.resolve(true);
+}
+function enviarDoc(path,pk){
+ var d=DOCMEM[path];
+ if(d){
+  _docShare(d,_docNome(path,pk,d.mime)).catch(function(){
+   /* iPhone recusou (toque "expirou"): abre o documento com o botão ↗ */
+   _docAbrirParaEnviar(path,pk,d);
+  });
+  return;
+ }
+ toast('📄 Preparando o documento…');
+ pegarDoc(path,pk).then(function(d){
+  if(!d||!d.b64){toast('Documento não encontrado na nuvem');return}
+  DOCMEM[path]=d;
+  _docShare(d,_docNome(path,pk,d.mime)).catch(function(){_docAbrirParaEnviar(path,pk,d)});
+ }).catch(function(e){toast('⚠️ '+e.message)});
+}
+function _docAbrirParaEnviar(path,pk,d){
+ if(/pdf/i.test(d.mime||'application/pdf')){abrirPdf(d.b64,_docNome(path,pk,d.mime).replace(/\.pdf$/,''),{share:true,fileName:_docNome(path,pk,d.mime)});toast('Toque em ↗ para enviar')}
+ else{_pdfShareFallback(_docFile(d,_docNome(path,pk,d.mime)).blob,_docNome(path,pk,d.mime))}
+}
+
+/* "Ver PDF" passa a ter o botão ↗ (enviar) e o nome pela placa */
+(function(){var o=window.verDoc;if(typeof o!=='function'||o._v222)return;
+ var w=function(path,titulo,pk,tipo){
+  var pkk=pk||String(path||'').split('/')[0];
+  toast('📄 Abrindo…');
+  pegarDoc(path,pkk,tipo).then(function(d){
+   if(!d||!d.b64){toast('Documento não encontrado — rode a Importação inicial ou o download offline (⚙️)');return}
+   DOCMEM[path]=d;
+   abrirPdf(d.b64,titulo,{share:true,fileName:_docNome(path,pkk,d.mime)});
+  }).catch(function(e){toast('⚠️ '+e.message)});
+ };
+ w._v222=1;window.verDoc=w;})();
+
+/* o ↗ do visualizador também manda só o arquivo (antes ia o título junto como texto) */
+window.compartilharPdfAtual=function(){
+ try{
+  if(!PDFV||!PDFV.b64){toast('PDF indisponível para compartilhar');return}
+  _docShare({b64:PDFV.b64,mime:'application/pdf'},PDFV.fileName||'Documento.pdf').catch(function(){
+   var f=_docFile({b64:PDFV.b64,mime:'application/pdf'},PDFV.fileName||'Documento.pdf');_pdfShareFallback(f.blob,PDFV.fileName||'Documento.pdf')});
+ }catch(e){toast('⚠️ Não consegui compartilhar o PDF')}
+};
+
+/* ficha aberta: pré-carrega CRLV, GNV e documentos do contrato vigente */
+(function(){var o=window.ficha;if(typeof o!=='function'||o._v222)return;
+ var w=function(pk){var r=o.apply(this,arguments);
+  try{setTimeout(function(){var c=S.carros[pk];if(!c)return;
+   if(c.temCrlv)_docPre(pk+'/crlv',pk);
+   if(c.temGnvDoc)_docPre(pk+'/gnv',pk);
+   var ct=c.contratoVigenteId&&S.contratos[c.contratoVigenteId];
+   if(ct){if(ct.temPdf)_docPre(pk+'/ct/'+ct.id+'/pdf',pk);if(ct.temCnh)_docPre(pk+'/ct/'+ct.id+'/cnh',pk)}
+  },350)}catch(e){}
+  return r};
+ w._v222=1;window.ficha=w;})();
+
+/* botões Enviar nos contratos (PDF assinado e CNH) */
+(function(){var o=window.docBtns;if(typeof o!=='function'||o._v222)return;
+ var w=function(ct){var h=o.apply(this,arguments);if(!ct)return h;var pk=ct.carro;
+  if(ct.temPdf)h+='<button class="btn mini ok" onclick="enviarDoc(\''+pk+'/ct/'+ct.id+'/pdf\',\''+pk+'\')">📤 Enviar contrato</button>';
+  if(ct.temCnh)h+='<button class="btn mini ok" onclick="enviarDoc(\''+pk+'/ct/'+ct.id+'/cnh\',\''+pk+'\')">📤 Enviar CNH</button>';
+  return h};
+ w._v222=1;window.docBtns=w;})();
 
 </script>
 </body>
