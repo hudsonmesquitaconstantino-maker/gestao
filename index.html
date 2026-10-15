@@ -1534,7 +1534,7 @@ html.teclado .overlay{top:0!important}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=223; var APP_DATE='14/10/2026';
+var APP_VER=224; var APP_DATE='15/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -9975,7 +9975,7 @@ try{if(typeof TAB!=='undefined'&&(TAB===5||TAB===0)&&S)render()}catch(e){}
 
 </script>
 <script>
-/* ===== v219 — CNH DO MOTORISTA NO CONTRATO =====
+/* ===== v219 — CNH DO MOTORISTA NO CONTRATO (v223 outra sessão + v224 nome pela faixa) =====
    Pedido do Hudson (14/10/2026): na criação do contrato, começar pela CNH do motorista.
    - Anexa foto (câmera/galeria) ou PDF da CNH digital.
    - O app LÊ a CNH e preenche nome completo, CPF, RG + órgão, nº da CNH e validade
@@ -10000,6 +10000,53 @@ function cnh7RegOk(d){d=String(d||'').replace(/\D/g,'');if(d.length!==11||/^(\d)
  var v=0,i,j;for(i=0,j=9;i<9;i++,j--)v+=+d[i]*j;var dsc=0,v1=v%11;if(v1>=10){v1=0;dsc=2}
  v=0;for(i=0,j=1;i<9;i++,j++)v+=+d[i]*j;var x=v%11,v2=x>=10?0:x-dsc;if(v2<0)v2+=11;if(v2>=10)v2=0;
  return ''+v1+v2===d.slice(-2)}
+
+/* ---------- faixa MRZ ---------- */
+function cnh7MrzNome(raw){
+ var L=String(raw||'').toUpperCase().replace(/[«‹]/g,'<').split(/\n|\s{2,}/).map(function(l){return l.replace(/\s+/g,'')}).filter(Boolean);
+ var t=String(raw||'').toUpperCase().replace(/[«‹]/g,'<');
+ var o=null;
+ /* nome: só letras e '<', com '<<' separando, sem dígitos */
+ var mN=t.match(/(?:^|[^A-Z<])([A-Z]{2,}<<[A-Z<]{3,})/g);
+ if(mN){var cand=mN.map(function(x){return x.replace(/^[^A-Z]+/,'')}).filter(function(x){return !/\d/.test(x)&&!/^I<BRA/.test(x)}).pop();
+  if(cand){var tk=cand.split(/<+/).filter(function(w){return w.length>=1});
+   if(tk.length>=2)o={tokens:tk,cheio:cand.replace(/<+$/,'').length>=29}}}
+ if(!o)return null;
+ /* linha 2: AAMMDD nasc + dígito + sexo + AAMMDD validade */
+ var m2=t.replace(/\s+/g,'').match(/(\d{6})\d[MF<X](\d{6})\d/);
+ if(m2){var yy=+m2[1].slice(0,2),cy=new Date().getFullYear()%100;
+  o.nasc=((yy>cy?1900:2000)+yy)+'-'+m2[1].slice(2,4)+'-'+m2[1].slice(4,6);
+  o.val=(2000+(+m2[2].slice(0,2)))+'-'+m2[2].slice(2,4)+'-'+m2[2].slice(4,6)}
+ return o;
+}
+function _cnh7Re(tok){var A={A:'[AÀÁÂÃ]',E:'[EÉÊ]',I:'[IÍ]',O:'[OÓÔÕ]',U:'[UÚÜ]',C:'[CÇ]'};return tok.split('').map(function(ch){return A[ch]||ch}).join('')}
+/* acha no texto impresso o nome que bate com a MRZ: cada palavra começa com a palavra da MRZ */
+function cnh7NomePelaMrz(textoA,tk){
+ var re=new RegExp('(?:^|[^A-ZÀ-Ý])('+tk.map(function(w){return _cnh7Re(w)+'[A-ZÀ-Ý]*'}).join('\\s+')+')(?![A-ZÀ-Ý<])');
+ var m=String(textoA||'').toUpperCase().replace(/[«‹]/g,'<').replace(/[A-Z0-9]*<[A-Z0-9<]*/g,' ').match(re);
+ if(m)return m[1].replace(/\s+/g,' ').trim();
+ /* OCR trocou letra ("HIGOR" em vez de "HYGOR") ou grudou lixo: procura uma sequência de palavras
+    que bata palavra a palavra com a faixa (tolerando letra trocada); a faixa corrige a letra. */
+ var ws=String(textoA||'').toUpperCase().replace(/[«‹]/g,'<').replace(/[A-Z0-9]*<[A-Z0-9<]*/g,' ').replace(/[^A-ZÀ-Ý0-9 \n]/g,' ').split(/\s+/).filter(function(w){return /[A-ZÀ-Ý]/.test(w)&&!/\d/.test(w)});
+ for(var i=0;i+tk.length<=ws.length;i++){var r=cnh7JuntaMrz(ws.slice(i,i+tk.length).join(' '),tk);if(r)return r}
+ return '';
+}
+/* nome do OCR com erro de letra ("HIGOR") + MRZ ("HYGOR"): palavra a palavra, a MRZ corrige letra
+   trocada; a palavra impressa vence quando é a forma completa da abreviada (MEDEIR -> MEDEIROS) */
+function cnh7JuntaMrz(nome,tk){
+ var w=String(nome||'').split(' ');if(w.length!==tk.length)return '';
+ function sa(x){return semAcento(x).toUpperCase()}
+ function dist(a,b){var d=[],i,j;for(i=0;i<=a.length;i++){d[i]=[i]}for(j=0;j<=b.length;j++)d[0][j]=j;
+  for(i=1;i<=a.length;i++)for(j=1;j<=b.length;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return d[a.length][b.length]}
+ var out=[];
+ for(var i=0;i<w.length;i++){var c=w[i],m=tk[i],cs=sa(c);
+  if(cs===m||cs.indexOf(m)===0){out.push(c);continue}
+  if(cs.length===m.length&&dist(cs,m)<=2){out.push(m);continue}       /* letra trocada no OCR */
+  if(m.length<cs.length&&dist(cs.slice(0,m.length),m)<=1){out.push(m+cs.slice(m.length));continue}
+  return '';                                                         /* não bate: não arrisca */
+ }
+ return out.join(' ');
+}
 
 /* ---------- leitura do texto da CNH (OCR ou PDF) ---------- */
 function cnh7Parse(texto){
@@ -10049,6 +10096,7 @@ function cnh7Parse(texto){
 
  /* NOME: linha depois do rótulo NOME (modelo antigo "NOME", novo "1 NOME E SOBRENOME") */
  function nomeLimpo(s){
+  if(/</.test(String(s||'')))return '';   /* faixa de leitura automática (MRZ): nome abreviado, nunca usar direto */
   /* tira datas e blocos só de números ("31/08/2022", "8") ANTES de trocar 0->O dentro de
      palavras (J0ÃO -> JOÃO); senão a data vira letra e gruda no nome ("... SILVA OB") */
   s=String(s||'').replace(/\b\d{1,2}\s*[\/.\-]\s*\d{1,2}\s*[\/.\-]\s*\d{2,4}\b/g,' ');
@@ -10072,6 +10120,20 @@ function cnh7Parse(texto){
   }
  }
  if(!o.nome){var flatA=linhasA.join(' ');var mn=flatA.match(/\bNOME(?:\s+E\s+SOBRENOME)?\s+([A-ZÀ-Ý][A-ZÀ-Ý ]{5,60}?)\s+(?:DOC|DATA|CPF|FILIA|PERMISS|ACC|CAT|N[O°º]?\s*REGISTRO|\d)/);if(mn)o.nome=nomeLimpo(mn[1])}
+
+ /* FAIXA DE BAIXO (MRZ): "HYGOR<<MEDEIR<CARDOSO<DA<SILVA" — o nome ali é ABREVIADO para caber em
+    30 caracteres (MEDEIROS -> MEDEIR). Serve de GUIA: acha no texto o nome impresso completo que
+    começa com essas mesmas letras. Nunca entra sozinho como nome final sem aviso. */
+ var mz=cnh7MrzNome(raw);
+ if(mz&&mz.tokens.length>=2){
+  o._mrz=mz;
+  var achado=cnh7NomePelaMrz(linhasA.join(' '),mz.tokens);
+  if(achado)o.nome=achado;
+  else if(o.nome){var mg=cnh7JuntaMrz(o.nome,mz.tokens);if(mg)o.nome=mg}
+  else{o.nome=mz.tokens.join(' ');o._nomeMrz=true;o.nomeCortado=!!mz.cheio}
+  if(!o.nasc&&mz.nasc)o.nasc=mz.nasc;
+  if(!o.validade&&mz.val)o.validade=mz.val;
+ }
 
  /* RG + órgão emissor + UF: "123456789 DETRAN RJ" / "12.345.678-9 SSP RJ" */
  var ORG='DETRAN|SSP|IFP|DIC|PC|SDS|SESP|SEJUSP|SESPDS|IIRGD|IGP|PCRJ|SESPDC|SSPDS|SEDS|SECC|PM|MD|MEX|MAER|MM|DPF|CNT|OAB|CRM|CREA|IPF|DGPC|SJS|SJTC|SPTC|POLITEC|SEPC|ITEP|IML|ITB|SSPRJ';
@@ -10122,9 +10184,12 @@ function cnh7AplicaMrz(o,r){
  if(r.cnh)o.cnh=r.cnh;
  if(r.nasc)o.nasc=r.nasc;
  if(r.validade)o.validade=r.validade;
- if(r.nome){var a=semAcento(o.nome||'').toUpperCase(),b=r.nome;
-  var igual=r.nomeCortado?(a.indexOf(b)===0):(a.split(' ').sort().join(' ')===b.split(' ').sort().join(' '));
-  if(!igual){o.nome=b;o.nomeCortado=!!r.nomeCortado}}
+ /* v224: nome — a faixa (MRZ) pode vir ABREVIADA (MEDEIROS -> MEDEIR). Ela só confirma/corrige o nome
+    impresso; só vira o nome quando não há nome impresso ou quando ela vem completa. */
+ if(r.nome){var tk=r.nome.split(' '),cmp=(o.nome&&!o._nomeMrz)?(cnh7NomePelaMrz(o.nome,tk)||cnh7JuntaMrz(o.nome,tk)):'';
+  if(cmp){o.nome=cmp;o.nomeCortado=false;o.nomeConfira=false}
+  else if(!o.nome||o._nomeMrz||!r.nomeCortado){o.nome=r.nome;o.nomeCortado=!!r.nomeCortado;o._nomeMrz=!!r.nomeCortado}
+  else o.nomeConfira=true}
  o.mrz=!!(r.cnh||r.validade||r.nome);
  cnh7Avisos(o);return o;
 }
@@ -10132,7 +10197,8 @@ function cnh7Avisos(o){
  o.avisos=[];
  if(o.cpf&&!cnh7CpfOk(o.cpf))o.avisos.push('CPF lido não confere (dígito) — confira');
  if(o.cnh&&!cnh7RegOk(o.cnh))o.avisos.push('Nº da CNH lido não confere (dígito) — confira');
- if(o.nomeCortado)o.avisos.push('O nome pode estar incompleto — confira');
+ if(o.nomeCortado)o.avisos.push('Nome lido da faixa de baixo da CNH, onde vem ABREVIADO — confira letra por letra');
+ else if(o.nomeConfira)o.avisos.push('O nome impresso e o da faixa de baixo da CNH não batem — confira o nome');
  return o;
 }
 /* junta duas leituras da MESMA foto: o que faltou numa vem da outra; número conferido vence */
@@ -10140,7 +10206,10 @@ function cnh7Junta(a,b){
  if(!a)return b;if(!b)return a;
  if(b.cpf&&(!a.cpf||(!cnh7CpfOk(a.cpf)&&cnh7CpfOk(b.cpf))))a.cpf=b.cpf;
  if(b.cnh&&(!a.cnh||(!cnh7RegOk(a.cnh)&&cnh7RegOk(b.cnh))||(b.mrz&&!a.mrz&&cnh7RegOk(b.cnh))))a.cnh=b.cnh;
- if(b.mrz&&!a.mrz){if(b.nasc)a.nasc=b.nasc;if(b.validade)a.validade=b.validade;if(b.nome){a.nome=b.nome;a.nomeCortado=b.nomeCortado}a.mrz=true}
+ if(b.mrz&&!a.mrz){if(b.nasc)a.nasc=b.nasc;if(b.validade)a.validade=b.validade;
+  if(b.nome&&(!b._nomeMrz||!a.nome||a._nomeMrz)){a.nome=b.nome;a.nomeCortado=b.nomeCortado;a._nomeMrz=b._nomeMrz;a.nomeConfira=b.nomeConfira}
+  else if(b.nome&&a.nome){var tk=b.nome.split(' '),cmp=cnh7NomePelaMrz(a.nome,tk)||cnh7JuntaMrz(a.nome,tk);if(cmp)a.nome=cmp;else a.nomeConfira=true}
+  a.mrz=true}
  ['nome','nasc','validade','cat'].forEach(function(k){if(!a[k]&&b[k])a[k]=b[k]});
  if(!a.rg&&b.rg){a.rg=b.rg;a.rgOrg=b.rgOrg}
  else if(b.rg&&a.rg===b.rg&&String(b.rgOrg||'').length>String(a.rgOrg||'').length)a.rgOrg=b.rgOrg;
@@ -10203,11 +10272,19 @@ function cnh7LerPdf(b64,status){
  var buf=b64ToU8(b64).buffer;
  return impTextoPdf(buf.slice(0)).then(function(txt){
   var o=cnh7Parse(txt||'');
-  if(cnh7Pontos(o)>=6){o._texto=txt;return o}
+  if(cnh7Pontos(o)>=6&&!o._nomeMrz){o._texto=txt;return o}
+  var doTexto=o;
   return garantirPdfjs().then(function(){return pdfjsLib.getDocument({data:b64ToU8(b64)}).promise}).then(function(pdf){return pdf.getPage(1)}).then(function(pg){
    var vp=pg.getViewport({scale:2.5}),cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;
    return pg.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise.then(function(){return cnh7Ocr(cv,status)});
-  });
+  }).then(function(oc){
+   /* junta: o que o texto do PDF trouxe (exato) + o nome impresso achado pelo OCR guiado pela MRZ */
+   if(cnh7Pontos(doTexto)<6)return oc;
+   var mz=doTexto._mrz,nome='';
+   if(mz&&oc&&oc._texto)nome=cnh7NomePelaMrz(oc._texto,mz.tokens)||cnh7JuntaMrz(oc.nome||'',mz.tokens);
+   if(nome){doTexto.nome=nome;doTexto._nomeMrz=false;doTexto.nomeCortado=false;doTexto.nomeConfira=false;cnh7Avisos(doTexto)}
+   return doTexto;
+  },function(){return cnh7Pontos(doTexto)>=6?doTexto:Promise.reject(new Error('não consegui ler'))});
  });
 }
 /* foto grande -> JPEG leve para guardar na nuvem (mantém leitura nítida) */
@@ -10250,7 +10327,7 @@ function cnh7Card(){
   h+='<div class="cnh7top">'+thumb+'<div class="cnh7tx"><b>CNH anexada</b><small>'+(CNH7.lendo?esc(CNH7.msg||'Lendo…'):(d?'Vai ficar guardada neste contrato':'Não consegui ler — preencha abaixo'))+'</small></div><button class="n3mini" onclick="cnh7Escolher()">Trocar</button></div>';
   if(CNH7.lendo)h+='<div class="cnh7bar"><i></i></div>';
   if(d&&!CNH7.lendo){
-   var L=[['Nome',d.nome],['CPF',d.cpf?showCPF(d.cpf):''],['RG',d.rg?(d.rg+(d.rgOrg?' · '+d.rgOrg:'')):''],['Nº da CNH',d.cnh],['Validade',d.validade?dataBR(d.validade):''],['Nascimento',d.nasc?dataBR(d.nasc):''],['Categoria',d.cat]];
+   var L=[['Nome',d.nome+((d._nomeMrz||d.nomeCortado||d.nomeConfira)?' ⚠️':'')],['CPF',d.cpf?showCPF(d.cpf):''],['RG',d.rg?(d.rg+(d.rgOrg?' · '+d.rgOrg:'')):''],['Nº da CNH',d.cnh],['Validade',d.validade?dataBR(d.validade):''],['Nascimento',d.nasc?dataBR(d.nasc):''],['Categoria',d.cat]];
    h+='<div class="cnh7lido">'+L.map(function(x){return '<div><span>'+x[0]+'</span><b>'+(x[1]?esc(x[1]):'<em>não li</em>')+'</b></div>'}).join('')+'</div>';
    if(d.avisos&&d.avisos.length)h+='<div class="n3info n3alertaBox">'+d.avisos.map(esc).join('<br>')+'</div>';
    if(d.validade&&d.validade<hoje())h+='<div class="n3info n3alertaBox">⚠️ CNH vencida em '+dataBR(d.validade)+'.</div>';
