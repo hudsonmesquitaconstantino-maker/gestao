@@ -1536,7 +1536,7 @@ html.teclado #main{padding-bottom:calc(20px + var(--navH,0px))!important}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=226; var APP_DATE='15/10/2026';
+var APP_VER=227; var APP_DATE='15/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -10715,6 +10715,21 @@ function _ecMotHtml(ct){
  function solta(){[].slice.call(document.querySelectorAll('.kbEspaco')).forEach(function(sp){var sc=sp.parentNode,t=sc.scrollTop;sp.parentNode.removeChild(sp);try{sc.scrollTop=t}catch(e){}});marcas=[]}
  try{new MutationObserver(function(){if(de.classList.contains('teclado')){segura();requestAnimationFrame(segura);setTimeout(segura,60)}else{setTimeout(solta,30)}}).observe(de,{attributes:true,attributeFilter:['class']})}catch(e){}
  document.addEventListener('focusout',function(){setTimeout(function(){if(!de.classList.contains('teclado'))marcas=[]},400)},true);
+})();
+/* ===== v226 — toque duplo não salva/gera em dobro =====
+   Varredura (15/10/2026): dois toques rápidos em "Salvar observação" criavam DUAS observações.
+   Regra geral: botão que salva, gera, cria, registra, confirma, aplica, envia, exclui ou encerra
+   ignora um segundo toque no MESMO botão em menos de 1,2 s (o primeiro já está trabalhando). */
+(function(){
+ var RE=/salvar|gerar|criar|registrar|confirmar|aplicar|enviar|excluir|encerrar|kmRapidoSalvar|obsSalvar|n3Ok|e3Ok|tImportAplicar|reativar|marcarFatura|semear|restaurar|importar|fazerBackup|regerar/i;
+ var ult=null,em=0;
+ document.addEventListener('click',function(e){
+  var b=e.target&&e.target.closest?e.target.closest('[onclick]'):null;if(!b)return;
+  var oc=b.getAttribute('onclick')||'';if(!RE.test(oc))return;
+  var t=Date.now();
+  if(b===ult&&t-em<1200){e.stopImmediatePropagation();e.preventDefault();return}
+  ult=b;em=t;
+ },true);
 })();
 
 </script>
