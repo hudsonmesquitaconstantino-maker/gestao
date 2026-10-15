@@ -1534,7 +1534,7 @@ html.teclado .overlay{top:0!important}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=224; var APP_DATE='15/10/2026';
+var APP_VER=225; var APP_DATE='15/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -10571,6 +10571,81 @@ window.compartilharPdfAtual=function(){
   if(ct.temCnh)h+='<button class="btn mini ok" onclick="enviarDoc(\''+pk+'/ct/'+ct.id+'/cnh\',\''+pk+'\')">📤 Enviar CNH</button>';
   return h};
  w._v222=1;window.docBtns=w;})();
+
+</script>
+<script>
+/* ===== v225 — CORRIGIR CONTRATO: dados do MOTORISTA também =====
+   Pedido do Hudson (15/10/2026): o nome do Hygor saiu errado (MEDEIR) e a tela "Corrigir contrato"
+   só tinha datas, km, valores e veículo. Agora tem o bloco Motorista (nome, CPF, telefone, RG,
+   órgão, CNH, validade, CEP e endereço). Corrigir só o motorista também gera o Word corrigido.
+   O nome novo vai junto para o carro (motorista atual) e para o robô do km — sem isso o robô
+   acharia que é um motorista NOVO e se desligaria para esse carro. */
+function _ecMotHtml(ct){
+ var l=ct.locatario||{},rg=(typeof _rgTransferDados==='function')?_rgTransferDados(l):{num:'',org:'',cnh:l.cnh||'',cnhVal:l.cnhVal||''};
+ var f=function(rot,id,v,extra){return '<label>'+rot+'</label><input id="'+id+'" value="'+esc(v==null?'':String(v))+'"'+(extra||'')+'>'};
+ return '<div class="sect">Motorista (locatário)</div>'+
+  f('Nome completo','ecNome',l.nome||'',' autocapitalize="characters"')+
+  '<div class="grid2"><div>'+f('CPF','ecCpf',l.cpf?showCPF(l.cpf):'',' inputmode="numeric"')+'</div><div>'+f('Telefone','ecTel',l.tel?showTel(l.tel):'',' inputmode="tel"')+'</div></div>'+
+  '<div class="grid2"><div>'+f('RG','ecRgNum',rg.num,' autocapitalize="characters"')+'</div><div>'+f('Órgão do RG','ecRgOrg',rg.org,' placeholder="DETRAN/RJ"')+'</div></div>'+
+  '<div class="grid2"><div>'+f('Nº da CNH','ecCnh',rg.cnh||l.cnh||'',' inputmode="numeric"')+'</div><div><label>Validade da CNH</label><input type="date" id="ecCnhVal" value="'+esc(rg.cnhVal||l.cnhVal||'')+'"></div></div>'+
+  f('CEP','ecCep',l.cep?showCEP(l.cep):'',' inputmode="numeric"')+
+  '<label>Endereço</label><textarea id="ecEnd" rows="2">'+esc(l.endereco||'')+'</textarea>';
+}
+(function(){var o=window.editarContratoVigente;if(typeof o!=='function'||o._v225)return;
+ var w=function(id){var r=o.apply(this,arguments);
+  try{var ct=S.contratos[id],b=document.getElementById('sheetBody2');
+   if(ct&&b&&CTEDIT&&CTEDIT.id===id&&!document.getElementById('ecNome')){
+    var alvo=[].slice.call(b.querySelectorAll('.sect')).filter(function(x){return /Datas e quilometragem/.test(x.textContent)})[0];
+    if(alvo)alvo.insertAdjacentHTML('beforebegin',_ecMotHtml(ct));
+    try{if(typeof aplicarMascarasContrato==='function'){}}catch(e){}
+   }}catch(e){}
+  return r};
+ w._v225=1;window.editarContratoVigente=w;})();
+
+(function(){var o=window.salvarCorrecaoContrato;if(typeof o!=='function'||o._v225)return;
+ var w=function(id){
+  var ct=S.contratos&&S.contratos[id];
+  if(!ct||!document.getElementById('ecNome'))return o.apply(this,arguments);
+  var gi=function(x){var e=document.getElementById(x);return e?String(e.value||'').trim():''};
+  var l=ct.locatario=ct.locatario||{},velho=JSON.parse(JSON.stringify(l));
+  var nome=gi('ecNome').toUpperCase().replace(/\s+/g,' ');
+  if(!nome){toast('O nome do motorista não pode ficar vazio');return}
+  var cpfD=gi('ecCpf').replace(/\D/g,'');if(cpfD&&cpfD.length!==11){toast('Confira o CPF (11 números)');return}
+  var cnh=gi('ecCnh').replace(/\D/g,''),val=gi('ecCnhVal'),num=gi('ecRgNum'),org=gi('ecRgOrg');
+  var novo={nome:nome,cpf:cpfD?showCPF(cpfD):'',tel:gi('ecTel'),cnh:cnh,cnhVal:val,cep:gi('ecCep'),endereco:gi('ecEnd'),
+   rg:(num||org)?('RG '+num+(org?' – '+org:'')+(cnh?' | CNH '+cnh+(val?' (val. '+dataBR(val)+')':''):'')):(cnh?'CNH '+cnh+(val?' (val. '+dataBR(val)+')':''):'')};
+  var mud=Object.keys(novo).filter(function(k){return String(novo[k]||'')!==String(velho[k]||'')});
+  /* rg é texto montado: só conta como mudança se RG/órgão/CNH/validade mudaram de verdade */
+  var rgAnt=(typeof _rgTransferDados==='function')?_rgTransferDados(velho):{};
+  if(mud.indexOf('rg')>=0&&String(rgAnt.num||'')===num&&String(rgAnt.org||'')===org&&mud.indexOf('cnh')<0&&mud.indexOf('cnhVal')<0)mud.splice(mud.indexOf('rg'),1);
+  if(!mud.length)return o.apply(this,arguments);
+  var antesUlt=ct.ultimaCorrecaoEm;
+  mud.forEach(function(k){l[k]=novo[k]});
+  /* segura os avisos da tela original: se só o motorista mudou, ela diria "Nenhuma alteração feita" */
+  var tt=window.toast,msgs=[],r;window.toast=function(m){msgs.push(m)};
+  try{r=o.apply(this,arguments)}finally{window.toast=tt}
+  if(CTEDIT&&CTEDIT.id===id){ /* a tela recusou (data/valor inválido): desfaz o motorista e mostra o motivo */
+   ct.locatario=velho;msgs.forEach(function(m){toast(m)});return r}
+  if(ct.ultimaCorrecaoEm!==antesUlt)msgs.forEach(function(m){toast(m)});
+  /* nome novo: carro e robô do km acompanham (o robô não pode achar que é motorista novo) */
+  var c=S.carros[ct.carro],nomeAnt=String(velho.nome||'').trim().toUpperCase();
+  if(mud.indexOf('nome')>=0&&c&&c.contratoVigenteId===id&&String(c.motorista||'').trim().toUpperCase()===nomeAnt){
+   try{var pk=ct.carro,cont=window.ROBO&&ROBO.contatos&&ROBO.contatos[pk];
+    if(cont&&String(cont.motorista||'').trim().toUpperCase()===nomeAnt){cont.motorista=nome;if(window.ROBOREF)ROBOREF.child('contatos/'+pk+'/motorista').set(nome)}}catch(e){}
+   c.motorista=nome;_touchCarro(c,['motorista']);
+  }
+  ct.revisoes=Array.isArray(ct.revisoes)?ct.revisoes:[];
+  ct.revisoes.push({em:Date.now(),campos:mud.map(function(k){return 'locatario.'+k}),antes:{locatario:velho},depois:{locatario:JSON.parse(JSON.stringify(ct.locatario))}});
+  if(ct.revisoes.length>20)ct.revisoes=ct.revisoes.slice(-20);
+  if(ct.ultimaCorrecaoEm===antesUlt){
+   /* só o motorista mudou: a tela original diria "nenhuma alteração" — conclui aqui */
+   ct.ultimaCorrecaoEm=Date.now();ct.ultimaCorrecaoData=hoje();if(ct.temPdf)ct.pdfDesatualizadoEm=Date.now();ct.temDocx=false;
+   _touchContrato(ct);save();CTEDIT=null;try{closeSheet(2)}catch(e){}try{ficha(ct.carro);render()}catch(e){}
+   toast('✅ Motorista corrigido — gerando novo Word…');
+   setTimeout(function(){try{regerarContrato(id)}catch(e){toast('⚠️ Corrigido; use “Regerar Word” para baixar a versão nova.')}},120);
+  }else{_touchContrato(ct);save()}
+  return r};
+ w._v225=1;window.salvarCorrecaoContrato=w;})();
 
 </script>
 </body>
