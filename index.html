@@ -1534,7 +1534,7 @@ html.teclado .overlay{top:0!important}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=222; var APP_DATE='14/10/2026';
+var APP_VER=223; var APP_DATE='14/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -10079,28 +10079,88 @@ function cnh7Parse(texto){
  var pRg=flat.search(/IDENTIDADE|DOC\.?\s*IDENT/);
  var zona=pRg>=0?flat.slice(pRg,pRg+160):flat;
  var mr=zona.match(reRg)||flat.match(reRg);
+ /* v223: a UF às vezes sai borrada ("RJ" -> "R)"); perto do rótulo aceita sem a UF */
+ if(!mr&&pRg>=0){mr=zona.match(new RegExp('([0-9OQDILSBZ][0-9OQDILSBZX.\\-]{3,16})\\s*[\\-/]?\\s*('+ORG+')\\b'));if(mr)mr[3]=''}
  if(mr){var num=mr[1].replace(/[^0-9X.\-]/g,function(ch){return ch}).replace(/[OQDILSBZ]/g,function(ch){return digitos(ch)});
-  if(num.replace(/\D/g,'')!==o.cpf){o.rg=num.replace(/[.\-]+$/,'');o.rgOrg=mr[2]+'/'+mr[3]}}
+  if(num.replace(/\D/g,'')!==o.cpf){o.rg=num.replace(/[.\-]+$/,'');o.rgOrg=mr[2]+(mr[3]?'/'+mr[3]:'')}}
 
  /* categoria: A, B, AB, C, D, E, AC, AD, AE */
  var pc=flat.search(/CAT\.?\s*HAB/);
  if(pc>=0){var zc=flat.slice(pc,pc+110).replace(/^CAT\.?\s*HAB\.?/,'');
   var m2=zc.match(/\b(AB|AC|AD|AE)\b/)||zc.match(/^\W{0,4}(A|B|C|D|E)\b/);if(m2)o.cat=m2[1]}
  if(!o.cat&&o.cnh){var m3=flat.match(new RegExp(o.cnh+'\\s+(AB|AC|AD|AE|A|B|C|D|E)\\b'));if(m3)o.cat=m3[1]}
+ cnh7AplicaMrz(o,cnh7Mrz(linhas,digitos));
  return o;
+}
+/* v223: as 3 linhas de código do rodapé da CNH (I<BRA...). Letra própria para máquina, o OCR lê
+   bem mesmo em print pequeno, e cada número tem dígito verificador: nº da CNH, nascimento,
+   validade e nome só entram se o dígito conferir. */
+function cnh7Icao(s){var w=[7,3,1],t=0;for(var i=0;i<s.length;i++){var c=s[i],v=c==='<'?0:(/\d/.test(c)?+c:c.charCodeAt(0)-55);t+=v*w[i%3]}return t%10}
+function cnh7Mrz(linhas,digitos){
+ var r={},L=linhas.map(function(l){return l.replace(/\s+/g,'').replace(/«/g,'<<')});
+ L.forEach(function(l,ix){
+  var m1=!r.cnh&&l.match(/[I1L]<?BRA([0-9A-Z<]{10,})/);
+  if(m1){var g=m1[1].replace(/<+$/,''),k=g.indexOf('<'),num,chk;
+   if(k>=0){var ext=g.slice(k+1).replace(/<.*$/,'');num=g.slice(0,k)+ext.slice(0,-1);chk=ext.slice(-1)}else{num=g.slice(0,9);chk=g.charAt(9)}
+   num=digitos(num);chk=digitos(chk||'');
+   for(var a=0;a+11<=num.length&&!r.cnh;a++){var c=num.slice(a,a+11);if(/^\d{11}$/.test(c)&&String(cnh7Icao(c))===chk&&cnh7RegOk(c))r.cnh=c}
+  }
+  var m2=!r.validade&&l.match(/([0-9OQDILSBZ]{6})([0-9OQDILSBZ])[MF<]([0-9OQDILSBZ]{6})([0-9OQDILSBZ])BRA/);
+  if(m2){var n=digitos(m2[1]),nc=digitos(m2[2]),v=digitos(m2[3]),vc=digitos(m2[4]),yy=new Date().getFullYear()%100;
+   function iso(x,sec){var mm=+x.slice(2,4),dd=+x.slice(4,6);if(mm<1||mm>12||dd<1||dd>31)return '';return sec+x.slice(0,2)+'-'+x.slice(2,4)+'-'+x.slice(4,6)}
+   if(/^\d{6}$/.test(n)&&String(cnh7Icao(n))===nc)r.nasc=iso(n,+n.slice(0,2)>yy?'19':'20');
+   if(/^\d{6}$/.test(v)&&String(cnh7Icao(v))===vc)r.validade=iso(v,'20');
+   /* o nome é a linha seguinte */
+   var l3=L[ix+1]||'';
+   if(/^[A-Z]{2,}<<?[A-Z<]+$/.test(l3)){var nm=l3.replace(/<+/g,' ').trim();if(nm.split(' ').length>=2){r.nome=nm;r.nomeCortado=l3.length>=30&&!/<$/.test(l3)}}
+  }
+ });
+ return r;
+}
+function cnh7AplicaMrz(o,r){
+ if(!r)return o;
+ if(r.cnh)o.cnh=r.cnh;
+ if(r.nasc)o.nasc=r.nasc;
+ if(r.validade)o.validade=r.validade;
+ if(r.nome){var a=semAcento(o.nome||'').toUpperCase(),b=r.nome;
+  var igual=r.nomeCortado?(a.indexOf(b)===0):(a.split(' ').sort().join(' ')===b.split(' ').sort().join(' '));
+  if(!igual){o.nome=b;o.nomeCortado=!!r.nomeCortado}}
+ o.mrz=!!(r.cnh||r.validade||r.nome);
+ cnh7Avisos(o);return o;
+}
+function cnh7Avisos(o){
+ o.avisos=[];
+ if(o.cpf&&!cnh7CpfOk(o.cpf))o.avisos.push('CPF lido não confere (dígito) — confira');
+ if(o.cnh&&!cnh7RegOk(o.cnh))o.avisos.push('Nº da CNH lido não confere (dígito) — confira');
+ if(o.nomeCortado)o.avisos.push('O nome pode estar incompleto — confira');
+ return o;
+}
+/* junta duas leituras da MESMA foto: o que faltou numa vem da outra; número conferido vence */
+function cnh7Junta(a,b){
+ if(!a)return b;if(!b)return a;
+ if(b.cpf&&(!a.cpf||(!cnh7CpfOk(a.cpf)&&cnh7CpfOk(b.cpf))))a.cpf=b.cpf;
+ if(b.cnh&&(!a.cnh||(!cnh7RegOk(a.cnh)&&cnh7RegOk(b.cnh))||(b.mrz&&!a.mrz&&cnh7RegOk(b.cnh))))a.cnh=b.cnh;
+ if(b.mrz&&!a.mrz){if(b.nasc)a.nasc=b.nasc;if(b.validade)a.validade=b.validade;if(b.nome){a.nome=b.nome;a.nomeCortado=b.nomeCortado}a.mrz=true}
+ ['nome','nasc','validade','cat'].forEach(function(k){if(!a[k]&&b[k])a[k]=b[k]});
+ if(!a.rg&&b.rg){a.rg=b.rg;a.rgOrg=b.rgOrg}
+ else if(b.rg&&a.rg===b.rg&&String(b.rgOrg||'').length>String(a.rgOrg||'').length)a.rgOrg=b.rgOrg;
+ return cnh7Avisos(a);
 }
 
 /* ---------- OCR ---------- */
 function cnh7Script(src){return new Promise(function(ok,no){if(window.Tesseract)return ok();var s=document.createElement('script');s.src=src;s.onload=function(){ok()};s.onerror=function(){no(new Error('sem internet para carregar o leitor'))};document.head.appendChild(s)})}
-function cnh7Canvas(fonte,giro,maxLado){
+function cnh7Canvas(fonte,giro,maxLado,grande,contraste){
  var w=fonte.naturalWidth||fonte.width,h=fonte.naturalHeight||fonte.height,esc=Math.min(1,(maxLado||2200)/Math.max(w,h));
  /* foto pequena: amplia (OCR erra menos com letra grande) */
  if(Math.max(w,h)<1400)esc=1400/Math.max(w,h);
+ /* v223: segunda tentativa AMPLIADA (print da CNH digital: a CNH ocupa pedaço pequeno da tela).
+    Limite de área para caber no canvas do iPhone. */
+ if(grande)esc=Math.max(esc,Math.min(3,4800/Math.max(w,h),Math.sqrt(12e6/(w*h))));
  var W=Math.round(w*esc),H=Math.round(h*esc),cv=document.createElement('canvas');
  var gira=(giro===90||giro===270);cv.width=gira?H:W;cv.height=gira?W:H;
  var x=cv.getContext('2d');x.save();x.translate(cv.width/2,cv.height/2);x.rotate(giro*Math.PI/180);x.drawImage(fonte,-W/2,-H/2,W,H);x.restore();
  /* cinza + contraste: o fundo verde/amarelo da CNH atrapalha o OCR */
- try{var im=x.getImageData(0,0,cv.width,cv.height),d=im.data;for(var i=0;i<d.length;i+=4){var g=0.3*d[i]+0.59*d[i+1]+0.11*d[i+2];g=(g-128)*1.35+128;g=g<0?0:g>255?255:g;d[i]=d[i+1]=d[i+2]=g}x.putImageData(im,0,0)}catch(e){}
+ try{var im=x.getImageData(0,0,cv.width,cv.height),d=im.data;for(var i=0;i<d.length;i+=4){var g=0.3*d[i]+0.59*d[i+1]+0.11*d[i+2];g=(g-128)*(contraste||1.35)+128;g=g<0?0:g>255?255:g;d[i]=d[i+1]=d[i+2]=g}x.putImageData(im,0,0)}catch(e){}
  return cv;
 }
 function cnh7Pontos(o){return (o.nome?3:0)+(o.cpf&&cnh7CpfOk(o.cpf)?3:(o.cpf?1:0))+(o.cnh&&cnh7RegOk(o.cnh)?2:(o.cnh?1:0))+(o.validade?1:0)+(o.rg?1:0)}
@@ -10108,18 +10168,32 @@ function cnh7Ocr(fonte,status){
  return cnh7Script(CNH7_TESS).then(function(){
   return Tesseract.createWorker('por',1,CNH7_OPT);
  }).then(function(wk){
-  var giros=[0,90,270,180],melhor=null,txtMelhor='';
+  /* v223: [giro, ampliada, contraste]. Em pé normal primeiro (como antes: se já leu o principal, para).
+     Senão, em pé AMPLIADA (2 contrastes) juntando o que cada leitura achou. Só se em pé não deu
+     nada gira a foto; a melhor rotação ganha também a leitura ampliada. */
+  var por={},txt={},fila=[[0,0,1.35],[0,1,1],[0,1,1.35],[90,0,1.35],[270,0,1.35],[180,0,1.35]],extra=false;
+  function pts(g){return por[g]?cnh7Pontos(por[g]):-1}
+  function melhorGiro(){var bg=0;[90,270,180].forEach(function(g){if(pts(g)>pts(bg))bg=g});return bg}
   function tenta(k){
-   if(k>=giros.length)return Promise.resolve();
-   if(status)status(k?'A foto parece de lado — tentando girar ('+(k+1)+'/4)…':'Lendo a CNH…');
-   return wk.recognize(cnh7Canvas(fonte,giros[k])).then(function(r){
-    var t=(r&&r.data&&r.data.text)||'',o=cnh7Parse(t);
-    if(!melhor||cnh7Pontos(o)>cnh7Pontos(melhor)){melhor=o;txtMelhor=t;melhor._giro=giros[k]}
-    if(cnh7Pontos(melhor)>=8)return;           /* já achou o principal: para */
+   if(k>=fila.length){
+    var bg=melhorGiro();
+    if(!extra&&bg!==0&&pts(bg)>0&&pts(bg)<8){extra=true;fila.push([bg,1,1],[bg,1,1.35]);}
+    else return Promise.resolve();
+   }
+   var t=fila[k],g=t[0];
+   if(k===1&&pts(0)>=8)return Promise.resolve();          /* em pé já leu o principal: para */
+   if(k===3&&pts(0)>=6)return Promise.resolve();          /* em pé funcionou: não gira */
+   if(k>=3&&k<6&&pts(melhorGiro())>=8)return Promise.resolve();
+   if(k>=6&&pts(g)>=10)return Promise.resolve();
+   if(status)status(g?'A foto parece de lado — tentando girar…':(t[1]?'Ampliando a CNH para ler melhor…':'Lendo a CNH…'));
+   return wk.recognize(cnh7Canvas(fonte,g,0,t[1],t[2])).then(function(r){
+    var tx=(r&&r.data&&r.data.text)||'',o=cnh7Parse(tx);
+    var antes=pts(g);por[g]=cnh7Junta(por[g],o);if(cnh7Pontos(por[g])>antes||!txt[g])txt[g]=tx;
+    if(k===2&&pts(0)>=8)return;                           /* em pé ampliada resolveu */
     return tenta(k+1);
    });
   }
-  return tenta(0).then(function(){try{wk.terminate()}catch(e){}melhor=melhor||{avisos:[]};melhor._texto=txtMelhor;return melhor},
+  return tenta(0).then(function(){try{wk.terminate()}catch(e){}var bg=pts(0)>=pts(melhorGiro())?0:melhorGiro();var melhor=por[bg]||{avisos:[]};melhor._giro=bg;melhor._texto=txt[bg]||'';return melhor},
    function(e){try{wk.terminate()}catch(x){}throw e});
  });
 }
