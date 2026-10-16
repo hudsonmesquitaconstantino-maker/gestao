@@ -327,6 +327,7 @@ button.mcData{border:0;font-family:inherit;cursor:pointer}
 .mcObr{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--ink)}
 .mcObr input{width:20px;height:20px}
 .mcAddRow input{flex:1;min-width:0;border:1px solid var(--line);border-radius:10px;padding:0 10px;min-height:44px;font-size:16px;background:#fff}
+html.afKb .mcPe{visibility:hidden;pointer-events:none} /* v25: digitando a multa nova, a barra Pular/Conferido sai da frente do campo e do + Adicionar */
 .mcPe{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;margin-top:auto;position:sticky;bottom:0;padding:10px 0 calc(4px + env(safe-area-inset-bottom));background:linear-gradient(to top,var(--bg) 75%,rgba(242,243,245,0))}
 .mcBig{min-height:52px;font-size:16px;justify-content:center}
 .mcPular{min-height:52px;padding:0 18px}
@@ -2323,12 +2324,23 @@ html.af.afKb .sheet{max-height:calc(var(--afVvh,100vh) - 12px)!important}
   var el=document.activeElement;if(!campo(el))return;var c=rolavel(el);if(!c)return;
   var cr=c.getBoundingClientRect(),alt=vv?vv.height:window.innerHeight;
   var r=el.getBoundingClientRect(),baixo=Math.min(cr.bottom,alt)-16,cima=Math.max(cr.top,0)+12;
+  var lim=_barras(c,el,cima,baixo);cima=lim[0];baixo=lim[1];
   if(r.bottom>baixo)c.scrollTop+=Math.min(r.bottom-baixo+24,r.top-cima);
   else if(r.top<cima)c.scrollTop-=(cima-r.top)+12;
  }
+/* barras grudadas (sticky/fixed) DENTRO da área que rola: o campo tem de ficar ACIMA da barra de baixo
+    e ABAIXO da de cima — senão fica escondido atrás dela (consulta do Multas: "Pular / Conferido") */
+ function _barras(c,el,cima,baixo){
+  var L=c.querySelectorAll('*');for(var i=0;i<L.length;i++){var e=L[i];if(e===el||e.contains(el))continue;
+   var cs=getComputedStyle(e);if((cs.position!=='sticky'&&cs.position!=='fixed')||cs.display==='none'||cs.visibility==='hidden')continue;
+   var r=e.getBoundingClientRect();if(!r.height||!r.width)continue;
+   if(r.bottom>=baixo-40&&r.top<baixo)baixo=r.top-8;          /* grudada embaixo */
+   else if(r.top<=cima+40&&r.bottom>cima)cima=r.bottom+8}     /* grudada em cima */
+  return [cima,baixo]}
  function agenda(){if(!raf)raf=requestAnimationFrame(mostra)}
  if(vv){vv.addEventListener('resize',function(){agenda();setTimeout(agenda,120)})}
- document.addEventListener('focusin',function(){setTimeout(agenda,60);setTimeout(agenda,350)},true);
+ document.addEventListener('focusin',function(){setTimeout(agenda,60);setTimeout(agenda,350);setTimeout(agenda,700)},true);
+ window.addEventListener('resize',function(){agenda();setTimeout(agenda,150)});
  try{new MutationObserver(function(){setTimeout(agenda,30)}).observe(de,{attributes:true,attributeFilter:['class']})}catch(e){}
 })();
 /* o iPhone "empurra" a tela inteira para cima quando o teclado abre: como a página nunca rola
