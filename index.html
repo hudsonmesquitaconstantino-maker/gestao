@@ -1536,7 +1536,7 @@ html.teclado #main{padding-bottom:calc(20px + var(--navH,0px))!important}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=230; var APP_DATE='16/10/2026';
+var APP_VER=231; var APP_DATE='16/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -10835,6 +10835,24 @@ window.fcLerCrlvNovo=fcLerCrlvNovo=function(inp){
  };r.onerror=function(){FC_CRLV_LENDO=false;toast('⚠️ Falha ao ler o CRLV')};r.readAsArrayBuffer(f);
 };
 LEITOR_VER=95; /* v229: CRLV/laudo escaneado agora é lido por OCR — relê os que antes ficaram "sem texto" */
+
+/* ===== v231 — carro novo começa pelo CRLV =====
+   Pedido do Hudson (16/10/2026): o campo do PDF ficava lá embaixo (bloco Documento) e ele
+   tinha que rolar a tela toda para anexar. Agora é o primeiro bloco do "Adicionar carro":
+   escolhe o PDF e o app preenche o resto. */
+(function(){var o=window.formCarro;if(typeof o!=='function'||o._v231)return;
+ var w=function(pk){var r=o.apply(this,arguments);
+  try{if(!pk){var inp=document.getElementById('fc_crlv'),hero=document.querySelector('#sheetBody .v102sheetHero');
+   if(inp&&hero&&!document.getElementById('fcCrlvTopo')){
+    var lab=inp.previousElementSibling&&inp.previousElementSibling.tagName==='LABEL'?inp.previousElementSibling:null;
+    var box=document.createElement('div');box.className='v102panel';box.id='fcCrlvTopo';
+    box.innerHTML='<div class="v102panelHead"><span>📄</span><div><b>Comece pelo CRLV</b><small>Escolha o PDF (digital ou escaneado) e o app preenche placa, chassi, Renavam, motor e o resto</small></div></div>';
+    if(lab){lab.innerHTML='CRLV em PDF <span class="v102optional">opcional — dá para cadastrar sem</span>';box.appendChild(lab)}
+    box.appendChild(inp);
+    hero.parentNode.insertBefore(box,hero.nextSibling);
+   }}}catch(e){}
+  return r};
+ w._v231=1;window.formCarro=formCarro=w;})();
 
 /* ---------- leitura do TEXTO DO OCR do CRLV (scan/foto) ----------
    O OCR troca 0↔O, 1↔I, junta lixo do QR code nas linhas e embaralha as colunas.
