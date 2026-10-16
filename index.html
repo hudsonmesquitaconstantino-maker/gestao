@@ -1536,7 +1536,7 @@ html.teclado #main{padding-bottom:calc(20px + var(--navH,0px))!important}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=228; var APP_DATE='15/10/2026';
+var APP_VER=229; var APP_DATE='16/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -9912,7 +9912,10 @@ try{if(typeof TAB!=='undefined'&&(TAB===5||TAB===0)&&S)render()}catch(e){}
   if(/CHASSI\s+REMARCADO|REMARCACAO\s+DE\s+CHASSI/.test(flat))obs.push('Chassi remarcado');
   if(/MOTOR\s+REMARCADO|REMARCACAO\s+DE\s+MOTOR/.test(flat))obs.push('Motor remarcado');
   if(/VEICULO\s+MODIFICADO|ALTERACAO\s+DE\s+CARACTERISTICA/.test(flat))obs.push('Veículo modificado');
-  var csv=flat.match(/\b\d{9}-\d{2}\/\d{4}\b/g);
+  var csv=flat.match(/\b\d{9}-\d{2}\/\d{4}\b/g)||[];
+  /* v229: CSV também vem como número corrido depois da palavra ("CSV 010815474522023") */
+  var reCsv=/\bCSV\s*:?\s*(\d{10,16})\b/g,mc;while((mc=reCsv.exec(flat)))csv.push(mc[1]);
+  if(!csv.length)csv=null;
   if(csv)csv.filter(function(v,i,a){return a.indexOf(v)===i}).slice(0,3).forEach(function(v){obs.push('CSV '+v)});
   if(obs.length)o.obsCRLV='CRLV: '+obs.join(' • ');
 
@@ -10273,7 +10276,7 @@ function cnh7Img(b64,mime){return new Promise(function(ok,no){var im=new Image()
 /* PDF: texto direto; se for só imagem, renderiza a 1ª página e faz OCR */
 function cnh7LerPdf(b64,status){
  var buf=b64ToU8(b64).buffer;
- return impTextoPdf(buf.slice(0)).then(function(txt){
+ return (window.impTextoPdfBruto||impTextoPdf)(buf.slice(0)).then(function(txt){
   var o=cnh7Parse(txt||'');
   if(cnh7Pontos(o)>=6&&!o._nomeMrz){o._texto=txt;return o}
   var doTexto=o;
@@ -10741,6 +10744,203 @@ function _ecMotHtml(ct){
   ult=b;em=t;
  },true);
 })();
+
+</script>
+<script>
+/* ===== v229 — CRLV ESCANEADO (foto/scan em PDF) também é lido =====
+   Pedido do Hudson (16/10/2026): cadastrou o Cronos QAT0D14 com o CRLV em PDF e o app
+   não preencheu nada. O PDF era um SCAN (Epson Scan 2): só imagem, sem texto dentro.
+   O leitor só sabia ler PDF com texto (o CRLV-e baixado do gov.br), e no scan voltava vazio.
+   Agora: se o PDF não tem texto, o app desenha a página e lê pela imagem (OCR, o mesmo da
+   CNH), tentando girar se estiver de lado. O texto lido fica guardado no aparelho, então a
+   releitura automática não refaz o OCR a cada abertura do app. */
+var impTextoPdfBruto=window.impTextoPdfBruto||impTextoPdf;
+var OCRDOC={mem:{}};
+function _ocrChave(buf){
+ var u=new Uint8Array(buf),h=u.length,p=Math.max(1,Math.floor(u.length/4096));
+ for(var i=0;i<u.length;i+=p)h=(h*31+u[i])|0;
+ return 'ocrtxt/'+u.length+'_'+(h>>>0).toString(36);
+}
+function _ocrUtil(t){return String(t||'').replace(/\s/g,'').length>20}
+/* o texto do OCR serve? (tem cara de documento de veículo) */
+function _ocrPontos(t){var U=semAcento(String(t||'')).toUpperCase(),n=0;
+ ['RENAVAM','CHASSI','PLACA','EXERCICIO','MOTOR','COMBUSTIVEL','CERTIFICADO','CILINDRO','INMETRO','MARCA'].forEach(function(w){if(U.indexOf(w)>=0)n++});return n}
+function _ocrPagina(pdf,n,wk,status){
+ return pdf.getPage(n).then(function(pg){
+  var vp0=pg.getViewport({scale:1}),esc=Math.min(3,2600/Math.max(vp0.width,vp0.height));
+  var vp=pg.getViewport({scale:esc}),cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;
+  return pg.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise.then(function(){
+   var giros=[0,90,270,180],melhor={t:'',p:-1};
+   function tenta(k){
+    if(k>=giros.length||melhor.p>=4)return Promise.resolve(melhor.t);
+    if(status)status(k?'Documento parece de lado — girando…':'Documento escaneado — lendo pela imagem…');
+    var src=k?_ocrGira(cv,giros[k]):cv;
+    return wk.recognize(src).then(function(r){var t=(r&&r.data&&r.data.text)||'',p=_ocrPontos(t);if(p>melhor.p)melhor={t:t,p:p};return tenta(k+1)});
+   }
+   return tenta(0);
+  });
+ });
+}
+function _ocrGira(cv,g){var o=document.createElement('canvas'),gi=(g===90||g===270);o.width=gi?cv.height:cv.width;o.height=gi?cv.width:cv.height;
+ var x=o.getContext('2d');x.translate(o.width/2,o.height/2);x.rotate(g*Math.PI/180);x.drawImage(cv,-cv.width/2,-cv.height/2);return o}
+function ocrTextoPdf(buf,status){
+ var chave=_ocrChave(buf);
+ if(OCRDOC.mem[chave]){_ocrMarca(OCRDOC.mem[chave]);return Promise.resolve(OCRDOC.mem[chave])}
+ return Promise.resolve().then(function(){try{return idbGet(chave)}catch(e){return null}}).then(function(salvo){
+  if(salvo&&salvo.t){OCRDOC.mem[chave]=salvo.t;_ocrMarca(salvo.t);return salvo.t}
+  var pdf;
+  return garantirPdfjs().then(function(){return pdfjsLib.getDocument({data:new Uint8Array(buf.slice(0))}).promise})
+   .then(function(p){pdf=p;return cnh7Script(CNH7_TESS)})
+   .then(function(){return Tesseract.createWorker('por',1,CNH7_OPT)})
+   .then(function(wk){
+    var out=[],N=Math.min(pdf.numPages,2);
+    function pg(n){if(n>N)return Promise.resolve(out.join('\n'));return _ocrPagina(pdf,n,wk,status).then(function(t){out.push(t);return pg(n+1)})}
+    return pg(1).then(function(t){try{wk.terminate()}catch(e){}OCRDOC.mem[chave]=t;_ocrMarca(t);try{idbSet(chave,{t:t,em:Date.now()})}catch(e){}return t},
+     function(e){try{wk.terminate()}catch(x){}throw e});
+   });
+ });
+}
+/* impTextoPdf passa a cair no OCR quando o PDF não tem texto */
+window.impTextoPdf=impTextoPdf=function(buf,status){
+ var copia=buf&&buf.slice?buf.slice(0):buf;
+ return impTextoPdfBruto(buf).then(function(txt){
+  if(_ocrUtil(txt))return txt;
+  return ocrTextoPdf(copia,status).then(function(t){OCRDOC.ultimo=true;return t||txt},function(){return txt});
+ });
+};
+window.impTextoPdfBruto=impTextoPdfBruto;
+
+/* carro novo: avisa que está lendo a imagem (demora mais que o PDF com texto) */
+window.fcLerCrlvNovo=fcLerCrlvNovo=function(inp){
+ if(!inp||!inp.files||!inp.files[0])return;var f=inp.files[0];FC_CRLV_LENDO=true;toast('📄 Lendo CRLV do carro novo…');
+ var r=new FileReader();r.onload=function(){
+  OCRDOC.ultimo=false;
+  impTextoPdf(r.result,function(m){toast('📄 '+m+' (pode levar uns 20 s)')}).then(function(txt){
+   var dc=impDadosCRLV(txt||''),ocr=OCRDOC.ultimo;
+
+   var mapa={placa:'placa',nome:null,motorCodigo:'motorCodigo',motor:'motor',modeloCRLV:'modeloCRLV',ano:'ano',cor:'cor',potencia:'potencia',combustivel:'combustivel',proprietario:'proprietario',chassi:'chassi',renavam:'renavam',exercicio:'exercicioCRLV'};
+   var n=0;
+   Object.keys(mapa).forEach(function(k){var id=mapa[k];if(!id||!dc[k])return;var e=document.getElementById('fc_'+id);if(e&&!e.value.trim()){e.value=dc[k];n++}});
+   /* procedência escrita no documento (sinistro/monta, CSV, alienação) */
+   try{var x=window.crlvExtras?crlvExtras(txt||'',dc):{};
+    var eo=document.getElementById('fc_procObs');if(x.obsCRLV&&eo&&!eo.value.trim()){eo.value=x.obsCRLV.replace(/^CRLV:\s*/,'');n++}
+    var el=document.getElementById('fc_procLeilao');if(x._leilao&&el&&el.value==='Não'&&[].some.call(el.options,function(op){return op.value===x._leilao})){el.value=x._leilao;n++}
+    var ef=document.getElementById('fc_procFinanciado');if(x._financiado&&ef&&ef.value==='Não'){ef.value='Sim';n++}
+   }catch(e){}
+   FC_CRLV_LENDO=false;fcAtualizaSinc();
+   if(!n&&!dc.placa&&!dc.chassi&&!dc.renavam)toast('⚠️ Não consegui ler este CRLV. Preencha os dados à mão (o PDF fica salvo mesmo assim).');
+   else toast(ocr?'📄 CRLV escaneado lido pela imagem — CONFIRA placa, chassi e Renavam antes de salvar':(dc.modeloCRLV?'📄 CRLV lido — dados e sincronismo conferidos':'📄 CRLV lido — confira os dados antes de salvar'));
+  }).catch(function(){FC_CRLV_LENDO=false;fcAtualizaSinc();toast('⚠️ Não consegui ler o CRLV. Preencha os dados e escolha o sincronismo manualmente.')});
+ };r.onerror=function(){FC_CRLV_LENDO=false;toast('⚠️ Falha ao ler o CRLV')};r.readAsArrayBuffer(f);
+};
+LEITOR_VER=95; /* v229: CRLV/laudo escaneado agora é lido por OCR — relê os que antes ficaram "sem texto" */
+
+/* ---------- leitura do TEXTO DO OCR do CRLV (scan/foto) ----------
+   O OCR troca 0↔O, 1↔I, junta lixo do QR code nas linhas e embaralha as colunas.
+   Aqui cada campo só entra se passar numa conferência (dígito do Renavam, formato da
+   placa, ano do chassi batendo com o ano modelo...). Na dúvida fica em branco — nunca
+   um valor errado. */
+OCRDOC.textos=OCRDOC.textos||{};
+function _ocrEh(t){return !!(t&&OCRDOC.textos[String(t).length+':'+String(t).slice(0,80)])}
+function _ocrMarca(t){if(t)OCRDOC.textos[String(t).length+':'+String(t).slice(0,80)]=1}
+function renavamOk(r){r=String(r||'').replace(/\D/g,'');if(r.length!==11)return false;
+ var b=r.slice(0,10).split('').reverse(),pes=[2,3,4,5,6,7,8,9,2,3],s=0;for(var i=0;i<10;i++)s+=(+b[i])*pes[i];
+ var d=(s*10)%11;if(d===10)d=0;return d===+r[10]}
+var _VIN_ANO={A:2010,B:2011,C:2012,D:2013,E:2014,F:2015,G:2016,H:2017,J:2018,K:2019,L:2020,M:2021,N:2022,P:2023,R:2024,S:2025,T:2026,V:2027,W:2028,X:2029,Y:2030,'1':2001,'2':2002,'3':2003,'4':2004,'5':2005,'6':2006,'7':2007,'8':2008,'9':2009};
+/* fabricantes (3 primeiros caracteres do chassi) mais comuns no Brasil — 3 letras certas valem mais que 2 */
+var _WMI3=['9BW','9BG','9BD','9BF','9BR','9BH','93H','93Y','93X','94D','936','935','9BM','9C2','9C6','8AP','8AD','8AW','8AG','8AF','8AJ','8A1','8BC','988','98R','99A','93W','9BS','95P','LGX','LVV','LJ1','KMH','KNA','JTD','3N1','WVW','WBA','WDD','VF3','VF7','ZFA','9UJ','9U7','93U','9BV','94T','9FB','8AC','8AT'];
+var _WMI=['9B','93','8A','9C','94','95','98','99','9F','9U','LG','LV','LJ','KM','KN','JT','JN','3N','WV','WB','WD','VF','ZF'];
+function _vinNorm(s){return String(s||'').toUpperCase().replace(/[^0-9A-Z]/g,'').replace(/O/g,'0').replace(/Q/g,'0').replace(/I/g,'1')}
+function _vinValido(v,anoMod){
+ if(v.length!==17||!/^[0-9A-HJ-NPR-Z]{17}$/.test(v)||!/\d/.test(v.slice(-6)))return 0;
+ var p=0;if(_WMI3.indexOf(v.slice(0,3))>=0)p+=3;else if(_WMI.indexOf(v.slice(0,2))>=0)p+=1;
+ var a=_VIN_ANO[v.charAt(9)];if(anoMod&&a&&(a===+anoMod||a+30===+anoMod))p+=3;
+ if(/^\d{5,6}$/.test(v.slice(-6).replace(/^[A-Z]/,'')))p+=1;
+ return p;
+}
+function ocrChassi(txt,anoMod){
+ var U=String(txt||'').toUpperCase(),cands=[];
+ (U.match(/[0-9A-Z]{15,20}/g)||[]).forEach(function(t){
+  var n=_vinNorm(t);
+  var vars=[n];
+  if(n.length===18)for(var i=0;i<18;i++)vars.push(n.slice(0,i)+n.slice(i+1));
+  if(n.length===19)for(var i2=0;i2<19;i2++)for(var j=i2+1;j<19;j++)vars.push(n.slice(0,i2)+n.slice(i2+1,j)+n.slice(j+1));
+  vars.forEach(function(v){var p=_vinValido(v,anoMod)-(v===n?0:1);if(p>=5)cands.push({v:v,p:p})});
+ });
+ cands.sort(function(a,b){return b.p-a.p});
+ /* só aceita se o melhor for único (dois diferentes com a mesma nota = dúvida) */
+ if(!cands.length)return '';
+ var top=cands.filter(function(c){return c.p===cands[0].p}).map(function(c){return c.v}).filter(function(v,i,a){return a.indexOf(v)===i});
+ return top.length===1?top[0]:'';
+}
+function _placaNorm(t){
+ t=String(t||'').toUpperCase().replace(/[^0-9A-Z]/g,'');if(t.length!==7)return '';
+ var L=t.slice(0,3).replace(/0/g,'O').replace(/1/g,'I').replace(/8/g,'B').replace(/5/g,'S');
+ var d4=t.charAt(3).replace(/O|Q|D/,'0').replace(/I|L/,'1'),c5=t.charAt(4),d67=t.slice(5).replace(/O|Q|D/g,'0').replace(/I|L/g,'1');
+ var p=L+d4+c5+d67;
+ return /^[A-Z]{3}\d[A-Z0-9]\d{2}$/.test(p)?p:'';
+}
+function crlvOcr(txt){
+ var raw=String(txt||''),U=semAcento(raw).toUpperCase(),linhas=U.split('\n'),o={};
+ var flat=U.replace(/\s+/g,' ');
+ /* RENAVAM: 11 dígitos com dígito verificador certo (o "código de segurança do CLA" também tem 11) */
+ var rens=(flat.match(/\b\d{11}\b/g)||[]).filter(renavamOk);
+ if(rens.length){var iR=flat.indexOf('RENAVAM');rens.sort(function(a,b){return Math.abs(flat.indexOf(a)-iR)-Math.abs(flat.indexOf(b)-iR)});o.renavam=rens[0]}
+ /* ANO fab/modelo: "2019 | 2020" */
+ var mA=flat.match(/\b((?:19|20)\d{2})\s*[|IL!\/]?\s*((?:19|20)\d{2})\b/g)||[];
+ for(var a=0;a<mA.length;a++){var yy=mA[a].match(/(\d{4})\D+(\d{4})|(\d{4})(\d{4})/);if(!yy)continue;var f=+(yy[1]||yy[3]),m=+(yy[2]||yy[4]);if(m-f>=0&&m-f<=1&&f>1980&&m<=new Date().getFullYear()+1){o.ano=f+'/'+m;o._anoMod=m;break}}
+ /* PLACA (+ exercício logo depois) e placa anterior "XXX/UF" */
+ var toks=flat.split(' ');
+ for(var t=0;t<toks.length;t++){
+  var raw7=toks[t].replace(/[^0-9A-Z\/]/g,'');var base=raw7.split('/')[0];
+  var pl=_placaNorm(base);if(!pl)continue;
+  if(/\/[A-Z]{2}$/.test(raw7)){if(!o.placaAnterior)o.placaAnterior=pl+'/'+raw7.slice(-2);continue}
+  if(!o.placa){o.placa=pl;var ex=(toks[t+1]||'').match(/^(20\d\d)$/);if(ex)o.exercicio=ex[1]}
+ }
+ if(!o.placa&&o.placaAnterior)o.placa=o.placaAnterior.split('/')[0];
+ /* CHASSI: conserta O→0/I→1 e letra a mais; o 10º caractere tem que bater com o ano modelo */
+ var ch=ocrChassi(U,o._anoMod);if(ch)o.chassi=ch;
+ /* MOTOR: código longo nas linhas logo abaixo do rótulo MOTOR */
+ for(var l=0;l<linhas.length;l++){
+  if(!/\bMOTOR\b/.test(linhas[l])||/REMARCAD/.test(linhas[l]))continue;
+  for(var k=l;k<Math.min(l+3,linhas.length);k++){
+   var cs=(linhas[k].match(/\b[0-9A-Z*]{8,22}\b/g)||[]).filter(function(w){
+    var d=w.replace(/\D/g,'').length;return d>=5&&w!==o.renavam&&w!==o.chassi&&!/^\d{11}$/.test(w)&&!/^(?:19|20)\d{2}$/.test(w)&&!(o.chassi&&o.chassi.indexOf(w)>=0)&&!/CV/.test(w)});
+   if(cs.length){o.motorCodigo=cs[0].replace(/\*/g,'');break}
+  }
+  if(o.motorCodigo)break;
+ }
+ /* MARCA/MODELO/VERSÃO: "I/FIAT CRONOS DRIVE 1.3" (corta no que é da coluna da direita) */
+ var mM=flat.match(/\b((?:I\/[A-Z]{2,12}[ \/]|[A-Z]{2,12}\/)[A-Z0-9][A-Z0-9 .\-]{1,40}?)(?=\s+(?:DADOS DO SEGURO|ASSINADO|ESPECIE|PASSAGEIRO|CARGA|MISTO|CAT\b|\d{2}\/\d{2}\/\d{4})|\s*$)/);
+ if(mM&&!/CILINDRADA|COMBUSTIVEL|CNPJ|MODELO|VERSAO/.test(mM[1]))o.modeloCRLV=mM[1].trim();
+ /* PROPRIETÁRIO: linha de nome logo antes do "CPF / CNPJ" */
+ for(var q=0;q<linhas.length;q++){
+  if(!/CPF\s*\/\s*CNP/.test(linhas[q]))continue;
+  for(var r2=q-1;r2>=Math.max(0,q-2);r2--){
+   var nm=linhas[r2].replace(/[^A-Z ]/g,' ').split(/\s+/).filter(function(w){return w.length>=2}).join(' ');
+   if(/^[A-Z]{2,}( [A-Z]{2,}){1,7}$/.test(nm)&&!/NOME|CARROCERIA|APLICAVEL|CATEGORIA/.test(nm)){o.proprietario=nm;break}
+  }
+  break;
+ }
+ /* COR / COMBUSTÍVEL / POTÊNCIA (já costumam vir certos, mas garanto) */
+ var mPot=flat.match(/\b(\d{2,3})\s*CV\s*\/\s*(\d{3,4})\b/);if(mPot){o.potencia=mPot[1]+'CV/'+mPot[2];var cc=+mPot[2];if(cc>=600&&cc<=7000)o.motor=(Math.round(cc/100)/10).toFixed(1)}
+ var mCor=flat.match(/\b(BRANCA|PRETA|PRATA|CINZA|VERMELHA|AZUL|VERDE|AMARELA|BEGE|MARROM|DOURADA|LARANJA|ROXA|VINHO|FANTASIA)\b/);if(mCor)o.cor=mCor[1].charAt(0)+mCor[1].slice(1).toLowerCase();
+ var mComb=flat.match(/\b(ALCOOL\s*\/\s*GASOLINA(?:\s*\/\s*GNV)?|GASOLINA\s*\/\s*ELETRICO|GASOLINA|ALCOOL|DIESEL|ELETRICO|FLEX)\b/);if(mComb)o.combustivel=mComb[1].replace(/\s+/g,'').replace('ALCOOL','ÁLCOOL').replace('ELETRICO','ELÉTRICO');
+ delete o._anoMod;
+ return o;
+}
+/* impDadosCRLV: texto vindo do OCR passa pelo leitor conferido; os campos "perigosos"
+   do leitor de PDF-texto (placa, chassi, Renavam, motor) só ficam se o OCR confirmar. */
+(function(){var prev=window.impDadosCRLV;if(typeof prev!=='function'||prev._v229)return;
+ var w=function(texto){
+  var o=prev(texto)||{};
+  if(!_ocrEh(texto))return o;
+  var x={};try{x=crlvOcr(texto)}catch(e){}
+  ['placa','chassi','renavam','motorCodigo','exercicio','ano','modeloCRLV','proprietario','placaAnterior','numeroCRV','eixos','lotacao'].forEach(function(k){delete o[k]});
+  Object.keys(x).forEach(function(k){if(x[k])o[k]=x[k]});
+  return o;
+ };
+ w._v229=1;window.impDadosCRLV=impDadosCRLV=w;})();
 
 </script>
 </body>
