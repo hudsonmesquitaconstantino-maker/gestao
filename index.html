@@ -1536,7 +1536,7 @@ html.teclado #main{padding-bottom:calc(20px + var(--navH,0px))!important}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=231; var APP_DATE='16/10/2026';
+var APP_VER=232; var APP_DATE='16/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -10760,26 +10760,50 @@ var OCRDOC={mem:{}};
 function _ocrChave(buf){
  var u=new Uint8Array(buf),h=u.length,p=Math.max(1,Math.floor(u.length/4096));
  for(var i=0;i<u.length;i+=p)h=(h*31+u[i])|0;
- return 'ocrtxt/'+u.length+'_'+(h>>>0).toString(36);
+ return 'ocrtxt3/'+u.length+'_'+(h>>>0).toString(36);
 }
 function _ocrUtil(t){return String(t||'').replace(/\s/g,'').length>20}
 /* o texto do OCR serve? (tem cara de documento de veículo) */
 function _ocrPontos(t){var U=semAcento(String(t||'')).toUpperCase(),n=0;
  ['RENAVAM','CHASSI','PLACA','EXERCICIO','MOTOR','COMBUSTIVEL','CERTIFICADO','CILINDRO','INMETRO','MARCA'].forEach(function(w){if(U.indexOf(w)>=0)n++});return n}
+/* Lê a página em até 3 tamanhos diferentes: o scan de 200 dpi sai com erros diferentes em
+   cada tamanho (num some o Renavam, noutro o motor). Para assim que o CRLV tem os campos
+   principais conferidos; os textos das leituras são juntados para o leitor escolher. */
+function _ocrEhCrlv(t){return /RENAVAM|CERTIFICADO DE REGISTRO|CHASSI/.test(semAcento(String(t||'')).toUpperCase())}
+/* precisa de mais uma leitura? CRLV: no mínimo 2 (para votar); 3ª se faltar campo ou houver discordância */
+function _ocrPrecisaMais(textos){
+ if(!_ocrEhCrlv(textos[0]))return false;
+ if(textos.length<2)return true;
+ OCRDOC.duvida={};var o={};try{o=crlvOcrVotos(textos.join(OCR_SEP))}catch(e){}
+ var falta=['placa','chassi','renavam','motorCodigo','ano'].filter(function(k){return !o[k]}).length;
+ return falta>0||Object.keys(OCRDOC.duvida||{}).length>0;
+}
+function _ocrRender(pg,larg){
+ var vp0=pg.getViewport({scale:1}),esc=larg/Math.min(vp0.width,vp0.height);esc=Math.min(esc,4);
+ var vp=pg.getViewport({scale:esc}),cv=document.createElement('canvas');cv.width=Math.round(vp.width);cv.height=Math.round(vp.height);
+ return pg.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise.then(function(){return cv});
+}
 function _ocrPagina(pdf,n,wk,status){
  return pdf.getPage(n).then(function(pg){
-  var vp0=pg.getViewport({scale:1}),esc=Math.min(3,2600/Math.max(vp0.width,vp0.height));
-  var vp=pg.getViewport({scale:esc}),cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;
-  return pg.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise.then(function(){
-   var giros=[0,90,270,180],melhor={t:'',p:-1};
-   function tenta(k){
-    if(k>=giros.length||melhor.p>=4)return Promise.resolve(melhor.t);
-    if(status)status(k?'Documento parece de lado — girando…':'Documento escaneado — lendo pela imagem…');
-    var src=k?_ocrGira(cv,giros[k]):cv;
-    return wk.recognize(src).then(function(r){var t=(r&&r.data&&r.data.text)||'',p=_ocrPontos(t);if(p>melhor.p)melhor={t:t,p:p};return tenta(k+1)});
-   }
-   return tenta(0);
-  });
+  var larguras=[1500,1850,1200],textos=[],giro=0;
+  function passo(k){
+   if(k>=larguras.length||(k>0&&!_ocrPrecisaMais(textos)))return Promise.resolve(textos.join(OCR_SEP));
+   if(status)status(k?'Conferindo o documento ('+(k+1)+'ª leitura)…':'Documento escaneado — lendo pela imagem…');
+   return _ocrRender(pg,larguras[k]).then(function(cv){
+    if(k===0){
+     /* 1ª leitura escolhe a posição (em pé / de lado / de cabeça para baixo) */
+     var giros=[0,90,270,180],melhor={t:'',p:-1,g:0};
+     var tenta=function(i){
+      if(i>=giros.length||melhor.p>=4)return Promise.resolve();
+      if(i&&status)status('Documento parece de lado — girando…');
+      return wk.recognize(giros[i]?_ocrGira(cv,giros[i]):cv).then(function(r){var t=(r&&r.data&&r.data.text)||'',p=_ocrPontos(t);if(p>melhor.p)melhor={t:t,p:p,g:giros[i]};return tenta(i+1)});
+     };
+     return tenta(0).then(function(){giro=melhor.g;textos.push(melhor.t);return passo(1)});
+    }
+    return wk.recognize(giro?_ocrGira(cv,giro):cv).then(function(r){textos.push((r&&r.data&&r.data.text)||'');return passo(k+1)});
+   });
+  }
+  return passo(0);
  });
 }
 function _ocrGira(cv,g){var o=document.createElement('canvas'),gi=(g===90||g===270);o.width=gi?cv.height:cv.width;o.height=gi?cv.width:cv.height;
@@ -10816,12 +10840,18 @@ window.fcLerCrlvNovo=fcLerCrlvNovo=function(inp){
  if(!inp||!inp.files||!inp.files[0])return;var f=inp.files[0];FC_CRLV_LENDO=true;toast('📄 Lendo CRLV do carro novo…');
  var r=new FileReader();r.onload=function(){
   OCRDOC.ultimo=false;
-  impTextoPdf(r.result,function(m){toast('📄 '+m+' (pode levar uns 20 s)')}).then(function(txt){
+  impTextoPdf(r.result,function(m){toast('📄 '+m+' (pode levar até 1 minuto — não feche a tela)')}).then(function(txt){
    var dc=impDadosCRLV(txt||''),ocr=OCRDOC.ultimo;
 
-   var mapa={placa:'placa',nome:null,motorCodigo:'motorCodigo',motor:'motor',modeloCRLV:'modeloCRLV',ano:'ano',cor:'cor',potencia:'potencia',combustivel:'combustivel',proprietario:'proprietario',chassi:'chassi',renavam:'renavam',exercicio:'exercicioCRLV'};
+   /* v232: nome curto = modelo + ano modelo ("Cronos 2020"); motor com válvulas ("1.3 8v") */
+   try{var nc=nomeCurtoCarro(dc.modeloCRLV,dc.ano);if(nc)dc.nome=nc;var mv=motorComValvulas(dc);if(mv)dc.motor=mv}catch(e){}
+   var mapa={placa:'placa',nome:'nome',motorCodigo:'motorCodigo',motor:'motor',modeloCRLV:'modeloCRLV',ano:'ano',cor:'cor',potencia:'potencia',combustivel:'combustivel',proprietario:'proprietario',chassi:'chassi',renavam:'renavam',exercicio:'exercicioCRLV'};
    var n=0;
-   Object.keys(mapa).forEach(function(k){var id=mapa[k];if(!id||!dc[k])return;var e=document.getElementById('fc_'+id);if(e&&!e.value.trim()){e.value=dc[k];n++}});
+   Object.keys(mapa).forEach(function(k){var id=mapa[k];if(!id||!dc[k])return;var e=document.getElementById('fc_'+id);if(e&&!e.value.trim()){e.value=dc[k];n++;
+    /* lido da imagem: campo fica marcado em amarelo até a pessoa conferir (tocar nele) */
+    if(ocr&&/^(placa|chassi|renavam|motorCodigo)$/.test(k)){e.classList.add('ocrConfira');e.addEventListener('focus',function(){this.classList.remove('ocrConfira')},{once:true})}}});
+   if(ocr){var faltou=['placa','chassi','renavam','motorCodigo'].filter(function(k){var e=document.getElementById('fc_'+mapa[k]);return e&&!e.value.trim()});
+    faltou.forEach(function(k){var e=document.getElementById('fc_'+mapa[k]);if(e){e.classList.add('ocrFalta');e.placeholder='não deu para ler com certeza — digite do documento'}})}
    /* procedência escrita no documento (sinistro/monta, CSV, alienação) */
    try{var x=window.crlvExtras?crlvExtras(txt||'',dc):{};
     var eo=document.getElementById('fc_procObs');if(x.obsCRLV&&eo&&!eo.value.trim()){eo.value=x.obsCRLV.replace(/^CRLV:\s*/,'');n++}
@@ -10854,6 +10884,53 @@ LEITOR_VER=95; /* v229: CRLV/laudo escaneado agora é lido por OCR — relê os 
   return r};
  w._v231=1;window.formCarro=formCarro=w;})();
 
+
+/* ===== v232 — nome curto e motor com válvulas a partir do CRLV =====
+   Pedido do Hudson (16/10/2026): "Nome curto" = modelo + último ano ("Cronos 2020") e o motor
+   sempre com as válvulas ("1.3 8v"). As válvulas não estão no CRLV: o app copia de um carro
+   da própria frota com o mesmo modelo e motor; se não tiver, usa uma tabela só com motores
+   que não deixam dúvida (ex.: Fiat 1.3 Firefly = 8v). Se não tiver certeza, fica só "1.3". */
+var _MARCAS=['FIAT','VW','VOLKSWAGEN','GM','CHEVROLET','CHEV','FORD','RENAULT','HYUNDAI','TOYOTA','HONDA','NISSAN','JEEP','PEUGEOT','CITROEN','MITSUBISHI','KIA','CAOA','CHERY','BYD','JAC','MMC','FIAT/','IMP'];
+function _modeloPalavras(modelo){
+ var m=semAcento(String(modelo||'')).toUpperCase().replace(/^I\//,'').replace(/\//g,' ').split(/\s+/).filter(Boolean);
+ while(m.length&&_MARCAS.indexOf(m[0])>=0)m.shift();
+ return m;
+}
+function nomeCurtoCarro(modelo,ano){
+ var w=_modeloPalavras(modelo);if(!w.length)return '';
+ var n=[w[0]];if(/^(GRAND|NOVO|NOVA|NEW|UP)$/.test(w[0])&&w[1]&&!/\d/.test(w[1]))n.push(w[1]);
+ var nome=n.map(function(x){return x.charAt(0)+x.slice(1).toLowerCase()}).join(' ');
+ var am=String(ano||'').match(/(\d{4})\D*$/);
+ return nome+(am?' '+am[1]:'');
+}
+function motorComValvulas(dc){
+ var lit=String(dc.motor||'').match(/^(\d\.\d)/);if(!lit)return '';lit=lit[1];
+ if(/\dv\b/i.test(dc.motor))return dc.motor;
+ var w=_modeloPalavras(dc.modeloCRLV),mod=w[0]||'',marca=semAcento(String(dc.modeloCRLV||'')).toUpperCase();
+ /* 1) a própria frota: mesmo modelo e mesma cilindrada já cadastrados com válvulas */
+ try{var achou='';Object.keys(S.carros||{}).forEach(function(pk){var c=S.carros[pk];if(achou||!c)return;
+  var cm=String(c.motor||''),cn=semAcento(String((c.nome||'')+' '+(c.modeloCRLV||''))).toUpperCase();
+  if(mod&&cn.indexOf(mod)>=0&&cm.indexOf(lit)===0&&/\d{1,2}\s*v\b/i.test(cm))achou=lit+' '+cm.match(/(\d{1,2})\s*v\b/i)[1]+'v'});
+  if(achou)return achou}catch(e){}
+ /* 2) tabela: só combinações sem ambiguidade */
+ var cv=+(String(dc.potencia||'').match(/(\d{2,3})\s*CV/i)||[])[1]||0;
+ var T=[
+  [/FIAT/, '1.3', 98,110, '8v'],     /* Firefly 1.3 (Argo, Cronos, Uno, Mobi) */
+  [/FIAT.*\bARGO\b/, '1.0', 72,78, '6v'],/* Firefly 1.0 3 cilindros */
+  [/FIAT/, '1.4', 84,90, '8v'],      /* Fire 1.4 (Grand Siena, Uno, Strada, Palio) */
+  [/FIAT/, '1.8', 130,140,'16v'],    /* E.torQ 1.8 */
+  [/FIAT/, '1.6', 115,120,'16v'],    /* E.torQ 1.6 */
+  [/GM|CHEV/, '1.4', 97,106,'8v'],   /* SPE/4 1.4 (Onix, Prisma, Cobalt, Spin) */
+  [/GM|CHEV/, '1.8', 105,112,'8v'],  /* 1.8 8v (Cobalt, Spin) */
+  [/HYUNDAI/, '1.6', 120,130,'16v'],
+  [/TOYOTA|HONDA/, null, 0,999,'16v']
+ ];
+ for(var i=0;i<T.length;i++){var t=T[i];if(t[0].test(marca)&&(!t[1]||t[1]===lit)&&cv>=t[2]&&cv<=t[3])return lit+' '+t[4]}
+ return '';
+}
+
+(function(){try{var st=document.createElement('style');st.textContent='input.ocrConfira{border:2px solid #E0A800!important;background:#FFF8E1!important}input.ocrFalta{border:2px dashed #D9534F!important}';document.head.appendChild(st)}catch(e){}})();
+
 /* ---------- leitura do TEXTO DO OCR do CRLV (scan/foto) ----------
    O OCR troca 0↔O, 1↔I, junta lixo do QR code nas linhas e embaralha as colunas.
    Aqui cada campo só entra se passar numa conferência (dígito do Renavam, formato da
@@ -10877,20 +10954,71 @@ function _vinValido(v,anoMod){
  if(/^\d{5,6}$/.test(v.slice(-6).replace(/^[A-Z]/,'')))p+=1;
  return p;
 }
+/* CHASSI do OCR: o scan troca 8↔B↔S, 0↔O↔D, 1↔I, 6↔G, 5↔S e às vezes come ou inventa
+   uma letra. Procuro, com no máximo 2 correções desse tipo, um chassi que:
+   começa por um fabricante conhecido (3 caracteres), tem o 10º caractere = ano modelo
+   e termina em número de série. Só aceito se sobrar UM candidato (ou um com mais votos
+   entre as leituras). Na dúvida, fica em branco. */
+var _VIN_CONF={'8':'B3S','B':'83S','S':'58','3':'8B','0':'DQ','O':'0','D':'0','Q':'0','1':'7','I':'1','L':'1','7':'1','5':'S','6':'G','G':'6','2':'Z','Z':'2','A':'4','4':'A','U':'V0','V':'U'};
+function _vinBom(v,anoMod){
+ if(v.length!==17||!/^[0-9A-HJ-NPR-Z]{17}$/.test(v))return false;
+ if(_WMI3.indexOf(v.slice(0,3))<0)return false;
+ if(!/\d{4}$/.test(v))return false;
+ var a=_VIN_ANO[v.charAt(9)];
+ if(anoMod)return !!a&&(a===+anoMod||a+30===+anoMod);
+ return !!a;
+}
+function _vinVariantes(s,prof){
+ var vistos={},fila=[[s,0]],out=[];vistos[s]=1;
+ while(fila.length){
+  var it=fila.shift(),t=it[0],d=it[1];out.push(it);
+  if(d>=prof)continue;
+  var novos=[];
+  if(t.length>17)for(var i=0;i<t.length;i++)novos.push(t.slice(0,i)+t.slice(i+1));
+  for(var j=0;j<t.length;j++){var cs=_VIN_CONF[t[j]]||'';for(var k=0;k<cs.length;k++)novos.push(t.slice(0,j)+cs[k]+t.slice(j+1))}
+  if(t.length===16)['8','9'].forEach(function(c){novos.push(c+t)});
+  novos.forEach(function(n){if(!vistos[n]&&n.length>=16&&n.length<=19){vistos[n]=1;fila.push([n,d+1])}});
+ }
+ return out;
+}
+/* posições que são sempre número: série (6 últimos) e, na Fiat (9BD/8AP), o código do modelo (4 a 6) */
+function _vinPosicoes(v){
+ if(v.length!==17)return v;
+ var dig=function(x){return x.replace(/S/g,'5').replace(/G/g,'6').replace(/B/g,'8').replace(/Z/g,'2').replace(/D/g,'0')};
+ v=v.slice(0,11)+dig(v.slice(11));
+ if(/^(9BD|8AP)/.test(v))v=v.slice(0,3)+dig(v.slice(3,6))+v.slice(6);
+ return v;
+}
 function ocrChassi(txt,anoMod){
- var U=String(txt||'').toUpperCase(),cands=[];
- (U.match(/[0-9A-Z]{15,20}/g)||[]).forEach(function(t){
-  var n=_vinNorm(t);
-  var vars=[n];
-  if(n.length===18)for(var i=0;i<18;i++)vars.push(n.slice(0,i)+n.slice(i+1));
-  if(n.length===19)for(var i2=0;i2<19;i2++)for(var j=i2+1;j<19;j++)vars.push(n.slice(0,i2)+n.slice(i2+1,j)+n.slice(j+1));
-  vars.forEach(function(v){var p=_vinValido(v,anoMod)-(v===n?0:1);if(p>=5)cands.push({v:v,p:p})});
+ var U=String(txt||'').toUpperCase(),votos={},melhor=9;
+ var linhas=U.split('\n'),toks=[];
+ linhas.forEach(function(l){
+  var w=l.split(/[\s|]+/).map(function(x){return x.replace(/[^0-9A-Z]/g,'')}).filter(Boolean);
+  for(var i=0;i<w.length;i++){
+   if(w[i].length>=15&&w[i].length<=20)toks.push(w[i]);
+   /* chassi partido em dois pedaços na mesma linha */
+   if(i+1<w.length){var j=w[i]+w[i+1];if(j.length>=16&&j.length<=19&&w[i].length>=3&&w[i+1].length>=3)toks.push(j)}
+  }
  });
- cands.sort(function(a,b){return b.p-a.p});
- /* só aceita se o melhor for único (dois diferentes com a mesma nota = dúvida) */
- if(!cands.length)return '';
- var top=cands.filter(function(c){return c.p===cands[0].p}).map(function(c){return c.v}).filter(function(v,i,a){return a.indexOf(v)===i});
- return top.length===1?top[0]:'';
+ toks.forEach(function(t){
+  if(t.length>19)return;
+  var n=t.replace(/O/g,'0').replace(/Q/g,'0').replace(/I/g,'1');
+  /* nº de série (6 últimos) é sempre número: S→5, G→6, B→8, Z→2, D→0 */
+  /* Fiat (9BD/8AP): o código do modelo (posições 4 a 6) é sempre número */
+  var fz=n.match(/^(?:.{0,2})(9BD|8AP)/);if(fz){var ia=n.indexOf(fz[1])+3;n=n.slice(0,ia)+n.slice(ia,ia+3).replace(/S/g,'5').replace(/G/g,'6').replace(/B/g,'8').replace(/Z/g,'2').replace(/D/g,'0')+n.slice(ia+3)}
+  if(n.length>=17){var ser=n.slice(-6).replace(/S/g,'5').replace(/G/g,'6').replace(/B/g,'8').replace(/Z/g,'2').replace(/D/g,'0');n=n.slice(0,-6)+ser}
+  _vinVariantes(n,2).forEach(function(it){
+   it=[_vinPosicoes(it[0]),it[1]];
+   if(!_vinBom(it[0],anoMod))return;
+   var d=it[1]+(n===t?0:0);
+   if(d<melhor){melhor=d;votos={}}
+   if(d===melhor)votos[it[0]]=(votos[it[0]]||0)+1;
+  });
+ });
+ var ks=Object.keys(votos);if(!ks.length)return '';
+ ks.sort(function(a,b){return votos[b]-votos[a]});
+ if(ks.length>1&&votos[ks[0]]===votos[ks[1]])return '';
+ return ks[0];
 }
 function _placaNorm(t){
  t=String(t||'').toUpperCase().replace(/[^0-9A-Z]/g,'');if(t.length!==7)return '';
@@ -10914,9 +11042,10 @@ function crlvOcr(txt){
   var raw7=toks[t].replace(/[^0-9A-Z\/]/g,'');var base=raw7.split('/')[0];
   var pl=_placaNorm(base);if(!pl)continue;
   if(/\/[A-Z]{2}$/.test(raw7)){if(!o.placaAnterior)o.placaAnterior=pl+'/'+raw7.slice(-2);continue}
-  if(!o.placa){o.placa=pl;var ex=(toks[t+1]||'').match(/^(20\d\d)$/);if(ex)o.exercicio=ex[1]}
+  if(!o.placa){o.placa=pl;var tn=t+1;while(tn<toks.length&&!/[0-9A-Z]/.test(toks[tn]))tn++;var ex=(toks[tn]||'').match(/^(20\d\d)$/);if(ex)o.exercicio=ex[1]}
  }
  if(!o.placa&&o.placaAnterior)o.placa=o.placaAnterior.split('/')[0];
+ if(!o.exercicio){var mEx=flat.match(/EXERCICIO.{0,90}?\b(20\d\d)\b/);if(mEx&&+mEx[1]>=2010&&+mEx[1]<=new Date().getFullYear()+1)o.exercicio=mEx[1]}
  /* CHASSI: conserta O→0/I→1 e letra a mais; o 10º caractere tem que bater com o ano modelo */
  var ch=ocrChassi(U,o._anoMod);if(ch)o.chassi=ch;
  /* MOTOR: código longo nas linhas logo abaixo do rótulo MOTOR */
@@ -10930,13 +11059,29 @@ function crlvOcr(txt){
   if(o.motorCodigo)break;
  }
  /* MARCA/MODELO/VERSÃO: "I/FIAT CRONOS DRIVE 1.3" (corta no que é da coluna da direita) */
- var mM=flat.match(/\b((?:I\/[A-Z]{2,12}[ \/]|[A-Z]{2,12}\/)[A-Z0-9][A-Z0-9 .\-]{1,40}?)(?=\s+(?:DADOS DO SEGURO|ASSINADO|ESPECIE|PASSAGEIRO|CARGA|MISTO|CAT\b|\d{2}\/\d{2}\/\d{4})|\s*$)/);
- if(mM&&!/CILINDRADA|COMBUSTIVEL|CNPJ|MODELO|VERSAO/.test(mM[1]))o.modeloCRLV=mM[1].trim();
+ /* MARCA/MODELO/VERSÃO: "I/FIAT CRONOS DRIVE 1.3" — o OCR costuma grudar lixo da coluna
+    da direita depois. Corto no tamanho do motor (1.3, 1.0, 2.0...) quando houver; senão no
+    primeiro pedaço que não parece palavra do modelo, no máximo 5 palavras. */
+ var mod='';
+ flat=flat.replace(/(^|\s)[VL1|]\/?(FIAT|VW|GM|FORD|RENAULT|HYUNDAI|TOYOTA|HONDA|NISSAN|JEEP|PEUGEOT|CITROEN|CHEVROLET|MMC|KIA)\b/g,'$1I/$2');
+ var re0=/\b(I\/[A-Z]{2,12}|[A-Z]{2,12}\/)\s*([A-Z0-9][^\n]{0,70})/g,mm;
+ while((mm=re0.exec(flat))){
+  if(/CPF|CNPJ|UF$|PLACA|MODELO|VERSAO|CILINDRADA|COMBUSTIVEL|GASOLINA|ALCOOL|DPVAT|ANTERIOR/.test(mm[1]+mm[2].slice(0,12)))continue;
+  var pal=mm[2].split(/\s+/),ok=[];
+  for(var z=0;z<pal.length&&ok.length<5;z++){var w0=pal[z];
+   if(!/^[A-Z0-9][A-Z0-9.\-]*$/.test(w0))break;
+   if(ok.length&&w0.length<=2&&!/^\d/.test(w0)&&!/^(LT|LS|SE|GL|EX|LX|XS|SX|GT|TS|MT|AT)$/.test(w0))break;
+   ok.push(w0);if(/^\d\.\d$/.test(w0))break;
+  }
+  if(ok.length&&ok.some(function(x){return /[A-Z]{3,}/.test(x)})){mod=(mm[1].replace(/\s+$/,'').replace(/([A-Z])$/,'$1'))+(/\/$/.test(mm[1])?'':' ')+ok.join(' ');break}
+ }
+ if(mod)o.modeloCRLV=mod.replace(/\s+/g,' ').replace(/^(I\/[A-Z]+)\s*/,'$1 ').trim();
  /* PROPRIETÁRIO: linha de nome logo antes do "CPF / CNPJ" */
  for(var q=0;q<linhas.length;q++){
   if(!/CPF\s*\/\s*CNP/.test(linhas[q]))continue;
   for(var r2=q-1;r2>=Math.max(0,q-2);r2--){
    var nm=linhas[r2].replace(/[^A-Z ]/g,' ').split(/\s+/).filter(function(w){return w.length>=2}).join(' ');
+   nm=nm.replace(/^((?:[A-Z]{1,2}|DA|DE|DO|DAS|DOS)\s+)+/,'');
    if(/^[A-Z]{2,}( [A-Z]{2,}){1,7}$/.test(nm)&&!/NOME|CARROCERIA|APLICAVEL|CATEGORIA/.test(nm)){o.proprietario=nm;break}
   }
   break;
@@ -10950,11 +11095,38 @@ function crlvOcr(txt){
 }
 /* impDadosCRLV: texto vindo do OCR passa pelo leitor conferido; os campos "perigosos"
    do leitor de PDF-texto (placa, chassi, Renavam, motor) só ficam se o OCR confirmar. */
+/* várias leituras (tamanhos diferentes) do mesmo documento: cada campo vai por votação.
+   Duas leituras iguais = certo. Leituras que discordam e nenhuma repete = fica em branco. */
+var OCR_SEP='\n#LEITURA#\n';
+function _sufixoComum(vs){var tk=vs.map(function(v){return v.split(' ')}),out=[];
+ for(var i=1;;i++){var w=tk[0][tk[0].length-i];if(!w)break;if(tk.every(function(t){return t[t.length-i]===w}))out.unshift(w);else break}return out.join(' ')}
+function crlvOcrVotos(texto){
+ var partes=String(texto||'').split(OCR_SEP).filter(function(x){return x.trim()});
+ if(partes.length<2)return crlvOcr(texto);
+ var lidos=partes.map(function(t){try{return crlvOcr(t)}catch(e){return {}}}),o={},chaves={};
+ lidos.forEach(function(l){Object.keys(l).forEach(function(k){chaves[k]=1})});
+ Object.keys(chaves).forEach(function(k){
+  var vs=lidos.map(function(l){return l[k]}).filter(Boolean),cont={};
+  vs.forEach(function(v){cont[v]=(cont[v]||0)+1});
+  var ord=Object.keys(cont).sort(function(a,b){return cont[b]-cont[a]});
+  if(!ord.length)return;
+  if(cont[ord[0]]>=2&&(ord.length<2||cont[ord[0]]>cont[ord[1]])){o[k]=ord[0];return}
+  if(ord.length===1){o[k]=ord[0];return}
+  /* discordância sem maioria */
+  if(k==='proprietario'){var sf=_sufixoComum(ord);if(sf.split(' ').length>=2)o[k]=sf;return}
+  if(k==='modeloCRLV'){var cur=ord.slice().sort(function(a,b){return a.length-b.length})[0];if(ord.every(function(v){return v.indexOf(cur)===0}))o[k]=cur;return}
+  if(k==='renavam'){o[k]=ord[0];return}   /* todos já passaram no dígito verificador */
+  if(k==='cor'||k==='combustivel'||k==='potencia'||k==='motor'){o[k]=ord[0];return}
+  /* placa, chassi, motor, ano...: na dúvida, em branco */
+  OCRDOC.duvida=OCRDOC.duvida||{};OCRDOC.duvida[k]=ord;
+ });
+ return o;
+}
 (function(){var prev=window.impDadosCRLV;if(typeof prev!=='function'||prev._v229)return;
  var w=function(texto){
   var o=prev(texto)||{};
   if(!_ocrEh(texto))return o;
-  var x={};try{x=crlvOcr(texto)}catch(e){}
+  var x={};try{x=crlvOcrVotos(texto)}catch(e){}
   ['placa','chassi','renavam','motorCodigo','exercicio','ano','modeloCRLV','proprietario','placaAnterior','numeroCRV','eixos','lotacao'].forEach(function(k){delete o[k]});
   Object.keys(x).forEach(function(k){if(x[k])o[k]=x[k]});
   return o;
