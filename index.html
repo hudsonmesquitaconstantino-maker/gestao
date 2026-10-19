@@ -1536,7 +1536,7 @@ html.teclado #main{padding-bottom:calc(20px + var(--navH,0px))!important}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=234; var APP_DATE='19/10/2026';
+var APP_VER=235; var APP_DATE='19/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -11165,7 +11165,8 @@ function docMudTexto(){if(!DOCMUD.length)return '';var t='📄 CRLV atualizado �
      _CRLV_TROCA.forEach(function(par){var k=par[0],v=dc[k]||x[k];if(!v)return;
       if(k==='dataEmissaoCRLV'){if(v!==c[k]){c[k]=v;mud.push(par[1]+': '+_crlvDataBR(v))}return}
       if(_crlvNorm(v)!==_crlvNorm(c[k])){var antes=c[k];c[k]=v;
-       if(k==='proprietario'||k==='placaAnterior'||k==='numeroCRV'||k==='localCRLV')mud.push(par[1]+': '+(antes?antes+' → ':'')+v);
+       if(!par[1]){}
+       else if(k==='proprietario'||k==='placaAnterior'||k==='numeroCRV'||k==='localCRLV'||k==='docProprietario')mud.push(par[1]+': '+(antes?antes+' → ':'')+v);
        else mud.push(par[1]+(antes?' atualizado':''))}});
      /* exercício só avança */
      var ex=parseInt(dc.exercicio,10)||0;if(ex&&ex>(parseInt(c.exercicioCRLV,10)||0)){c.exercicioCRLV=String(ex);mud.push('Exercício '+ex)}
@@ -11345,6 +11346,40 @@ window._roboAtrasados=_roboAtrasados=function(){if(!S)return [];return Object.ke
 window._roboAlertas=_roboAlertas=function(c){var a=[];if(!S)return a;var pk=Object.keys(S.carros).find(function(k){return S.carros[k]===c});if(!pk)return a;var at=_roboAtrasoDe(pk);if(at)a.push({n:'red',t:at.txt});return a};
 /* robô desligado: não exporta mais nada para a área do robô */
 window._roboSync=_roboSync=function(){return 0};
+
+</script>
+<script>
+/* ===== v235 — CPF/CNPJ DO PROPRIETÁRIO lido do CRLV (e enviado aos outros apps) =====
+   Pedido do Hudson (19/10/2026): na consulta de multas os dois Cronos novos apareceram sem
+   CPF. O app de Multas só copiava o CPF de OUTRO carro do mesmo dono; o Gestão nem guardava o
+   CPF do documento. Agora o leitor do CRLV pega o CPF/CNPJ do proprietário (conferido pelo
+   dígito verificador), grava no carro (docProprietario) e o app de Multas usa esse número. */
+function _cnpjOk(d){d=String(d||'').replace(/\D/g,'');if(d.length!==14||/^(\d)\1{13}$/.test(d))return false;
+ var calc=function(n){var p=n===12?[5,4,3,2,9,8,7,6,5,4,3,2]:[6,5,4,3,2,9,8,7,6,5,4,3,2],s=0;for(var i=0;i<n;i++)s+=(+d[i])*p[i];var r=s%11;return r<2?0:11-r};
+ return calc(12)===+d[12]&&calc(13)===+d[13]}
+function _cpfOk(d){return typeof cnh7CpfOk==='function'?cnh7CpfOk(d):/^\d{11}$/.test(String(d||'').replace(/\D/g,''))}
+function docDoProprietario(texto){
+ var t=String(texto||'').replace(/[Oo](?=\d)|(?<=\d)[Oo]/g,'0');
+ var cnpj=t.match(/\b(\d{2})\s*\.\s*(\d{3})\s*\.\s*(\d{3})\s*\/\s*(\d{4})\s*-\s*(\d{2})\b/);
+ if(cnpj){var d=cnpj.slice(1).join('');if(_cnpjOk(d))return {doc:d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,'$1.$2.$3/$4-$5'),tipo:'CNPJ'}}
+ var re=/\b(\d{3})\s*\.\s*(\d{3})\s*\.\s*(\d{3})\s*-\s*(\d{2})\b/g,m;
+ while((m=re.exec(t))){var c=m.slice(1).join('');if(_cpfOk(c))return {doc:c.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/,'$1.$2.$3-$4'),tipo:'CPF'}}
+ return null;
+}
+(function(){var prev=window.impDadosCRLV;if(typeof prev!=='function'||prev._v235)return;
+ var w=function(texto){var o=prev(texto)||{};try{var d=docDoProprietario(texto);if(d){o.docProprietario=d.doc;o.docProprietarioTipo=d.tipo}}catch(e){}return o};
+ w._v235=1;window.impDadosCRLV=impDadosCRLV=w;})();
+/* CRLV mais novo troca também o CPF/CNPJ (transferência) */
+try{_CRLV_TROCA.push(['docProprietario','CPF/CNPJ do proprietário'],['docProprietarioTipo','']);}catch(e){}
+(function(){var o=window._rotuloCampo;window._rotuloCampo=function(k){if(k==='docProprietario')return 'CPF/CNPJ do proprietário';if(k==='docProprietarioTipo')return 'tipo do documento';return o?o(k):k}})();
+/* ficha: mostra o CPF/CNPJ junto com os dados do documento */
+(function(){var o=window._fichaDocExtra;if(typeof o!=='function'||o._v235)return;
+ var w=function(c){var h=o(c)||'';if(!c||!c.docProprietario)return h;
+  var row='<b>'+esc(c.docProprietarioTipo||'CPF/CNPJ')+' do proprietário</b><span>'+esc(c.docProprietario)+'</span>';
+  return h.indexOf('<div class="kv">')>=0?h.replace('<div class="kv">','<div class="kv">'+row):'<div class="g2sub"><span>Do documento (CRLV)</span></div><div class="kv">'+row+'</div>'};
+ w._v235=1;window._fichaDocExtra=w;})();
+/* leitor novo: todos os CRLVs anexados são relidos uma vez, para pegar o CPF/CNPJ */
+try{LEITOR_VER=96}catch(e){}
 
 </script>
 </body>

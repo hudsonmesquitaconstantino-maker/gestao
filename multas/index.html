@@ -1728,6 +1728,13 @@ function nomeDoGestao(c){
   const cor = c.cor && !semAc(base).toLowerCase().includes(semAc(c.cor).toLowerCase()) ? capP(c.cor) : '';
   return [base, cor, ano].filter(Boolean).join(' ');
 }
+/* CPF/CNPJ do proprietário lido do CRLV pelo Gestão (v235). Só aceita número com dígito certo. */
+function docDoGestao(g){
+  const d = soDig(g && g.docProprietario);
+  if(d.length === 11) return {docTipo: 'CPF', doc: d.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4')};
+  if(d.length === 14) return {docTipo: 'CNPJ', doc: d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5')};
+  return null;
+}
 function noGestao(v){
   if(!GEST.idx) return true;
   if(GEST.idx[normPlaca(v.placa)]) return true;
@@ -1871,11 +1878,14 @@ function sincronizarComGestao(){
       if(S.tombV[id] && !voltou) continue;
       if(voltou) S.saidas[pk] = {...sd, voltou: agora};
       delete S.tombV[id];
-      const d0 = docDoDono[donoKey(g.proprietario)] || {docTipo: 'CPF', doc: ''};
+      const d0 = docDoGestao(g) || docDoDono[donoKey(g.proprietario)] || {docTipo: 'CPF', doc: ''};
       const nv = {...novoVeiculo(padronizarNome(nomeDoGestao(g), g)), id, placa: fmtPlaca(g.placa), renavam: soDig(g.renavam) ? soDig(g.renavam).padStart(11, '0') : '', docTipo: d0.docTipo, doc: d0.doc, frota};
       S.veiculos.push(nv); novos.push(nv.nome); mudou = true; continue;
     }
-    if(!v.doc && g.proprietario && docDoDono[donoKey(g.proprietario)]){ Object.assign(v, docDoDono[donoKey(g.proprietario)]); mudou = true; }
+    /* v26: o CPF/CNPJ que o Gestão leu do CRLV manda (transferência troca o dono) */
+    const dg = docDoGestao(g);
+    if(dg && soDig(v.doc) !== soDig(dg.doc)){ ajustes.push(`${v.nome}: ${v.docTipo || 'CPF'} ${v.doc || '—'} → ${dg.doc}`); Object.assign(v, dg); mudou = true; }
+    else if(!dg && !v.doc && g.proprietario && docDoDono[donoKey(g.proprietario)]){ Object.assign(v, docDoDono[donoKey(g.proprietario)]); mudou = true; }
     if(v.frota !== frota){ v.frota = frota; mudou = true; }
     // FIPE de janeiro guardada como base do IPVA do ano
     const hoje = new Date(), Ya = hoje.getFullYear();
