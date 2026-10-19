@@ -1536,7 +1536,7 @@ html.teclado #main{padding-bottom:calc(20px + var(--navH,0px))!important}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=237; var APP_DATE='19/10/2026';
+var APP_VER=238; var APP_DATE='19/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -3548,7 +3548,7 @@ function _vFrota(){
 function vMais(){
  var nObs=0;try{nObs=Object.keys(S.observacoes||{}).filter(function(k){return !S.observacoes[k].feito}).length}catch(e){}
  var nRob=0;try{nRob=_roboAtrasados().length}catch(e){}
- var it=[['nota','Observações',nObs+' pendente'+(nObs===1?'':'s'),'go(4)'],['robo','Km dos motoristas',nRob?nRob+' sem mandar a foto':'Pedir foto e responder pelo WhatsApp','abrirRobo()'],['doc','Novo contrato de locação','Puxa os dados do carro','go(2)'],['carro','Adicionar carro novo','Placa, CRLV e motorista','formCarro()'],['eng','Configurações','Chave, backup e versão','openCfg()']];
+ var it=[['nota','Observações',nObs+' pendente'+(nObs===1?'':'s'),'go(4)'],['robo','Km dos motoristas',nRob?nRob+' sem mandar a foto':'Pedir foto e responder pelo WhatsApp','abrirRobo()'],['doc','Novo contrato de locação','Puxa os dados do carro','go(2)'],['busca','Consultar veículos','Quais carros entram no Uber Comfort e 99Plus','abrirConsultaVeic()'],['carro','Adicionar carro novo','Placa, CRLV e motorista','formCarro()'],['eng','Configurações','Chave, backup e versão','openCfg()']];
  var h='<div class="g2head"><div class="g2titulo">Mais</div></div><div class="g2grp">';
  it.forEach(function(o){h+='<button class="g2opt" onclick="'+o[3]+'"><span class="g2ic">'+G2I[o[0]]+'</span><span class="g2optTx"><b>'+o[1]+'</b><small>'+o[2]+'</small></span>'+G2I.chev+'</button>'});
  h+='</div><div class="g2ver">GuimasCar Gestão · v'+APP_VER+' · '+APP_DATE+'<br><small style="opacity:.6">tela '+(screen.height||0)+' · vh '+(function(){try{var d=document.createElement('div');d.style.cssText='position:fixed;top:0;height:100vh;width:1px;visibility:hidden';document.body.appendChild(d);var v=Math.round(d.getBoundingClientRect().height);d.remove();return v}catch(e){return 0}})()+' · janela '+innerHeight+' · corpo '+Math.round(document.body.getBoundingClientRect().height)+'</small></div>';
@@ -11406,6 +11406,442 @@ try{LEITOR_VER=96}catch(e){}
  if(mud)save();
 },1000)})();
 try{LEITOR_VER=97}catch(e){}
+
+</script>
+<script>
+var VEIC_EMB={"conferidoEm": "2026-10-19", "cidade": "Rio de Janeiro", "anoTipo": "ano de fabricação (o primeiro ano do CRLV, ex.: 2019 em 2019/2020)", "fontes": [{"nome": "Uber — veículos elegíveis no Rio de Janeiro (lista oficial, por modelo e ano)", "url": "https://www.uber.com/br/pt-br/eligible-vehicles/?city=rio-de-janeiro"}, {"nome": "Uber — mudanças no Black e Comfort a partir de 11/01/2027 (publicado 14/10/2026)", "url": "https://www.uber.com/br/pt-br/blog/mudancas-black-e-comfort-a-partir-de-janeiro-2027/"}, {"nome": "99 — lista oficial de carros do 99Plus", "url": "https://99app.com/motorista/categorias/99-plus/"}, {"nome": "99 — requisitos 99Pop", "url": "https://99app.com/motorista/veiculos-aceitos/"}], "avisos": ["Logan saiu do Uber Comfort em 06/07/2026, em qualquer ano. Argo e Polo (hatch) só entram no Comfort a partir de 2023.", "A partir de 11/01/2027 o Uber Comfort no Rio passa a exigir 2017 ou mais novo (Cobalt e Etios Sedan: 2019) e tira de vez Argo, Polo, Voyage, Prisma, Yaris hatch, Peugeot 208, Joy Plus e Kia Rio.", "UberX no Rio: carros com 4 portas, 5 lugares e ar, fabricados a partir de 2011.", "99Pop: 4 portas, ar-condicionado e CRLV em dia. A 99 não publica ano mínimo para o Rio — o app confere no cadastro.", "99Plus exige nota 4,85; a lista de modelos é a oficial da 99. Uber Comfort exige 100 viagens e nota 4,80."], "modelos": [{"marca": "Chevrolet", "modelo": "Onix Plus", "tipo": "Sedã", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2019, "p99obs": "algumas versões 2017", "chave": "\\bONIX\\s*(PLUS|SEDAN|SED|SD)\\b"}, {"marca": "Chevrolet", "modelo": "Joy Plus", "tipo": "Sedã", "ux": 2011, "uc": 2016, "sai27": true, "p99": 2019, "p99obs": "como Onix Plus Joy", "chave": "\\bJOY\\s*PLUS\\b"}, {"marca": "Chevrolet", "modelo": "Onix", "tipo": "Hatch", "ux": 2011, "uc": 0, "p99": 0, "chave": "\\bONIX\\b"}, {"marca": "Chevrolet", "modelo": "Joy", "tipo": "Hatch", "ux": 2011, "uc": 0, "p99": 0, "chave": "\\bJOY\\b"}, {"marca": "Chevrolet", "modelo": "Prisma", "tipo": "Sedã", "ux": 2011, "uc": 2019, "sai27": true, "p99": 0, "chave": "\\bPRISMA\\b"}, {"marca": "Chevrolet", "modelo": "Cobalt", "tipo": "Sedã", "ux": 2011, "uc": 2019, "uc27": 2019, "p99": 2019, "chave": "\\bCOBALT\\b"}, {"marca": "Chevrolet", "modelo": "Spin", "tipo": "Minivan", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bSPIN\\b"}, {"marca": "Chevrolet", "modelo": "Tracker", "tipo": "SUV", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bTRACKER\\b"}, {"marca": "Chevrolet", "modelo": "Cruze", "tipo": "Sedã", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bCRUZE\\b"}, {"marca": "Fiat", "modelo": "Cronos", "tipo": "Sedã", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 0, "chave": "\\bCRONOS\\b"}, {"marca": "Fiat", "modelo": "Grand Siena / Siena", "tipo": "Sedã", "ux": 2011, "uc": 0, "p99": 0, "chave": "\\bSIENA\\b"}, {"marca": "Fiat", "modelo": "Argo", "tipo": "Hatch", "ux": 2011, "uc": 2023, "sai27": true, "p99": 0, "chave": "\\bARGO\\b"}, {"marca": "Fiat", "modelo": "Mobi", "tipo": "Hatch", "ux": 2011, "uc": 0, "p99": 0, "chave": "\\bMOBI\\b"}, {"marca": "Fiat", "modelo": "Uno", "tipo": "Hatch", "ux": 2011, "uc": 0, "p99": 0, "chave": "\\bUNO\\b"}, {"marca": "Fiat", "modelo": "Pulse", "tipo": "SUV", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 0, "chave": "\\bPULSE\\b"}, {"marca": "Fiat", "modelo": "Fastback", "tipo": "SUV", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 0, "chave": "\\bFASTBACK\\b"}, {"marca": "Fiat", "modelo": "Linea", "tipo": "Sedã", "ux": 2011, "uc": 0, "p99": 2019, "chave": "\\bLINEA\\b"}, {"marca": "Volkswagen", "modelo": "Virtus", "tipo": "Sedã", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bVIRTUS\\b"}, {"marca": "Volkswagen", "modelo": "Voyage", "tipo": "Sedã", "ux": 2011, "uc": 2019, "sai27": true, "p99": 0, "chave": "\\bVOYAGE\\b"}, {"marca": "Volkswagen", "modelo": "Polo Sedan", "tipo": "Sedã", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 0, "chave": "\\bPOLO\\s*(SEDAN|SED|SD)\\b"}, {"marca": "Volkswagen", "modelo": "Polo Track", "tipo": "Hatch", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 0, "chave": "\\bPOLO\\s*TRACK\\b"}, {"marca": "Volkswagen", "modelo": "Polo", "tipo": "Hatch", "ux": 2011, "uc": 2023, "sai27": true, "p99": 0, "chave": "\\bPOLO\\b"}, {"marca": "Volkswagen", "modelo": "Gol", "tipo": "Hatch", "ux": 2011, "uc": 0, "p99": 0, "chave": "\\bGOL\\b"}, {"marca": "Volkswagen", "modelo": "Fox", "tipo": "Hatch", "ux": 2011, "uc": 0, "p99": 0, "chave": "\\bFOX\\b"}, {"marca": "Volkswagen", "modelo": "Up", "tipo": "Hatch", "ux": 2011, "uc": 0, "p99": 0, "chave": "\\bUP\\b"}, {"marca": "Volkswagen", "modelo": "Jetta", "tipo": "Sedã", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bJETTA\\b"}, {"marca": "Volkswagen", "modelo": "Nivus", "tipo": "SUV", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bNIVUS\\b"}, {"marca": "Volkswagen", "modelo": "T-Cross", "tipo": "SUV", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bT-?\\s?CROSS\\b"}, {"marca": "Volkswagen", "modelo": "Tera", "tipo": "SUV", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 0, "chave": "\\bTERA\\b"}, {"marca": "Renault", "modelo": "Logan", "tipo": "Sedã", "ux": 2011, "uc": 0, "ucObs": "saiu do Comfort em 06/07/2026", "p99": 0, "chave": "\\bLOGAN\\b"}, {"marca": "Renault", "modelo": "Sandero / Stepway", "tipo": "Hatch", "ux": 2011, "uc": 0, "p99": 0, "chave": "\\b(SANDERO|STEPWAY)\\b"}, {"marca": "Renault", "modelo": "Kwid", "tipo": "Hatch", "ux": 2011, "uc": 0, "p99": 0, "chave": "\\bKWID\\b"}, {"marca": "Renault", "modelo": "Fluence", "tipo": "Sedã", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2019, "chave": "\\bFLUENCE\\b"}, {"marca": "Renault", "modelo": "Duster", "tipo": "SUV", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bDUSTER\\b(?!.*OROCH)"}, {"marca": "Renault", "modelo": "Captur", "tipo": "SUV", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bCAPTUR\\b"}, {"marca": "Renault", "modelo": "Kardian", "tipo": "SUV", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bKARDIAN\\b"}, {"marca": "Hyundai", "modelo": "HB20S", "tipo": "Sedã", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 0, "chave": "\\bHB20\\s?S\\b"}, {"marca": "Hyundai", "modelo": "HB20X", "tipo": "Hatch", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 0, "chave": "\\bHB20\\s?X\\b"}, {"marca": "Hyundai", "modelo": "HB20", "tipo": "Hatch", "ux": 2011, "uc": 0, "p99": 0, "chave": "\\bHB20\\b"}, {"marca": "Hyundai", "modelo": "Creta", "tipo": "SUV", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bCRETA\\b"}, {"marca": "Hyundai", "modelo": "Elantra", "tipo": "Sedã", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2018, "chave": "\\bELANTRA\\b"}, {"marca": "Toyota", "modelo": "Etios Sedan", "tipo": "Sedã", "ux": 2011, "uc": 2019, "uc27": 2019, "p99": 0, "chave": "\\bETIOS\\b.*\\b(SEDAN|SED|SD)\\b"}, {"marca": "Toyota", "modelo": "Etios", "tipo": "Hatch", "ux": 2011, "uc": 0, "p99": 0, "chave": "\\bETIOS\\b"}, {"marca": "Toyota", "modelo": "Yaris Cross", "tipo": "SUV", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bYARIS\\s*CROSS\\b"}, {"marca": "Toyota", "modelo": "Yaris Sedan", "tipo": "Sedã", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 0, "chave": "\\bYARIS\\b.*\\b(SEDAN|SED|SD)\\b"}, {"marca": "Toyota", "modelo": "Yaris", "tipo": "Hatch", "ux": 2011, "uc": 2016, "sai27": true, "p99": 0, "chave": "\\bYARIS\\b"}, {"marca": "Toyota", "modelo": "Corolla Cross", "tipo": "SUV", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bCOROLLA\\s*CROSS\\b"}, {"marca": "Toyota", "modelo": "Corolla", "tipo": "Sedã", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bCOROLLA\\b"}, {"marca": "Nissan", "modelo": "V-Drive", "tipo": "Sedã", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2018, "chave": "\\bV-?\\s?DRIVE\\b"}, {"marca": "Nissan", "modelo": "Versa", "tipo": "Sedã", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2018, "p99obs": "algumas versões 2017", "chave": "\\bVERSA\\b"}, {"marca": "Nissan", "modelo": "Sentra", "tipo": "Sedã", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bSENTRA\\b"}, {"marca": "Nissan", "modelo": "Kicks", "tipo": "SUV", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bKICKS\\b"}, {"marca": "Nissan", "modelo": "March", "tipo": "Hatch", "ux": 2011, "uc": 0, "p99": 0, "chave": "\\bMARCH\\b"}, {"marca": "Honda", "modelo": "City Hatchback", "tipo": "Hatch", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 0, "chave": "\\bCITY\\b.*\\bHATCH"}, {"marca": "Honda", "modelo": "City", "tipo": "Sedã", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bCITY\\b"}, {"marca": "Honda", "modelo": "Civic", "tipo": "Sedã", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bCIVIC\\b"}, {"marca": "Honda", "modelo": "HR-V", "tipo": "SUV", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bHR-?\\s?V\\b"}, {"marca": "Honda", "modelo": "WR-V", "tipo": "SUV", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 0, "chave": "\\bWR-?\\s?V\\b"}, {"marca": "Honda", "modelo": "Fit", "tipo": "Hatch", "ux": 2011, "uc": 0, "p99": 0, "chave": "\\bFIT\\b"}, {"marca": "Ford", "modelo": "Ka Sedan", "tipo": "Sedã", "ux": 2011, "uc": 0, "p99": 0, "chave": "\\bKA\\b.*\\b(SEDAN|SED|SD)\\b"}, {"marca": "Ford", "modelo": "Ka", "tipo": "Hatch", "ux": 2011, "uc": 0, "p99": 0, "chave": "\\bKA\\b"}, {"marca": "Ford", "modelo": "Fiesta", "tipo": "Hatch", "ux": 2011, "uc": 0, "p99": 0, "chave": "\\bFIESTA\\b"}, {"marca": "Ford", "modelo": "EcoSport", "tipo": "SUV", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 0, "chave": "\\bECO\\s?SPORT\\b"}, {"marca": "Ford", "modelo": "Fusion", "tipo": "Sedã", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bFUSION\\b"}, {"marca": "Peugeot", "modelo": "208", "tipo": "Hatch", "ux": 2011, "uc": 2016, "sai27": true, "p99": 0, "chave": "\\b208\\b"}, {"marca": "Peugeot", "modelo": "2008", "tipo": "SUV", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 0, "chave": "\\b2008\\b"}, {"marca": "Peugeot", "modelo": "408", "tipo": "Sedã", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2019, "chave": "\\b408\\b"}, {"marca": "Citroën", "modelo": "C4 Lounge", "tipo": "Sedã", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2018, "chave": "\\bC4\\s*(LOUNGE|L)\\b"}, {"marca": "Citroën", "modelo": "C4 Cactus", "tipo": "SUV", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2019, "chave": "\\bC4\\s*CACTUS\\b"}, {"marca": "Citroën", "modelo": "Basalt", "tipo": "SUV", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bBASALT\\b"}, {"marca": "Citroën", "modelo": "C3 Aircross", "tipo": "SUV", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bC3\\s*AIRCROSS\\b"}, {"marca": "Citroën", "modelo": "C3", "tipo": "Hatch", "ux": 2011, "uc": 0, "p99": 0, "chave": "\\bC3\\b"}, {"marca": "Kia", "modelo": "Rio", "tipo": "Hatch", "ux": 2011, "uc": 2016, "sai27": true, "p99": 2019, "chave": "\\bKIA\\b.*\\bRIO\\b"}, {"marca": "Kia", "modelo": "Cerato", "tipo": "Sedã", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bCERATO\\b"}, {"marca": "Caoa Chery", "modelo": "Arrizo 5", "tipo": "Sedã", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2019, "chave": "\\bARRIZO\\s?5"}, {"marca": "Caoa Chery", "modelo": "Arrizo 6", "tipo": "Sedã", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bARRIZO\\s?6"}, {"marca": "Caoa Chery", "modelo": "Tiggo 5X", "tipo": "SUV", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bTIGGO\\s?5"}, {"marca": "Jeep", "modelo": "Renegade", "tipo": "SUV", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bRENEGADE\\b"}, {"marca": "Jeep", "modelo": "Compass", "tipo": "SUV", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bCOMPASS\\b"}, {"marca": "BYD", "modelo": "Dolphin Mini", "tipo": "Hatch", "ux": 2011, "uc": 0, "p99": 0, "chave": "\\bDOLPHIN\\s*MINI\\b"}, {"marca": "BYD", "modelo": "Dolphin", "tipo": "Hatch", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bDOLPHIN\\b"}, {"marca": "BYD", "modelo": "King", "tipo": "Sedã", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bKING\\b"}, {"marca": "BYD", "modelo": "Yuan Plus / Yuan Pro", "tipo": "SUV", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bYUAN\\b"}, {"marca": "BYD", "modelo": "Song Plus / Song Pro", "tipo": "SUV", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bSONG\\b"}, {"marca": "GWM", "modelo": "Ora 03", "tipo": "Hatch", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bORA\\b"}, {"marca": "GWM", "modelo": "Haval H6", "tipo": "SUV", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2017, "chave": "\\bH6\\b"}, {"marca": "Geely", "modelo": "EX2", "tipo": "Hatch", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2019, "chave": "\\bEX2\\b"}, {"marca": "Geely", "modelo": "EX5", "tipo": "SUV", "ux": 2011, "uc": 2016, "uc27": 2017, "p99": 2019, "chave": "\\bEX5\\b"}]};
+/* ===== v238 — CONSULTAR VEÍCULOS (Uber/99 no Rio) + CARRO NOVO COMPLETO + FIPE ESPERTA =====
+   Pedidos do Hudson (19/10/2026):
+   1) "Consultar veículos" no Mais: quais modelos entram no UberX / Uber Comfort / 99Plus no Rio,
+      com o ano mínimo de fabricação, o que muda em 11/01/2027 e como fica cada carro da frota.
+      A lista vem do arquivo veiculos.json do próprio site (atualizado a partir das listas oficiais);
+      sem internet usa a última cópia guardada.
+   2) Carro novo: já cria pronto — FIPE (marca, modelo/versão e ano escolhidos sozinhos a partir do
+      CRLV: "I/FIAT CRONOS DRIVE 1.3" -> Fiat / CRONOS DRIVE 1.3 8V Flex / 2020), motorista, WhatsApp,
+      situação, óleo e correia.
+   3) FIPE do carro já cadastrado escolhe a versão certa sozinho; listas guardadas no aparelho
+      (a FIPE grátis limita as consultas por dia) e valor do dia com plano B (BrasilAPI). */
+
+/* ---------- dados das plataformas ---------- */
+var VEIC=(typeof VEIC_EMB!=='undefined')?VEIC_EMB:null;
+(function(){try{var s=localStorage.getItem('gestao_veic');if(s){var j=JSON.parse(s);if(j&&j.modelos&&(!VEIC||String(j.conferidoEm)>String(VEIC.conferidoEm)))VEIC=j}}catch(e){}})();
+function veicCarregar(cb){
+ try{fetch('veiculos.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(j){
+  if(j&&j.modelos&&j.modelos.length&&(!VEIC||String(j.conferidoEm)>=String(VEIC.conferidoEm))){VEIC=j;try{localStorage.setItem('gestao_veic',JSON.stringify(j))}catch(e){}}
+  if(cb)cb();
+ }).catch(function(){if(cb)cb()})}catch(e){if(cb)cb()}
+}
+function _veicTexto(c){return semAcento(String((c.modeloCRLV||'')+' '+(c.nome||''))).toUpperCase().replace(/^I\//,'').replace(/\//g,' ')}
+function veicModeloDoCarro(c){
+ if(!VEIC||!c)return null;var t=_veicTexto(c);
+ for(var i=0;i<VEIC.modelos.length;i++){var m=VEIC.modelos[i];try{if(new RegExp(m.chave).test(t))return m}catch(e){}}
+ return null;
+}
+function _veicAnoFab(c){var m=String(c.ano||'').match(/(\d{4})/);return m?+m[1]:0}
+/* situação de um carro: {comfort:'sim'|'nao'|'ate27'|'?', p99:'sim'|'nao'|'?'} */
+function veicSituacao(c){
+ var m=veicModeloDoCarro(c),a=_veicAnoFab(c);
+ if(!m||!a)return{m:m,a:a,comfort:'?',p99:'?'};
+ var cf='nao';
+ if(m.uc&&a>=m.uc){cf=(m.sai27||(m.uc27&&a<m.uc27))?'ate27':'sim'}
+ var p=(m.p99&&a>=m.p99)?'sim':'nao';
+ return{m:m,a:a,comfort:cf,p99:p};
+}
+function _vcData(iso){var m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})/);return m?m[3]+'/'+m[2]+'/'+m[1]:String(iso||'')}
+
+var VC_F={q:'',cat:'todos',tipo:'todos'};
+(function(){if(document.getElementById('vcCss'))return;var st=document.createElement('style');st.id='vcCss';st.textContent=
+ '.vcHero{display:flex;gap:12px;align-items:flex-start;margin:4px 0 12px}.vcHero .v102sheetIcon{flex:0 0 auto}'+
+ '.vcAviso{background:#FFF7E8;border:1px solid #F1D5A6;border-radius:12px;padding:10px 12px;margin:0 0 10px;font-size:13.5px;line-height:1.4}'+
+ '.vcAviso li{margin:2px 0 2px 16px}'+
+ '.vcSec{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#6B7280;margin:18px 2px 8px}'+
+ '.vcResumo{font-size:14px;margin:0 2px 8px}'+
+ '.vcCar{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:6px 10px;padding:10px 12px;border-bottom:1px solid #EEF0F3;background:#fff}'+
+ '.vcCar:first-child{border-radius:14px 14px 0 0}.vcCar:last-child{border-bottom:0;border-radius:0 0 14px 14px}.vcCar:only-child{border-radius:14px}'+
+ '.vcCarTx{flex:1;min-width:0}.vcCarTx b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.vcCarTx small{color:#6B7280;font-size:12.5px}'+
+ '.vcTags{grid-column:2;display:flex;flex-wrap:wrap;gap:4px}'+'.vcMais{margin-top:8px}.vcMais summary{cursor:pointer;font-size:13.5px;color:#374151;padding:8px 2px;list-style:none}.vcMais summary::-webkit-details-marker{display:none}'+
+ '.vcTag{font-size:11.5px;font-weight:600;padding:3px 7px;border-radius:999px;white-space:nowrap;border:1px solid transparent}'+
+ '.vcSim{background:#E7F5EC;color:#1E6B43;border-color:#BFE3CC}.vcNao{background:#F3F4F6;color:#6B7280;border-color:#E5E7EB}.vcAte{background:#FFF1DB;color:#9A5B00;border-color:#F3D19B}'+
+ '.vcBox{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 1px 0 rgba(0,0,0,.03)}'+
+ '.vcBusca{width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #D9DCE1;border-radius:12px;font-size:16px;background:#fff;margin:0 0 8px}'+
+ '.vcChips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}.vcChips button{border:1px solid #D9DCE1;background:#fff;border-radius:999px;padding:6px 11px;font-size:13px;color:#374151}'+
+ '.vcChips button.on{background:#1F2937;border-color:#1F2937;color:#fff}'+
+ '.vcMarca{font-size:12.5px;font-weight:700;color:#374151;margin:12px 2px 6px}'+
+ '.vcMod{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;padding:10px 12px;border-bottom:1px solid #EEF0F3;background:#fff}'+
+ '.vcMod:last-child{border-bottom:0}.vcMod b{font-size:14.5px}.vcMod small{color:#6B7280;font-size:12px}'+
+ '.vcAnos{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end;align-items:center}'+
+ '.vcObs{grid-column:1/-1;font-size:12px;color:#9A5B00}'+
+ '.vcFonte{font-size:12px;color:#6B7280;margin:16px 2px 4px;line-height:1.5}.vcFonte a{color:#2563EB;word-break:break-word}'+
+ '.fcFipeVal{font-size:14px;margin:6px 0 2px}.fcFipeVal b{font-size:16px}';
+ document.head.appendChild(st)})();
+
+function _vcTagC(s,label){
+ if(s==='sim')return '<span class="vcTag vcSim">'+label+' ✓</span>';
+ if(s==='ate27')return '<span class="vcTag vcAte">'+label+' até 10/01/27</span>';
+ if(s==='?')return '<span class="vcTag vcNao">'+label+' ?</span>';
+ return '<span class="vcTag vcNao">'+label+' ✗</span>';
+}
+function abrirConsultaVeic(){
+ if(!VEIC){toast('Carregando a lista…');veicCarregar(function(){if(VEIC)abrirConsultaVeic();else toast('⚠️ Sem a lista agora — abra com internet')});return}
+ var h='<div class="vcHero"><div class="v102sheetIcon">🔎</div><div><div class="v102eyebrow">UBER E 99 · '+esc(VEIC.cidade||'Rio de Janeiro').toUpperCase()+'</div><h3>Consultar veículos</h3><div class="sub">Listas oficiais conferidas em <b>'+_vcData(VEIC.conferidoEm)+'</b>. O ano é o de <b>fabricação</b> (o primeiro do CRLV).</div></div></div>';
+ if(VEIC.avisos&&VEIC.avisos.length)h+='<div class="vcAviso"><ul style="margin:0;padding:0">'+VEIC.avisos.map(function(a){return '<li>'+esc(a)+'</li>'}).join('')+'</ul></div>';
+ /* frota */
+ var lst=[];try{lst=carrosOrdenados().filter(function(c){return c.status!=='pessoal'})}catch(e){lst=Object.keys(S.carros||{}).map(function(k){return S.carros[k]})}
+ var nC=0,nA=0,nP=0;
+ var fr=lst.map(function(c){var s=veicSituacao(c);if(s.comfort==='sim')nC++;if(s.comfort==='ate27')nA++;if(s.p99==='sim')nP++;
+  return {ok:s.comfort==='sim'||s.comfort==='ate27'||s.p99==='sim',h:'<div class="vcCar">'+(typeof plateHtml==='function'?plateHtml(c.placa):'')+'<div class="vcCarTx"><b>'+esc(c.nome||tituloCarro(c))+'</b><small>'+(s.m?esc(s.m.modelo)+' · fabricado em '+(s.a||'?'):'modelo não reconhecido')+'</small></div><div class="vcTags">'+_vcTagC(s.comfort,'Uber Comfort')+_vcTagC(s.p99,'99Plus')+'</div></div>'}});
+ var frOk=fr.filter(function(x){return x.ok}),frNao=fr.filter(function(x){return !x.ok});
+ h+='<div class="vcSec">Sua frota</div><div class="vcResumo"><b>'+nC+'</b> entram no Uber Comfort'+(nA?' · <b>'+nA+'</b> só até 10/01/2027':'')+' · <b>'+nP+'</b> no 99Plus · de '+lst.length+' carros</div>'+
+  (frOk.length?'<div class="vcBox">'+frOk.map(function(x){return x.h}).join('')+'</div>':'')+
+  (frNao.length?'<details class="vcMais"'+(frOk.length?'':' open')+'><summary>▸ Ver os outros '+frNao.length+' carros (só UberX / 99Pop)</summary><div class="vcBox">'+frNao.map(function(x){return x.h}).join('')+'</div></details>':'');
+ /* lista de modelos */
+ h+='<div class="vcSec">Modelos</div><input class="vcBusca" id="vcQ" placeholder="Buscar modelo (ex.: Cronos, Onix Plus)" value="'+esc(VC_F.q)+'" oninput="VC_F.q=this.value;vcListar()">'+
+  '<div class="vcChips" id="vcCat">'+[['todos','Todos'],['comfort','Uber Comfort'],['p99','99Plus']].map(function(x){return '<button class="'+(VC_F.cat===x[0]?'on':'')+'" onclick="VC_F.cat=\''+x[0]+'\';vcListar()">'+x[1]+'</button>'}).join('')+'</div>'+
+  '<div class="vcChips" id="vcTipo">'+[['todos','Todos os tipos'],['Sedã','Sedã'],['Hatch','Hatch'],['SUV','SUV']].map(function(x){return '<button class="'+(VC_F.tipo===x[0]?'on':'')+'" onclick="VC_F.tipo=\''+x[0]+'\';vcListar()">'+x[1]+'</button>'}).join('')+'</div>'+
+  '<div id="vcLista"></div>';
+ h+='<div class="vcFonte">Fontes: '+(VEIC.fontes||[]).map(function(f){return '<br>• <a href="'+esc(f.url)+'" target="_blank" rel="noopener">'+esc(f.nome)+'</a>'}).join('')+'</div>';
+ h+='<div class="v102actionbar"><button class="btn sec" onclick="closeSheet()">Fechar</button></div>';
+ openSheet(h);vcListar();
+ veicCarregar(function(){/* se chegou lista mais nova, redesenha */var d=document.getElementById('vcLista');if(d&&VEIC&&d.getAttribute('data-v')!==VEIC.conferidoEm)vcListar()});
+}
+function vcListar(){
+ var box=document.getElementById('vcLista');if(!box||!VEIC)return;box.setAttribute('data-v',VEIC.conferidoEm||'');
+ ['vcCat','vcTipo'].forEach(function(id){var el=document.getElementById(id);if(!el)return;[].forEach.call(el.children,function(b){var on=(id==='vcCat'?VC_F.cat:VC_F.tipo);var key=(b.getAttribute('onclick')||'').match(/'([^']+)'/);b.className=key&&key[1]===on?'on':''})});
+ var q=semAcento(VC_F.q||'').toUpperCase().trim();
+ var ms=VEIC.modelos.filter(function(m){
+  if(VC_F.cat==='comfort'&&!m.uc)return false;if(VC_F.cat==='p99'&&!m.p99)return false;
+  if(VC_F.tipo!=='todos'&&!(m.tipo===VC_F.tipo||(VC_F.tipo==='SUV'&&m.tipo==='Minivan')))return false;
+  if(q&&semAcento(m.marca+' '+m.modelo).toUpperCase().indexOf(q)<0)return false;return true});
+ if(!ms.length){box.innerHTML='<div class="vcBox"><div class="vcMod">Nenhum modelo com esse filtro.</div></div>';return}
+ var por={};ms.forEach(function(m){(por[m.marca]=por[m.marca]||[]).push(m)});
+ box.innerHTML=Object.keys(por).sort(function(a,b){return a.localeCompare(b)}).map(function(mk){
+  return '<div class="vcMarca">'+esc(mk)+'</div><div class="vcBox">'+por[mk].map(function(m){
+   var uc=m.uc?'<span class="vcTag '+(m.sai27?'vcAte':'vcSim')+'">Comfort '+m.uc+'+</span>':'<span class="vcTag vcNao">Comfort ✗</span>';
+   var p=m.p99?'<span class="vcTag vcSim">99Plus '+m.p99+'+</span>':'<span class="vcTag vcNao">99Plus ✗</span>';
+   var obs=[];if(m.sai27)obs.push('Sai do Uber Comfort em 11/01/2027, em qualquer ano');else if(m.uc&&m.uc27&&m.uc27>m.uc)obs.push('No Comfort a partir de 11/01/2027: '+m.uc27+' ou mais novo');
+   if(m.ucObs)obs.push(m.ucObs);if(m.p99obs&&m.p99)obs.push('99Plus: '+m.p99obs);
+   return '<div class="vcMod"><div><b>'+esc(m.modelo)+'</b><br><small>'+esc(m.tipo)+' · UberX '+(m.ux||'?')+'+</small></div><div class="vcAnos">'+uc+p+'</div>'+(obs.length?'<div class="vcObs">'+esc(obs.join(' · '))+'</div>':'')+'</div>'}).join('')+'</div>'}).join('');
+}
+setTimeout(function(){veicCarregar()},4000);
+
+/* ---------- FIPE: listas guardadas no aparelho + escolha automática da versão ---------- */
+var _FIPE_TTL=20*864e5;
+function _fipeCacheGet(k){try{var s=localStorage.getItem('gestao_fipec_'+k);if(!s)return null;var j=JSON.parse(s);if(Date.now()-j.t>_FIPE_TTL)return null;return j.d}catch(e){return null}}
+function _fipeCacheSet(k,d){try{localStorage.setItem('gestao_fipec_'+k,JSON.stringify({t:Date.now(),d:d}))}catch(e){}}
+function fipeGet(path,cacheKey){
+ var c=cacheKey?_fipeCacheGet(cacheKey):null;if(c)return Promise.resolve(c);
+ return fetch(FIPE+path).then(function(r){return r.json()}).then(function(d){
+  if(d&&d.error){var e=new Error(/limite/i.test(d.error)?'limite':'erro');throw e}
+  if(cacheKey)_fipeCacheSet(cacheKey,d);return d});
+}
+function _fipeErroTxt(e){return e&&e.message==='limite'?'⚠️ A FIPE grátis bloqueou por hoje (limite de consultas desta internet). Tente mais tarde ou pelos dados móveis.':'⚠️ FIPE fora do ar agora — tente depois'}
+var _FIPE_MARCAS=[[/^(GM|CHEVROLET|CHEV)$/,/CHEVROLET/],[/^(VW|VOLKSWAGEN|VOLKS)$/,/VOLKSWAGEN/],[/^FIAT$/,/^FIAT$/],[/^RENAULT$/,/^RENAULT$/],[/^FORD$/,/^FORD$/],[/^HYUNDAI$/,/^HYUNDAI$/],
+ [/^TOYOTA$/,/^TOYOTA$/],[/^NISSAN$/,/^NISSAN$/],[/^HONDA$/,/^HONDA$/],[/^PEUGEOT$/,/^PEUGEOT$/],[/^(CITROEN|CITROËN)$/,/^CITRO/],[/^JEEP$/,/^JEEP$/],[/^KIA$/,/^KIA/],
+ [/^(CAOA|CHERY)$/,/^CAOA CHERY$/],[/^(MMC|MITSUBISHI)$/,/^MITSUBISHI$/],[/^BYD$/,/^BYD$/],[/^GWM$/,/^GWM$/],[/^JAC$/,/^JAC$/],[/^GEELY$/,/^GEELY$/]];
+function fipeMarcaDoCrlv(modelo,marcas){
+ var w=semAcento(String(modelo||'')).toUpperCase().replace(/^I\//,'').split(/[\/\s]+/).filter(Boolean)[0]||'';if(!w)return null;
+ for(var i=0;i<_FIPE_MARCAS.length;i++){if(_FIPE_MARCAS[i][0].test(w)){var re=_FIPE_MARCAS[i][1];
+  for(var j=0;j<marcas.length;j++){if(re.test(semAcento(marcas[j].nome).toUpperCase()))return marcas[j]}}}
+ for(var k=0;k<marcas.length;k++){if(semAcento(marcas[k].nome).toUpperCase()===w)return marcas[k]}
+ return null;
+}
+var _FIPE_ABREV={EXPR:'EXPRESSION',EXP:'EXPRESSION',DYNA:'DYNAMIQUE',DYN:'DYNAMIQUE',AUTH:'AUTHENTIQUE',PRIV:'PRIVILEGE',ATTRACTIV:'ATTRACTIVE',ATTRAC:'ATTRACTIVE',ESSEN:'ESSENCE',
+ SD:'SEDAN',SED:'SEDAN',TREND:'TRENDLINE',COMF:'COMFORTLINE',HIGH:'HIGHLINE',ADV:'ADVANCE',PREM:'PREMIER',EXCL:'EXCLUSIVE',TIT:'TITANIUM'};
+var _FIPE_GENERICO=/^(FLEX|T\.?FLEX|F\.?FLEX|TOTAL|FLEXPOWER|F\.POWER|ECONOFLEX|ECONO\.?FLEX|ECONO|ECO\.FLEX|HI-FLEX|HI-POWER|FLEXSTART|FLEXSTAR|FLEX FUEL|FUEL|MEC\.?|\dP\.?|MPI|MI|MPFI|FIRE|EVO|E-FLEX|POWER|4\/5P|\(.*\)|-|\/)$/;
+/* lê do carro o que a FIPE usa para separar as versões */
+function fipeInfoCarro(d){
+ var mod=semAcento(String(d.modeloCRLV||'')).toUpperCase().replace(/^I\//,'').replace(/\//g,' ').split(/\s+/).filter(Boolean);
+ if(mod.length&&/^(GM|CHEVROLET|CHEV|VW|VOLKSWAGEN|FIAT|RENAULT|FORD|HYUNDAI|TOYOTA|NISSAN|HONDA|PEUGEOT|CITROEN|JEEP|KIA|CAOA|CHERY|MMC|MITSUBISHI|BYD|GWM|JAC|GEELY|IMP)$/.test(mod[0]))mod.shift();
+ if(mod.length&&mod[0]==='CHERY')mod.shift();
+ var nomeW=semAcento(String(d.nome||'')).toUpperCase().replace(/\b(19|20)\d{2}\b/g,'').split(/\s+/).filter(Boolean);
+ var base='',resto=[],k=mod.length?nomeW.indexOf(mod[0]):-1;
+ if(!mod.length){base=nomeW[0]||''}
+ else if(k>0){base=nomeW.slice(0,k+1).join(' ');resto=mod.slice(1)}          /* CRLV "SIENA" + nome "Grand Siena" */
+ else if(/^(GRAND|NOVO|NOVA|NEW)$/.test(mod[0])&&mod[1]){base=mod[0]+' '+mod[1];resto=mod.slice(2)}
+ else{base=mod[0];resto=mod.slice(1)}
+ var disp='',valv='',aut=false,sedan=false,tok=[],sce=false;
+ var mm=String(d.motor||'').match(/(\d)[.,](\d)/);if(mm)disp=mm[1]+'.'+mm[2];
+ var mv=String(d.motor||'').match(/(\d{1,2})\s*V\b/i);if(mv)valv=mv[1]+'V';
+ resto.forEach(function(t){
+  var x;
+  if((x=t.match(/^(\d)[.,](\d)L?(MT|AT)?$/))){if(!disp)disp=x[1]+'.'+x[2];if(x[3]==='AT')aut=true;return}
+  if((x=t.match(/^(1\d)(M|A|AT|MT)?$/))){if(!disp)disp=x[1].charAt(0)+'.'+x[1].charAt(1);if(x[2]==='A'||x[2]==='AT')aut=true;return}
+  if((x=t.match(/^(\d)[.,]?(\d)(MT|AT)$/))){if(!disp)disp=x[1]+'.'+x[2];if(x[2]==='AT')aut=true;return}
+  if(/^(AT|AUT|AUTO|CVT|AUTOMATICO|DUALOGIC|GSR|AT6|AT9)$/.test(t)){aut=true;if(t==='GSR')tok.push('GSR');return}
+  if(/^(SD|SED|SEDAN)$/.test(t)){sedan=true;return}
+  if(t==='SCE'){sce=true;return}
+  if(/^(M|MT|MEC|E|B|L|MB\d|FLEX|TB)$/.test(t))return;
+  if((x=t.match(/^(\d{2})(SL|SV|S|SR)$/))){if(!disp)disp=x[1].charAt(0)+'.'+x[1].charAt(1);tok.push(x[2]);return}
+  tok.push(_FIPE_ABREV[t]||t);
+ });
+ if(!disp){var cc=+(String(d.potencia||'').match(/\/\s*(\d{3,4})/)||[])[1]||0;if(cc>=900)disp=(Math.round(cc/100)/10).toFixed(1)}
+ if(/^ONIX$/.test(base)&&tok.indexOf('PLUS')>=0)sedan=true;
+ if(sce&&disp==='1.6')valv='16V';if(sce&&disp==='1.0')valv='12V'; /* Renault SCe */
+ if(!valv&&disp){try{var mc=motorComValvulas({motor:disp,modeloCRLV:d.modeloCRLV,potencia:d.potencia});var vv=String(mc||'').match(/(\d{1,2})v\b/i);if(vv)valv=vv[1]+'V'}catch(e){}}
+ var anoMod=+(String(d.ano||'').match(/(\d{4})\D*$/)||[])[1]||0;
+ var diesel=/DIESEL/i.test(String(d.combustivel||''));
+ return{base:base,tok:tok,disp:disp,valv:valv,aut:aut,sedan:sedan,anoMod:anoMod,diesel:diesel};
+}
+function fipeScore(nome,info){
+ var N=semAcento(String(nome||'')).toUpperCase().replace(/\s+/g,' ').trim();
+ if(!info.base)return -99;
+ var b=info.base;
+ if(!(N.indexOf(b+' ')===0||N===b||N.indexOf(b+'.')===0))return -99;
+ var resto=N.slice(b.length).trim(),s=0;
+ var dN=resto.match(/(\d)\.(\d)/);
+ if(info.disp){if(dN){s+=(dN[1]+'.'+dN[2]===info.disp)?6:-8}else s-=1}
+ var vN=resto.match(/\b(\d{1,2})V\b/);
+ if(info.valv&&vN){s+=(vN[1]+'V'===info.valv)?3:-4}
+ var pal=resto.replace(/(\d)\.(\d)/g,' ').split(/[\s\/]+/).filter(Boolean),usadas={};
+ info.tok.forEach(function(t){
+  for(var i=0;i<pal.length;i++){var p=pal[i].replace(/\.$/,'');if(!usadas[i]&&(p===t||(t.length>=3&&p.indexOf(t)===0)||(p.length>=3&&t.indexOf(p)===0))){usadas[i]=1;s+=3;return}}
+  s-=1;
+ });
+ var aut=/\bAUT\b|AUT\.|\bCVT\b|DUALOGIC|EASYR|EASY R|I-?MOTION|\bGSR\b/.test(resto);s+=aut?(info.aut?3:-4):(info.aut?-2:0);
+ var sed=/\bSEDAN\b|\bSED\.|\bSD\./.test(resto);s+=sed?(info.sedan?3:-4):(info.sedan?-4:0);
+ pal.forEach(function(p,i){if(usadas[i])return;var q=p.replace(/\.$/,'');if(_FIPE_GENERICO.test(q)||/^\d{1,2}V$/.test(q)||/^\d+CV$/.test(q)||/^(AUT|SEDAN|SED|SD|HATCH)$/.test(q))return;s-=1});
+ return s;
+}
+function fipeOrdenar(modelos,info){
+ return modelos.map(function(m){return{m:m,s:fipeScore(m.nome,info)}}).sort(function(a,b){return b.s-a.s||a.m.nome.length-b.m.nome.length});
+}
+function fipeEscolherAno(anos,info){
+ if(!info.anoMod)return null;
+ var cand=anos.filter(function(a){return String(a.nome||'').indexOf(String(info.anoMod))===0});
+ if(!cand.length)return null;
+ var pref=cand.filter(function(a){return info.diesel?/diesel/i.test(a.nome):/gasolina|flex/i.test(a.nome)});
+ return (pref[0]||cand[0]);
+}
+/* acha marca/modelo/ano de uma vez: devolve {marca, modelo, ano, ranking, certeza} */
+function fipeAcharAuto(dados){
+ var info=fipeInfoCarro(dados);
+ return fipeGet('/marcas','marcas').then(function(ms){
+  var mk=fipeMarcaDoCrlv(dados.modeloCRLV,ms);if(!mk)return{info:info,marcas:ms};
+  return fipeGet('/marcas/'+mk.codigo+'/modelos','mod_'+mk.codigo).then(function(d){
+   var rk=fipeOrdenar(d.modelos||[],info).filter(function(x){return x.s>-99});
+   if(!rk.length)return{info:info,marcas:ms,marca:mk,modelos:d.modelos,ranking:[]};
+   var i=0;
+   function tenta(){
+    if(i>=Math.min(4,rk.length))return{info:info,marcas:ms,marca:mk,modelos:d.modelos,ranking:rk,modelo:rk[0].m,ano:null};
+    var c=rk[i++];
+    return fipeGet('/marcas/'+mk.codigo+'/modelos/'+c.m.codigo+'/anos','anos_'+mk.codigo+'_'+c.m.codigo).then(function(anos){
+     var a=fipeEscolherAno(anos,info);
+     if(a)return{info:info,marcas:ms,marca:mk,modelos:d.modelos,ranking:rk,modelo:c.m,anos:anos,ano:a,certeza:(rk.length<2||rk[0].s-rk[1].s>=2)&&i===1};
+     return tenta();
+    });
+   }
+   return tenta();
+  });
+ });
+}
+
+/* ---------- FIPE no cadastro de carro já existente (versão escolhida sozinha) ---------- */
+window.fipeFluxo=fipeFluxo=function(pk){
+ _fipeCarro=pk;var c=S.carros[pk];
+ openSheet('<h3>💰 Tabela FIPE</h3><p class="sub">'+esc(c.nome)+' — o app já escolhe a versão pelo CRLV; confira e toque em Vincular. Depois o valor atualiza sozinho todo dia.</p>'+
+ '<label>Marca</label><select id="fpM" onchange="fipeModelos()"><option value="">carregando marcas…</option></select>'+
+ '<label>Modelo (versão)</label><select id="fpMo" onchange="fipeAnos()" disabled><option value="">—</option></select>'+
+ '<label>Ano / combustível</label><select id="fpA" disabled><option value="">—</option></select>'+
+ '<div class="v102info" id="fpInfo" style="display:none"></div>'+
+ '<button class="btn ok" onclick="fipeVincular(\''+pk+'\')">✅ Vincular e buscar valor</button>'+
+ (c.fipeM?'<button class="btn red" onclick="fipeDesvincular(\''+pk+'\')">Desvincular</button>':'')+
+ '<button class="btn sec" onclick="closeSheet(2)">Voltar</button>',2);
+ fipeGet('/marcas','marcas').then(function(ms){
+  var sel=document.getElementById('fpM');if(!sel)return;
+  sel.innerHTML='<option value="">— escolha —</option>'+ms.map(function(m){return '<option value="'+m.codigo+'">'+esc(m.nome)+'</option>'}).join('');
+  if(c.fipeM){sel.value=c.fipeM;fipeModelos();return}
+  var mk=fipeMarcaDoCrlv(c.modeloCRLV||c.nome,ms);if(mk){sel.value=mk.codigo;fipeModelos()}
+ }).catch(function(e){toast(_fipeErroTxt(e))});
+};
+window.fipeModelos=fipeModelos=function(){
+ var m=document.getElementById('fpM').value,sel=document.getElementById('fpMo');
+ if(!m){sel.disabled=true;return}
+ sel.disabled=true;sel.innerHTML='<option value="">carregando…</option>';
+ var atual=_fipeCarro?S.carros[_fipeCarro]:null,info=atual?fipeInfoCarro(atual):null;
+ fipeGet('/marcas/'+m+'/modelos','mod_'+m).then(function(d){
+  var rk=info?fipeOrdenar(d.modelos||[],info):(d.modelos||[]).map(function(x){return{m:x,s:0}});
+  var bons=rk.filter(function(x){return x.s>-99}),resto=rk.filter(function(x){return x.s<=-99}).sort(function(a,b){return a.m.nome.localeCompare(b.m.nome)});
+  sel.innerHTML='<option value="">— escolha —</option>'+(bons.length?'<optgroup label="Mais parecidos com o CRLV">'+bons.map(function(x){return '<option value="'+x.m.codigo+'">'+esc(x.m.nome)+'</option>'}).join('')+'</optgroup><optgroup label="Todos">':'')+
+   resto.map(function(x){return '<option value="'+x.m.codigo+'">'+esc(x.m.nome)+'</option>'}).join('')+(bons.length?'</optgroup>':'');
+  sel.disabled=false;
+  if(atual&&atual.fipeMo&&String(atual.fipeM)===String(m)){sel.value=atual.fipeMo;fipeAnos();return}
+  if(bons.length){sel.value=bons[0].m.codigo;fipeAnos(true)}
+ }).catch(function(e){sel.innerHTML='<option value="">erro — reabra</option>';toast(_fipeErroTxt(e))});
+};
+window.fipeAnos=fipeAnos=function(auto){
+ var m=document.getElementById('fpM').value,mo=document.getElementById('fpMo').value,sel=document.getElementById('fpA');
+ if(!mo){sel.disabled=true;return}
+ sel.disabled=true;sel.innerHTML='<option value="">carregando…</option>';
+ var atual=_fipeCarro?S.carros[_fipeCarro]:null,info=atual?fipeInfoCarro(atual):null;
+ fipeGet('/marcas/'+m+'/modelos/'+mo+'/anos','anos_'+m+'_'+mo).then(function(anos){
+  sel.innerHTML='<option value="">— escolha —</option>'+anos.map(function(a){return '<option value="'+a.codigo+'">'+esc(a.nome)+'</option>'}).join('');
+  sel.disabled=false;
+  if(atual&&atual.fipeA&&String(atual.fipeMo)===String(mo)){sel.value=atual.fipeA;return}
+  var a=info?fipeEscolherAno(anos,info):null;if(a)sel.value=a.codigo;
+  var inf=document.getElementById('fpInfo');
+  if(inf&&auto===true){inf.style.display='block';inf.innerHTML=a?'🔎 Escolhido pelo CRLV ('+esc((atual&&atual.modeloCRLV)||'')+'). Confira a versão antes de vincular.':'⚠️ Essa versão não tem o ano '+(info&&info.anoMod||'')+' na FIPE — escolha outra versão na lista.'}
+ }).catch(function(e){sel.innerHTML='<option value="">erro — reabra</option>';toast(_fipeErroTxt(e))});
+};
+window.fipeVincular=fipeVincular=function(pk){
+ var m=document.getElementById('fpM').value,mo=document.getElementById('fpMo').value,a=document.getElementById('fpA').value;
+ if(!m||!mo||!a){toast('Escolha marca, modelo e ano');return}
+ toast('💰 Buscando valor na FIPE…');
+ fetch(FIPE+'/marcas/'+m+'/modelos/'+mo+'/anos/'+a).then(function(r){return r.json()}).then(function(d){
+  if(d&&d.error)throw new Error(/limite/i.test(d.error)?'limite':'erro');
+  var v=parseBRL(d.Valor||'');
+  if(!v){toast('⚠️ FIPE não retornou valor');return}
+  var c=S.carros[pk];
+  c.fipeM=m;c.fipeMo=mo;c.fipeA=a;c.valorRef=v;c.fipeMes=(d.MesReferencia||'').trim();c.fipeAtualizadoEm=Date.now();c.fipeCodigo=d.CodigoFipe||c.fipeCodigo||'';
+  try{_touchCarro(c,['fipeCodigo'])}catch(e){}
+  save();closeSheet(2);ficha(pk);
+  toast('✅ '+d.Modelo+' — R$ '+fmtBRL(v));
+ }).catch(function(e){toast(_fipeErroTxt(e))});
+};
+if(CARRO_CAMPOS_EDIT.indexOf('fipeCodigo')<0)CARRO_CAMPOS_EDIT.push('fipeCodigo');
+
+/* valor do dia: parallelum; se bloquear, BrasilAPI pelo código FIPE */
+window.atualizarFipe=atualizarFipe=function(force){
+ if(!S)return;var d=hoje();
+ if(!force&&localStorage.getItem('gestao_fipe_dia')===d)return;
+ var pend=Object.keys(S.carros).filter(function(k){var c=S.carros[k];return c.fipeM&&c.fipeMo&&c.fipeA});
+ if(!pend.length){localStorage.setItem('gestao_fipe_dia',d);return}
+ var mudou=false,i=0,falhas=0;
+ function aplica(c,v,mes,cod){if(!v)return;if(Math.round(v)!==Math.round(c.valorRef))mudou=true;c.valorRef=v;if(mes)c.fipeMes=String(mes).trim();c.fipeAtualizadoEm=Date.now();if(cod&&!c.fipeCodigo){c.fipeCodigo=cod;try{_touchCarro(c,['fipeCodigo'])}catch(e){}}}
+ function planoB(c){
+  if(!c.fipeCodigo)return Promise.resolve(false);
+  var anoA=String(c.fipeA||'').split('-'),anoMod=+anoA[0]||0,comb=+anoA[1]||1;
+  return fetch('https://brasilapi.com.br/api/fipe/preco/v1/'+encodeURIComponent(c.fipeCodigo)).then(function(r){return r.json()}).then(function(lst){
+   if(!Array.isArray(lst))return false;
+   var x=lst.filter(function(e){return +e.anoModelo===anoMod&&(comb===3?/diesel/i.test(e.combustivel):comb===2?/[aá]lcool|etanol/i.test(e.combustivel):!/diesel|[aá]lcool/i.test(e.combustivel))})[0];
+   if(!x)return false;aplica(c,parseBRL(x.valor),x.mesReferencia,'');return true}).catch(function(){return false});
+ }
+ (function next(){
+  if(i>=pend.length){
+   if(!falhas)localStorage.setItem('gestao_fipe_dia',d);
+   if(mudou){save();if(TAB===0||TAB===3||TAB===5)render();toast('💰 Valores FIPE do dia aplicados')}
+   return;
+  }
+  var c=S.carros[pend[i++]];
+  fetch(FIPE+'/marcas/'+c.fipeM+'/modelos/'+c.fipeMo+'/anos/'+c.fipeA).then(function(r){return r.json()}).then(function(dd){
+   if(dd&&dd.error)throw new Error('limite');
+   aplica(c,parseBRL(dd.Valor||''),dd.MesReferencia,dd.CodigoFipe);next();
+  }).catch(function(){planoB(c).then(function(ok){if(!ok)falhas++;next()})});
+ })();
+};
+
+/* ---------- CARRO NOVO: FIPE, motorista, WhatsApp, óleo e correia já no cadastro ---------- */
+var FC_FIPE={};
+function fcFipeHtml(){
+ return '<div class="v102panel" id="fcFipePanel"><div class="v102panelHead"><span>💰</span><div><b>Tabela FIPE</b><small>O app escolhe marca, versão e ano pelo CRLV — confira</small></div></div>'+
+  '<label>Marca</label><select id="fcFpM" onchange="fcFipeMarca()"><option value="">—</option></select>'+
+  '<label>Modelo (versão)</label><select id="fcFpMo" onchange="fcFipeModelo()" disabled><option value="">—</option></select>'+
+  '<label>Ano / combustível</label><select id="fcFpA" onchange="fcFipeValor()" disabled><option value="">—</option></select>'+
+  '<div class="fcFipeVal" id="fcFpVal"></div>'+
+  '<div class="v102info" id="fcFpInfo">Anexe o CRLV acima (ou preencha Modelo do CRLV e Ano) e toque em achar.</div>'+
+  '<button class="btn sec" type="button" onclick="fcFipeAuto(true)">🔎 Achar na FIPE pelos dados do carro</button></div>';
+}
+function fcExtrasHtml(){
+ return '<div class="v102panel" id="fcMotPanel"><div class="v102panelHead"><span>👤</span><div><b>Motorista</b><small>Deixe em branco se o carro está parado</small></div></div>'+
+  '<label>Nome do motorista</label><input id="fc_motorista" autocomplete="off" oninput="fcStatusAuto()">'+
+  '<label>WhatsApp do motorista</label><input id="fc_telWhats" inputmode="tel" placeholder="(21) 9XXXX-XXXX">'+
+  '<label>Situação</label><select id="fc_status"><option value="parado">Parado</option><option value="ativo">Alugado</option><option value="venda">Compra e venda</option><option value="pessoal">Pessoal</option></select></div>'+
+  '<div class="v102panel" id="fcOleoPanel"><div class="v102panelHead"><span>🛢</span><div><b>Óleo e correia</b><small>Próximas trocas — o app passa a avisar</small></div></div>'+
+  '<div class="grid2"><div><label>Tipo de óleo</label><input id="fc_oleoTipo" placeholder="5W30"></div><div><label>Próxima troca de óleo (km)</label><input id="fc_proxOleoKm" inputmode="numeric"></div></div>'+
+  '<div id="fcCorWrap"><label>Próxima troca da correia dentada (km)</label><input id="fc_proxCorreiaKm" inputmode="numeric"></div></div>';
+}
+function fcStatusAuto(){var s=document.getElementById('fc_status'),m=document.getElementById('fc_motorista');if(!s||!m||s.dataset.mexeu)return;s.value=m.value.trim()?'ativo':'parado'}
+function _fcSel(id,lista,val,label){var sel=document.getElementById(id);if(!sel)return;
+ sel.innerHTML='<option value="">— escolha —</option>'+lista.map(function(x){return '<option value="'+x.codigo+'">'+esc(x.nome)+'</option>'}).join('');sel.disabled=false;if(val)sel.value=val}
+function _fcDados(){function g(id){var e=document.getElementById('fc_'+id);return e?e.value.trim():''}
+ return{modeloCRLV:g('modeloCRLV'),nome:g('nome'),motor:g('motor'),potencia:g('potencia'),ano:g('ano'),combustivel:g('combustivel')}}
+function fcFipeAuto(manual){
+ var d=_fcDados(),inf=document.getElementById('fcFpInfo');if(!inf)return;
+ if(!d.modeloCRLV&&!d.nome){if(manual)toast('Preencha o Modelo do CRLV (ou anexe o CRLV) primeiro');return}
+ inf.innerHTML='🔎 Procurando na FIPE…';
+ fipeAcharAuto(d).then(function(r){
+  if(!document.getElementById('fcFpM'))return;
+  _fcSel('fcFpM',r.marcas||[],r.marca&&r.marca.codigo);
+  if(!r.marca){inf.innerHTML='⚠️ Não reconheci a marca no CRLV — escolha na lista.';return}
+  var bons=(r.ranking||[]).map(function(x){return x.m});
+  var resto=(r.modelos||[]).filter(function(m){return bons.indexOf(m)<0}).sort(function(a,b){return a.nome.localeCompare(b.nome)});
+  _fcSel('fcFpMo',bons.concat(resto),r.modelo&&r.modelo.codigo);
+  FC_FIPE={m:r.marca.codigo,mo:r.modelo&&r.modelo.codigo,a:r.ano&&r.ano.codigo};
+  if(r.anos)_fcSel('fcFpA',r.anos,r.ano&&r.ano.codigo);
+  if(r.modelo&&r.ano){inf.innerHTML=(r.certeza?'✅ ':'🔎 ')+'<b>'+esc(r.marca.nome)+' · '+esc(r.modelo.nome)+' · '+esc(r.ano.nome)+'</b><br><span class="sub">'+(r.certeza?'Escolhido pelo CRLV. Pode trocar se não for essa versão.':'Tem versões parecidas — confira se é essa.')+'</span>';fcFipeValor()}
+  else if(r.modelo){inf.innerHTML='⚠️ Achei o modelo, mas não o ano '+(r.info.anoMod||'')+' — escolha a versão e o ano.';if(!r.anos)fcFipeModelo()}
+  else inf.innerHTML='⚠️ Não achei a versão — escolha na lista.';
+ }).catch(function(e){inf.innerHTML=esc(_fipeErroTxt(e))+'<br><span class="sub">Dá para criar o carro sem a FIPE e vincular depois na ficha.</span>'});
+}
+function fcFipeMarca(){
+ var m=document.getElementById('fcFpM').value;FC_FIPE={m:m};document.getElementById('fcFpVal').innerHTML='';
+ if(!m)return;var sel=document.getElementById('fcFpMo');sel.disabled=true;sel.innerHTML='<option>carregando…</option>';
+ fipeGet('/marcas/'+m+'/modelos','mod_'+m).then(function(d){var info=fipeInfoCarro(_fcDados());
+  var rk=fipeOrdenar(d.modelos||[],info),bons=rk.filter(function(x){return x.s>-99}).map(function(x){return x.m}),resto=rk.filter(function(x){return x.s<=-99}).map(function(x){return x.m}).sort(function(a,b){return a.nome.localeCompare(b.nome)});
+  _fcSel('fcFpMo',bons.concat(resto),bons[0]&&bons[0].codigo);if(bons[0])fcFipeModelo()}).catch(function(e){toast(_fipeErroTxt(e))});
+}
+function fcFipeModelo(){
+ var m=document.getElementById('fcFpM').value,mo=document.getElementById('fcFpMo').value;FC_FIPE={m:m,mo:mo};document.getElementById('fcFpVal').innerHTML='';
+ if(!mo)return;var sel=document.getElementById('fcFpA');sel.disabled=true;sel.innerHTML='<option>carregando…</option>';
+ fipeGet('/marcas/'+m+'/modelos/'+mo+'/anos','anos_'+m+'_'+mo).then(function(anos){var a=fipeEscolherAno(anos,fipeInfoCarro(_fcDados()));
+  _fcSel('fcFpA',anos,a&&a.codigo);if(a)fcFipeValor()}).catch(function(e){toast(_fipeErroTxt(e))});
+}
+function fcFipeValor(){
+ var m=document.getElementById('fcFpM').value,mo=document.getElementById('fcFpMo').value,a=document.getElementById('fcFpA').value,box=document.getElementById('fcFpVal');
+ FC_FIPE={m:m,mo:mo,a:a};if(!a){box.innerHTML='';return}
+ box.innerHTML='buscando valor…';
+ fetch(FIPE+'/marcas/'+m+'/modelos/'+mo+'/anos/'+a).then(function(r){return r.json()}).then(function(d){
+  if(d&&d.error)throw new Error(/limite/i.test(d.error)?'limite':'erro');
+  var v=parseBRL(d.Valor||'');if(!document.getElementById('fcFpA')||document.getElementById('fcFpA').value!==a)return;
+  FC_FIPE.v=v;FC_FIPE.mes=(d.MesReferencia||'').trim();FC_FIPE.cod=d.CodigoFipe||'';
+  box.innerHTML=v?'Valor FIPE: <b>R$ '+fmtBRL(v)+'</b> <span class="sub">('+esc(FC_FIPE.mes)+')</span>':'';
+  var vr=document.getElementById('fc_valorRef');if(vr&&v&&!vr.value.trim())vr.value=fmtBRL(v);
+ }).catch(function(e){box.innerHTML='';toast(_fipeErroTxt(e))});
+}
+(function(){var o=window.formCarro;if(typeof o!=='function'||o._v238)return;
+ var w=function(pk){var r=o.apply(this,arguments);
+  try{if(!pk){FC_FIPE={};
+   var body=document.getElementById('sheetBody'),panels=body?body.querySelectorAll('.v102panel'):[],doc=null,uso=null;
+   [].forEach.call(panels,function(p){var t=(p.querySelector('.v102panelHead b')||{}).textContent||'';if(t==='Documento')doc=p;if(t==='Uso e quilometragem')uso=p});
+   if(doc&&!document.getElementById('fcFipePanel')){doc.insertAdjacentHTML('afterend',fcFipeHtml())}
+   if(uso&&!document.getElementById('fcMotPanel')){uso.insertAdjacentHTML('afterend',fcExtrasHtml())}
+   var st=document.getElementById('fc_status');if(st)st.addEventListener('change',function(){this.dataset.mexeu=1});
+   var sinc=document.getElementById('fc_sincModo');
+   function cor(){var w=document.getElementById('fcCorWrap');if(!w)return;var v=sinc?sinc.value:'auto',t=v;if(v==='auto'){try{t=detectarSincronismo(_fcDadosSinc()).tipo||''}catch(e){t=''}}w.style.display=(t==='corrente')?'none':'block'}
+   window.fcCorAtualiza=cor;if(sinc)sinc.addEventListener('change',cor);['modeloCRLV','motor','ano','potencia'].forEach(function(k){var e=document.getElementById('fc_'+k);if(e)e.addEventListener('change',cor)});cor();
+   /* marca/modelo digitados à mão: tenta a FIPE quando sair do campo */
+   ['modeloCRLV','ano'].forEach(function(k){var e=document.getElementById('fc_'+k);if(e)e.addEventListener('change',function(){if(!FC_CRLV_LENDO&&document.getElementById('fc_modeloCRLV').value.trim()&&/\d{4}/.test(document.getElementById('fc_ano').value))fcFipeAuto(false)})});
+  }}catch(e){}
+  return r};
+ w._v238=1;window.formCarro=formCarro=w;})();
+/* depois de ler o CRLV do carro novo, procura a FIPE sozinho */
+(function(){var o=window.fcLerCrlvNovo;if(typeof o!=='function'||o._v238)return;
+ var w=function(inp){var r=o.apply(this,arguments);
+  var t0=Date.now();(function espera(){if(!document.getElementById('fcFpM'))return;if(FC_CRLV_LENDO&&Date.now()-t0<120000){setTimeout(espera,500);return}
+   try{fcStatusAuto()}catch(e){}try{fcCorAtualiza()}catch(e){}if(document.getElementById('fc_modeloCRLV').value.trim())fcFipeAuto(false)})();
+  return r};
+ w._v238=1;window.fcLerCrlvNovo=fcLerCrlvNovo=w;})();
+(function(){var o=window.salvarCarro;if(typeof o!=='function'||o._v238)return;
+ var w=function(pk){
+  if(pk)return o.apply(this,arguments);
+  function g(id){var e=document.getElementById(id);return e?e.value.trim():''}
+  var placa=normPlaca(g('fc_placa')),ex={mot:g('fc_motorista'),tel:g('fc_telWhats'),st:g('fc_status'),ot:g('fc_oleoTipo'),po:parseInt(g('fc_proxOleoKm').replace(/\D/g,''),10)||0,pc:parseInt(g('fc_proxCorreiaKm').replace(/\D/g,''),10)||0};
+  var td=ex.tel.replace(/\D/g,'');if(td&&(td.length<10||td.length>11)){toast('WhatsApp inválido — DDD + número');return}
+  var fp=JSON.parse(JSON.stringify(FC_FIPE||{})),existia=!!(S.carros&&S.carros[placa]);
+  var r=o.apply(this,arguments);
+  var c=S.carros&&S.carros[placa];
+  if(c&&!existia){
+   var campos=[];
+   if(ex.mot){c.motorista=ex.mot;campos.push('motorista')}
+   if(ex.st){c.status=ex.st;campos.push('status')}
+   if(td){c.telWhats=fmtTel(td);campos.push('telWhats')}
+   if(ex.ot){c.oleoTipo=ex.ot;campos.push('oleoTipo')}
+   if(ex.po){c.proxOleoKm=ex.po;c.proxOleoManual=1;campos.push('proxOleoKm','proxOleoManual')}
+   if(ex.pc&&c.temCorreia){c.proxCorreiaKm=ex.pc;c.proxCorreiaManual=1;campos.push('proxCorreiaKm','proxCorreiaManual')}
+   if(fp.m&&fp.mo&&fp.a){c.fipeM=fp.m;c.fipeMo=fp.mo;c.fipeA=fp.a;if(fp.v){c.valorRef=fp.v;c.fipeMes=fp.mes||''}c.fipeCodigo=fp.cod||'';c.fipeAtualizadoEm=Date.now();campos.push('fipeCodigo')}
+   if(campos.length){try{_touchCarro(c,campos)}catch(e){}save();try{render()}catch(e){}}
+  }
+  return r};
+ w._v238=1;window.salvarCarro=salvarCarro=w;})();
 
 </script>
 </body>
