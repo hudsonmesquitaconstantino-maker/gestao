@@ -9,7 +9,7 @@
    sem ela, a foto é lida pela IA da própria Cloudflare).
    Este arquivo é público no GitHub: nada de segredo aqui. */
 
-const VERSAO = 'robo-km 3.17';
+const VERSAO = 'robo-km 3.18';
 const DIA = 864e5;
 
 /* ---------------- utilidades ---------------- */
@@ -145,6 +145,7 @@ const MODELO_LEMBRETE = {
 };
 const textoLembreteLivre = (nome, carro) => TXT_LEMBRETE.replace('{{1}}', nome).replace('{{2}}', carro);
 function textoPedidoLivre(nome, carro, t) { return `Olá, *${nome}*, ${saudacao(t)}! 👋\n\nPor favor, me envie agora uma *foto nítida do painel* mostrando a *quilometragem* do *${carro}*.\n\n🛢️ É para a *verificação da troca de óleo*.\n\nObrigado!\n*Guimas Car*`; }
+const MSG_DIVERGENTE = 'Recebi a foto 👍 mas não consegui confirmar o km com certeza. Manda outra *agora*, bem de perto do visor do km total (sem reflexo).';
 const MSG_ILEGIVEL = 'Não consegui ler a quilometragem nessa foto 🤔 Manda outra *agora*, bem de perto do painel, com o km total aparecendo.';
 const msgConferir = km => `Li ${fmtKm(km)} km, mas não bateu com o último registro do carro. Manda mais uma foto bem de perto do km total (não o TRIP), por favor.`;
 /* Óleo: SEMPRE o original da montadora primeiro (regra do Hudson). A 2ª opção é a melhor marca
@@ -228,7 +229,8 @@ Leia o HODÔMETRO TOTAL (ODO / quilometragem total do carro).
 NUNCA use o hodômetro parcial (TRIP, TRIP A, TRIP B, "A", "B"), velocímetro, conta-giros, autonomia, temperatura, relógio ou consumo.
 Se aparecerem dois números de km, o total é o maior e costuma vir rotulado ODO ou sem rótulo de TRIP.
 Leia TODOS os dígitos do hodômetro total, um por um. Em painel digital (ex.: Fiat Mobi/Uno) o último dígito às vezes aparece afastado dos outros por um espaço: "10783 1" é 107831, não 10783. Carro de frota costuma ter 5 ou 6 dígitos.
-Responda SOMENTE com JSON: {"tipo": "painel"|"etiqueta"|"outro", "painel": true|false, "odometro": inteiro ou null, "certeza": "alta"|"media"|"baixa", "obs": "texto curto"}.
+Primeiro COPIE o visor do hodômetro total exatamente como aparece, caractere por caractere, com os espaços (ex.: "17996 1 km", "107831 km"). Depois escreva o número.
+Responda SOMENTE com JSON: {"tipo": "painel"|"etiqueta"|"outro", "painel": true|false, "visor": "texto do hodômetro total como aparece", "odometro": inteiro ou null, "certeza": "alta"|"media"|"baixa", "obs": "texto curto"}.
 "tipo" = "painel" SOMENTE se a foto mostra o quadro de instrumentos do carro (velocímetro/visor). Etiqueta de troca de óleo, adesivo, nota, papel ou qualquer número escrito à mão = "etiqueta" (NUNCA é o hodômetro). Motor, pneu, peça, pessoa, documento = "outro".
 "painel" = false sempre que "tipo" não for "painel". "odometro" = null se não der para ler com segurança ou se não for painel.`;
 
@@ -242,27 +244,29 @@ function b64(buf) {
 const MODELOS_CF = ['@cf/meta/llama-4-scout-17b-16e-instruct', '@cf/mistralai/mistral-small-3.1-24b-instruct'];
 /* Releitura com a referência do carro: usada quando a 1ª leitura não bate com o último km registrado. */
 const dicaRef = ref => `\n\nATENÇÃO: o último hodômetro registrado deste carro foi ${fmtKm(ref)} km. O hodômetro total desta foto deve ser IGUAL ou um pouco MAIOR que isso. Confira dígito por dígito se não faltou ou sobrou algum (o último dígito pode estar afastado por um espaço). Se a foto mostrar mesmo um número bem diferente, informe o que está escrito — não invente.`;
-async function lerOdometroCF(ctx, midia, ref) {
+async function lerOdometroCF(ctx, midia, ref, idx = 0, extra = '') {
   const url = `data:${midia.mime.split(';')[0]};base64,${b64(midia.bytes)}`;
   let ultimoErro = '';
-  const ordem = [ctx.env.CF_MODEL, ...MODELOS_CF].filter(Boolean);
+  let ordem = [ctx.env.CF_MODEL, ...MODELOS_CF].filter(Boolean);
+  if (idx) ordem = [...ordem.slice(idx % ordem.length), ...ordem.slice(0, idx % ordem.length)];
   for (const m of (ref ? [...ordem].reverse() : ordem)) {   /* na releitura começa pelo outro modelo */
     try {
       const out = await ctx.env.AI.run(m, {
-        messages: [{ role: 'user', content: [{ type: 'text', text: PROMPT + (ref ? dicaRef(ref) : '') }, { type: 'image_url', image_url: { url } }] }],
+        messages: [{ role: 'user', content: [{ type: 'text', text: PROMPT + (ref ? dicaRef(ref) : '') + extra }, { type: 'image_url', image_url: { url } }] }],
         max_tokens: 200, temperature: 0
       });
       const resp = out && (out.response !== undefined ? out.response : (out.choices && out.choices[0] && out.choices[0].message && out.choices[0].message.content));
-      return interpretarResposta(typeof resp === 'string' ? resp : JSON.stringify(resp || {}));
+      return { ...interpretarResposta(typeof resp === 'string' ? resp : JSON.stringify(resp || {})), modelo: m };
     } catch (e) { ultimoErro += `${m}: ${String(e.message || e).slice(0, 200)} | `; }
   }
   throw new Error('Workers AI: ' + ultimoErro);
 }
-async function lerOdometro(ctx, midia, ref) {
-  if (!ctx.env.GEMINI_KEY && ctx.env.AI) return lerOdometroCF(ctx, midia, ref);
-  const modelos = [ctx.env.GEMINI_MODEL, 'gemini-flash-latest', 'gemini-flash-lite-latest'].filter(Boolean);
+async function lerOdometro(ctx, midia, ref, idx = 0, extra = '') {
+  if (!ctx.env.GEMINI_KEY && ctx.env.AI) return lerOdometroCF(ctx, midia, ref, idx, extra);
+  let modelos = [ctx.env.GEMINI_MODEL, 'gemini-flash-latest', 'gemini-flash-lite-latest'].filter(Boolean);
+  if (idx) modelos = [...modelos.slice(idx % modelos.length), ...modelos.slice(0, idx % modelos.length)];
   const corpo = {
-    contents: [{ parts: [{ text: PROMPT + (ref ? dicaRef(ref) : '') }, { inline_data: { mime_type: midia.mime.split(';')[0], data: b64(midia.bytes) } }] }],
+    contents: [{ parts: [{ text: PROMPT + (ref ? dicaRef(ref) : '') + extra }, { inline_data: { mime_type: midia.mime.split(';')[0], data: b64(midia.bytes) } }] }],
     generationConfig: { temperature: 0, responseMimeType: 'application/json' }
   };
   let ultimoErro = '';
@@ -273,7 +277,7 @@ async function lerOdometro(ctx, midia, ref) {
     const j = await r.json().catch(() => ({}));
     if (!r.ok) { ultimoErro = `${m}: ${r.status} ${JSON.stringify(j).slice(0, 200)}`; continue; }
     const txt = (((j.candidates || [])[0] || {}).content || {}).parts?.map(p => p.text || '').join('') || '';
-    return interpretarResposta(txt);
+    return { ...interpretarResposta(txt), modelo: m };
   }
   throw new Error('Gemini: ' + ultimoErro);
 }
@@ -284,11 +288,43 @@ function interpretarResposta(txt) {
   }
   let km = o.odometro;
   if (typeof km === 'string') km = Number(km.replace(/\D/g, ''));
+  /* o texto copiado do visor manda: "17996 1 km" = 179961 (o número que a IA escreve às vezes repete ou troca dígito) */
+  const kv = kmDoVisor(o.visor);
+  if (kv && kv !== km) km = kv;
   km = Number.isFinite(km) && km > 0 && km < 2e6 ? Math.round(km) : null;
   const certeza = String(o.certeza || '').toLowerCase();
   const tipo = String(o.tipo || (o.painel === false ? 'outro' : 'painel')).toLowerCase();
   const painel = o.painel !== false && tipo === 'painel';   /* etiqueta/nota com km escrito NUNCA vale como hodômetro */
-  return { painel, tipo, km: certeza === 'baixa' || !painel ? null : km, certeza, obs: String(o.obs || '').slice(0, 200) };
+  return { painel, tipo, km: certeza === 'baixa' || !painel ? null : km, certeza, obs: String(o.obs || '').slice(0, 200), visor: String(o.visor || '').slice(0, 40) };
+}
+/* "17996 1 km" -> 179961 · "107831km" -> 107831 · "ODO 45.230 km" -> 45230. Só aceita 4 a 7 dígitos. */
+function kmDoVisor(v) {
+  const t = String(v || '').toUpperCase().replace(/TRIP\s*[AB]?.*$/, '');
+  const m = t.match(/(\d[\d .]*\d|\d)\s*KM\b/) || t.match(/(\d[\d .]*\d)/);
+  if (!m) return null;
+  const d = m[1].replace(/[ .]/g, '');
+  return /^\d{4,7}$/.test(d) ? Number(d) : null;
+}
+/* Leitura CONFERIDA (3.18 — caso Raphael/LMX: painel mostrava 179.961 e o robô respondeu 179.996).
+   Duas leituras independentes (modelos diferentes). Se baterem, vale. Se não baterem, uma 3ª
+   leitura dígito por dígito desempata (2 de 3). Sem maioria: NÃO responde km nenhum — pede outra
+   foto. Melhor pedir outra foto do que mandar um km errado para o motorista e para o Gestão. */
+const DICA_DIGITOS = '\n\nLeia o hodômetro total DÍGITO POR DÍGITO, da esquerda para a direita, e confira a quantidade de dígitos antes de responder. Não repita nem pule dígito.';
+async function lerOdometroConferido(ctx, midia) {
+  const a = await lerOdometro(ctx, midia, null, 0).catch(e => ({ erro: e.message }));
+  const b = await lerOdometro(ctx, midia, null, 1).catch(e => ({ erro: e.message }));
+  if (a.erro && b.erro) throw new Error(a.erro);
+  const lidos = [a, b].filter(x => !x.erro);
+  if (lidos.length === 1) return lidos[0];
+  if (!a.painel && !b.painel) return a;
+  if (a.km && b.km && a.km === b.km) return { ...a, certeza: 'dupla', leituras: [a.km, b.km] };
+  if (!a.km || !b.km) return a.km ? a : b;   /* uma leitura só conseguiu: mesmo comportamento de antes */
+  const c = await lerOdometro(ctx, midia, null, 0, DICA_DIGITOS).catch(() => ({}));
+  const votos = [a.km, b.km, c.km].filter(Boolean), cont = {};
+  votos.forEach(k => { cont[k] = (cont[k] || 0) + 1; });
+  const venc = Object.keys(cont).find(k => cont[k] >= 2);
+  if (venc) { const base = [a, b, c].find(x => String(x.km) === venc); return { ...base, km: Number(venc), certeza: 'conferida', leituras: votos }; }
+  return { ...a, km: null, certeza: 'divergente', divergente: votos, leituras: votos };
 }
 
 /* Leitura da foto contra o último km conhecido (Gestão ou foto anterior aceita).
@@ -540,19 +576,19 @@ async function processarWebhook(ctx, corpo) {
 async function tratarFoto(ctx, pk, ct, m, msg, teste) {
   const agora = Date.now(), para = msg.from;
   const midia = await ctx.baixarMidia(msg.image.id);
-  const lido = await lerOdometro(ctx, midia);
-  const reg = { em: agora, pk, km: lido.km, painel: lido.painel, certeza: lido.certeza, obs: lido.obs, midia: msg.image.id };
+  const lido = await lerOdometroConferido(ctx, midia);
+  const reg = { em: agora, pk, km: lido.km, painel: lido.painel, certeza: lido.certeza, obs: lido.obs, midia: msg.image.id, visor: lido.visor || '', leituras: lido.leituras || null };
   const hist = 'historico/' + (teste ? 'teste' : pk);
 
   const chave = teste ? 'teste' : pk, espera = num(ctx.env.ESPERA_MS, 8000);
   if (!lido.painel || !lido.km) {
     m.falhas = num(m.falhas) + 1;
-    await ctx.post(hist, { ...reg, resultado: lido.tipo === 'etiqueta' ? 'etiqueta' : 'ilegivel' });
+    await ctx.post(hist, { ...reg, resultado: lido.divergente ? 'divergente' : (lido.tipo === 'etiqueta' ? 'etiqueta' : 'ilegivel') });
     /* álbum: espera as outras fotos; se alguma deu certo, fica quieto. No máximo 1 aviso a cada 10 min. */
     if (espera) await new Promise(r => setTimeout(r, espera));
     const atual = (await ctx.get('estado/' + chave).catch(() => null)) || {};
     if (num(atual.leituraEm) > agora - 5 * 60e3) return 'ilegivel:silencio';
-    if (await ctx.reivindicar(`travas/${chave}/ilegivel`, 10 * 60e3)) await ctx.texto(para, MSG_ILEGIVEL);
+    if (await ctx.reivindicar(`travas/${chave}/ilegivel`, 10 * 60e3)) await ctx.texto(para, lido.divergente ? MSG_DIVERGENTE : MSG_ILEGIVEL);
     return 'ilegivel';
   }
   let km = lido.km;
@@ -617,7 +653,7 @@ async function http(req, env, exec) {
       const r = await fetch(url.searchParams.get('img'), { headers: { 'user-agent': 'GuimasCarRoboKm/2.1 (teste de leitura)' } });
       const midia = { bytes: await r.arrayBuffer(), mime: r.headers.get('content-type') || 'image/jpeg' };
       const info = { http: r.status, tipo: midia.mime, bytes: midia.bytes.byteLength };
-      try { return J({ leitura: await lerOdometro(ctx, midia), ...info }); } catch (e) { return J({ erro: e.message, ...info }); }
+      try { return J({ leitura: await lerOdometroConferido(ctx, midia), ...info }); } catch (e) { return J({ erro: e.message, ...info }); }
     }
     if (p[2] === 'contatos') { const [c, e] = await Promise.all([ctx.get('contatos'), ctx.get('estado')]); const so = (url.searchParams.get('pk') || '').split(',').filter(Boolean);
       const f = o => so.length ? Object.fromEntries(Object.entries(o || {}).filter(([k]) => so.includes(k))) : o; return J({ contatos: f(c), estado: f(e) }); }
@@ -625,7 +661,7 @@ async function http(req, env, exec) {
       const pk = url.searchParams.get('pk'), r = await fetch(url.searchParams.get('img'), { headers: { 'user-agent': 'GuimasCarRoboKm' } });
       const midia = { bytes: await r.arrayBuffer(), mime: r.headers.get('content-type') || 'image/jpeg' };
       const ct = (await ctx.get('contatos/' + pk)) || {}, m = (await ctx.get('estado/' + pk)) || {}, agora = Date.now();
-      const lido = await lerOdometro(ctx, midia);
+      const lido = await lerOdometroConferido(ctx, midia);
       if (!lido.painel || !lido.km) return J({ lido, resposta: MSG_ILEGIVEL });
       const av = avaliarLeitura(ct, m, lido.km, agora);
       if (!av.ok) return J({ lido, avaliacao: av, resposta: msgConferir(lido.km) + '  (se a 2ª foto confirmar: ' + MSG_SUSPEITA + ')' });
