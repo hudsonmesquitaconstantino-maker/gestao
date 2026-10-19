@@ -1536,7 +1536,7 @@ html.teclado #main{padding-bottom:calc(20px + var(--navH,0px))!important}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=236; var APP_DATE='19/10/2026';
+var APP_VER=237; var APP_DATE='19/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -11397,6 +11397,15 @@ try{LEITOR_VER=96}catch(e){}
   try{if(c){var mud=CAMPOS.filter(function(k){return JSON.stringify(c[k]===undefined?null:c[k])!==antes[k]});if(mud.length)_touchCarro(c,mud)}}catch(e){}
   return r};
  w._v236=1;window.aplicaDadosDoTexto=aplicaDadosDoTexto=w;})();
+/* aparelho que já tinha lido o CPF na v235 (sem relógio): carimba uma vez para subir para a nuvem */
+(function(){var n=0,t=setInterval(function(){
+ if(++n>120){clearInterval(t);return}
+ if(!window.S||!S.carros||!window._gotCloud)return;clearInterval(t);
+ var F=['docProprietario','docProprietarioTipo','numeroCRV','localCRLV','dataEmissaoCRLV','placaAnterior','obsCRLV','especie','categoriaVeic','lotacao','pesoBruto','eixos','telWhats','pedidoKmEm'],mud=0;
+ Object.keys(S.carros).forEach(function(pk){var c=S.carros[pk],m=_garanteCampoAt(c),f=F.filter(function(k){return c[k]!==undefined&&c[k]!==''&&c[k]!==null&&!m[k]});if(f.length){_touchCarro(c,f);mud++}});
+ if(mud)save();
+},1000)})();
+try{LEITOR_VER=97}catch(e){}
 
 </script>
 </body>
