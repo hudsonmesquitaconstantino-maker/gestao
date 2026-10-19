@@ -1536,7 +1536,7 @@ html.teclado #main{padding-bottom:calc(20px + var(--navH,0px))!important}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=232; var APP_DATE='16/10/2026';
+var APP_VER=233; var APP_DATE='19/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -5132,7 +5132,7 @@ function varrerDocsAuto(opt){
  var mud=0,i=0,st=opt.stat?document.getElementById(opt.stat):null;
  function fim(){
   _docVarr.rodando=false;
-  if(mud){save();if(!_telaOcupada()){if(window._fichaPk)ficha(window._fichaPk);render();if(opt.force)toast('📄 '+mud+' documento(s) lido(s)')}}
+  if(mud){save();var _dmt=(typeof docMudTexto==='function')?docMudTexto():'';if(!_telaOcupada()){if(window._fichaPk)ficha(window._fichaPk);render();if(opt.force||_dmt)toast(_dmt||('📄 '+mud+' documento(s) lido(s)'))}}
   else if(opt.force)toast('📄 Documento lido — nenhum dado novo para atualizar');
   if(st)st.textContent=mud?('✅ '+mud+' documento(s) atualizado(s).'):'✅ Nada novo para ler — tudo já estava lido.';
  }
@@ -11132,6 +11132,57 @@ function crlvOcrVotos(texto){
   return o;
  };
  w._v229=1;window.impDadosCRLV=impDadosCRLV=w;})();
+
+</script>
+<script>
+/* ===== v233 — CRLV NOVO ATUALIZA O CADASTRO (transferência, novo exercício, novo CSV) =====
+   Pedido do Hudson (16/10/2026): transferiu o Cronos RJT5G17 para o nome dele, anexou o CRLV
+   novo e o app disse "nenhum dado novo para atualizar" — o proprietário continuou o antigo.
+   Causa: o leitor só PREENCHIA campo vazio; nunca trocava um valor já gravado.
+   Agora: se o documento é MAIS NOVO que o último lido (data de emissão do CRLV), os dados do
+   documento valem e substituem os antigos — proprietário, nº do CRV, local/data de emissão,
+   exercício, placa anterior, observações do CRLV (sinistro/CSV), cor, combustível, potência,
+   motor, espécie, categoria, peso, eixos, lotação. Chassi e Renavam NÃO são trocados: se
+   vierem diferentes, o app avisa (pode ser documento de outro carro).
+   A mensagem mostra exatamente o que mudou ("Proprietário: MARCELO… → HUDSON…"). */
+var DOCMUD=[];
+var _CRLV_TROCA=[['proprietario','Proprietário'],['numeroCRV','Nº do CRV'],['localCRLV','Local de emissão'],['dataEmissaoCRLV','Data de emissão'],
+ ['placaAnterior','Placa anterior'],['cor','Cor'],['combustivel','Combustível'],['potencia','Potência'],['motorCodigo','Código do motor'],
+ ['modeloCRLV','Modelo do CRLV'],['especie','Espécie'],['categoriaVeic','Categoria'],['pesoBruto','Peso bruto'],['eixos','Eixos'],['lotacao','Lotação'],['ano','Ano fab/modelo']];
+function _crlvNorm(v){return semAcento(String(v==null?'':v)).toUpperCase().replace(/\s+/g,' ').trim()}
+function _crlvDataBR(iso){var m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?m[3]+'/'+m[2]+'/'+m[1]:String(iso||'')}
+function docMudTexto(){if(!DOCMUD.length)return '';var t='📄 CRLV atualizado — '+DOCMUD.slice(0,4).join(' • ')+(DOCMUD.length>4?' (+'+(DOCMUD.length-4)+')':'');DOCMUD=[];return t}
+(function(){var o=window.aplicaDadosDoTexto;if(typeof o!=='function'||o._v233)return;
+ var w=function(pk,tipo,txt){
+  var c=S.carros[pk],mud=[];
+  if(c&&tipo==='crlv'){
+   try{
+    var dc=impDadosCRLV(txt)||{},x={};try{x=crlvExtras(txt,dc)||{}}catch(e){}
+    var novaData=dc.dataEmissaoCRLV||x.dataEmissaoCRLV||'',velhaData=c.dataEmissaoCRLV||'';
+    /* documento mais novo (ou o primeiro com data) manda nos dados do documento */
+    var maisNovo=novaData&&(!velhaData||novaData>velhaData);
+    if(maisNovo){
+     _CRLV_TROCA.forEach(function(par){var k=par[0],v=dc[k]||x[k];if(!v)return;
+      if(k==='dataEmissaoCRLV'){if(v!==c[k]){c[k]=v;mud.push(par[1]+': '+_crlvDataBR(v))}return}
+      if(_crlvNorm(v)!==_crlvNorm(c[k])){var antes=c[k];c[k]=v;
+       if(k==='proprietario'||k==='placaAnterior'||k==='numeroCRV'||k==='localCRLV')mud.push(par[1]+': '+(antes?antes+' → ':'')+v);
+       else mud.push(par[1]+(antes?' atualizado':''))}});
+     /* exercício só avança */
+     var ex=parseInt(dc.exercicio,10)||0;if(ex&&ex>(parseInt(c.exercicioCRLV,10)||0)){c.exercicioCRLV=String(ex);mud.push('Exercício '+ex)}
+     /* observação do CRLV (sinistro/CSV): troca só o texto que veio do documento, nunca o que a pessoa escreveu */
+     if(x.obsCRLV){var po=String(c.procObs||'');
+      if(!po.trim()||/^CRLV:/.test(po)){if(_crlvNorm(po)!==_crlvNorm(x.obsCRLV)){c.procObs=x.obsCRLV;mud.push('Observação do CRLV: '+x.obsCRLV.replace(/^CRLV:\s*/,''))}}}
+     if(x._leilao&&(!c.procLeilao||c.procLeilao==='Não'||/monta não informada/.test(c.procLeilao))&&c.procLeilao!==x._leilao){c.procLeilao=x._leilao;mud.push('Leilão/sinistro: '+x._leilao)}
+     /* chassi e Renavam não mudam num carro — diferente = alerta */
+     ['chassi','renavam'].forEach(function(k){var v=dc[k];if(v&&c[k]&&_crlvNorm(v)!==_crlvNorm(c[k]))mud.push('⚠️ '+(k==='chassi'?'Chassi':'Renavam')+' do documento ('+v+') é diferente do cadastro ('+c[k]+') — confira se é o CRLV deste carro')});
+     if(mud.length){try{_touchCarro(c,_CRLV_TROCA.map(function(p){return p[0]}).concat(['exercicioCRLV','procObs','procLeilao']))}catch(e){}}
+    }
+   }catch(e){}
+  }
+  var r=o.apply(this,arguments)||[];
+  if(mud.length){DOCMUD=DOCMUD.concat(mud);r=r.concat(mud)}
+  return r};
+ w._v233=1;window.aplicaDadosDoTexto=aplicaDadosDoTexto=w;})();
 
 </script>
 </body>
