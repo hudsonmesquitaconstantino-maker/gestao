@@ -1510,7 +1510,7 @@ html.teclado #main{padding-bottom:calc(20px + var(--navH,0px))!important}
 <header>
 <h1><b>GuimasCar</b> Gestão</h1>
 <div id="verTag"><span id="syncDot"></span><span id="syncText">iniciando…</span> · <span id="verNum">v156</span></div>
-<div class="hbtns"><button class="hbtn" id="hbRobo" style="position:relative" onclick="abrirRobo()" title="Robô do km">📸</button> <button class="hbtn" onclick="openCfg()">⚙️</button></div>
+<div class="hbtns"><button class="hbtn" id="hbRobo" style="position:relative" onclick="abrirRobo()" title="Km dos motoristas">📸</button> <button class="hbtn" onclick="openCfg()">⚙️</button></div>
 </header>
 <main id="main"></main>
 <nav class="g2nav">
@@ -1536,7 +1536,7 @@ html.teclado #main{padding-bottom:calc(20px + var(--navH,0px))!important}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=233; var APP_DATE='19/10/2026';
+var APP_VER=234; var APP_DATE='19/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -3485,8 +3485,8 @@ function _vHoje(){
   if(oleo&&c.motorista)bt='<button class="btn ok g2b" onclick="g2CobrarOleo(\''+pk+'\')">Cobrar '+esc(primNome(c.motorista))+'</button>'+bt;
   tarefas.push({p:prio,h:esc(tituloCarro(c))+' <span class="g2pl">'+esc(fmtPlaca(c.placa))+'</span>',tx:rs.map(function(a){return esc(_g2Curto(c,a))}).join(' · '),bt:bt});
  });
- if(grFoto.length===1){var c1=grFoto[0];grDoc.length;tarefas.push({p:2,h:esc(tituloCarro(c1))+' <span class="g2pl">'+esc(fmtPlaca(c1.placa))+'</span>',tx:esc(primNome(c1.motorista))+' não mandou a foto do km.',bt:'<button class="btn g2b" onclick="abrirRobo()">Abrir robô</button>'})}
- else if(grFoto.length)tarefas.push({p:2,h:grFoto.length+' motoristas não mandaram a foto do km',tx:grFoto.map(function(c){return esc(primNome(c.motorista))}).join(', ')+'. O lembrete automático sai às 16h.',bt:'<button class="btn g2b" onclick="abrirRobo()">Abrir robô</button>'});
+ if(grFoto.length===1){var c1=grFoto[0];grDoc.length;tarefas.push({p:2,h:esc(tituloCarro(c1))+' <span class="g2pl">'+esc(fmtPlaca(c1.placa))+'</span>',tx:esc(primNome(c1.motorista))+' não mandou a foto do km.',bt:'<button class="btn g2b" onclick="abrirRobo()">Pedir km</button>'})}
+ else if(grFoto.length)tarefas.push({p:2,h:grFoto.length+' motoristas não mandaram a foto do km',tx:grFoto.map(function(c){return esc(primNome(c.motorista))}).join(', ')+'. Cobre pelo WhatsApp.',bt:'<button class="btn g2b" onclick="abrirRobo()">Pedir km</button>'});
  if(grDoc.length===1){var c2=grDoc[0],r2=alertasCarro(c2).filter(function(a){return a.n==='red'});tarefas.push({p:4,h:esc(tituloCarro(c2))+' <span class="g2pl">'+esc(fmtPlaca(c2.placa))+'</span>',tx:r2.map(function(a){return esc(_g2Curto(c2,a))}).join(' · '),bt:'<button class="btn g2b" onclick="ficha(\''+_g2Pk(c2)+'\')">Abrir carro</button>'})}
  else if(grDoc.length)tarefas.push({p:4,h:grDoc.length+' carros com documento ou GNV vencido',tx:'CRLV atrasado, vistoria do GNV ou cilindro vencido.',bt:'<button class="btn g2b" onclick="FROTA_F=\'docs\';go(0)">Ver os '+grDoc.length+' carros</button>'});
  /* lembretes gerais (sem carro) vencidos ou de hoje */
@@ -3548,7 +3548,7 @@ function _vFrota(){
 function vMais(){
  var nObs=0;try{nObs=Object.keys(S.observacoes||{}).filter(function(k){return !S.observacoes[k].feito}).length}catch(e){}
  var nRob=0;try{nRob=_roboAtrasados().length}catch(e){}
- var it=[['nota','Observações',nObs+' pendente'+(nObs===1?'':'s'),'go(4)'],['robo','Robô do km',nRob?nRob+' sem responder hoje':'Fotos do painel e respostas','abrirRobo()'],['doc','Novo contrato de locação','Puxa os dados do carro','go(2)'],['carro','Adicionar carro novo','Placa, CRLV e motorista','formCarro()'],['eng','Configurações','Chave, backup e versão','openCfg()']];
+ var it=[['nota','Observações',nObs+' pendente'+(nObs===1?'':'s'),'go(4)'],['robo','Km dos motoristas',nRob?nRob+' sem mandar a foto':'Pedir foto e responder pelo WhatsApp','abrirRobo()'],['doc','Novo contrato de locação','Puxa os dados do carro','go(2)'],['carro','Adicionar carro novo','Placa, CRLV e motorista','formCarro()'],['eng','Configurações','Chave, backup e versão','openCfg()']];
  var h='<div class="g2head"><div class="g2titulo">Mais</div></div><div class="g2grp">';
  it.forEach(function(o){h+='<button class="g2opt" onclick="'+o[3]+'"><span class="g2ic">'+G2I[o[0]]+'</span><span class="g2optTx"><b>'+o[1]+'</b><small>'+o[2]+'</small></span>'+G2I.chev+'</button>'});
  h+='</div><div class="g2ver">GuimasCar Gestão · v'+APP_VER+' · '+APP_DATE+'<br><small style="opacity:.6">tela '+(screen.height||0)+' · vh '+(function(){try{var d=document.createElement('div');d.style.cssText='position:fixed;top:0;height:100vh;width:1px;visibility:hidden';document.body.appendChild(d);var v=Math.round(d.getBoundingClientRect().height);d.remove();return v}catch(e){return 0}})()+' · janela '+innerHeight+' · corpo '+Math.round(document.body.getBoundingClientRect().height)+'</small></div>';
@@ -11183,6 +11183,168 @@ function docMudTexto(){if(!DOCMUD.length)return '';var t='📄 CRLV atualizado �
   if(mud.length){DOCMUD=DOCMUD.concat(mud);r=r.concat(mud)}
   return r};
  w._v233=1;window.aplicaDadosDoTexto=aplicaDadosDoTexto=w;})();
+
+</script>
+<script>
+/* ===== v234 — KM PELO WHATSAPP, MANUAL (sem robô) =====
+   Decisão do Hudson (19/10/2026): cancelou a Dualhook (R$ 70/mês não compensa). O robô sai;
+   fica o cálculo da média de km/dia e da estimativa (quem provavelmente está perto da troca),
+   e o resto vira botão:
+   1) "📲 Pedir foto do km" abre o WhatsApp Business dele com a MESMA mensagem que o robô mandava;
+   2) o motorista manda a foto, ele mesmo olha o painel;
+   3) "✍️ Lançar km" → digita o km → o app salva no carro e entrega a resposta pronta
+      (a mesma do robô: quanto falta para óleo/correia, óleo indicado, "Mensagem automática")
+      com botão para mandar no WhatsApp do motorista ou copiar.
+   Quem recebeu o pedido e não mandou a foto até as 19h aparece em Pendências (cobrar). */
+
+/* ---------- textos (idênticos aos do robô 3.18) ---------- */
+var KMW_AVISO='_🤖 Mensagem automática — Guimas Car_';
+var KMW_OLEO={FORD:{nome:'Ford',orig:'Motorcraft',alt:'Mobil'},RENAULT:{nome:'Renault',orig:'Motrio',alt:'Elf'},VW:{nome:'Volkswagen',orig:'Maxi Performance',alt:'Shell Helix'},
+ FIAT:{nome:'Fiat',orig:'Selenia',alt:'Mobil'},JEEP:{nome:'Jeep',orig:'Selenia',alt:'Mobil'},CHEVROLET:{nome:'Chevrolet',orig:'ACDelco',alt:'Mobil'},NISSAN:{nome:'Nissan',orig:'Nissan',alt:'Mobil'},
+ TOYOTA:{nome:'Toyota',orig:'Toyota',alt:'Mobil'},HONDA:{nome:'Honda',orig:'Honda',alt:'Mobil'},HYUNDAI:{nome:'Hyundai',orig:'Hyundai',alt:'Shell Helix'},KIA:{nome:'Kia',orig:'Kia',alt:'Mobil'},
+ PEUGEOT:{nome:'Peugeot',orig:'Total Quartz',alt:'Mobil'},CITROEN:{nome:'Citroën',orig:'Total Quartz',alt:'Mobil'},MITSUBISHI:{nome:'Mitsubishi',orig:'Mitsubishi',alt:'Mobil'}};
+var KMW_MARCA=[['FORD',/\bFORD\b|\b(KA|FIESTA|ECOSPORT|FOCUS|RANGER|TERRITORY)\b/],['RENAULT',/\bRENAULT\b|\b(LOGAN|SANDERO|KWID|DUSTER|CAPTUR|OROCH|STEPWAY)\b/],
+ ['VW',/\b(VW|VOLKSWAGEN|VOLKS)\b|\b(GOL|VOYAGE|FOX|POLO|VIRTUS|UP|SAVEIRO|T-?CROSS|NIVUS|JETTA)\b/],['FIAT',/\bFIAT\b|\b(UNO|MOBI|ARGO|CRONOS|SIENA|GRAND SIENA|PALIO|STRADA|TORO|PULSE|FASTBACK|DOBLO)\b/],
+ ['JEEP',/\bJEEP\b|\b(RENEGADE|COMPASS|COMMANDER)\b/],['CHEVROLET',/\b(CHEV|CHEVROLET|GM)\b|\b(ONIX|PRISMA|COBALT|SPIN|CELTA|CLASSIC|TRACKER|MONTANA|S10|CRUZE)\b/],
+ ['NISSAN',/\bNISSAN\b|\b(VERSA|KICKS|MARCH|SENTRA|FRONTIER|LIVINA|TIIDA)\b/],['TOYOTA',/\bTOYOTA\b|\b(COROLLA|ETIOS|YARIS|HILUX|SW4|COROLLA CROSS)\b/],
+ ['HONDA',/\bHONDA\b|\b(FIT|CITY|CIVIC|HR-?V|WR-?V)\b/],['HYUNDAI',/\bHYUNDAI\b|\b(HB20S?|CRETA)\b/],['KIA',/\bKIA\b|\b(PICANTO|CERATO|SPORTAGE|SOUL)\b/],
+ ['PEUGEOT',/\bPEUGEOT\b|\b(208|2008|308|408|3008)\b/],['CITROEN',/\bCITROEN\b|\b(C3|C4|AIRCROSS|BASALT)\b/],['MITSUBISHI',/\b(MITSUBISHI|MMC)\b|\b(LANCER|PAJERO|ASX|L200)\b/]];
+function _kmwMarca(c){
+ var sa=function(s){return semAcento(String(s||'')).toUpperCase().replace(/^I\//,'').replace(/\//g,' ')};
+ var tx=[sa(c.modeloCRLV),sa(c.nome)];
+ for(var i=0;i<tx.length;i++){var t=tx[i];if(!t)continue;var pre=t.split(/\s+/)[0];
+  for(var j=0;j<KMW_MARCA.length;j++)if(KMW_MARCA[j][1].test(pre))return KMW_MARCA[j][0];
+  for(var k=0;k<KMW_MARCA.length;k++)if(KMW_MARCA[k][1].test(t))return KMW_MARCA[k][0]}
+ return '';
+}
+function _kmwOleo(c){
+ var mk=KMW_OLEO[_kmwMarca(c)],tipo=String(c.oleoTipo||'').trim().toUpperCase(),visc=tipo?'*'+tipo+'* — ':'',igual=tipo?' na mesma viscosidade':'';
+ var orig=mk&&(mk.orig===mk.nome?'use o *original '+mk.orig+'* (da concessionária)':'use o original *'+mk.orig+'* ('+mk.nome+')');
+ return mk?'🧴 Óleo: '+visc+orig+'. Se não tiver, *'+mk.alt+'*'+igual+'. Sempre com filtro novo.'
+  :'🧴 Óleo: '+visc+'use o *original da montadora*. Se não tiver, *Mobil*'+igual+'. Sempre com filtro novo.';
+}
+function _kmwNome(n){var p=String(n||'').trim().split(/\s+/)[0]||'';return p?p.charAt(0).toUpperCase()+p.slice(1).toLowerCase():''}
+function _kmwPlaca(c,pk){var p=String(c.placa||pk||'').toUpperCase().replace(/[^A-Z0-9]/g,'');return p.length===7?p.slice(0,3)+'-'+p.slice(3):p}
+function kmwTextoPedido(c,pk){
+ return 'Olá, *'+_kmwNome(c.motorista)+'*, '+_saudacao()+'! 👋\n\nPor favor, me envie agora uma *foto nítida do painel* mostrando a *quilometragem* do *'+((c.nome||'carro')+' '+_kmwPlaca(c,pk)).trim()+'*.\n\n🛢️ É para a *verificação da troca de óleo*.\n\nObrigado!\n\n'+KMW_AVISO;
+}
+function kmwTextoResposta(c,km){
+ var nome=_kmwNome(c.motorista),L=['✅ Recebi'+(nome?', '+nome:'')+'! Km registrado: *'+fmtKm(km)+'*'];
+ var po=Number(c.proxOleoKm)||0;
+ if(po){var f=po-km;L.push(f<=0?'🛢 Troca de óleo: *VENCIDA há '+fmtKm(-f)+' km*. Faça a troca o quanto antes.':'🛢 Troca de óleo: faltam *'+fmtKm(f)+' km* (troca aos '+fmtKm(po)+' km).');L.push(_kmwOleo(c))}
+ var pc=Number(c.proxCorreiaKm)||0;
+ if(c.temCorreia&&pc){var g=pc-km;
+  if(g<=0)L.push('⚙️ Correia dentada: *VENCIDA há '+fmtKm(-g)+' km*. Me chama para agendarmos o quanto antes.');
+  else if(g<=8000)L.push('⚠️ *Correia dentada: faltam '+fmtKm(g)+' km* (troca aos '+fmtKm(pc)+' km).');
+  else L.push('⚙️ Correia dentada: faltam *'+fmtKm(g)+' km* (troca aos '+fmtKm(pc)+' km).')}
+ L.push('',KMW_AVISO);
+ return L.join('\n');
+}
+
+/* ---------- telefone do motorista ---------- */
+function kmwTel(pk){
+ var c=S.carros[pk]||{},d='';
+ var cands=[c.telWhats,((window.ROBO&&ROBO.contatos)||{})[pk]&&ROBO.contatos[pk].tel,_roboTelContrato(c)];
+ for(var i=0;i<cands.length&&!d;i++){d=String(cands[i]||'').replace(/\D/g,'');if(d.indexOf('55')===0&&d.length>=12)d=d.slice(2);if(d.length<10||d.length>11)d=''}
+ if(d.length===10&&/[6-9]/.test(d.charAt(2)))d=d.slice(0,2)+'9'+d.slice(2);
+ return d;
+}
+function kmwSalvaTel(pk,v){var c=S.carros[pk];if(!c)return;var d=String(v||'').replace(/\D/g,'');
+ if(d&&(d.length<10||d.length>11)){toast('Número inválido — DDD + número');return}
+ c.telWhats=d?fmtTel(d):'';c.editadoEm=Date.now();try{_garanteCampoAt(c).telWhats=Date.now()}catch(e){}save();toast(d?'📱 Número salvo':'Número removido')}
+function _kmwAbrirWhats(tel,msg){
+ var q='send?phone=55'+tel+'&text='+encodeURIComponent(msg),saiu=false;
+ var marca=function(){if(document.hidden)saiu=true};document.addEventListener('visibilitychange',marca);
+ setTimeout(function(){document.removeEventListener('visibilitychange',marca);if(!saiu&&!document.hidden)location.href='whatsapp://'+q},1500);
+ location.href='whatsapp-smb://'+q;   /* WhatsApp Business primeiro; se não abrir, o normal */
+}
+
+/* ---------- ações ---------- */
+function kmwPedir(pk){
+ var c=S.carros[pk];if(!c)return;var tel=kmwTel(pk);
+ if(!tel){toast('Coloque o número do motorista primeiro');var e=document.getElementById('kmwTel_'+pk);if(e)e.focus();return}
+ c.pedidoKmEm=Date.now();c.editadoEm=Date.now();try{_garanteCampoAt(c).pedidoKmEm=Date.now()}catch(e){}save();
+ _kmwAbrirWhats(tel,kmwTextoPedido(c,pk));
+ setTimeout(function(){try{if(document.getElementById('kmwTela'))abrirRobo(true)}catch(e){}},600);
+}
+var KMW_RESP=null;
+function kmwLancar(pk){kmRapido(pk);KMR.manual=true;
+ try{var h=document.querySelector('#sheetBody2 h3')||document.querySelector('.overlay.open h3');if(h)h.textContent='Lançar km e responder'}catch(e){}}
+(function(){var o=window.kmRapidoSalvar;if(typeof o!=='function'||o._v234)return;
+ var w=function(){
+  var k=KMR,c=k&&S.carros[k.pk],antes=c?String(c.kmUltima)+'|'+c.kmUltimaData:'';
+  var r=o.apply(this,arguments);
+  try{if(k&&k.manual&&c&&String(c.kmUltima)+'|'+c.kmUltimaData!==antes){
+   c.pedidoKmEm=0;save();kmwResposta(k.pk,Number(c.kmUltima))}}catch(e){}
+  return r};
+ w._v234=1;window.kmRapidoSalvar=kmRapidoSalvar=w;})();
+function kmwResposta(pk,km){
+ var c=S.carros[pk];if(!c)return;var txt=kmwTextoResposta(c,km),tel=kmwTel(pk);KMW_RESP={pk:pk,txt:txt};
+ setTimeout(function(){
+  openSheet('<div class="v102sheetHero"><div class="v102sheetIcon">💬</div><div><div class="v102eyebrow">'+esc(_kmwPlaca(c,pk))+'</div><h3>Resposta pronta</h3><div class="sub">Km '+fmtKm(km)+' salvo. Mande para '+esc(_kmwNome(c.motorista)||'o motorista')+':</div></div></div>'+
+   '<div id="kmwTxt" style="white-space:pre-wrap;background:var(--card2,#f4f6f8);border-radius:14px;padding:12px 14px;font-size:15px;line-height:1.45;user-select:text;-webkit-user-select:text">'+esc(txt)+'</div>'+
+   '<button class="btn" style="width:100%;margin-top:10px;background:#25D366;border-color:#25D366;color:#fff" '+(tel?'':'disabled ')+'onclick="kmwEnviarResposta()">💬 Enviar no WhatsApp'+(tel?'':' (sem número)')+'</button>'+
+   '<button class="btn sec" style="width:100%;margin-top:6px" onclick="kmwCopiarResposta()">📋 Copiar texto</button>'+
+   '<button class="btn sec" style="width:100%;margin-top:6px" onclick="closeSheet(2)">Fechar</button>',2);
+ },350);
+}
+function kmwEnviarResposta(){if(!KMW_RESP)return;var tel=kmwTel(KMW_RESP.pk);if(!tel){toast('Sem número do motorista');return}_kmwAbrirWhats(tel,KMW_RESP.txt)}
+function kmwCopiarResposta(){if(!KMW_RESP)return;var t=KMW_RESP.txt;
+ (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(t):Promise.reject()).then(function(){toast('📋 Copiado')},function(){
+  try{var a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove();toast('📋 Copiado')}catch(e){toast('Não consegui copiar — segure o texto para copiar')}})}
+
+/* ---------- tela (substitui a do robô) ---------- */
+window.abrirRobo=abrirRobo=function(manterRolagem){
+ if(!S){toast('Dados ainda carregando');return}
+ var sc=0;try{if(manterRolagem){var sb=document.getElementById('sheetBody');sc=sb?sb.scrollTop:0}}catch(e){}
+ var lista=Object.keys(S.carros).filter(function(pk){return _roboElegivel(S.carros[pk])}).map(function(pk){return {pk:pk,c:S.carros[pk],r:_roboRisco(pk)}});
+ lista.sort(function(a,b){return (b.r.nivel-a.r.nivel)||((a.r.fo===null?1e9:a.r.fo)-(b.r.fo===null?1e9:b.r.fo))||(a.c.nome||'').localeCompare(b.c.nome||'')});
+ var h='<div id="kmwTela"><div class="v102sheetHero"><div class="v102sheetIcon">📸</div><div><div class="v102eyebrow">WHATSAPP</div><h3>Km dos motoristas</h3><div class="sub">Os de cima são os que, pela média de km/dia, provavelmente estão na troca. <b>1)</b> Pedir foto abre o seu WhatsApp com a mensagem pronta. <b>2)</b> Quando a foto chegar, Lançar km: o app salva e monta a resposta para você mandar.</div></div></div>';
+ lista.forEach(function(x){
+  var c=x.c,r=x.r,pk=x.pk,tel=kmwTel(pk);
+  var cor=r.nivel>=3?'#c0392b':(r.nivel===2?'#C77A16':(r.nivel===1?'#8a8f98':'#2E7D5B'));
+  var info=[];
+  if(r.km)info.push('últ. km '+fmtKm(r.km)+(r.dt?' em '+dataBR(r.dt)+(r.dias!==null?' ('+r.dias+' dias)':''):''));else info.push('sem km registrado');
+  if(r.estimado)info.push('hoje ≈ '+fmtKm(r.est)+' ('+r.kmDia+' km/dia'+(r.kdFrota?', média da frota':'')+')');
+  var tr=[];
+  if(r.fo!==null)tr.push(r.fo<=0?'<b style="color:#c0392b">óleo '+(r.estimado?'provavelmente ':'')+'VENCIDO</b>':'óleo: faltam ~'+fmtKm(r.fo)+' km');else tr.push('óleo sem programação');
+  if(r.fc!==null)tr.push(r.fc<=0?'<b style="color:#c0392b">correia '+(r.estimado?'provavelmente ':'')+'VENCIDA</b>':'correia: faltam ~'+fmtKm(r.fc)+' km');
+  var ped=Number(c.pedidoKmEm)||0,kmEm=Number((c._campoAt||{}).kmUltima)||0,sit='';
+  if(ped&&!(kmEm>ped)){var hoje0=new Date();hoje0.setHours(0,0,0,0);
+   sit='<div class="sub" style="color:#C77A16;margin-top:4px">📨 Pedido enviado '+(ped>=hoje0.getTime()?'hoje às '+new Date(ped).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'em '+new Date(ped).toLocaleDateString('pt-BR'))+' — aguardando a foto</div>'}
+  h+='<div class="card" style="border-left:4px solid '+cor+';margin-bottom:10px">'+
+   '<div style="display:flex;justify-content:space-between;gap:8px"><b>'+esc(tituloCarro(c))+'</b><span class="sub">'+esc(_kmwPlaca(c,pk))+'</span></div>'+
+   '<div class="sub">'+esc(c.motorista||'')+'</div>'+
+   '<div class="sub" style="margin-top:4px">'+info.join(' · ')+'</div><div class="sub">'+tr.join(' · ')+'</div>'+sit+
+   '<input id="kmwTel_'+pk+'" inputmode="tel" placeholder="WhatsApp do motorista (DDD + número)" value="'+esc(tel?fmtTel(tel):'')+'" onchange="kmwSalvaTel(\''+pk+'\',this.value)" style="margin-top:8px">'+
+   '<div style="display:flex;gap:8px;margin-top:8px"><button class="btn mini" style="flex:1;background:#25D366;border-color:#25D366;color:#fff" onclick="kmwPedir(\''+pk+'\')">📲 Pedir foto do km</button>'+
+   '<button class="btn mini sec" style="flex:1" onclick="kmwLancar(\''+pk+'\')">✍️ Lançar km</button></div></div>';
+ });
+ if(!lista.length)h+='<div class="card sub">Nenhum carro alugado com motorista.</div>';
+ h+='</div>';
+ openSheet(h);
+ if(sc)setTimeout(function(){var sb=document.getElementById('sheetBody');if(sb)sb.scrollTop=sc},30);
+};
+window._roboRepintar=_roboRepintar=function(){try{if(document.getElementById('kmwTela')&&document.getElementById('ovSheet').classList.contains('open')&&!digitando())abrirRobo(true)}catch(e){}};
+/* ficha / outros lugares que usavam o botão do robô */
+window.roboWhats=roboWhats=function(pk){kmwPedir(pk)};
+
+/* ---------- quem não mandou a foto (pedido manual) ---------- */
+window._roboAtrasoDe=_roboAtrasoDe=function(pk){
+ if(!S||!S.carros[pk])return null;var c=S.carros[pk];if(!_roboElegivel(c))return null;
+ var ped=Number(c.pedidoKmEm)||0,now=Date.now();if(!ped)return null;
+ var kmEm=Number((c._campoAt||{}).kmUltima)||0;if(kmEm>ped)return null;
+ if(now-ped>3*864e5)return null;            /* pedido velho sai da lista */
+ if(now<_prazoResposta(ped))return null;
+ var d0=new Date(ped);d0.setHours(0,0,0,0);var dias=Math.floor((now-d0.getTime())/864e5);
+ var quando=dias<=0?'hoje às '+new Date(ped).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):(dias===1?'ontem':'há '+dias+' dias');
+ return {pk:pk,ped:ped,txt:'📸 '+_nomeCurto(c.motorista)+' NÃO mandou a foto do painel (pedido '+quando+') — cobrar'};
+};
+window._roboAtrasados=_roboAtrasados=function(){if(!S)return [];return Object.keys(S.carros).map(_roboAtrasoDe).filter(Boolean)};
+/* alertas do robô (suspeita/número novo) não existem mais; fica só o "não mandou a foto" */
+window._roboAlertas=_roboAlertas=function(c){var a=[];if(!S)return a;var pk=Object.keys(S.carros).find(function(k){return S.carros[k]===c});if(!pk)return a;var at=_roboAtrasoDe(pk);if(at)a.push({n:'red',t:at.txt});return a};
+/* robô desligado: não exporta mais nada para a área do robô */
+window._roboSync=_roboSync=function(){return 0};
 
 </script>
 </body>

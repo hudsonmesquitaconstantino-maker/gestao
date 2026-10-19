@@ -9,7 +9,11 @@
    sem ela, a foto é lida pela IA da própria Cloudflare).
    Este arquivo é público no GitHub: nada de segredo aqui. */
 
-const VERSAO = 'robo-km 3.18';
+const VERSAO = 'robo-km 3.19 (desligado)';
+/* 3.19 (19/10/2026): o Hudson cancelou a Dualhook e passou a pedir/responder o km à mão pelo Gestão
+   (tela "Km dos motoristas"). O robô fica DESLIGADO: o cron não roda e o webhook não processa nada.
+   Para religar um dia: ROBO_LIGADO = true e um número de WhatsApp conectado. */
+const ROBO_LIGADO = false;
 const DIA = 864e5;
 
 /* ---------------- utilidades ---------------- */
@@ -715,10 +719,12 @@ async function http(req, env, exec) {
 
 export default {
   async fetch(req, env, exec) {
+    if (!ROBO_LIGADO) return new Response(VERSAO, { status: 200 });
     try { return await http(req, env, exec); }
     catch (e) { return new Response('erro', { status: 500 }); }
   },
   async scheduled(evt, env, exec) {
+    if (!ROBO_LIGADO) return;
     exec.waitUntil((async () => {
       let ctx; try { ctx = new Ctx(env); await ciclo(ctx, evt.scheduledTime || Date.now()); }
       catch (e) { if (ctx) await ctx.log('cron: ' + e.message); }

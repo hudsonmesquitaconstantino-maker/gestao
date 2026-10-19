@@ -11,7 +11,7 @@ binding = "AI"
 
 [triggers]
 # a cada 15 min, das 8h às 20h (Brasília). Pedidos de rotina só seg–sáb, 9h–12h.
-crons = ["*/15 11-23 * * *"]
+crons = []
 
 [vars]
 FIREBASE_DB = "https://guimas-73e01-default-rtdb.firebaseio.com"
