@@ -1536,7 +1536,7 @@ html.teclado #main{padding-bottom:calc(20px + var(--navH,0px))!important}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=243; var APP_DATE='20/10/2026';
+var APP_VER=244; var APP_DATE='20/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -12257,6 +12257,90 @@ window.buildTermoTexto=buildTermoTexto=function(t,carro){
  }
  return x;
 };
+
+</script>
+<script>
+/* ===== v244 — HISTÓRICO SEPARADO EM ABAS + GASTO POR FORNECEDOR NO ANO =====
+   Pedido do Hudson (20/10/2026): a tela Histórico misturava tudo (gastos por carro, fechamento
+   do fornecedor e a lista de manutenções). Agora tem 3 abas no topo:
+     • Manutenções  — busca + lista de manutenções;
+     • Fornecedores — "Fatura do mês" (o fechamento de sempre: copiar fatura, paga, descontos,
+                      conferência) e "No ano": quanto foi gasto com cada fornecedor no ano, do
+                      maior para o menor; tocando, abre mês a mês (jan, fev, mar…) e a média por mês;
+     • Por carro    — gastos por carro (mês, ano, histórico).
+   Nada muda nos dados: só a organização da tela. */
+(function(){if(document.getElementById('hsegCss'))return;var st=document.createElement('style');st.id='hsegCss';st.textContent=
+ '#hWrap[data-seg=manut] #hTot,#hWrap[data-seg=manut] #hFech{display:none!important}'+
+ '#hWrap[data-seg=forn] .search,#hWrap[data-seg=forn] #hTot,#hWrap[data-seg=forn] [data-hbusca],#hWrap[data-seg=forn] #hZero{display:none!important}'+
+ '#hWrap[data-seg=forn][data-fsub=ano] #hFech{display:none!important}'+
+ '#hWrap[data-seg=carros] .search,#hWrap[data-seg=carros] #hFech,#hWrap[data-seg=carros] [data-hbusca],#hWrap[data-seg=carros] #hZero{display:none!important}'+
+ '#hWrap .hsegTop{margin:4px 0 10px}#hWrap .hsegTop .v99seg{margin:0}'+
+ '.faRow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:center;padding:10px 2px;border-bottom:1px solid var(--line,#EEF0F3);cursor:pointer;list-style:none}'+
+ '.faRow::-webkit-details-marker{display:none}.faRow b{font-size:15px}.faRow small{color:var(--mu,#6B7280);font-size:12px}'+
+ '.faVal{font-weight:800;text-align:right;font-variant-numeric:tabular-nums}'+
+ '.faBar{grid-column:1/-1;height:4px;border-radius:3px;background:#EEF0F3;overflow:hidden}.faBar i{display:block;height:100%;background:var(--ac,#C77A16);border-radius:3px}'+
+ '.faMes{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:8px;align-items:center;padding:5px 2px 5px 8px;font-size:13.5px}'+
+ '.faMes .faBar{grid-column:auto;height:6px}.faMes span:last-child{text-align:right;font-variant-numeric:tabular-nums;font-weight:650}'+
+ '.faMes.zero{color:var(--mu,#9CA3AF)}.faMedia{font-size:12.5px;color:var(--tx2,#374151);padding:6px 2px 10px 8px;border-bottom:1px solid var(--line,#EEF0F3)}';
+ document.head.appendChild(st)})();
+
+var _MES_CURTO=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+function fornecedoresDoAno(ano){
+ var hj=hoje(),ateMes=(String(ano)===hj.slice(0,4))?Number(hj.slice(5,7)):12,porCh={},tot=0,totF=0,totH=0;
+ for(var mi=1;mi<=12;mi++){
+  var ym=ano+'-'+('0'+mi).slice(-2),f=fechamentoDoMes(ym);
+  f.fornecedores.forEach(function(fo){
+   var ch=_fatChave(fo.nome),x=porCh[ch]||(porCh[ch]={nome:fo.nome,total:0,frota:0,pessoal:0,meses:[0,0,0,0,0,0,0,0,0,0,0,0]});
+   if(fo.nome.length>x.nome.length)x.nome=fo.nome;
+   x.total=_r2(x.total+fo.total);x.frota=_r2(x.frota+fo.totalFrota);x.pessoal=_r2(x.pessoal+fo.totalPessoal);x.meses[mi-1]=_r2(x.meses[mi-1]+fo.total);
+  });
+  tot=_r2(tot+f.total);totF=_r2(totF+f.totalFrota);totH=_r2(totH+f.totalPessoal);
+ }
+ var lista=Object.keys(porCh).map(function(k){return porCh[k]}).filter(function(x){return Math.abs(x.total)>0.004}).sort(function(a,b){return b.total-a.total});
+ return{ano:String(ano),ateMes:ateMes,lista:lista,total:tot,totalFrota:totF,totalPessoal:totH};
+}
+function htmlFornAno(){
+ var meses=mesesComGasto(),anos={};meses.forEach(function(m){anos[m.slice(0,4)]=1});anos[hoje().slice(0,4)]=1;
+ var lsAnos=Object.keys(anos).sort().reverse(),ano=window._faAno&&anos[window._faAno]?window._faAno:lsAnos[0];
+ var d=fornecedoresDoAno(ano),max=d.lista.length?Math.max.apply(null,d.lista.map(function(x){return x.total})):0;
+ var h='<div class="card v99histcard" id="hFornAno"><div class="v99summary" style="cursor:default"><span>📈 Gasto por fornecedor</span><span>'+esc(ano)+'</span></div>';
+ h+='<select onchange="window._faAno=this.value;render()" style="margin:6px 0 8px">'+lsAnos.map(function(a){return '<option value="'+a+'"'+(a===ano?' selected':'')+'>'+a+'</option>'}).join('')+'</select>';
+ h+='<div class="kv" style="margin:2px 0 8px"><b style="font-weight:800;color:var(--tx)">TOTAL '+esc(ano)+'</b><span style="font-weight:800;color:var(--tx)">R$ '+fmtBRL(d.total)+'</span>'+
+  '<b>↳ Frota Fábio</b><span>R$ '+fmtBRL(d.totalFrota)+'</span><b>↳ Frota Hudson</b><span>R$ '+fmtBRL(d.totalPessoal)+'</span>'+
+  '<b>Média por mês</b><span>R$ '+fmtBRL(_r2(d.total/d.ateMes))+'</span></div>';
+ if(!d.lista.length)h+='<div class="sub">Nenhum gasto com fornecedor em '+esc(ano)+'.</div>';
+ d.lista.forEach(function(x){
+  var media=_r2(x.total/d.ateMes),comCompra=x.meses.slice(0,d.ateMes).filter(function(v){return Math.abs(v)>0.004}).length,maxM=Math.max.apply(null,x.meses.concat([0.01]));
+  h+='<details><summary class="faRow"><div><b>'+esc(x.nome)+'</b><br><small>média R$ '+fmtBRL(media)+'/mês · '+comCompra+' de '+d.ateMes+' meses com compra</small></div><div class="faVal">R$ '+fmtBRL(x.total)+'</div>'+
+   '<div class="faBar"><i style="width:'+(max>0?Math.max(2,Math.round(x.total/max*100)):0)+'%"></i></div></summary>';
+  for(var i=0;i<d.ateMes;i++){var v=x.meses[i];
+   h+='<div class="faMes'+(Math.abs(v)<0.005?' zero':'')+'"><span>'+_MES_CURTO[i]+'</span><div class="faBar"><i style="width:'+(v>0?Math.max(2,Math.round(v/maxM*100)):0)+'%"></i></div><span>'+(Math.abs(v)<0.005?'—':_fmtValSinal(v))+'</span></div>'}
+  h+='<div class="faMedia">Média: <b>R$ '+fmtBRL(media)+'</b>/mês ('+_MES_CURTO[0]+'–'+_MES_CURTO[d.ateMes-1]+')'+(comCompra?' · nos meses com compra: <b>R$ '+fmtBRL(_r2(x.total/comCompra))+'</b>':'')+
+   '<br>Frota Fábio R$ '+fmtBRL(x.frota)+' · Frota Hudson R$ '+fmtBRL(x.pessoal)+'</div></details>';
+ });
+ return h+'</div>';
+}
+function _hSegBar(seg,sub){
+ function b(k,t){return '<span class="v99segbtn'+(seg===k?' on':'')+'" onclick="hSeg(\''+k+'\')">'+t+'</span>'}
+ var h='<div class="hsegTop"><div class="v99seg">'+b('manut','Manutenções')+b('forn','Fornecedores')+b('carros','Por carro')+'</div>';
+ if(seg==='forn')h+='<div class="v99seg" style="grid-template-columns:repeat(2,1fr);margin-top:6px"><span class="v99segbtn'+(sub!=='ano'?' on':'')+'" onclick="hFSub(\'mes\')">Fatura do mês</span><span class="v99segbtn'+(sub==='ano'?' on':'')+'" onclick="hFSub(\'ano\')">No ano</span></div>';
+ return h+'</div>';
+}
+function hSeg(k){window._hSeg=k;if(k==='forn')window._fechAberto=true;if(k==='carros')window._hTotAberto=true;render();window.scrollTo(0,0)}
+function hFSub(k){window._hFSub=k;window._fechAberto=true;render()}
+(function(){var o=window.vHistorico;if(typeof o!=='function'||o._v244)return;
+ var w=function(){
+  var seg=window._hSeg||'manut',sub=window._hFSub||'mes',h=o.apply(this,arguments);
+  var i=h.indexOf('<div class="search">');var bar=_hSegBar(seg,sub);
+  h=i>=0?h.slice(0,i)+bar+h.slice(i):bar+h;
+  if(seg==='forn'&&sub==='ano')h+=htmlFornAno();
+  return '<div id="hWrap" data-seg="'+seg+'" data-fsub="'+sub+'">'+h+'</div>';
+ };
+ w._v244=1;window.vHistorico=vHistorico=w;})();
+/* tocar num carro em "Por carro" leva para a lista de manutenções dele */
+(function(){var o=window.hFiltraPlaca;if(typeof o!=='function'||o._v244)return;
+ var w=function(p){if((window._hSeg||'manut')!=='manut'){window._hSeg='manut';render()}return o.apply(this,arguments)};
+ w._v244=1;window.hFiltraPlaca=hFiltraPlaca=w;})();
 
 </script>
 </body>
