@@ -1536,7 +1536,7 @@ html.teclado #main{padding-bottom:calc(20px + var(--navH,0px))!important}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=238; var APP_DATE='19/10/2026';
+var APP_VER=239; var APP_DATE='20/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -3384,7 +3384,7 @@ h+='<div class="sect">Devolução do carro</div>';
   h+='<div class="card tap" style="margin:0 0 6px" onclick="verManut(\''+m.id+'\')"><div class="row"><div class="grow">'+
    '<div class="tit" style="font-size:14px">'+esc(periodoTexto(m.dataIni,m.dataFim))+_diasChip(m.dataIni,m.dataFim)+_haChip(m)+'</div>'+
    '<div class="sub">'+esc(primNome(m.motorista))+(m.odometro>0?' · '+fmtKm(m.odometro)+' km':'')+'</div></div>'+
-   '<div style="color:var(--warn);font-weight:800">R$ '+fmtBRL(m.total)+'</div></div></div>';
+   _valManutHtml(m)+'</div></div>';
  });
  h+='</div></details>';
  h+='<button class="btn sec" onclick="closeSheet()">Fechar</button>';
@@ -3559,6 +3559,7 @@ function abrirLancar(){
  openSheet('<div class="g2sheetH">Lançar</div><div class="g2grp">'+
   _g2Opt('carro','Carro novo','Placa, CRLV (lê o documento) e motorista','closeSheet(2);formCarro()')+
   _g2Opt('chave','Manutenção','Peças, mão de obra e dias parado','closeSheet(2);go(1)')+
+  _g2Opt('tag','Garantia / desconto','Peça com defeito descontada na fatura do fornecedor','abrirGarantia()')+
   _g2Opt('km','Quilometragem','Escolha o carro e digite o km','g2EscolherCarro(\'km\')')+
   _g2Opt('doc','Contrato de locação','Puxa os dados do carro','closeSheet(2);go(2)')+
   _g2Opt('nota','Observação','Geral ou de um carro','closeSheet(2);obsNova()')+
@@ -7682,20 +7683,20 @@ function textoFechamento(ym,nomeForn){
  pks.filter(function(gk){return !f.carros[gk].pessoal}).forEach(function(gk){
   var c=f.carros[gk],pk=c.pk,car=S.carros[pk];
   x+=(car?tituloCarro(car):pk)+' ('+fmtPlaca(pk).split('-')[0]+')\n';
-  c.itens.forEach(function(i){x+='• R$ '+fmtBRL(i.valor)+' - '+i.desc+'\n'});
-  x+='Subtotal: R$ '+fmtBRL(c.sub)+'\n\n';
+  c.itens.forEach(function(i){x+=_linhaFatura(i)});
+  x+='Subtotal: '+_fmtValSinal(c.sub)+'\n\n';
  });
  var pess=pks.filter(function(gk){return f.carros[gk].pessoal});
  if(pess.length)x+='*👤 VEÍCULOS SEPARADOS (HUDSON)*\n\n';
  pess.forEach(function(gk){
   var c=f.carros[gk],pk=c.pk,car=S.carros[pk];
   x+=(car?tituloCarro(car):pk)+' ('+fmtPlaca(pk).split('-')[0]+')\n';
-  c.itens.forEach(function(i){x+='• R$ '+fmtBRL(i.valor)+' - '+i.desc+'\n'});
-  x+='Subtotal: R$ '+fmtBRL(c.sub)+'\n\n';
+  c.itens.forEach(function(i){x+=_linhaFatura(i)});
+  x+='Subtotal: '+_fmtValSinal(c.sub)+'\n\n';
  });
  x+='*📊 RESUMO DA FATURA*\n';
  x+='*Total Frota Fábio:* R$ '+fmtBRL(f.totalFrota)+'\n';
- x+='*Total Frota Hudson:* R$ '+fmtBRL(f.totalPessoal)+'\n';
+ x+='*Total Frota Hudson:* R$ '+fmtBRL(f.totalPessoal)+'\n';var _gd=_garantiasNoFornecedor(f);if(_gd<0)x+='*Descontos de garantia (já abatidos acima):* − R$ '+fmtBRL(-_gd)+'\n';
  x+='*TOTAL GERAL A PAGAR: R$* '+fmtBRL(f.total);
  return x;
 }
@@ -7934,7 +7935,7 @@ function vHistorico(){
   h+='<div class="card v99histcard" id="hFech"><details'+(window._fechAberto?' open':'')+' ontoggle="window._fechAberto=this.open"><summary class="v99summary"><span>📅 Fechamento por fornecedor</span><span>'+_nomeMes(ym)+' ›</span></summary>';
   h+='<label>M\u00eas</label><select onchange="window._fechAberto=true;window._fechMes=this.value;render()">';
   meses.forEach(function(x){h+='<option value="'+x+'"'+(x===ym?' selected':'')+'>'+_nomeMes(x)+'</option>'});
-  h+='</select>';
+  h+='</select>';h+='<div style="margin:8px 0 4px"><span class="chip tap" onclick="listaGarantias()">🛡 Garantias e descontos</span> <span class="chip tap" onclick="abrirGarantia()">＋ lançar garantia</span></div>';
   if(!f.fornecedores.length)h+='<div class="sub" style="margin-top:6px">Sem gastos neste m\u00eas.</div>';
   f.fornecedores.forEach(function(fo){
    var det='';
@@ -7942,10 +7943,10 @@ function vHistorico(){
     var cc=fo.carros[gk],pk=cc.pk,car=S.carros[pk];
     det+='<div class="mvrow" style="opacity:.85"><b class="hplc">'+esc(fmtPlaca(pk))+'</b>'+
       '<div class="grow">'+esc(car?tituloCarro(car):pk)+' <span class="chip">'+(cc.pessoal?'Hudson':'Fábio')+'</span></div>'+
-      '<div class="mvval">R$ '+fmtBRL(cc.sub)+'</div></div>';
+      '<div class="mvval">'+_fmtValSinal(cc.sub)+'</div></div>';
     cc.itens.forEach(function(it){
      det+='<div class="sub" style="margin:0 0 2px 8px">'+(it.data?dataBR(it.data)+' \u00b7 ':'')+
-       esc(String(it.desc||'').slice(0,60))+' \u2014 <b>R$ '+fmtBRL(it.valor)+'</b></div>';
+       esc(String(it.desc||'').slice(0,60))+' \u2014 <b'+(it.valor<0?' style="color:var(--ok,#2E7D5B)"':'')+'>'+_fmtValSinal(it.valor)+'</b></div>';
     });
    });
    h+='<details><summary style="list-style:none;cursor:pointer">'+
@@ -7983,7 +7984,7 @@ function vHistorico(){
   h+='<div class="card tap" data-hbusca="'+esc(db)+'" onclick="verManut(\''+m.id+'\')"><div class="row">'+plateHtml(c.placa)+
    '<div class="grow"><div class="tit" style="font-size:14px">'+esc(tituloCarro(c))+'</div>'+
    '<div class="sub">'+esc(periodoTexto(m.dataIni,m.dataFim))+_diasChip(m.dataIni,m.dataFim)+_haChip(m)+' · '+esc(primNome(m.motorista))+'</div></div>'+
-   '<div style="color:var(--warn);font-weight:800">R$ '+fmtBRL(m.total)+'</div></div></div>';
+   _valManutHtml(m)+'</div></div>';
  });
  return h;
 }
@@ -11842,6 +11843,141 @@ function fcFipeValor(){
   }
   return r};
  w._v238=1;window.salvarCarro=salvarCarro=w;})();
+
+</script>
+<script>
+/* ===== v239 — GARANTIAS / DESCONTOS DE FORNECEDOR =====
+   Pedido do Hudson (20/10/2026): o calço do motor do Mobi RGB comprado com o Abraão no mês
+   passado deu defeito; o Abraão não tinha outro e vai DESCONTAR na fatura deste mês. Não havia
+   como lançar valor negativo. Agora existe "Garantia / desconto": escolhe fornecedor, carro e a
+   peça (o app lista o que foi comprado com aquele fornecedor para aquele carro e já puxa o
+   valor), e o desconto entra NEGATIVO no fechamento do mês — no fornecedor, na Frota Fábio ou
+   Hudson e no total — e no texto "copiar fatura" do WhatsApp. Também abate o gasto do carro.
+   O lançamento NÃO conta como troca de peça (não mexe em últimas trocas, catálogo nem km). */
+function _ehGarantia(m){return !!(m&&m.garantia)}
+/* nunca vira "troca de peça" */
+(function(){var o=window.detectarComponentes;if(typeof o!=='function'||o._v239)return;
+ var w=function(m){if(_ehGarantia(m))return{comps:{},proxOleo:0,proxCorreia:0};return o.apply(this,arguments)};
+ w._v239=1;window.detectarComponentes=detectarComponentes=w;})();
+var _SEM_GAR=0;
+(function(){var o=window.manutsDoCarro;if(typeof o!=='function'||o._v239)return;
+ var w=function(pk){var r=o.apply(this,arguments);return _SEM_GAR?r.filter(function(m){return !_ehGarantia(m)}):r};
+ w._v239=1;window.manutsDoCarro=manutsDoCarro=w;})();
+['catalogoCarro','_tImpManuts'].forEach(function(fn){var o=window[fn];if(typeof o!=='function'||o._v239)return;
+ var w=function(){_SEM_GAR++;try{return o.apply(this,arguments)}finally{_SEM_GAR--}};w._v239=1;window[fn]=w;});
+
+function _fmtValSinal(v){v=_r2(v);return v<0?'− R$ '+fmtBRL(-v):'R$ '+fmtBRL(v)}
+function _valManutHtml(m){
+ if(_ehGarantia(m))return '<div style="color:var(--ok,#2E7D5B);font-weight:800;text-align:right">'+_fmtValSinal(m.total)+'<div style="font-size:11px;font-weight:600">🛡 garantia</div></div>';
+ return '<div style="color:var(--warn);font-weight:800">R$ '+fmtBRL(m.total)+'</div>';
+}
+function _linhaFatura(i){
+ if(_r2(i.valor)<0)return '• *− R$ '+fmtBRL(-_r2(i.valor))+'* - '+i.desc+' (desconto)\n';
+ return '• R$ '+fmtBRL(i.valor)+' - '+i.desc+'\n';
+}
+function _garantiasNoFornecedor(fo){var t=0;Object.keys(fo.carros||{}).forEach(function(gk){fo.carros[gk].itens.forEach(function(i){if(_r2(i.valor)<0)t=_r2(t+i.valor)})});return t}
+
+/* fornecedores conhecidos (para o campo) */
+function _fornecedoresConhecidos(){
+ var cont={};
+ Object.keys(S.manutencoes||{}).forEach(function(k){var m=S.manutencoes[k];
+  (m.pecas||[]).forEach(function(p){var n=String(p.loja||'').trim();if(n)cont[n]=(cont[n]||0)+1});
+  (m.blocos||[]).forEach(function(b){var n=String(b.nome||'').trim();if(n)cont[n]=(cont[n]||0)+1});
+ });
+ /* junta grafias ("Abraão"/"abraao"): fica a mais usada */
+ var porCh={};Object.keys(cont).forEach(function(n){var ch=semAcento(n).replace(/[^a-z0-9]/g,'');if(!porCh[ch]||cont[n]>cont[porCh[ch]])porCh[ch]=n});
+ return Object.keys(porCh).map(function(ch){return porCh[ch]}).sort(function(a,b){return a.localeCompare(b)});
+}
+/* itens comprados daquele fornecedor para aquele carro (últimos 12 meses) */
+function _itensCompradosForn(pk,forn){
+ var ch=semAcento(String(forn||'')).replace(/[^a-z0-9]/g,''),lim=new Date(Date.now()-365*864e5).toISOString().slice(0,10),out=[];
+ if(!pk||!ch)return out;
+ Object.keys(S.manutencoes||{}).forEach(function(k){var m=S.manutencoes[k];if(!m||m.carro!==pk||_ehGarantia(m))return;
+  _itensFinanceirosManut(m,true).forEach(function(it){
+   if(it.valor<=0)return;var fc=semAcento(String(it.fornecedor||'')).replace(/[^a-z0-9]/g,'');
+   if(!fc||(fc.indexOf(ch)<0&&ch.indexOf(fc)<0))return;if((it.data||'')<lim)return;
+   out.push({mid:m.id,desc:it.desc,valor:it.valor,data:it.data,tipo:it.tipo});
+  });
+ });
+ return out.sort(function(a,b){return String(b.data).localeCompare(String(a.data))});
+}
+
+var GAR_ED=null;
+function abrirGarantia(id,pkIni){
+ var m=id?S.manutencoes[id]:null;GAR_ED=m?m.id:null;
+ var p=m?(m.pecas||[])[0]||{}:{};
+ var forns=_fornecedoresConhecidos();
+ var desc=m?String(p.desc||'').replace(/^GARANTIA\s*[—-]\s*/i,''):'';
+ var h='<div class="v102sheetHero"><div class="v102sheetIcon">🛡</div><div><div class="v102eyebrow">FORNECEDOR</div><h3>'+(m?'Editar garantia':'Garantia / desconto')+'</h3><div class="sub">Peça que deu garantia e o fornecedor vai <b>descontar na fatura</b>. Entra negativo no fechamento do mês (fornecedor, Frota Fábio/Hudson e total) e na fatura copiada para o WhatsApp.</div></div></div>'+
+  '<div class="v102panel">'+
+  '<label>Fornecedor</label><input id="gaForn" list="gaFornL" autocomplete="off" value="'+esc(m?p.loja:'')+'" placeholder="Ex.: Abraão" onchange="garPecas()" oninput="garPecas()"><datalist id="gaFornL">'+forns.map(function(n){return '<option value="'+esc(n)+'">'}).join('')+'</datalist>'+
+  '<label>Carro</label><select id="gaCarro" onchange="garPecas();garFrota()"><option value="">— escolha —</option>'+opcoesCarros(m?m.carro:(pkIni||''))+'</select>'+
+  '<div id="gaPecasBox"></div>'+
+  '<label>Peça / descrição</label><input id="gaDesc" value="'+esc(desc)+'" placeholder="Ex.: Calço do motor">'+
+  '<label>Valor a descontar (R$)</label><input id="gaValor" inputmode="decimal" value="'+(m?fmtBRL(-_r2(m.total)):'')+'" placeholder="0,00">'+
+  '<label>Data do desconto <span class="v102optional">define o mês da fatura</span></label><input type="date" id="gaData" value="'+esc(m?(p.data||m.dataIni):hoje())+'">'+
+  '<label>Desconta de qual frota</label><select id="gaFrota"><option value="">Automático (frota do carro)</option><option value="fabio"'+(m&&m.frotaFechamento==='fabio'?' selected':'')+'>Frota Fábio</option><option value="hudson"'+(m&&m.frotaFechamento==='hudson'?' selected':'')+'>Frota Hudson</option></select>'+
+  '<div class="v102info" id="gaFrotaInfo"></div>'+
+  '<label>Observação <span class="v102optional">opcional</span></label><input id="gaObs" value="'+esc(m?m.texto:'')+'" placeholder="Ex.: calço com defeito, fornecedor sem a peça">'+
+  '</div><div class="v102actionbar"><button class="btn ok v102primary" onclick="salvarGarantia()">'+(m?'Salvar':'Lançar desconto')+'</button>'+
+  (m?'<button class="btn red" onclick="excluirGarantia(\''+m.id+'\')">🗑 Excluir garantia</button>':'')+
+  '<button class="btn sec" onclick="closeSheet(2)">Cancelar</button></div>';
+ openSheet(h,2);
+ setTimeout(function(){garPecas();garFrota()},0);
+}
+function garFrota(){var pk=(document.getElementById('gaCarro')||{}).value,box=document.getElementById('gaFrotaInfo');if(!box)return;var c=S.carros[pk];box.textContent=c?('Automático: '+(c.meuCarro?'Frota Hudson':'Frota Fábio')+' ('+tituloCarro(c)+').'):'';}
+function garPecas(){
+ var box=document.getElementById('gaPecasBox');if(!box)return;
+ var pk=document.getElementById('gaCarro').value,f=document.getElementById('gaForn').value;
+ var its=_itensCompradosForn(pk,f);
+ if(!pk||!f.trim()){box.innerHTML='';return}
+ if(!its.length){box.innerHTML='<div class="v102info">Nada comprado de '+esc(f)+' para este carro nos últimos 12 meses — digite a peça e o valor.</div>';return}
+ window._garIts=its;
+ box.innerHTML='<label>Qual peça deu garantia? <span class="v102optional">puxa descrição e valor</span></label><select id="gaPeca" onchange="garEscolhePeca(this.value)"><option value="">— escolha ou digite abaixo —</option>'+
+  its.map(function(it,i){return '<option value="'+i+'">'+esc((it.data?dataBR(it.data)+' · ':'')+String(it.desc).slice(0,50)+' — R$ '+fmtBRL(it.valor))+'</option>'}).join('')+'</select>';
+}
+function garEscolhePeca(i){var it=(window._garIts||[])[+i];if(!it)return;
+ document.getElementById('gaDesc').value=String(it.desc||'');document.getElementById('gaValor').value=fmtBRL(it.valor);window._garOrig=it.mid;
+ var ob=document.getElementById('gaObs');if(ob&&!ob.value.trim())ob.value='Garantia da compra de '+(it.data?dataBR(it.data):'')+' — fornecedor sem a peça, desconto na fatura';
+}
+function salvarGarantia(){
+ function g(id){return ((document.getElementById(id)||{}).value||'').trim()}
+ var forn=g('gaForn'),pk=g('gaCarro'),desc=g('gaDesc'),v=_r2(parseBRL(g('gaValor'))),dt=g('gaData');
+ if(!forn){toast('Escolha o fornecedor');return}
+ if(!pk||!S.carros[pk]){toast('Escolha o carro');return}
+ if(!desc){toast('Escreva a peça (ex.: Calço do motor)');return}
+ if(!(v>0)){toast('Valor inválido');return}
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(dt)){toast('Data inválida');return}
+ var n=Date.now(),id=GAR_ED||('gar_'+n),ant=GAR_ED?S.manutencoes[GAR_ED]:null;
+ var m={id:id,carro:pk,motorista:(S.carros[pk].motorista||''),dataIni:dt,dataFim:dt,dataPecasPadrao:dt,odometro:0,garantia:true,garantiaDe:(window._garOrig||(ant&&ant.garantiaDe)||''),
+  pecas:[{desc:'GARANTIA — '+desc,loja:forn,valor:-v,data:dt,pendenteFinanceiro:false}],blocos:[],
+  frotaFechamento:g('gaFrota'),texto:g('gaObs'),origem:'garantia',criadoEm:(ant&&ant.criadoEm)||n,editadoEm:n};
+ S.manutencoes[id]=normManut(m);window._garOrig=null;
+ save();try{_avisoFaturaPaga(S.manutencoes[id])}catch(e){}
+ closeSheet(2);try{render()}catch(e){}
+ toast('🛡 Desconto de '+_fmtValSinal(-v).replace('− ','')+' lançado na fatura de '+forn+' ('+_nomeMes(dt.slice(0,7))+')');
+}
+function excluirGarantia(id){
+ ask('Excluir esta garantia?','O desconto sai do fechamento do fornecedor.','Excluir',function(){
+  S.apagados=S.apagados||{};S.apagados[id]=Date.now();delete S.manutencoes[id];save();closeSheet(2);try{render()}catch(e){}toast('Garantia excluída')});
+}
+function listaGarantias(){
+ var gs=Object.keys(S.manutencoes||{}).map(function(k){return S.manutencoes[k]}).filter(_ehGarantia).sort(function(a,b){return String(b.dataIni).localeCompare(String(a.dataIni))});
+ var h='<div class="v102sheetHero"><div class="v102sheetIcon">🛡</div><div><div class="v102eyebrow">FORNECEDORES</div><h3>Garantias e descontos</h3><div class="sub">Peças que deram garantia e foram descontadas na fatura do fornecedor.</div></div></div>'+
+  '<button class="btn ok" onclick="abrirGarantia()">＋ Lançar garantia / desconto</button>';
+ if(!gs.length)h+='<div class="v102info" style="margin-top:10px">Nenhuma garantia lançada ainda.</div>';
+ else{var tot=0;h+='<div class="v102panel" style="margin-top:10px">';
+  gs.forEach(function(m){var c=S.carros[m.carro]||{placa:m.carro},p=(m.pecas||[])[0]||{};tot=_r2(tot+m.total);
+   h+='<div class="mvrow tap" onclick="abrirGarantia(\''+m.id+'\')"><b class="hplc">'+esc(fmtPlaca(m.carro))+'</b><div class="grow">'+esc(String(p.desc||'').replace(/^GARANTIA\s*[—-]\s*/i,''))+
+    '<div class="sub">'+esc(p.loja||'')+' · '+esc(_nomeMes(String(m.dataIni).slice(0,7)))+' · '+(m.frotaFechamento?_rotuloFrotaFinanceira(m.frotaFechamento):(c.meuCarro?'Frota Hudson':'Frota Fábio'))+'</div></div><div class="mvval" style="color:var(--ok,#2E7D5B)">'+_fmtValSinal(m.total)+'</div></div>'});
+  h+='<div class="sub" style="margin-top:6px">Total descontado: <b>'+_fmtValSinal(tot)+'</b></div></div>'}
+ h+='<div class="v102actionbar"><button class="btn sec" onclick="closeSheet(2)">Fechar</button></div>';
+ openSheet(h,2);
+}
+/* abrir uma garantia pelo histórico vai direto para a edição dela */
+(function(){var o=window.verManut;if(typeof o!=='function'||o._v239)return;
+ var w=function(id){var m=S.manutencoes&&S.manutencoes[id];if(_ehGarantia(m))return abrirGarantia(id);return o.apply(this,arguments)};
+ w._v239=1;window.verManut=verManut=w;})();
 
 </script>
 </body>
