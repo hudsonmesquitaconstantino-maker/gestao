@@ -11888,6 +11888,27 @@ function _fornecedoresConhecidos(){
  var porCh={};Object.keys(cont).forEach(function(n){var ch=semAcento(n).replace(/[^a-z0-9]/g,'');if(!porCh[ch]||cont[n]>cont[porCh[ch]])porCh[ch]=n});
  return Object.keys(porCh).map(function(ch){return porCh[ch]}).sort(function(a,b){return a.localeCompare(b)});
 }
+/* fornecedores pelo gasto dos últimos 12 meses (grafias diferentes juntas) */
+function _fornecedoresRanking(){
+ var lim=new Date(Date.now()-365*864e5).toISOString().slice(0,10),tot={},nomes={},tudo={};
+ Object.keys(S.manutencoes||{}).forEach(function(k){var m=S.manutencoes[k];if(!m||_ehGarantia(m))return;
+  _itensFinanceirosManut(m,true).forEach(function(it){var n=String(it.fornecedor||'').trim();if(!n||it.valor<=0)return;
+   var ch=semAcento(n).replace(/[^a-z0-9]/g,'');if(!ch)return;nomes[ch]=nomes[ch]||{};nomes[ch][n]=(nomes[ch][n]||0)+1;
+   tudo[ch]=_r2((tudo[ch]||0)+it.valor);if((it.data||'')>=lim)tot[ch]=_r2((tot[ch]||0)+it.valor)})});
+ return Object.keys(tudo).map(function(ch){var ns=nomes[ch],nome=Object.keys(ns).sort(function(a,b){return ns[b]-ns[a]||b.length-a.length})[0];return{chave:ch,nome:nome,ano:tot[ch]||0,tudo:tudo[ch]}})
+  .sort(function(a,b){return b.ano-a.ano||b.tudo-a.tudo||a.nome.localeCompare(b.nome)});
+}
+function _garOpcoesForn(sel){
+ var chSel=semAcento(String(sel||'')).replace(/[^a-z0-9]/g,''),achou=false;
+ var h=_fornecedoresRanking().map(function(f){var on=chSel&&f.chave===chSel;if(on)achou=true;return '<option value="'+esc(f.nome)+'"'+(on?' selected':'')+'>'+esc(f.nome)+(f.ano?' — R$ '+fmtBRL(f.ano)+' em 12 meses':'')+'</option>'}).join('');
+ if(sel&&!achou)h='<option value="'+esc(sel)+'" selected>'+esc(sel)+'</option>'+h;
+ return h;
+}
+function garFornSel(){var v=document.getElementById('gaFornSel').value,w=document.getElementById('gaFornOutroW');
+ if(v==='__outro'){w.style.display='block';document.getElementById('gaForn').value=(document.getElementById('gaFornOutro').value||'').trim();setTimeout(function(){document.getElementById('gaFornOutro').focus()},50)}
+ else{w.style.display='none';document.getElementById('gaForn').value=v}
+ garPecas();
+}
 /* itens comprados daquele fornecedor para aquele carro (últimos 12 meses) */
 function _itensCompradosForn(pk,forn){
  var ch=semAcento(String(forn||'')).replace(/[^a-z0-9]/g,''),lim=new Date(Date.now()-365*864e5).toISOString().slice(0,10),out=[];
@@ -11906,11 +11927,11 @@ var GAR_ED=null;
 function abrirGarantia(id,pkIni){
  var m=id?S.manutencoes[id]:null;GAR_ED=m?m.id:null;
  var p=m?(m.pecas||[])[0]||{}:{};
- var forns=_fornecedoresConhecidos();
  var desc=m?String(p.desc||'').replace(/^(GARANTIA|DESCONTO)\s*[—-]\s*/i,''):'';
  var h='<div class="v102sheetHero"><div class="v102sheetIcon">🏷</div><div><div class="v102eyebrow">FORNECEDOR</div><h3>'+(m?'Editar desconto':'Desconto na fatura')+'</h3><div class="sub">Peça comprada em outro mês que o fornecedor vai <b>descontar na fatura</b>. O desconto entra só no mês escolhido abaixo (fornecedor, Frota Fábio/Hudson e total) e na fatura copiada para o WhatsApp — <b>o mês em que a peça foi paga não muda</b>.</div></div></div>'+
   '<div class="v102panel">'+
-  '<label>Fornecedor</label><input id="gaForn" list="gaFornL" autocomplete="off" value="'+esc(m?p.loja:'')+'" placeholder="Ex.: Abraão" onchange="garPecas()" oninput="garPecas()"><datalist id="gaFornL">'+forns.map(function(n){return '<option value="'+esc(n)+'">'}).join('')+'</datalist>'+
+  '<label>Fornecedor <span class="v102optional">os que mais gastamos primeiro</span></label><select id="gaFornSel" onchange="garFornSel()"><option value="">— escolha —</option>'+_garOpcoesForn(m?p.loja:'')+'<option value="__outro">Outro (digitar o nome)</option></select>'+
+  '<input id="gaForn" type="hidden" value="'+esc(m?p.loja:'')+'"><div id="gaFornOutroW" style="display:none"><label>Nome do fornecedor</label><input id="gaFornOutro" autocomplete="off" placeholder="Nome do fornecedor" oninput="document.getElementById(\'gaForn\').value=this.value.trim();garPecas()"></div>'+
   '<label>Carro</label><select id="gaCarro" onchange="garPecas();garFrota()"><option value="">— escolha —</option>'+opcoesCarros(m?m.carro:(pkIni||''))+'</select>'+
   '<div id="gaPecasBox"></div>'+
   '<label>Peça / descrição</label><input id="gaDesc" value="'+esc(desc)+'" placeholder="Ex.: Calço do motor">'+
