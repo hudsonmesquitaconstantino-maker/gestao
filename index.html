@@ -3559,7 +3559,7 @@ function abrirLancar(){
  openSheet('<div class="g2sheetH">Lançar</div><div class="g2grp">'+
   _g2Opt('carro','Carro novo','Placa, CRLV (lê o documento) e motorista','closeSheet(2);formCarro()')+
   _g2Opt('chave','Manutenção','Peças, mão de obra e dias parado','closeSheet(2);go(1)')+
-  _g2Opt('tag','Garantia / desconto','Peça com defeito descontada na fatura do fornecedor','abrirGarantia()')+
+  _g2Opt('tag','Desconto na fatura','Peça que o fornecedor vai descontar na fatura','abrirGarantia()')+
   _g2Opt('km','Quilometragem','Escolha o carro e digite o km','g2EscolherCarro(\'km\')')+
   _g2Opt('doc','Contrato de locação','Puxa os dados do carro','closeSheet(2);go(2)')+
   _g2Opt('nota','Observação','Geral ou de um carro','closeSheet(2);obsNova()')+
@@ -7696,7 +7696,7 @@ function textoFechamento(ym,nomeForn){
  });
  x+='*📊 RESUMO DA FATURA*\n';
  x+='*Total Frota Fábio:* R$ '+fmtBRL(f.totalFrota)+'\n';
- x+='*Total Frota Hudson:* R$ '+fmtBRL(f.totalPessoal)+'\n';var _gd=_garantiasNoFornecedor(f);if(_gd<0)x+='*Descontos de garantia (já abatidos acima):* − R$ '+fmtBRL(-_gd)+'\n';
+ x+='*Total Frota Hudson:* R$ '+fmtBRL(f.totalPessoal)+'\n';var _gd=_garantiasNoFornecedor(f);if(_gd<0)x+='*Descontos (já abatidos acima):* − R$ '+fmtBRL(-_gd)+'\n';
  x+='*TOTAL GERAL A PAGAR: R$* '+fmtBRL(f.total);
  return x;
 }
@@ -7935,7 +7935,7 @@ function vHistorico(){
   h+='<div class="card v99histcard" id="hFech"><details'+(window._fechAberto?' open':'')+' ontoggle="window._fechAberto=this.open"><summary class="v99summary"><span>📅 Fechamento por fornecedor</span><span>'+_nomeMes(ym)+' ›</span></summary>';
   h+='<label>M\u00eas</label><select onchange="window._fechAberto=true;window._fechMes=this.value;render()">';
   meses.forEach(function(x){h+='<option value="'+x+'"'+(x===ym?' selected':'')+'>'+_nomeMes(x)+'</option>'});
-  h+='</select>';h+='<div style="margin:8px 0 4px"><span class="chip tap" onclick="listaGarantias()">🛡 Garantias e descontos</span> <span class="chip tap" onclick="abrirGarantia()">＋ lançar garantia</span></div>';
+  h+='</select>';h+='<div style="margin:8px 0 4px"><span class="chip tap" onclick="listaGarantias()">🏷 Descontos na fatura</span> <span class="chip tap" onclick="abrirGarantia()">＋ lançar desconto</span></div>';
   if(!f.fornecedores.length)h+='<div class="sub" style="margin-top:6px">Sem gastos neste m\u00eas.</div>';
   f.fornecedores.forEach(function(fo){
    var det='';
@@ -11868,11 +11868,11 @@ var _SEM_GAR=0;
 
 function _fmtValSinal(v){v=_r2(v);return v<0?'− R$ '+fmtBRL(-v):'R$ '+fmtBRL(v)}
 function _valManutHtml(m){
- if(_ehGarantia(m))return '<div style="color:var(--ok,#2E7D5B);font-weight:800;text-align:right">'+_fmtValSinal(m.total)+'<div style="font-size:11px;font-weight:600">🛡 garantia</div></div>';
+ if(_ehGarantia(m))return '<div style="color:var(--ok,#2E7D5B);font-weight:800;text-align:right">'+_fmtValSinal(m.total)+'<div style="font-size:11px;font-weight:600">🏷 desconto</div></div>';
  return '<div style="color:var(--warn);font-weight:800">R$ '+fmtBRL(m.total)+'</div>';
 }
 function _linhaFatura(i){
- if(_r2(i.valor)<0)return '• *− R$ '+fmtBRL(-_r2(i.valor))+'* - '+i.desc+' (desconto)\n';
+ if(_r2(i.valor)<0)return '• *− R$ '+fmtBRL(-_r2(i.valor))+'* - '+i.desc+(/^(DESCONTO|GARANTIA)/i.test(i.desc)?'':' (desconto)')+'\n';
  return '• R$ '+fmtBRL(i.valor)+' - '+i.desc+'\n';
 }
 function _garantiasNoFornecedor(fo){var t=0;Object.keys(fo.carros||{}).forEach(function(gk){fo.carros[gk].itens.forEach(function(i){if(_r2(i.valor)<0)t=_r2(t+i.valor)})});return t}
@@ -11907,8 +11907,8 @@ function abrirGarantia(id,pkIni){
  var m=id?S.manutencoes[id]:null;GAR_ED=m?m.id:null;
  var p=m?(m.pecas||[])[0]||{}:{};
  var forns=_fornecedoresConhecidos();
- var desc=m?String(p.desc||'').replace(/^GARANTIA\s*[—-]\s*/i,''):'';
- var h='<div class="v102sheetHero"><div class="v102sheetIcon">🛡</div><div><div class="v102eyebrow">FORNECEDOR</div><h3>'+(m?'Editar garantia':'Garantia / desconto')+'</h3><div class="sub">Peça que deu garantia e o fornecedor vai <b>descontar na fatura</b>. Entra negativo no fechamento do mês (fornecedor, Frota Fábio/Hudson e total) e na fatura copiada para o WhatsApp.</div></div></div>'+
+ var desc=m?String(p.desc||'').replace(/^(GARANTIA|DESCONTO)\s*[—-]\s*/i,''):'';
+ var h='<div class="v102sheetHero"><div class="v102sheetIcon">🏷</div><div><div class="v102eyebrow">FORNECEDOR</div><h3>'+(m?'Editar desconto':'Desconto na fatura')+'</h3><div class="sub">Peça comprada em outro mês que o fornecedor vai <b>descontar na fatura</b>. O desconto entra só no mês escolhido abaixo (fornecedor, Frota Fábio/Hudson e total) e na fatura copiada para o WhatsApp — <b>o mês em que a peça foi paga não muda</b>.</div></div></div>'+
   '<div class="v102panel">'+
   '<label>Fornecedor</label><input id="gaForn" list="gaFornL" autocomplete="off" value="'+esc(m?p.loja:'')+'" placeholder="Ex.: Abraão" onchange="garPecas()" oninput="garPecas()"><datalist id="gaFornL">'+forns.map(function(n){return '<option value="'+esc(n)+'">'}).join('')+'</datalist>'+
   '<label>Carro</label><select id="gaCarro" onchange="garPecas();garFrota()"><option value="">— escolha —</option>'+opcoesCarros(m?m.carro:(pkIni||''))+'</select>'+
@@ -11918,9 +11918,9 @@ function abrirGarantia(id,pkIni){
   '<label>Data do desconto <span class="v102optional">define o mês da fatura</span></label><input type="date" id="gaData" value="'+esc(m?(p.data||m.dataIni):hoje())+'">'+
   '<label>Desconta de qual frota</label><select id="gaFrota"><option value="">Automático (frota do carro)</option><option value="fabio"'+(m&&m.frotaFechamento==='fabio'?' selected':'')+'>Frota Fábio</option><option value="hudson"'+(m&&m.frotaFechamento==='hudson'?' selected':'')+'>Frota Hudson</option></select>'+
   '<div class="v102info" id="gaFrotaInfo"></div>'+
-  '<label>Observação <span class="v102optional">opcional</span></label><input id="gaObs" value="'+esc(m?m.texto:'')+'" placeholder="Ex.: calço com defeito, fornecedor sem a peça">'+
+  '<label>Observação <span class="v102optional">opcional</span></label><input id="gaObs" value="'+esc(m?m.texto:'')+'" placeholder="Ex.: peça com defeito, fornecedor sem a peça">'+
   '</div><div class="v102actionbar"><button class="btn ok v102primary" onclick="salvarGarantia()">'+(m?'Salvar':'Lançar desconto')+'</button>'+
-  (m?'<button class="btn red" onclick="excluirGarantia(\''+m.id+'\')">🗑 Excluir garantia</button>':'')+
+  (m?'<button class="btn red" onclick="excluirGarantia(\''+m.id+'\')">🗑 Excluir desconto</button>':'')+
   '<button class="btn sec" onclick="closeSheet(2)">Cancelar</button></div>';
  openSheet(h,2);
  setTimeout(function(){garPecas();garFrota()},0);
@@ -11933,12 +11933,12 @@ function garPecas(){
  if(!pk||!f.trim()){box.innerHTML='';return}
  if(!its.length){box.innerHTML='<div class="v102info">Nada comprado de '+esc(f)+' para este carro nos últimos 12 meses — digite a peça e o valor.</div>';return}
  window._garIts=its;
- box.innerHTML='<label>Qual peça deu garantia? <span class="v102optional">puxa descrição e valor</span></label><select id="gaPeca" onchange="garEscolhePeca(this.value)"><option value="">— escolha ou digite abaixo —</option>'+
+ box.innerHTML='<label>Qual peça vai ser descontada? <span class="v102optional">puxa descrição, valor e a data da compra</span></label><select id="gaPeca" onchange="garEscolhePeca(this.value)"><option value="">— escolha ou digite abaixo —</option>'+
   its.map(function(it,i){return '<option value="'+i+'">'+esc((it.data?dataBR(it.data)+' · ':'')+String(it.desc).slice(0,50)+' — R$ '+fmtBRL(it.valor))+'</option>'}).join('')+'</select>';
 }
 function garEscolhePeca(i){var it=(window._garIts||[])[+i];if(!it)return;
- document.getElementById('gaDesc').value=String(it.desc||'');document.getElementById('gaValor').value=fmtBRL(it.valor);window._garOrig=it.mid;
- var ob=document.getElementById('gaObs');if(ob&&!ob.value.trim())ob.value='Garantia da compra de '+(it.data?dataBR(it.data):'')+' — fornecedor sem a peça, desconto na fatura';
+ document.getElementById('gaDesc').value=String(it.desc||'');document.getElementById('gaValor').value=fmtBRL(it.valor);window._garOrig=it.mid;window._garCompraIt=it.data?dataBR(it.data):'';
+ var ob=document.getElementById('gaObs');if(ob&&!ob.value.trim())ob.value='Peça com defeito, comprada em '+(it.data?dataBR(it.data):'')+' — fornecedor sem a peça, desconto na fatura';
 }
 function salvarGarantia(){
  function g(id){return ((document.getElementById(id)||{}).value||'').trim()}
@@ -11949,26 +11949,27 @@ function salvarGarantia(){
  if(!(v>0)){toast('Valor inválido');return}
  if(!/^\d{4}-\d{2}-\d{2}$/.test(dt)){toast('Data inválida');return}
  var n=Date.now(),id=GAR_ED||('gar_'+n),ant=GAR_ED?S.manutencoes[GAR_ED]:null;
+ var _garCompra=window._garCompraIt||(ant&&String(((ant.pecas||[])[0]||{}).desc||'').match(/compra de (\d{2}\/\d{2}\/\d{4})/)||[])[1]||'';if(desc.indexOf('(compra de')>=0)_garCompra='';window._garCompraIt='';
  var m={id:id,carro:pk,motorista:(S.carros[pk].motorista||''),dataIni:dt,dataFim:dt,dataPecasPadrao:dt,odometro:0,garantia:true,garantiaDe:(window._garOrig||(ant&&ant.garantiaDe)||''),
-  pecas:[{desc:'GARANTIA — '+desc,loja:forn,valor:-v,data:dt,pendenteFinanceiro:false}],blocos:[],
+  pecas:[{desc:'DESCONTO — '+desc+(_garCompra?' (compra de '+_garCompra+')':''),loja:forn,valor:-v,data:dt,pendenteFinanceiro:false}],blocos:[],
   frotaFechamento:g('gaFrota'),texto:g('gaObs'),origem:'garantia',criadoEm:(ant&&ant.criadoEm)||n,editadoEm:n};
  S.manutencoes[id]=normManut(m);window._garOrig=null;
  save();try{_avisoFaturaPaga(S.manutencoes[id])}catch(e){}
  closeSheet(2);try{render()}catch(e){}
- toast('🛡 Desconto de '+_fmtValSinal(-v).replace('− ','')+' lançado na fatura de '+forn+' ('+_nomeMes(dt.slice(0,7))+')');
+ toast('🏷 Desconto de '+_fmtValSinal(-v).replace('− ','')+' lançado na fatura de '+forn+' ('+_nomeMes(dt.slice(0,7))+')');
 }
 function excluirGarantia(id){
- ask('Excluir esta garantia?','O desconto sai do fechamento do fornecedor.','Excluir',function(){
-  S.apagados=S.apagados||{};S.apagados[id]=Date.now();delete S.manutencoes[id];save();closeSheet(2);try{render()}catch(e){}toast('Garantia excluída')});
+ ask('Excluir este desconto?','O desconto sai do fechamento do fornecedor.','Excluir',function(){
+  S.apagados=S.apagados||{};S.apagados[id]=Date.now();delete S.manutencoes[id];save();closeSheet(2);try{render()}catch(e){}toast('Desconto excluído')});
 }
 function listaGarantias(){
  var gs=Object.keys(S.manutencoes||{}).map(function(k){return S.manutencoes[k]}).filter(_ehGarantia).sort(function(a,b){return String(b.dataIni).localeCompare(String(a.dataIni))});
- var h='<div class="v102sheetHero"><div class="v102sheetIcon">🛡</div><div><div class="v102eyebrow">FORNECEDORES</div><h3>Garantias e descontos</h3><div class="sub">Peças que deram garantia e foram descontadas na fatura do fornecedor.</div></div></div>'+
-  '<button class="btn ok" onclick="abrirGarantia()">＋ Lançar garantia / desconto</button>';
- if(!gs.length)h+='<div class="v102info" style="margin-top:10px">Nenhuma garantia lançada ainda.</div>';
+ var h='<div class="v102sheetHero"><div class="v102sheetIcon">🏷</div><div><div class="v102eyebrow">FORNECEDORES</div><h3>Descontos na fatura</h3><div class="sub">Peças descontadas na fatura do fornecedor. Cada desconto entra só no mês dele; o mês da compra não muda.</div></div></div>'+
+  '<button class="btn ok" onclick="abrirGarantia()">＋ Lançar desconto</button>';
+ if(!gs.length)h+='<div class="v102info" style="margin-top:10px">Nenhum desconto lançado ainda.</div>';
  else{var tot=0;h+='<div class="v102panel" style="margin-top:10px">';
   gs.forEach(function(m){var c=S.carros[m.carro]||{placa:m.carro},p=(m.pecas||[])[0]||{};tot=_r2(tot+m.total);
-   h+='<div class="mvrow tap" onclick="abrirGarantia(\''+m.id+'\')"><b class="hplc">'+esc(fmtPlaca(m.carro))+'</b><div class="grow">'+esc(String(p.desc||'').replace(/^GARANTIA\s*[—-]\s*/i,''))+
+   h+='<div class="mvrow tap" onclick="abrirGarantia(\''+m.id+'\')"><b class="hplc">'+esc(fmtPlaca(m.carro))+'</b><div class="grow">'+esc(String(p.desc||'').replace(/^(GARANTIA|DESCONTO)\s*[—-]\s*/i,''))+
     '<div class="sub">'+esc(p.loja||'')+' · '+esc(_nomeMes(String(m.dataIni).slice(0,7)))+' · '+(m.frotaFechamento?_rotuloFrotaFinanceira(m.frotaFechamento):(c.meuCarro?'Frota Hudson':'Frota Fábio'))+'</div></div><div class="mvval" style="color:var(--ok,#2E7D5B)">'+_fmtValSinal(m.total)+'</div></div>'});
   h+='<div class="sub" style="margin-top:6px">Total descontado: <b>'+_fmtValSinal(tot)+'</b></div></div>'}
  h+='<div class="v102actionbar"><button class="btn sec" onclick="closeSheet(2)">Fechar</button></div>';
