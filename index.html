@@ -1536,7 +1536,7 @@ html.teclado #main{padding-bottom:calc(20px + var(--navH,0px))!important}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=239; var APP_DATE='20/10/2026';
+var APP_VER=240; var APP_DATE='20/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -12000,6 +12000,132 @@ function listaGarantias(){
 (function(){var o=window.verManut;if(typeof o!=='function'||o._v239)return;
  var w=function(id){var m=S.manutencoes&&S.manutencoes[id];if(_ehGarantia(m))return abrirGarantia(id);return o.apply(this,arguments)};
  w._v239=1;window.verManut=verManut=w;})();
+
+</script>
+<script>
+/* ===== v240 — TEXTOS PARA O WHATSAPP COM CARA PROFISSIONAL =====
+   Pedido do Hudson (20/10/2026): todo texto que o app copia (fatura do fornecedor, manutenção,
+   termo de devolução) com o negrito do WhatsApp (*texto*) nos títulos, rótulos e valores, e o
+   itálico (_texto_) nas observações, no mesmo estilo da mensagem automática do km. Na fatura,
+   o desconto aparece só uma vez, na linha do carro (o resumo não repete). */
+var WA_LINHA='━━━━━━━━━━━━━━━';
+function _waVal(v){v=_r2(v);return v<0?'− R$ '+fmtBRL(-v):'R$ '+fmtBRL(v)}
+
+/* ---------- FATURA DO FORNECEDOR ---------- */
+window._linhaFatura=_linhaFatura=function(i){
+ var v=_r2(i.valor),d=String(i.desc||'');
+ if(v<0){
+  var m=d.match(/^(?:DESCONTO|GARANTIA)\s*[—-]\s*(.*?)(?:\s*\((compra de [^)]*)\))?$/i);
+  var peca=m?m[1]:d,cp=m&&m[2]?' _('+m[2]+')_':'';
+  return '• *'+_waVal(v)+'* — Desconto: '+peca+cp+'\n';
+ }
+ return '• *'+_waVal(v)+'* — '+d+'\n';
+};
+window.textoFechamento=textoFechamento=function(ym,nomeForn){
+ var f=fechamentoDoMes(ym).fornecedores.filter(function(x){return x.nome===nomeForn})[0];
+ if(!f)return '';
+ var mes=_nomeMes(ym).replace('/',' de ');
+ var x='*🧾 FATURA — '+nomeForn.toUpperCase()+'*\n_'+mes+'_\n'+WA_LINHA+'\n\n';
+ function bloco(gk){
+  var c=f.carros[gk],pk=c.pk,car=S.carros[pk];
+  var s='*'+(car?tituloCarro(car):pk)+'* ('+fmtPlaca(pk).split('-')[0]+')\n';
+  c.itens.forEach(function(i){s+=_linhaFatura(i)});
+  s+='_Subtotal: '+_waVal(c.sub)+'_\n\n';
+  return s;
+ }
+ var pks=Object.keys(f.carros);
+ var fr=pks.filter(function(gk){return !f.carros[gk].pessoal}),pe=pks.filter(function(gk){return f.carros[gk].pessoal});
+ if(fr.length){x+='*🚗 FROTA GUIMASCAR*\n\n';fr.forEach(function(gk){x+=bloco(gk)})}
+ if(pe.length){x+='*👤 VEÍCULOS SEPARADOS (HUDSON)*\n\n';pe.forEach(function(gk){x+=bloco(gk)})}
+ x+=WA_LINHA+'\n*📊 RESUMO DA FATURA*\n';
+ x+='Frota Fábio: *'+_waVal(f.totalFrota)+'*\n';
+ x+='Frota Hudson: *'+_waVal(f.totalPessoal)+'*\n\n';
+ x+='*💰 TOTAL A PAGAR: '+_waVal(f.total)+'*';
+ return x;
+};
+
+/* ---------- MANUTENÇÃO ---------- */
+window.buildManutTexto=buildManutTexto=function(m,carro){
+ carro=carro||{};var t='';
+ if(m.garantia){
+  var p=(m.pecas||[])[0]||{};
+  return '*🏷 DESCONTO NA FATURA — '+String(p.loja||'').toUpperCase()+'*\n'+WA_LINHA+'\n'+
+   '*Veículo:* '+(carro.nome||'')+(carro.motor?' '+carro.motor:'')+'\n*Placa:* '+fmtPlaca(carro.placa||m.carro)+'\n*Data:* '+dataBR(m.dataIni)+'\n'+
+   '• *'+_waVal(m.total)+'* — '+String(p.desc||'').replace(/^(DESCONTO|GARANTIA)\s*[—-]\s*/i,'')+'\n'+(m.texto?'_'+m.texto+'_\n':'');
+ }
+ var dias=_diasTxt(m.dataIni,m.dataFim);
+ t+='*🔧 MANUTENÇÃO — '+String((carro.nome||'')+(carro.motor?' '+carro.motor:'')).toUpperCase()+'*\n'+WA_LINHA+'\n';
+ t+='*Placa:* '+fmtPlaca(carro.placa||m.carro)+'\n';
+ if(m.motorista)t+='*Motorista:* '+m.motorista+'\n';
+ t+='*Data:* '+periodoTexto(m.dataIni,m.dataFim)+(dias?' _('+dias+')_':'')+'\n';
+ if(m.odometro)t+='*Odômetro:* '+fmtKm(m.odometro)+' km\n';
+ if(m.pecas.length){
+  t+='\n*🔩 PEÇAS'+(m.totalPecas>0?' — R$ '+fmtBRL(m.totalPecas):'')+'*\n';
+  m.pecas.forEach(function(p){t+='• '+(p.valor?'*'+_waVal(p.valor)+'* — ':'')+p.desc+(p.loja?' _('+p.loja+')_':'')+'\n'});
+ }
+ if(m.blocos.length){
+  m.blocos.forEach(function(b){
+   t+='\n*🛠 MÃO DE OBRA'+(b.valor?' — R$ '+fmtBRL(b.valor):'')+'*\n';
+   t+='*'+(b.titulo||'Mecânico')+':* '+(b.nome||'')+'\n';
+   (b.servicos||[]).forEach(function(s){t+='• '+s+'\n'});
+  });
+ }
+ if(m.total>0)t+='\n'+WA_LINHA+'\n*💰 TOTAL: R$ '+fmtBRL(m.total)+'*';
+ return t;
+};
+/* copiar sempre no padrão novo (registros do app); histórico importado do WhatsApp fica como veio */
+window.copiarManut=copiarManut=function(id){
+ var m=S.manutencoes[id];if(!m)return;var t=m.texto;
+ if(m.origem!=='whatsapp'){try{t=buildManutTexto(m,S.carros[m.carro]||{nome:'',placa:m.carro})}catch(e){t=m.texto}}
+ copiarTexto(t);
+};
+
+/* ---------- TERMO DE DEVOLUÇÃO ---------- */
+window.buildTermoTexto=buildTermoTexto=function(t,carro){
+ carro=carro||{};
+ var x='*📄 TERMO DE DEVOLUÇÃO E ACERTO DE CONTAS*\n'+WA_LINHA+'\n';
+ x+='*Veículo:* '+(carro.nome||'')+' '+(carro.motor||'')+'\n';
+ x+='*Placa:* '+fmtPlaca(carro.placa)+'\n';
+ x+='*Motorista:* '+t.motorista+'\n';
+ x+='*Período do contrato:* '+periodoTexto(t.dataIni,t.dataFim)+' _(total: '+diasEntre(t.dataIni,t.dataFim)+' dias)_\n';
+ x+='*Motivo da devolução:* '+t.motivo+'\n';
+ x+='*Odômetro:* '+fmtKm(t.odometro)+' km\n\n';
+ x+='*1️⃣ MANUTENÇÃO CORRETIVA — DIVISÃO 50/50*\n';
+ x+='*Peças:* R$ '+fmtBRL(t.totalPecas)+'\n';
+ t.pecas.forEach(function(p){x+='• *R$ '+fmtBRL(p.valor)+'* — '+p.desc+(p.loja?' _('+p.loja+')_':'')+'\n'});
+ t.blocos.forEach(function(b){
+  x+='\n*'+b.titulo+':* '+b.nome+(tNum(b.valor)?' — *R$ '+fmtBRL(tNum(b.valor))+'*':'')+'\n';
+  String(b.servicos||'').split('\n').map(function(s){return s.trim()}).filter(Boolean).forEach(function(s){x+='• '+s+'\n'});
+ });
+ x+='\nTotal da manutenção: *R$ '+fmtBRL(t.totalManut)+'*\n';
+ x+='Cota do motorista (50%): *R$ '+fmtBRL(t.cota)+'*\n\n';
+ x+='*2️⃣ CUSTOS DE USO INTEGRAL — 100% MOTORISTA*\n';
+ t.integrais.forEach(function(i){x+='• *R$ '+fmtBRL(tNum(i.valor))+'* — '+i.desc+'\n'});
+ x+='\nTotal de custos integrais: *R$ '+fmtBRL(t.totalIntegrais)+'*\n\n';
+ x+='*3️⃣ BALANÇO FINANCEIRO DO CONTRATO*\n';
+ if(t.debitos.length){x+='*Débitos:*\n';t.debitos.forEach(function(d){x+='• *R$ '+fmtBRL(tNum(d.valor))+'* — '+d.desc+'\n'});x+='\n'}
+ if(t.creditos.length){x+='*Créditos:*\n';t.creditos.forEach(function(cq){x+='• *R$ '+fmtBRL(tNum(cq.valor))+'* — '+cq.desc+'\n'});x+='\n'}
+ x+=WA_LINHA+'\n*📊 RESUMO FINAL*\n';
+ x+='(+) Cota manutenção (50%): *R$ '+fmtBRL(t.cota)+'*\n';
+ x+='(+) Custos integrais (100%): *R$ '+fmtBRL(t.totalIntegrais)+'*\n';
+ x+='(+) Débitos pendentes: *R$ '+fmtBRL(t.totalDebitos)+'*\n';
+ if(t.creditos.length)x+='(−) Créditos abatidos (caução): *R$ '+fmtBRL(t.totalCreditos)+'*\n';
+ x+='\n'+(t.aDevolver?'*💰 SALDO LÍQUIDO A DEVOLVER: R$ '+fmtBRL(t.saldo)+'*':'*💰 SALDO LÍQUIDO DEVIDO PELO MOTORISTA: R$ '+fmtBRL(t.saldo)+'*')+'\n';
+ if(t.motivo==='Fim do Contrato'&&t.aDevolver&&Number(t.saldo)>0){
+  x+='\n*🗓 CRONOGRAMA DE RESSARCIMENTO*\n';
+  x+='_Conforme política de frota da empresa, o saldo residual da caução é liberado após o ciclo de 30 dias corridos contados da entrega do veículo. Se a data programada cair em sábado ou domingo, o depósito é postergado para o próximo dia útil. Este período é obrigatório para a conferência de multas de trânsito em processamento no Detran e vistorias técnicas de encerramento de contrato._\n\n';
+  x+='*Data programada para depósito:* '+dataBR(dataDepositoTermo(t.dataFim))+'\n';
+  x+='*Método de pagamento:* Transferência via PIX\n\n';
+  x+='⚠️ *Atenção:* por favor, responda a esta mensagem enviando a sua *Chave PIX* e o *nome do titular da conta* para deixarmos programado no sistema.';
+ }
+ return x;
+};
+window.copiarTermo=copiarTermo=function(id){
+ var t=S.termos[id];if(!t)return;var tx=t.texto;
+ try{var c=S.carros[t.carro];if(c&&Array.isArray(t.pecas)&&Array.isArray(t.blocos)&&Array.isArray(t.integrais)&&Array.isArray(t.debitos)&&Array.isArray(t.creditos))tx=buildTermoTexto(t,c)}catch(e){tx=t.texto}
+ if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(tx).then(function(){toast('📋 Copiado')},function(){toast('Segure no texto e copie manualmente')});
+ else toast('Segure no texto e copie manualmente');
+};
 
 </script>
 </body>
