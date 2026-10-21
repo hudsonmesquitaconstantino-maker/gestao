@@ -1536,7 +1536,7 @@ html.teclado #main{padding-bottom:calc(20px + var(--navH,0px))!important}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=245; var APP_DATE='21/10/2026';
+var APP_VER=246; var APP_DATE='21/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -3559,6 +3559,7 @@ function abrirLancar(){
  openSheet('<div class="g2sheetH">Lançar</div><div class="g2grp">'+
   _g2Opt('carro','Carro novo','Placa, CRLV (lê o documento) e motorista','closeSheet(2);formCarro()')+
   _g2Opt('chave','Manutenção','Peças, mão de obra e dias parado','closeSheet(2);go(1)')+
+  _g2Opt('troca','Troca de óleo','Só o km — o app calcula a próxima troca','oleoRapidoEscolher()')+
   _g2Opt('tag','Desconto na fatura','Peça que o fornecedor vai descontar na fatura','abrirGarantia()')+
   _g2Opt('km','Quilometragem','Escolha o carro e digite o km','g2EscolherCarro(\'km\')')+
   _g2Opt('doc','Contrato de locação','Puxa os dados do carro','closeSheet(2);go(2)')+
@@ -12344,6 +12345,138 @@ function hFSub(k){window._hFSub=k;window._fechAberto=true;render()}
 (function(){var o=window.hFiltraPlaca;if(typeof o!=='function'||o._v244)return;
  var w=function(p){if((window._hSeg||'manut')!=='manut'){window._hSeg='manut';render()}return o.apply(this,arguments)};
  w._v244=1;window.hFiltraPlaca=hFiltraPlaca=w;})();
+
+</script>
+<script>
+/* ===== v246 — TROCA DE ÓLEO RÁPIDA =====
+   Pedido do Hudson (21/10/2026): lançar troca de óleo só digitando o km. O app sabe o óleo do carro
+   e o intervalo (sintético 0W/5W → 10.000 km; semissintético/mineral 10W/15W/20W → 7.000 km), calcula a
+   próxima troca e grava uma manutenção NORMAL — igual à que se faria pelo formulário completo:
+   mecânico = o próprio motorista (nome dele), SEM valor, e a descrição da troca com a próxima troca.
+   Tudo o que a manutenção normal faz também acontece aqui: última troca de óleo, próxima troca, km do
+   carro, texto do WhatsApp, histórico. Nada entra no fechamento de fornecedor (não tem valor). */
+(function(){if(document.getElementById('orCss'))return;var st=document.createElement('style');st.id='orCss';st.textContent=
+ '.orChips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 2px}'+
+ '.orChip{border:1px solid var(--line,#E2E5EA);background:var(--card,#fff);color:var(--tx,#111);border-radius:999px;padding:8px 12px;font-size:14px;font-weight:600;cursor:pointer}'+
+ '.orChip.on{background:var(--ac,#C77A16);border-color:var(--ac,#C77A16);color:#fff}'+
+ '.orProx{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:12px 0 4px;padding:12px;border-radius:12px;background:#FFF7EA;border:1px solid #F3DDB5}'+
+ '.orProx b{font-size:20px;font-variant-numeric:tabular-nums}.orProx small{color:var(--mu,#6B7280)}'+
+ '.orPrev{white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;background:#F6F7F9;border-radius:10px;padding:10px;margin:8px 0;color:#333}'+
+ '.orMsg{margin:6px 0;font-size:13.5px}';
+ document.head.appendChild(st)})();
+
+/* textos gravados na manutenção (iguais aos do grupo) */
+function _orServicos(oleo,prox){
+ var o=String(oleo||'').trim();
+ return ['Troca de óleo e filtro de óleo do motor'+(o?' ('+o+')':''),
+         'Próxima troca de óleo e filtro de óleo do motor com '+fmtKm(prox)+' km'];
+}
+/* intervalo pelo tipo de óleo: 0W/5W = sintético (10.000) · 10W/15W/20W = semissintético/mineral (7.000) */
+function _orIntervalo(c){
+ var t=String(c&&c.oleoTipo||'').toUpperCase(),m=t.match(/(\d{1,2})\s*W\s*-?\s*\d{2}/);
+ if(m){var w=Number(m[1]);return w<=5?{km:10000,por:'óleo sintético ('+m[0].replace(/\s|-/g,'')+')'}:{km:7000,por:'óleo semissintético ('+m[0].replace(/\s|-/g,'')+')'}}
+ var iv=Number(c&&c.oleoIntervalo)||0;
+ if(Math.abs(iv-10000)<=700)return {km:10000,por:'histórico do carro'};
+ if(Math.abs(iv-7000)<=700)return {km:7000,por:'histórico do carro'};
+ return {km:0,por:''};
+}
+var ORP=null;
+function oleoRapidoEscolher(){
+ var h='<div class="g2sheetH">Troca de óleo de qual carro?</div><div class="g2grp">';
+ carrosOrdenados().filter(_g2Ativo).forEach(function(c){var pk=_g2Pk(c),iv=_orIntervalo(c);
+  h+='<div class="g2row tap" onclick="oleoRapido(\''+pk+'\')">'+plateHtml(c.placa)+'<div class="g2rowTx"><div class="g2t">'+esc(tituloCarro(c))+'</div><div class="g2s">'+
+   (c.motorista?esc(primNome(c.motorista)):'sem motorista')+(c.oleoTipo?' · '+esc(c.oleoTipo):'')+(Number(c.proxOleoKm)?' · próxima '+fmtKm(c.proxOleoKm)+' km':'')+'</div></div>'+G2I.chev+'</div>'});
+ openSheet(h+'</div>',2);
+}
+function oleoRapido(pk){
+ var c=S&&S.carros[pk];if(!c)return;
+ var iv=_orIntervalo(c),mot=String(c.motorista||'').trim();
+ ORP={pk:pk,iv:iv.km,ivPor:iv.por,quem:mot?'motorista':'outro',forcar:false};
+ var at=Number(c.kmUltima||c.kmAtual)||0;
+ var h='<div class="v102sheetHero"><div class="v102sheetIcon">🛢</div><div><div class="v102eyebrow">'+esc(fmtPlaca(c.placa||pk))+'</div><h3>Troca de óleo</h3><div class="sub">'+esc(tituloCarro(c))+
+  (at?' · último km: <b>'+fmtKm(at)+'</b>'+(c.kmUltimaData?' em '+dataBR(c.kmUltimaData):''):'')+'</div></div></div>';
+ h+='<label>Km do painel na troca</label><input id="orKm" inputmode="numeric" placeholder="'+(at?'Ex.: '+esc(String(at)):'Km')+'" style="font-size:22px;font-weight:700" oninput="ORP.forcar=false;_orAtualiza()">';
+ h+='<label>Data da troca</label><input id="orData" type="date" value="'+hoje()+'" max="'+hoje()+'" onchange="_orAtualiza()">';
+ h+='<label>Quem trocou</label><div class="orChips" id="orQuem"></div><input id="orNome" placeholder="Nome de quem trocou" style="display:none" oninput="_orAtualiza()">';
+ h+='<label>Motorista do carro</label><input id="orMot" value="'+esc(mot)+'" placeholder="Nome do motorista" oninput="_orAtualiza()">';
+ h+='<label>Óleo</label><input id="orOleo" value="'+esc(c.oleoTipo||'')+'" placeholder="Ex.: 5W30" oninput="_orOleoMudou()">';
+ h+='<label>Troca a cada</label><div class="orChips" id="orIv"></div><div class="sub" id="orIvPor" style="margin-top:2px"></div>';
+ h+='<div class="orProx" id="orProx"></div><div class="orMsg" id="orMsg"></div>';
+ h+='<div class="v102previewLabel" style="margin-top:6px">Como fica a manutenção</div><div class="orPrev" id="orPrev"></div>';
+ h+='<button class="btn ok" style="width:100%" onclick="oleoRapidoSalvar()">✓ Salvar troca de óleo</button><button class="btn sec" style="width:100%;margin-top:6px" onclick="closeSheet(2)">Cancelar</button>';
+ openSheet(h,2);_orAtualiza();
+ setTimeout(function(){var e=document.getElementById('orKm');if(e)e.focus()},250);
+}
+function _orSetQuem(q){ORP.quem=q;var n=document.getElementById('orNome');if(n){n.style.display=q==='outro'?'':'none';if(q==='outro')setTimeout(function(){n.focus()},50)}_orAtualiza()}
+function _orSetIv(km){ORP.iv=km;ORP.ivPor='escolhido agora';_orAtualiza()}
+function _orOleoMudou(){var c=S.carros[ORP.pk]||{},iv=_orIntervalo({oleoTipo:(document.getElementById('orOleo')||{}).value,oleoIntervalo:c.oleoIntervalo});if(iv.km){ORP.iv=iv.km;ORP.ivPor=iv.por}_orAtualiza()}
+function _orLe(){
+ var g=function(id){var e=document.getElementById(id);return e?String(e.value||'').trim():''};
+ var km=parseInt(g('orKm').replace(/\D/g,''),10)||0,mot=g('orMot');
+ var quem=ORP.quem==='motorista'?mot:g('orNome');
+ return {km:km,data:g('orData')||hoje(),mot:mot,quem:quem,oleo:g('orOleo'),iv:ORP.iv,prox:km&&ORP.iv?km+ORP.iv:0};
+}
+function _orRascunho(d){
+ return normManut({id:'orPrev',carro:ORP.pk,motorista:d.mot,dataIni:d.data,dataFim:'',odometro:d.km,pecas:[],
+  blocos:[{titulo:'Mecânico',nome:d.quem,valor:0,servicos:_orServicos(d.oleo,d.prox),dataIni:d.data,dataFim:d.data,pendenteFinanceiro:false}],
+  totalPecas:0,totalMO:0,total:0,criadoEm:Date.now()});
+}
+function _orAtualiza(){
+ if(!ORP)return;var c=S.carros[ORP.pk]||{},d=_orLe(),mot=d.mot;
+ var q=document.getElementById('orQuem');
+ if(q)q.innerHTML='<span class="orChip'+(ORP.quem==='motorista'?' on':'')+'" onclick="_orSetQuem(\'motorista\')">O motorista'+(mot?' ('+esc(primNome(mot))+')':'')+'</span><span class="orChip'+(ORP.quem==='outro'?' on':'')+'" onclick="_orSetQuem(\'outro\')">Outra pessoa</span>';
+ var ivb=document.getElementById('orIv');
+ if(ivb)ivb.innerHTML=[7000,10000].map(function(k){return '<span class="orChip'+(ORP.iv===k?' on':'')+'" onclick="_orSetIv('+k+')">'+fmtKm(k)+' km</span>'}).join('');
+ var por=document.getElementById('orIvPor');if(por)por.textContent=ORP.iv?(ORP.ivPor?'Pelo '+ORP.ivPor+'.':''):'Escolha o intervalo deste carro.';
+ var px=document.getElementById('orProx');
+ if(px)px.innerHTML=d.prox?'<span>Próxima troca</span><b>'+fmtKm(d.prox)+' km</b>':'<small>Digite o km para calcular a próxima troca.</small>';
+ var pv=document.getElementById('orPrev');
+ if(pv){try{pv.textContent=d.km&&d.prox?buildManutTexto(_orRascunho(d),c):'—'}catch(e){pv.textContent='—'}}
+}
+function oleoRapidoSalvar(){
+ if(!ORP)return;var c=S.carros[ORP.pk];if(!c)return;var d=_orLe(),msg=document.getElementById('orMsg');
+ function erro(t){msg.innerHTML='<b style="color:#c0392b">'+t+'</b>'}
+ if(!(d.km>0))return erro('Digite o km do painel.');
+ if(d.data>hoje())return erro('A data não pode ser no futuro.');
+ if(!d.mot)return erro('Informe o motorista do carro.');
+ if(!d.quem)return erro('Informe quem fez a troca.');
+ if(!d.iv)return erro('Escolha a cada quantos km troca (7.000 ou 10.000).');
+ var at=Number(c.kmUltima||c.kmAtual)||0,dAt=c.kmUltimaData||'';
+ if(at&&d.km<at-100&&(!dAt||d.data>=dAt))return erro('⚠️ '+fmtKm(d.km)+' km é MENOR que o último registro ('+fmtKm(at)+' km'+(dAt?' em '+dataBR(dAt):'')+'). O km não pode voltar — confira o painel.');
+ var dias=dAt?Math.max(1,(Date.parse(d.data)-Date.parse(dAt))/864e5):60;
+ if(at&&d.km>at+1000*dias+5000&&!ORP.forcar){ORP.forcar=true;msg.innerHTML='<b style="color:#C77A16">'+fmtKm(d.km-at)+' km a mais em '+Math.round(dias)+' dia(s) parece muito.</b> Confira o número; se estiver certo, toque em Salvar de novo.';return}
+ /* compra e venda: a manutenção é do motorista; o fechamento precisa de uma frota — sem valor, não pesa em nenhuma */
+ var _cv=contratoVendaVigenteDoCarro(ORP.pk),ff=_cv?(c.meuCarro?'hudson':'fabio'):'';
+ var m=normManut({id:idNovo('mn'),carro:ORP.pk,motorista:d.mot,dataIni:d.data,dataFim:'',dataPecasPadrao:'',odometro:d.km,frotaFechamento:ff,pecas:[],
+  blocos:[{titulo:'Mecânico',nome:d.quem,valor:0,servicos:_orServicos(d.oleo,d.prox),dataIni:d.data,dataFim:d.data,pendenteFinanceiro:false}],
+  totalPecas:0,totalMO:0,total:0,criadoEm:Date.now()});
+ m.texto=buildManutTexto(m,c);
+ /* mesmos passos do formulário completo (gerarManut) */
+ var campos=['oleoIntervalo'];
+ if(d.oleo&&d.oleo!==String(c.oleoTipo||'')){c.oleoTipo=d.oleo;campos.push('oleoTipo')}
+ c.oleoIntervalo=d.iv;
+ S.manutencoes[m.id]=m;
+ _kmPorManut(c,d.km,d.data);
+ var det=detectarComponentes(m);
+ _liberarProximaManualPorNovaTroca(c,det,m);
+ var marc=aplicarDeteccao(m,c);
+ if(det.comps.oleo)campos=campos.concat(['proxOleoKm','proxOleoManual']);
+ _touchCarro(c,campos);
+ m.blocos[0].servicos.forEach(function(s){if(/pr[óo]xima\s+troca/i.test(s))c.proximasTrocas.push({texto:s})});
+ save();
+ var ok=det.comps.oleo;
+ openSheet('<div class="v102sheetHero"><div class="v102sheetIcon">✓</div><div><div class="v102eyebrow">'+esc(fmtPlaca(c.placa||ORP.pk))+'</div><h3>Troca de óleo salva</h3><div class="sub">'+esc(tituloCarro(c))+' · '+fmtKm(d.km)+' km em '+dataBR(d.data)+'</div></div></div>'+
+  '<div class="orProx"><span>Próxima troca</span><b>'+fmtKm(Number(c.proxOleoKm)||d.prox)+' km</b></div>'+
+  (ok?'':'<div class="orMsg"><b style="color:#c0392b">⚠️ O app não reconheceu a troca de óleo neste registro. Abra a manutenção e confira.</b></div>')+
+  '<div class="orPrev">'+esc(m.texto)+'</div>'+
+  '<button class="btn ok" style="width:100%" onclick="copiarManut(\''+m.id+'\')">📋 Copiar texto</button>'+
+  '<button class="btn sec" style="width:100%;margin-top:6px" onclick="closeSheet(2);verManut(\''+m.id+'\')">Abrir a manutenção</button>'+
+  '<button class="btn sec" style="width:100%;margin-top:6px" onclick="closeSheet(2)">Fechar</button>',2);
+ toast('🛢 Troca de óleo gravada no histórico do '+tituloCarro(c));
+ try{render()}catch(e){}
+ try{_roboRepintar()}catch(e){}
+ ORP=null;
+}
 
 </script>
 </body>
