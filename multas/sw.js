@@ -1,6 +1,6 @@
 /* Multas da Frota — service worker próprio (escopo /gestao/multas/)
    Página: rede primeiro, cache só se estiver sem internet. */
-const CACHE = 'guimas-multas-v28';
+const CACHE = 'guimas-multas-v29';
 const PAGE = new URL('./index.html', self.registration.scope).href;
 self.addEventListener('install', e => e.waitUntil((async () => {
   const c = await caches.open(CACHE);
