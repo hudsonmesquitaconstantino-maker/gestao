@@ -1536,7 +1536,7 @@ html.teclado #main{padding-bottom:calc(20px + var(--navH,0px))!important}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=244; var APP_DATE='20/10/2026';
+var APP_VER=245; var APP_DATE='21/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -12158,6 +12158,9 @@ function _waItem(txt,valor,recuo){
  if(resto)_waQuebra(resto,WA_W-recuo-2).forEach(function(x){out.push(cont+x)});
  return out.join('\n');
 }
+/* v245 (pedido do Hudson 21/10/2026): o que não tem valor fica EM BRANCO — nunca "0,00" (ex.: troca de
+   óleo feita pelo motorista). Item sem valor sai só com a descrição; total/subtotal zerado nem aparece. */
+function _waV(v){return Math.abs(_r2(Number(v)||0))>0.004?v:null}
 function _waTraco(){return Array(WA_W+1).join('-')}
 function _waTraco(){return Array(WA_VC+1).join('-')}
 /* texto com recuo pendurado: 1ª linha com prefixo, continuação alinhada depois dele */
@@ -12184,9 +12187,9 @@ window.textoFechamento=textoFechamento=function(ym,nomeForn){
    c.itens.forEach(function(i){
     var d=String(i.desc||''),mm=d.match(/^(?:DESCONTO|GARANTIA)\s*[—-]\s*(.*?)(?:\s*\(compra de (\d{2}\/\d{2})\/\d{4}\))?$/i);
     if(_r2(i.valor)<0&&mm)d='DESCONTO: '+mm[1]+(mm[2]?' (compra '+mm[2]+')':'');
-    L.push(_waItem(d,i.valor));
+    L.push(_waItem(d,_waV(i.valor)));
    });
-   if(c.itens.length>1)L.push(_waItem('Subtotal',c.sub,WA_W-21));
+   if(c.itens.length>1&&_waV(c.sub)!=null)L.push(_waItem('Subtotal',c.sub,WA_W-21));
    if(ix<gks.length-1)L.push('');
   });
   L.push('');
@@ -12194,7 +12197,7 @@ window.textoFechamento=textoFechamento=function(ym,nomeForn){
  var pks=Object.keys(f.carros);
  grupo('FROTA FÁBIO',pks.filter(function(gk){return !f.carros[gk].pessoal}));
  grupo('FROTA HUDSON',pks.filter(function(gk){return f.carros[gk].pessoal}));
- L.push(_waSep('-'),_waItem('Frota Fábio',f.totalFrota,0),_waItem('Frota Hudson',f.totalPessoal,0));
+ L.push(_waSep('-'));if(_waV(f.totalFrota)!=null)L.push(_waItem('Frota Fábio',f.totalFrota,0));if(_waV(f.totalPessoal)!=null)L.push(_waItem('Frota Hudson',f.totalPessoal,0));
  return '*🧾 FATURA '+nomeForn.toUpperCase()+' — '+_nomeMes(ym).toUpperCase()+'*\n'+_waBloco(L)+'\n*💰 TOTAL A PAGAR: R$ '+fmtBRL(f.total)+'*';
 };
 
@@ -12211,12 +12214,12 @@ window.buildManutTexto=buildManutTexto=function(m,carro){
  if(m.odometro)L.push('Odômetro: '+fmtKm(m.odometro)+' km');
  if(m.pecas.length){
   L.push('','PEÇAS');
-  m.pecas.forEach(function(p){L.push(_waItem(p.desc+(p.loja?' ('+p.loja+')':''),p.valor?p.valor:0))});
-  if(m.pecas.length>1)L.push(_waItem('Total peças',m.totalPecas,WA_W-24));
+  m.pecas.forEach(function(p){L.push(_waItem(p.desc+(p.loja?' ('+p.loja+')':''),_waV(p.valor)))});
+  if(m.pecas.filter(function(p){return _waV(p.valor)!=null}).length>1)L.push(_waItem('Total peças',m.totalPecas,WA_W-24));
  }
  m.blocos.forEach(function(b){
   L.push('','MÃO DE OBRA');
-  L.push(_waItem((b.titulo||'Mecânico')+': '+(b.nome||''),b.valor?b.valor:0));
+  L.push(_waItem((b.titulo||'Mecânico')+': '+(b.nome||''),_waV(b.valor)));
   (b.servicos||[]).forEach(function(s){L.push(_waPend(s,'- ',1))});
  });
  var t='*🔧 MANUTENÇÃO — '+_waCarro(carro,pk)+'*\n'+_waBloco(L);
@@ -12232,19 +12235,19 @@ window.buildTermoTexto=buildTermoTexto=function(t,carro){
   _waRot('Motivo',t.motivo),'Odômetro: '+fmtKm(t.odometro)+' km'];
  x+=_waBloco(H)+'\n\n';
  var A=['MANUTENÇÃO (DIVISÃO 50/50)','','PEÇAS'];
- t.pecas.forEach(function(p){A.push(_waItem(p.desc+(p.loja?' ('+p.loja+')':''),p.valor))});
- t.blocos.forEach(function(b){A.push('','MÃO DE OBRA',_waItem(b.titulo+': '+b.nome,tNum(b.valor)));
+ t.pecas.forEach(function(p){A.push(_waItem(p.desc+(p.loja?' ('+p.loja+')':''),_waV(p.valor)))});
+ t.blocos.forEach(function(b){A.push('','MÃO DE OBRA',_waItem(b.titulo+': '+b.nome,_waV(tNum(b.valor))));
   String(b.servicos||'').split('\n').map(function(s){return s.trim()}).filter(Boolean).forEach(function(s){A.push(_waPend(s,'- ',1))})});
- A.push(_waSep('-'),_waItem('Total manutenção',t.totalManut,0),_waItem('Cota motorista 50%',t.cota,0));
+ if(_waV(t.totalManut)!=null)A.push(_waSep('-'),_waItem('Total manutenção',t.totalManut,0),_waItem('Cota motorista 50%',t.cota,0));
  x+='*1️⃣ MANUTENÇÃO CORRETIVA — DIVISÃO 50/50*\n'+_waBloco(A.slice(2))+'\n\n';
- var B=[];t.integrais.forEach(function(i){B.push(_waItem(i.desc,tNum(i.valor)))});if(t.integrais.length>1)B.push(_waItem('Total',t.totalIntegrais,WA_W-18));if(!B.length)B.push('Nenhum');
+ var B=[];t.integrais.forEach(function(i){B.push(_waItem(i.desc,_waV(tNum(i.valor))))});if(t.integrais.length>1&&_waV(t.totalIntegrais)!=null)B.push(_waItem('Total',t.totalIntegrais,WA_W-18));if(!B.length)B.push('Nenhum');
  x+='*2️⃣ CUSTOS DE USO INTEGRAL — 100% MOTORISTA*\n'+_waBloco(B)+'\n\n';
  var C=[];
- if(t.debitos.length){C.push('DÉBITOS');t.debitos.forEach(function(d){C.push(_waItem(d.desc,tNum(d.valor)))})}
- if(t.creditos.length){if(C.length)C.push('');C.push('CRÉDITOS');t.creditos.forEach(function(cq){C.push(_waItem(cq.desc,tNum(cq.valor)))})}
+ if(t.debitos.length){C.push('DÉBITOS');t.debitos.forEach(function(d){C.push(_waItem(d.desc,_waV(tNum(d.valor))))})}
+ if(t.creditos.length){if(C.length)C.push('');C.push('CRÉDITOS');t.creditos.forEach(function(cq){C.push(_waItem(cq.desc,_waV(tNum(cq.valor))))})}
  if(C.length)x+='*3️⃣ BALANÇO FINANCEIRO DO CONTRATO*\n'+_waBloco(C)+'\n\n';
- var R=[_waItem('(+) Cota manut. 50%',t.cota,0),_waItem('(+) Custos integrais',t.totalIntegrais,0),_waItem('(+) Débitos',t.totalDebitos,0)];
- if(t.creditos.length)R.push(_waItem('(-) Caução',-Math.abs(tNum(t.totalCreditos)),0));
+ var R=[];if(_waV(t.cota)!=null)R.push(_waItem('(+) Cota manut. 50%',t.cota,0));if(_waV(t.totalIntegrais)!=null)R.push(_waItem('(+) Custos integrais',t.totalIntegrais,0));if(_waV(t.totalDebitos)!=null)R.push(_waItem('(+) Débitos',t.totalDebitos,0));
+ if(t.creditos.length&&_waV(t.totalCreditos)!=null)R.push(_waItem('(-) Caução',-Math.abs(tNum(t.totalCreditos)),0));
  R.push(_waSep('-'),_waItem(t.aDevolver?'A DEVOLVER':'MOTORISTA DEVE',t.saldo,0));
  x+='*📊 RESUMO FINAL*\n'+_waBloco(R)+'\n';
  x+=(t.aDevolver?'*💰 SALDO LÍQUIDO A DEVOLVER: R$ '+fmtBRL(t.saldo)+'*':'*💰 SALDO LÍQUIDO DEVIDO PELO MOTORISTA: R$ '+fmtBRL(t.saldo)+'*')+'\n';
