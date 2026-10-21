@@ -1673,7 +1673,7 @@ html.gsplOn,html.gsplOn body{background:#050E2A!important}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=251; var APP_DATE='21/10/2026';
+var APP_VER=252; var APP_DATE='21/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -1738,7 +1738,7 @@ function periodoTexto(ini,fim){
    Vale para TODAS as manutenções; sem data final, conta como 1 dia. */
 function _diasManut(ini,fim){var re=/^\d{4}-\d{2}-\d{2}$/;if(!ini||!re.test(ini))return 0;if(!fim||!re.test(fim))fim=ini;var n=diasEntre(ini,fim)+1;return n>0?n:0}
 function _diasTxt(ini,fim){var n=_diasManut(ini,fim);return n?n+' dia'+(n>1?'s':''):''}
-function _diasChip(ini,fim){var t=_diasTxt(ini,fim);return t?' <span class="diasChip">⏱ '+t+'</span>':''}
+function _diasChip(ini,fim){var t=_diasManut(ini,fim)>1?_diasTxt(ini,fim):'';return t?' <span class="diasChip">⏱ '+t+'</span>':''}
 /* ---------- valor por extenso (reais) ---------- */
 function extenso(n){
  n=Math.round((Number(n)||0)*100);var reais=Math.floor(n/100),cent=n%100;
@@ -7380,7 +7380,7 @@ function mDesenha(){
  var _baseIni=(document.getElementById('mIni')||{}).value||hoje();
  var _baseFim=(document.getElementById('mFim')||{}).value||_baseIni;
  var _mDi=document.getElementById('mDias');
- if(_mDi)_mDi.innerHTML=_diasManut(_baseIni,_baseFim)?'⏱ Carro parado <b>'+_diasTxt(_baseIni,_baseFim)+'</b> nesta manutenção':'';
+ if(_mDi)_mDi.innerHTML=_diasManut(_baseIni,_baseFim)>1?'⏱ Carro parado <b>'+_diasTxt(_baseIni,_baseFim)+'</b> nesta manutenção':'';
  var _basePecas=(document.getElementById('mPecasData')||{}).value||_baseFim||_baseIni;
  var hp='';
  MP.forEach(function(p,i){
@@ -7554,7 +7554,7 @@ function editarManut(id){
 }
 function edDesenha(){
  var hp='',_eI=(document.getElementById('edIni')||{}).value||'',_eF=(document.getElementById('edFim')||{}).value||_eI,_eD=document.getElementById('edDias');
- if(_eD)_eD.innerHTML=_diasManut(_eI,_eF)?'⏱ Carro parado <b>'+_diasTxt(_eI,_eF)+'</b> nesta manutenção':'';
+ if(_eD)_eD.innerHTML=_diasManut(_eI,_eF)>1?'⏱ Carro parado <b>'+_diasTxt(_eI,_eF)+'</b> nesta manutenção':'';
  EP.forEach(function(p,i){
   hp+='<div class="v100item"><div class="v100itemTop"><div class="v100itemTitle">PEÇA '+('0'+(i+1)).slice(-2)+'</div><button class="v100remove" onclick="EP.splice('+i+',1);edDesenha()">Remover</button></div>'+
    '<div class="v100pieceGrid"><div class="desc"><label>Descrição</label><textarea rows="1" class="taflex" placeholder="Ex.: Pastilha de freio dianteira" oninput="EP['+i+'].desc=this.value;taGrow(this)">'+esc(p.desc)+'</textarea></div>'+
@@ -9395,7 +9395,7 @@ function e3Desenha(){
  eb.innerHTML=g+'<button type="button" class="n3itAdd" onclick="e3Novo(\'b\')">＋ Adicionar mão de obra</button></div>';
  setTimeout(function(){document.querySelectorAll('#n3e .n3ed textarea').forEach(taGrow)},10);
  var _eI=(document.getElementById('edIni')||{}).value||'',_eF=(document.getElementById('edFim')||{}).value||_eI,_eD=document.getElementById('edDias');
- if(_eD)_eD.innerHTML=_diasManut(_eI,_eF)?'⏱ Carro parado <b>'+_diasTxt(_eI,_eF)+'</b> nesta manutenção':'';
+ if(_eD)_eD.innerHTML=_diasManut(_eI,_eF)>1?'⏱ Carro parado <b>'+_diasTxt(_eI,_eF)+'</b> nesta manutenção':'';
  edTotais();
 }
 function edDesenha(){e3Desenha()}
