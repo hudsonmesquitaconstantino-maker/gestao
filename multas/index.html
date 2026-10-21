@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
+<style id="gsplPre">html.gsplPre.gsplPre,html.gsplPre.gsplPre body,html.gsplPre.gsplPre body.locked{background:#050E2A!important}</style><script>document.documentElement.classList.add("gsplPre")</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Multas da Frota</title>
@@ -382,7 +383,7 @@ html.af dialog{max-height:calc(var(--afVvh,100vh) - 24px)}
 <style id="gsplCss">
 #gspl{position:fixed;left:0;right:0;z-index:2147483000;overflow:hidden;pointer-events:auto;
  top:var(--gsTop,0px);height:var(--gsH,100%);
- background:radial-gradient(120% 70% at 50% 38%,#0E2160 0%,#050E2A 58%,#030818 100%);
+ background:radial-gradient(120% 70% at 50% 38%,#0E2160 0%,#050E2A 58%,#030818 100%) #050E2A;
  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased;color:#fff}
 #gspl *{box-sizing:border-box}
 #gspl{isolation:isolate;-webkit-transform:translateZ(0);transform:translateZ(0)}
@@ -453,7 +454,21 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
  var sa0=false;try{sa0=navigator.standalone===true||matchMedia('(display-mode: standalone)').matches}catch(e){}
  var full=false&&sa0;
  if(full)de.classList.add('gsplFull');
- de.classList.add('gsplOn');setTimeout(function(){de.classList.remove('gsplOn','gsplFull')},MAX+2000);
+ /* COMO O iPHONE (iOS 26) PINTA A FAIXA DO RELÓGIO: testa o ponto do meio, 4px abaixo do topo, e usa a cor de
+    fundo do elemento FIXO que estiver ali. Elemento "absoluto" não conta, e um fixo que cobre a tela inteira
+    (o corpo desses apps) é tratado como sobreposição e MANTÉM a cor anterior — foi isso que deixou a faixa
+    azul presa (v67/v68) ou clara durante a abertura (v69+). Nestes apps:
+      • a abertura sai de dentro do corpo (a camada de rolagem a transformava em "absoluta") e fica fixa de
+        verdade, com fundo azul sólido → faixa azul durante a abertura;
+      • uma faixinha fixa de 7px, da cor do topo do app, fica por baixo da abertura; quando a abertura some,
+        é ela que o iPhone encontra → faixa volta à cor do app (e escurece junto quando uma janela abre). */
+ if(!full){
+  try{de.appendChild(el)}catch(e){}
+  try{if(!document.getElementById('gsTinta')){var tt=document.createElement('div');tt.id='gsTinta';tt.setAttribute('aria-hidden','true');
+   tt.style.cssText='position:fixed;left:0;right:0;top:0;height:7px;z-index:2147482000;background:#EEF0F4;pointer-events:none;transition:background-color .35s ease';
+   de.appendChild(tt)}}catch(e){}
+ }
+ de.classList.add('gsplOn','gsplPre');setTimeout(function(){de.classList.remove('gsplOn','gsplFull','gsplPre')},MAX+2000);
  /* cobre a TELA inteira (inclusive atrás da barra de status), como a imagem fixa do iPhone */
  function mede(){
   var sh=0;try{sh=Math.max(screen.height||0,screen.width<screen.height?screen.height:0)}catch(e){}
@@ -498,7 +513,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
  function abre(){
   if(feito)return;feito=true;
   el.className='anda abre';
-  setTimeout(function(){de.classList.remove('gsplOn','gsplFull');el.className='anda abre sai';cascata()},360);
+  setTimeout(function(){de.classList.remove('gsplOn','gsplFull','gsplPre');el.className='anda abre sai';cascata()},360);
   setTimeout(function(){try{el.parentNode.removeChild(el);var c=document.getElementById('gsplCss');if(c)c.parentNode.removeChild(c)}catch(e){}},1000);
  }
  function pronto(){var falta=MIN-(Date.now()-t0);setTimeout(abre,Math.max(0,falta))}
@@ -2725,6 +2740,7 @@ header .tabs button{position:relative;z-index:1;background:transparent!important
 .overlay .sheet{border-radius:28px 28px 0 0!important;box-shadow:0 -10px 40px rgba(5,10,24,.25)!important}
 html.af body>header.afHead,#afScroll,html.af body>.afBar{transition:transform .5s var(--g21mola),filter .5s var(--g21mola)}
 html.g21jan.af body{background:#0A0F1C!important}
+html.g21jan #gsTinta{background:#0A0F1C!important}
 html.g21jan.af body>header.afHead,html.g21jan #afScroll,html.g21jan.af body>.afBar{transform:scale(.93);filter:brightness(.85)}
 html.g21jan.af body>header.afHead{border-radius:22px 22px 0 0}
 
