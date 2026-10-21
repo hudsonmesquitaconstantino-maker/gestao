@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Multas">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icone-180.png">
 <link rel="icon" type="image/png" href="icone-192.png">
@@ -444,13 +444,7 @@ html.gsplOn.gsplOn,html.gsplOn.gsplOn body,html.gsplOn.gsplOn body.locked{backgr
 (function(){
  var el=document.getElementById('gspl');if(!el)return;
  var t0=Date.now(),MIN=1500,MAX=12000,feito=false,de=document.documentElement;
- de.classList.add('gsplOn');
- /* a faixa da barra de status do iPhone segue a cor do tema: fica azul durante a abertura e volta ao normal depois */
- var mtc=document.querySelector('meta[name="theme-color"]'),tcOrig=mtc?mtc.getAttribute('content'):null;
- if(!mtc){mtc=document.createElement('meta');mtc.name='theme-color';document.head.appendChild(mtc)}
- mtc.setAttribute('content','#050E2A');
- function tcVolta(){try{if(tcOrig===null)mtc.parentNode.removeChild(mtc);else mtc.setAttribute('content',tcOrig)}catch(e){}}
- setTimeout(function(){de.classList.remove('gsplOn');tcVolta()},MAX+2000);
+ de.classList.add('gsplOn');setTimeout(function(){de.classList.remove('gsplOn')},MAX+2000);
  /* cobre a TELA inteira (inclusive atrás da barra de status), como a imagem fixa do iPhone */
  function mede(){
   var sh=0;try{sh=Math.max(screen.height||0,screen.width<screen.height?screen.height:0)}catch(e){}
@@ -495,7 +489,7 @@ html.gsplOn.gsplOn,html.gsplOn.gsplOn body,html.gsplOn.gsplOn body.locked{backgr
  function abre(){
   if(feito)return;feito=true;
   el.className='anda abre';
-  setTimeout(function(){de.classList.remove('gsplOn');tcVolta();el.className='anda abre sai';cascata()},360);
+  setTimeout(function(){de.classList.remove('gsplOn');el.className='anda abre sai';cascata()},360);
   setTimeout(function(){try{el.parentNode.removeChild(el);var c=document.getElementById('gsplCss');if(c)c.parentNode.removeChild(c)}catch(e){}},1000);
  }
  function pronto(){var falta=MIN-(Date.now()-t0);setTimeout(abre,Math.max(0,falta))}
@@ -2661,6 +2655,8 @@ html.af body{background:var(--g21bg)!important}
 #afScroll{background:var(--g21bg)}
 
 /* ---------- topo de vidro + ícone do app ---------- */
+/* os apps desenham por trás da barra de status (como o Gestão): o topo desce o espaço dela */
+html.af body>header.afHead:has(>.suiteHead){padding-top:calc(8px + env(safe-area-inset-top))!important}
 html.af body>header.afHead{background:rgba(238,240,244,.82)!important;-webkit-backdrop-filter:saturate(1.8) blur(20px)!important;backdrop-filter:saturate(1.8) blur(20px)!important;border-bottom:.5px solid rgba(13,20,36,.06)!important;box-shadow:none!important}
 .suiteTitle,.htitle{display:flex!important;align-items:center;gap:9px}
 .suiteTitle::before,.htitle::before{content:"";flex:0 0 auto;width:32px;height:32px;border-radius:10px;background:#071233 var(--g21logo) center/cover no-repeat;box-shadow:0 3px 8px rgba(7,18,51,.28)}
