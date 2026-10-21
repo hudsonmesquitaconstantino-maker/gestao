@@ -497,7 +497,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
     var e=todos[i];if(el.contains(e))continue;
     var r=e.getBoundingClientRect();
     if(r.bottom<=0||r.top>=vh||r.width<vw*0.42||r.height<26||r.height>340)continue;
-    var cs=getComputedStyle(e);if(cs.position==='fixed'||cs.visibility==='hidden'||cs.display==='none'||Number(cs.opacity)===0)continue;
+    var cs=getComputedStyle(e);/* barras presas na tela (ex.: "Nova despesa", centralizada com translateX) não entram na cascata: a animação mexe no transform e a barra pulava de lado */if(cs.position==='fixed'||cs.position==='absolute'||cs.position==='sticky'||(cs.transform&&cs.transform!=='none')||e.closest('.afBar,.afFix')||cs.visibility==='hidden'||cs.display==='none'||Number(cs.opacity)===0)continue;
     var dentro=false;for(var j=0;j<lista.length;j++){if(lista[j].contains(e)){dentro=true;break}}
     if(dentro)continue;
     lista=lista.filter(function(x){return !e.contains(x)});
