@@ -1592,14 +1592,18 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
  var el=document.getElementById('gspl');if(!el)return;
  var t0=Date.now(),MIN=1500,MAX=12000,feito=false,de=document.documentElement;
  /* o app desenha por trás da barra de status? (é o que vale de verdade no iPhone, não o que a página pede) */
- var topoSeg=0;try{var pr=document.createElement('div');pr.style.cssText='position:fixed;top:0;left:0;visibility:hidden;padding-top:env(safe-area-inset-top)';document.body.appendChild(pr);topoSeg=pr.offsetHeight;document.body.removeChild(pr)}catch(e){}
- if(topoSeg>0)de.classList.add('gsplFull');
+ /* o app foi instalado desenhando por trás da barra de status? (o iPhone decide isso ao ADICIONAR o ícone à tela
+    de início e não muda depois — hoje só o Gestão). Nos outros, a faixa de cima é pintada pelo iPhone com o fundo da
+    página e fica assim até fechar: por isso eles NÃO pintam o fundo de azul. */
+ var sa0=false;try{sa0=navigator.standalone===true||matchMedia('(display-mode: standalone)').matches}catch(e){}
+ var full=true&&sa0;
+ if(full)de.classList.add('gsplFull');
  de.classList.add('gsplOn');setTimeout(function(){de.classList.remove('gsplOn','gsplFull')},MAX+2000);
  /* cobre a TELA inteira (inclusive atrás da barra de status), como a imagem fixa do iPhone */
  function mede(){
   var sh=0;try{sh=Math.max(screen.height||0,screen.width<screen.height?screen.height:0)}catch(e){}
   var ih=window.innerHeight||document.documentElement.clientHeight||0;
-  var bt=topoSeg>0;
+  var bt=full;
   var sa=false;try{sa=navigator.standalone===true||matchMedia('(display-mode: standalone)').matches}catch(e){}
   if(bt&&sa&&sh>=ih){
    /* app que desenha por trás da barra de status (Gestão): a página começa no topo da TELA e o iPhone
@@ -1678,7 +1682,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=255; var APP_DATE='21/10/2026';
+var APP_VER=256; var APP_DATE='21/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
