@@ -2490,6 +2490,11 @@ html.af.afKb .sheet{max-height:calc(var(--afVvh,100vh) - 12px)!important}
  var topo=pr.getBoundingClientRect().height;B.removeChild(pr);
  var sa=false;try{sa=navigator.standalone===true||matchMedia('(display-mode: standalone)').matches}catch(e){}
  if(sa&&topo>0)de.classList.add('afVH');
+ /* 22/10: no começo da abertura o iPhone ainda informa 0 para a faixa da barra de status — o app instalado
+    "por baixo da barra" não era reconhecido, o corpo ficava ~60pt mais curto e a barra de baixo subia (Resultados).
+    Confere de novo depois que a tela assenta. Nos apps que começam abaixo da barra de status a faixa é sempre 0. */
+ function reVH(){try{if(!sa||de.classList.contains('afVH'))return;var q=document.createElement('div');q.style.cssText='position:absolute;visibility:hidden;padding-top:env(safe-area-inset-top)';B.appendChild(q);var t=q.getBoundingClientRect().height;B.removeChild(q);if(t>0)de.classList.add('afVH')}catch(e){}}
+ if(sa){window.addEventListener('load',reVH);window.addEventListener('resize',reVH);window.addEventListener('pageshow',reVH);[150,500,1200,2500].forEach(function(ms){setTimeout(reVH,ms)})}
  de.classList.add('af');
  /* tudo que o app pedia para "rolar a página" agora rola o miolo */
  var o1=window.scrollTo,o2=window.scrollBy;
