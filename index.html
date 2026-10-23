@@ -1697,7 +1697,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=259; var APP_DATE='22/10/2026';
+var APP_VER=260; var APP_DATE='22/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -9727,7 +9727,8 @@ function _n4Pend(){
    var _e=p.k==='ofi'&&typeof n22EmprestadoPara==='function'?n22EmprestadoPara(n4Pk(c)):null;
    var sub=p.k==='ofi'?'Na oficina'+(c.oficinaOnde?' · '+esc(c.oficinaOnde):'')+(c.motorista?' · '+esc(primNome(c.motorista)):''):'Pronto para alugar';
    var dir=p.d>=0?'<span class="n4dias"><b>'+p.d+'</b><small>'+(p.d===1?'dia':'dias')+'</small></span>':'<span class="n4chev">›</span>';
-   h+=n4Linha(c,sub,dir,(_e?'<small class="n22com">Rodando com o '+esc(n4Nome(_e))+' emprestado</small>':'')+(al.length?'<small class="n4al">'+n4AlTx(c,al)+'</small>':''));
+   var _bt=p.k==='pro'&&typeof n22Pode==='function'&&n22Pode(c)?'<button class="n22bt" onclick="event.stopPropagation();n22Emprestimo(\''+n4Pk(c)+'\')">Emprestado? Marcar</button>':'';
+   h+=n4Linha(c,sub,dir,(_e?'<small class="n22com">Rodando com o '+esc(n4Nome(_e))+' emprestado</small>':'')+_bt+(al.length?'<small class="n4al">'+n4AlTx(c,al)+'</small>':''));
   });
   h+='</div>';
   if(sem>0)h+='<div class="n4nota">Sem motorista, deixam de render cerca de <b>R$ '+fmtBRL(sem)+' por semana</b> (pela última semanal de cada carro).</div>';
@@ -12663,7 +12664,7 @@ function oleoRapidoSalvar(){
 
 </script>
 <style id="g22css">
-.n22quem{display:flex;align-items:center;gap:12px}.n22quem .g2ic{flex:0 0 auto}.n22quem b{display:block;font-size:16px}.n22quem small{display:block;color:var(--tx2,#6b7280);font-size:13px;margin-top:2px}.n22com{display:block;color:#178A4A;font-weight:600;font-size:13px;margin-top:2px}
+.n22quem{display:flex;align-items:center;gap:12px}.n22quem .g2ic{flex:0 0 auto}.n22quem b{display:block;font-size:16px}.n22quem small{display:block;color:var(--tx2,#6b7280);font-size:13px;margin-top:2px}.n22bt{display:inline-block;margin-top:6px;border:0;background:#E7F6EE;color:#14703C;font:600 13px var(--sf,-apple-system);border-radius:999px;padding:6px 12px}.n22com{display:block;color:#178A4A;font-weight:600;font-size:13px;margin-top:2px}
 </style>
 <script>
 /* ===================== v259 — CARRO EMPRESTADO (sem contrato) =====================
@@ -12758,7 +12759,8 @@ function n22Atualiza(pk){
   var c=S.carros[pk];
   if(c&&!c.oficinaDesde&&g2EmpAtivo(c)){n22Emprestimo(pk);return}
   o(pk);
-  try{if(c&&n22Pode(c)){var b=document.getElementById('sheetBody2');if(b)b.insertAdjacentHTML('beforeend','<div class="g2grp" style="margin-top:14px">'+_g2Opt('pessoa','Emprestar para um motorista','Sem contrato · sai dos carros parados','n22Emprestimo(\''+pk+'\')')+'</div>')}}catch(e){}
+  /* v260: a opção fica no TOPO da janela (antes ficava no fim e passava despercebida — Hudson tocou em "Saiu da oficina") */
+  try{if(c&&n22Pode(c)){var b=document.getElementById('sheetBody2'),hd=b&&b.querySelector('.g2sheetH');if(hd)hd.insertAdjacentHTML('afterend','<div class="g2grp" style="margin:0 0 14px">'+_g2Opt('pessoa','Emprestar para um motorista','Está rodando com alguém, sem contrato','n22Emprestimo(\''+pk+'\')')+'</div>')}}catch(e){}
  };
  w._n22=1;window.g2Oficina=w;
 })();
