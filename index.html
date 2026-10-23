@@ -1697,7 +1697,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=258; var APP_DATE='21/10/2026';
+var APP_VER=259; var APP_DATE='22/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -2242,7 +2242,7 @@ function _regMaisNovo(a,b){if(!a)return b;if(!b)return a;var aa=_regAt(a),bb=_re
 /* Exclusão normal é definitiva contra cópias antigas/offline. A única exceção é uma
    restauração EXPLÍCITA de backup, marcada com restauradoEm posterior ao túmulo. */
 function _tombVence(apagados,id,obj){var t=Number(apagados&&apagados[id])||0;if(!t)return false;return !(Number(obj&&obj.restauradoEm)>t)}
-var CARRO_CAMPOS_EDIT=['nome','modeloCRLV','motor','motorCodigo','ano','chassi','renavam','cor','potencia','combustivel','proprietario','locadorId','codigoRadio','motorista','status','semanalPadrao','caucaoPadrao','proximasTrocas','contratoVigenteId','procLeilao','procFinanciado','procObs','emVenda','meuCarro','oleoTipo','oleoIntervalo','correiaIntervalo','proxOleoKm','proxOleoManual','temCorreia','proxCorreiaKm','proxCorreiaManual','sincronismoOrigem','sincronismoRegra','sincronismoConfirmadoEm','oficinaDesde','oficinaOnde'];
+var CARRO_CAMPOS_EDIT=['nome','modeloCRLV','motor','motorCodigo','ano','chassi','renavam','cor','potencia','combustivel','proprietario','locadorId','codigoRadio','motorista','status','semanalPadrao','caucaoPadrao','proximasTrocas','contratoVigenteId','procLeilao','procFinanciado','procObs','emVenda','meuCarro','oleoTipo','oleoIntervalo','correiaIntervalo','proxOleoKm','proxOleoManual','temCorreia','proxCorreiaKm','proxCorreiaManual','sincronismoOrigem','sincronismoRegra','sincronismoConfirmadoEm','oficinaDesde','oficinaOnde','emprestimoDesde','emprestimoPara','emprestimoDe'];
 function _garanteCampoAt(c){if(!c)return {};if(!c._campoAt||typeof c._campoAt!=='object'){c._campoAt={_legacy:Number(c.editadoEm)||0}}else if(c._campoAt._legacy===undefined)c._campoAt._legacy=Number(c.editadoEm)||0;return c._campoAt}
 function _campoAtCarro(c,k){var m=c&&c._campoAt;if(m&&typeof m==='object')return Number(m[k])||Number(m._all)||Number(m._legacy)||0;return Number(c&&c.editadoEm)||0}
 /* v162: ROBÔ DO KM (WhatsApp) — área ISOLADA da nuvem.
@@ -3803,8 +3803,8 @@ function ficha(pk){
  var ct=c.contratoVigenteId?S.contratos[c.contratoVigenteId]:null;if(ct&&ct.tipo==='venda')ct=null;
  var si=g2Situacao(c),km=_g2Km(c);
  var foto=(function(){try{var l=_roboLeitura(pk);return (l&&l.data===c.kmUltimaData&&Number(l.km)===Number(c.kmUltima))}catch(e){return false}})();
- var h='<div class="g2hero">'+plateHtml(c.placa)+'<div class="g2heroTx"><h3>'+esc(tituloCarro(c))+'</h3><div class="sub">'+(c.motorista?esc(primNome(c.motorista)):'Sem motorista')+(ct&&ct.semanal?' · R$ '+fmtBRL(ct.semanal)+'/semana':'')+'</div></div></div>';
- h+='<div class="g2sitLinha tap g2sit-'+si.k+'" onclick="g2Oficina(\''+pk+'\')">'+(si.k==='oficina'?G2I.ofi:si.k==='alugado'?G2I.pessoa:G2I.carro)+'<span>'+esc(si.t)+'</span>'+G2I.chev+'</div>';
+ var h='<div class="g2hero">'+plateHtml(c.placa)+'<div class="g2heroTx"><h3>'+esc(tituloCarro(c))+'</h3><div class="sub">'+(c.motorista?esc(primNome(c.motorista)):si.k==='emprestado'?'Emprestado para '+esc(primNome(c.emprestimoPara))+' · sem contrato':'Sem motorista')+(ct&&ct.semanal?' · R$ '+fmtBRL(ct.semanal)+'/semana':'')+'</div></div></div>';
+ h+='<div class="g2sitLinha tap g2sit-'+si.k+'" onclick="g2Oficina(\''+pk+'\')">'+(si.k==='oficina'?G2I.ofi:(si.k==='alugado'||si.k==='emprestado')?G2I.pessoa:G2I.carro)+'<span>'+esc(si.t)+'</span>'+G2I.chev+'</div>';
  h+='<div class="g2kmL tap" onclick="kmRapido(\''+pk+'\')"><b>'+(km?fmtKm(km)+' km':'Sem km')+'</b><span>'+(c.kmUltimaData?(foto?'foto do painel · ':'')+dataBR(c.kmUltimaData):'toque para lançar')+'</span><em>atualizar</em></div>';
  h+=_g2Saude(c,pk);
  var outros=alertasCarro(c).filter(function(a){var k=_g2Cat(a.t);return k==='km'||k==='obs'});
@@ -3922,7 +3922,7 @@ function fichaMais(pk){
  var ct=c.contratoVigenteId?S.contratos[c.contratoVigenteId]:null;if(ct&&ct.tipo==='venda')ct=null;
  var X=function(fn){return 'closeSheet(2);'+fn};
  openSheet('<div class="g2sheetH">'+esc(tituloCarro(c))+' · '+esc(fmtPlaca(c.placa))+'</div>'+
-  '<div class="g2grp">'+_g2Opt('km','Atualizar km','Digitar o km do painel',X('kmRapido(\''+pk+'\')'))+_g2Opt('ofi',c.oficinaDesde?'Situação: na oficina':'Marcar como na oficina','Entrada, saída e dias parado',X('g2Oficina(\''+pk+'\')'))+_g2Opt('nota','Nova observação','Lembrete deste carro',X('obsNova(\''+pk+'\')'))+_g2Opt('chave','Manutenção programada','Ajustar próxima troca de óleo e correia',X('editarProg(\''+pk+'\')'))+'</div>'+
+  '<div class="g2grp">'+_g2Opt('km','Atualizar km','Digitar o km do painel',X('kmRapido(\''+pk+'\')'))+_g2Opt('ofi',c.oficinaDesde?'Situação: na oficina':'Marcar como na oficina','Entrada, saída e dias parado',X('g2Oficina(\''+pk+'\')'))+((typeof n22Pode==='function'&&n22Pode(c))?_g2Opt('pessoa',g2EmpAtivo(c)?'Emprestado para '+esc(primNome(c.emprestimoPara)):'Emprestar para um motorista','Sem contrato · sai dos carros parados',X('n22Emprestimo(\''+pk+'\')')):'')+_g2Opt('nota','Nova observação','Lembrete deste carro',X('obsNova(\''+pk+'\')'))+_g2Opt('chave','Manutenção programada','Ajustar próxima troca de óleo e correia',X('editarProg(\''+pk+'\')'))+'</div>'+
   '<div class="g2grp">'+_g2Opt('doc','Editar dados do carro','CRLV, motor, status',X('formCarro(\''+pk+'\')'))+_g2Opt('pessoa','Motorista','Trocar o nome do motorista',X('editarMotorista(\''+pk+'\')'))+_g2Opt('troca',(c.meuCarro?'Frota Hudson':'Frota Fábio')+' · trocar','De quem é o carro',X('alternarFrota(\''+pk+'\')'))+_g2Opt('din',c.fipeM?'FIPE vinculada':'Vincular FIPE','Valor de referência',X('fipeFluxo(\''+pk+'\')'))+'</div>'+
   '<div class="g2grp">'+(ct?_g2Opt('troca','Levar motorista para outro carro','O contrato vai junto',X('prepararTransferenciaContrato(\''+pk+'\')')):_g2Opt('doc','Criar contrato','Para este carro',X('novoContratoPara(\''+pk+'\')')))+_g2Opt('doc','Importar contrato pronto (Word)','Arquivo .docx',X('importarContratoWord(\''+pk+'\')'))+_g2Opt('tag','Registrar compra e venda','Reserva de domínio',X('formVenda(\''+pk+'\',\'\')'))+_g2Opt('din','Termo de devolução','Acerto de contas',X('abrirTermo(\''+pk+'\')'))+'</div>'+
   (ct?'<div class="g2grp">'+_g2Opt('pare','Encerrar contrato','Pede confirmação',X('trocarMotorista(\''+pk+'\')'),true)+'</div>':''),2);
@@ -9301,7 +9301,7 @@ function n3cListaCarros(){
  /* parados (prontos para alugar) primeiro: é para eles que se faz contrato novo */
  /* v205: ordem alfabética normal (Hudson, 08/10/2026) */
  el.innerHTML=cs.map(function(c){var pk=normPlaca(c.placa),livre=c.status==='parado'&&!c.oficinaDesde;
-  return '<button class="n3row" onclick="n3cEscolher(\''+pk+'\')">'+plateHtml(c.placa)+'<span class="n3rowTx"><b>'+esc(tituloCarro(c))+'</b><small>'+(livre?'<span class="n3ok">parado · pronto para alugar</span>':c.oficinaDesde?'na oficina':(c.motorista?'com '+esc(primNome(c.motorista)):esc(c.status||'')))+'</small></span><span class="n3chev">›</span></button>'}).join('')||'<div class="n3vazio">Nenhum carro encontrado</div>';
+  return '<button class="n3row" onclick="n3cEscolher(\''+pk+'\')">'+plateHtml(c.placa)+'<span class="n3rowTx"><b>'+esc(tituloCarro(c))+'</b><small>'+(livre&&typeof g2EmpAtivo==='function'&&g2EmpAtivo(c)?'<span class="n3ok">emprestado para '+esc(primNome(c.emprestimoPara))+' (sem contrato)</span>':livre?'<span class="n3ok">parado · pronto para alugar</span>':c.oficinaDesde?'na oficina':(c.motorista?'com '+esc(primNome(c.motorista)):esc(c.status||'')))+'</small></span><span class="n3chev">›</span></button>'}).join('')||'<div class="n3vazio">Nenhum carro encontrado</div>';
 }
 function n3cEscolher(pk){var s=document.getElementById('ncCarro');if(!s)return;s.value=pk;N3C.busca='';ncPuxaCarro();try{ncResumo()}catch(e){}n3cDesenhaMot();n3Passo('n3c',1,true)}
 function n3cTrocarCarro(){var s=document.getElementById('ncCarro');if(s)s.value='';n3cDesenhaCarro();n3Passo('n3c',0,true);setTimeout(function(){var b=document.getElementById('n3cBusca');if(b)b.focus()},50)}
@@ -9701,12 +9701,12 @@ function n4Abas(){
 function vHoje(){G2AL=new Map();try{return _n4Pend()}finally{G2AL=null}}
 function _n4Pend(){
  var cs=carrosOrdenados().filter(function(c){return c.status!=='pessoal'&&n4DaFrota(c)});
- var ofi=[],pro=[],venda=[],rod=[];
- cs.forEach(function(c){var k=g2Situacao(c).k;if(k==='oficina')ofi.push(c);else if(k==='pronto')pro.push(c);else if(k==='venda')venda.push(c);else rod.push(c)});
+ var ofi=[],pro=[],venda=[],rod=[],emp=[];
+ cs.forEach(function(c){var k=g2Situacao(c).k;if(k==='oficina')ofi.push(c);else if(k==='pronto')pro.push(c);else if(k==='venda')venda.push(c);else if(k==='emprestado')emp.push(c);else rod.push(c)});
  /* compra e venda conta como rodando (o semanal continua entrando), mas a manutenção é do motorista: não entra nas pendências nem no robô */
  var comPend=rod.filter(function(c){return _g2Al(c).length}),emDia=rod.filter(function(c){return !_g2Al(c).length});
- rod=rod.concat(venda);
- var semMot=cs.filter(function(c){return !c.motorista&&g2Situacao(c).k!=='venda'});
+ rod=rod.concat(venda).concat(emp); /* v259: emprestado (sem contrato) roda */
+ var semMot=cs.filter(function(c){var k=g2Situacao(c).k;return !c.motorista&&k!=='venda'&&k!=='emprestado'});
  var h='<div class="g2head"><div class="g2data">'+_g2Data()+'</div><div class="g2titulo">Pendências</div></div>';
  var nPes=carrosOrdenados().filter(function(c){return c.status==='pessoal'&&n4DaFrota(c)}).length;
  h+=n4Abas();
@@ -9724,12 +9724,23 @@ function _n4Pend(){
   var sem=0;pro.forEach(function(c){sem+=n4Semanal(c)});ofi.forEach(function(c){if(!c.motorista)sem+=n4Semanal(c)});
   h+='<div class="n4h"><span>Carros parados</span><span>'+par.length+'</span></div><div class="n4grp">';
   par.forEach(function(p){var c=p.c,al=n4Al(c);
+   var _e=p.k==='ofi'&&typeof n22EmprestadoPara==='function'?n22EmprestadoPara(n4Pk(c)):null;
    var sub=p.k==='ofi'?'Na oficina'+(c.oficinaOnde?' · '+esc(c.oficinaOnde):'')+(c.motorista?' · '+esc(primNome(c.motorista)):''):'Pronto para alugar';
    var dir=p.d>=0?'<span class="n4dias"><b>'+p.d+'</b><small>'+(p.d===1?'dia':'dias')+'</small></span>':'<span class="n4chev">›</span>';
-   h+=n4Linha(c,sub,dir,al.length?'<small class="n4al">'+n4AlTx(c,al)+'</small>':'');
+   h+=n4Linha(c,sub,dir,(_e?'<small class="n22com">Rodando com o '+esc(n4Nome(_e))+' emprestado</small>':'')+(al.length?'<small class="n4al">'+n4AlTx(c,al)+'</small>':''));
   });
   h+='</div>';
   if(sem>0)h+='<div class="n4nota">Sem motorista, deixam de render cerca de <b>R$ '+fmtBRL(sem)+' por semana</b> (pela última semanal de cada carro).</div>';
+ }
+ /* 1b · EMPRESTADOS (sem contrato): rodando, mas é bom saber com quem está — v259 */
+ if(emp.length){
+  emp.sort(function(a,b){return n22Dias(b)-n22Dias(a)});
+  h+='<div class="n4h"><span>Emprestados sem contrato</span><span>'+emp.length+'</span></div><div class="n4grp">';
+  emp.forEach(function(c){var al=n4Al(c),de=c.emprestimoDe&&S.carros[c.emprestimoDe],d=n22Dias(c);
+   var sub='Com '+esc(primNome(c.emprestimoPara))+(de?' · '+esc(n4Nome(de).split(' ')[0])+' dele'+(de.oficinaDesde?' na oficina':''):'');
+   h+=n4Linha(c,sub,'<span class="n4dias"><b>'+d+'</b><small>'+(d===1?'dia':'dias')+'</small></span>',al.length?'<small class="n4al">'+n4AlTx(c,al)+'</small>':'');
+  });
+  h+='</div>';
  }
  /* 2 · RODANDO COM PENDÊNCIA: um carro por linha, o mais grave primeiro */
  comPend.sort(function(a,b){var na=g2Nivel(a)==='red'?0:1,nb=g2Nivel(b)==='red'?0:1;return (na-nb)||(g2Nota(b)-g2Nota(a))});
@@ -9754,12 +9765,13 @@ function _n4Pend(){
 }
 
 /* ---------- FROTA (consulta) ---------- */
-var N4F=[['todos','Frota'],['rodando','Rodando'],['oficina','Na oficina'],['pronto','Para alugar'],['semmot','Sem motorista'],['sempend','Sem pendência'],['pessoal','Pessoais']];
+var N4F=[['todos','Frota'],['rodando','Rodando'],['oficina','Na oficina'],['pronto','Para alugar'],['emprestado','Emprestados'],['semmot','Sem motorista'],['sempend','Sem pendência'],['pessoal','Pessoais']];
 (function(){var o=window._g2Filtro;if(typeof o!=='function'||o._n4)return;
  var w=function(f,c){var pes=c.status==='pessoal',k=g2Situacao(c).k;
   if(f==='todos')return !pes;if(f==='pessoal')return pes;
-  if(f==='rodando')return !pes&&(k==='alugado'||k==='venda');
-  if(f==='semmot')return !pes&&!c.motorista&&k!=='venda';
+  if(f==='rodando')return !pes&&(k==='alugado'||k==='venda'||k==='emprestado');
+  if(f==='semmot')return !pes&&!c.motorista&&k!=='venda'&&k!=='emprestado';
+  if(f==='emprestado')return !pes&&k==='emprestado';
   if(f==='sempend')return !pes&&k==='alugado'&&!_g2Al(c).length;
   if(f==='venda')return !pes&&k==='venda';
   return o(f,c)};
@@ -9782,10 +9794,10 @@ function _n4Frota(){
  h+='<div class="n4grp" id="g2lista">';
  if(!lst.length)h+='<div class="n4vazio">Nenhum carro aqui.</div>';
  lst.forEach(function(c){var si=g2Situacao(c),red=g2Nivel(c)==='red';
-  var st=si.k==='oficina'?'Oficina · '+g2OficinaDias(c)+'d':si.k==='pronto'?(function(){var d=n4ParadoDesde(c);return 'Para alugar'+(d?' · '+n4Dias(d)+'d':'')})():si.k==='pessoal'?'Pessoal':si.k==='venda'?'Compra e venda':'';
-  var db=semAcento(fmtPlaca(c.placa)+' '+c.placa+' '+tituloCarro(c)+' '+c.nome+' '+(c.motorista||''));
+  var st=si.k==='oficina'?'Oficina · '+g2OficinaDias(c)+'d':si.k==='pronto'?(function(){var d=n4ParadoDesde(c);return 'Para alugar'+(d?' · '+n4Dias(d)+'d':'')})():si.k==='pessoal'?'Pessoal':si.k==='venda'?'Compra e venda':si.k==='emprestado'?'Emprestado':'';
+  var db=semAcento(fmtPlaca(c.placa)+' '+c.placa+' '+tituloCarro(c)+' '+c.nome+' '+(c.motorista||'')+' '+(c.emprestimoPara||''));
   h+='<div class="n4row" data-busca="'+esc(db)+'" onclick="ficha(\''+n4Pk(c)+'\')">'+plateHtml(c.placa)+
-   '<div class="n4tx"><b>'+esc(n4Nome(c))+(red?' <i class="n4ponto" title="tem pendência"></i>':'')+'</b><small>'+(c.motorista?esc(primNome(c.motorista)):'sem motorista')+'</small></div>'+
+   '<div class="n4tx"><b>'+esc(n4Nome(c))+(red?' <i class="n4ponto" title="tem pendência"></i>':'')+'</b><small>'+(c.motorista?esc(primNome(c.motorista)):si.k==='emprestado'?'com '+esc(primNome(c.emprestimoPara))+' · empréstimo':'sem motorista')+'</small></div>'+
    '<span class="n4st">'+esc(st)+'</span><span class="n4chev">›</span></div>'});
  h+='</div><div id="n4Manut"></div>';
  setTimeout(function(){if(BUSCA_F)n4Busca()},0);
@@ -12648,6 +12660,122 @@ function oleoRapidoSalvar(){
  try{_roboRepintar()}catch(e){}
  ORP=null;
 }
+
+</script>
+<style id="g22css">
+.n22quem{display:flex;align-items:center;gap:12px}.n22quem .g2ic{flex:0 0 auto}.n22quem b{display:block;font-size:16px}.n22quem small{display:block;color:var(--tx2,#6b7280);font-size:13px;margin-top:2px}.n22com{display:block;color:#178A4A;font-weight:600;font-size:13px;margin-top:2px}
+</style>
+<script>
+/* ===================== v259 — CARRO EMPRESTADO (sem contrato) =====================
+   Pedido do Hudson (22/10/2026): o Mobi RGB-3E35 não tem contrato, mas foi emprestado ao motorista do Cobalt
+   (que está na oficina) para ele não ficar parado. O carro emprestado sai de "Carros parados", conta como
+   rodando e mostra com quem está. Nada de contrato, semanal ou robô muda: é só a situação do carro.
+   Campos no carro: emprestimoDesde (data), emprestimoPara (nome do motorista), emprestimoDe (placa do carro dele, se tiver). */
+function g2EmpAtivo(c){
+ return !!(c&&c.emprestimoDesde&&String(c.emprestimoPara||'').trim()&&!String(c.motorista||'').trim()&&c.status!=='pessoal'&&c.status!=='venda'&&!c.emVenda);
+}
+/* pode emprestar: carro sem motorista/contrato, que não é pessoal nem de compra e venda */
+function n22Pode(c){return !!(c&&!String(c.motorista||'').trim()&&c.status!=='pessoal'&&c.status!=='venda'&&!c.emVenda)}
+function n22Dias(c){return c&&c.emprestimoDesde?Math.max(1,diasEntre(c.emprestimoDesde,hoje())+1):0}
+/* carro emprestado para o motorista deste carro (ex.: o Cobalt na oficina → o Mobi que está com ele) */
+function n22EmprestadoPara(pk){
+ var r=null;Object.keys(S.carros||{}).forEach(function(k){var x=S.carros[k];if(g2EmpAtivo(x)&&x.emprestimoDe===pk)r=x});return r;
+}
+(function(){
+ var o=window.g2Situacao;if(typeof o!=='function'||o._n22)return;
+ var w=function(c){
+  if(c&&!c.oficinaDesde&&g2EmpAtivo(c)){var n=n22Dias(c);
+   return {k:'emprestado',t:'Emprestado para '+primNome(c.emprestimoPara)+' desde '+dataBR(c.emprestimoDesde)+(n>1?' ('+n+' dias)':''),curto:'Emprestado'}}
+  return o(c)};
+ w._n22=1;window.g2Situacao=w;
+})();
+/* contrato novo no carro (motorista preenchido) encerra o empréstimo, por qualquer caminho que crie o contrato */
+(function(){
+ var o=window.save;if(typeof o!=='function'||o._n22)return;
+ var w=function(){
+  try{Object.keys(S.carros||{}).forEach(function(k){var c=S.carros[k];
+   if(c&&c.emprestimoDesde&&(String(c.motorista||'').trim()||c.status==='pessoal'||c.status==='venda'||c.emVenda)){c.emprestimoDesde='';c.emprestimoPara='';c.emprestimoDe='';_touchCarro(c,['emprestimoDesde','emprestimoPara','emprestimoDe'])}})}catch(e){}
+  return o.apply(this,arguments)};
+ w._n22=1;window.save=w;
+})();
+
+/* ---------- janela do empréstimo ---------- */
+function n22Emprestimo(pk,trocar){
+ var c=S.carros[pk];if(!c)return;
+ var H='<div class="g2sheetH">'+esc(tituloCarro(c))+' · '+esc(fmtPlaca(c.placa))+'</div>';
+ if(g2EmpAtivo(c)&&!trocar){
+  var de=c.emprestimoDe&&S.carros[c.emprestimoDe],n=n22Dias(c);
+  H+='<div class="g2box"><div class="n22quem"><span class="g2ic">'+G2I.pessoa+'</span><span><b>'+esc(c.emprestimoPara)+'</b><small>com o carro desde '+dataBR(c.emprestimoDesde)+(n>1?' · '+n+' dias':'')+'</small></span></div>'+
+   (de?'<div class="sub" style="margin:10px 0 0">Carro dele: '+esc(n4Nome(de))+' · '+esc(fmtPlaca(de.placa))+(de.oficinaDesde?' · na oficina há '+g2OficinaDias(de)+' dia'+(g2OficinaDias(de)>1?'s':''):'')+'</div>':'')+
+   '<label>Devolveu em</label><input type="date" id="n22Fim" value="'+hoje()+'" max="'+hoje()+'">'+
+   '<button class="btn ok" onclick="n22Devolveu(\''+pk+'\')">Devolveu · carro volta a ficar parado</button></div>'+
+   '<button class="btn sec" onclick="n22Emprestimo(\''+pk+'\',true)">Trocar o motorista</button>'+
+   '<div class="sub" style="margin:10px 2px 0">Sem contrato: o carro conta como rodando e sai dos “Carros parados”. Se ele for alugado com contrato, o empréstimo termina sozinho.</div>';
+  openSheet(H,2);return;
+ }
+ H+='<div class="sub" style="margin:0 2px 12px">Empréstimo sem contrato: o carro roda com o motorista por enquanto, sai dos “Carros parados” e mostra com quem está.'+(c.oficinaDesde?' Ele está marcado como na oficina — ao emprestar, sai da oficina.':'')+'</div>';
+ H+='<div class="g2box"><label>Emprestado desde</label><input type="date" id="n22Desde" value="'+esc(trocar&&c.emprestimoDesde?c.emprestimoDesde:hoje())+'" max="'+hoje()+'"></div>';
+ /* motoristas da frota: quem está com o carro na oficina vem primeiro (é quem costuma precisar) */
+ var mot=[];Object.keys(S.carros||{}).forEach(function(k){var x=S.carros[k];if(!x||k===pk||x.status==='pessoal'||!String(x.motorista||'').trim())return;mot.push({pk:k,c:x,ofi:!!x.oficinaDesde})});
+ mot.sort(function(a,b){return (b.ofi-a.ofi)||String(a.c.motorista).localeCompare(String(b.c.motorista),'pt-BR')});
+ var ofi=mot.filter(function(m){return m.ofi}),out=mot.filter(function(m){return !m.ofi});
+ var row=function(m){return '<div class="g2row tap" onclick="n22Salvar(\''+pk+'\',\''+m.pk+'\')">'+plateHtml(m.c.placa)+'<div class="g2rowTx"><div class="g2t">'+esc(m.c.motorista)+'</div><div class="g2s">'+esc(n4Nome(m.c))+(m.ofi?' · na oficina há '+g2OficinaDias(m.c)+' dia'+(g2OficinaDias(m.c)>1?'s':''):'')+'</div></div>'+G2I.chev+'</div>'};
+ if(ofi.length)H+='<div class="g2sub"><span>Motoristas com o carro na oficina</span></div><div class="g2grp">'+ofi.map(row).join('')+'</div>';
+ H+='<div class="g2sub"><span>Outro motorista</span></div><div class="g2box"><input id="n22Nome" placeholder="Nome do motorista" autocomplete="off" autocapitalize="words"><button class="btn ok" onclick="n22Salvar(\''+pk+'\',\'\')">Emprestar</button></div>';
+ if(out.length)H+='<div class="g2sub"><span>Motoristas da frota</span></div><div class="g2grp">'+out.map(row).join('')+'</div>';
+ openSheet(H,2);
+}
+function n22Salvar(pk,dePk){
+ var c=S.carros[pk];if(!c)return;
+ if(!n22Pode(c)){toast('Este carro tem motorista/contrato');return}
+ var d=(document.getElementById('n22Desde')||{}).value||hoje();if(d>hoje()){toast('A data não pode ser no futuro');return}
+ var nome='';
+ if(dePk){var x=S.carros[dePk];nome=x?String(x.motorista||'').trim():''}
+ else nome=String((document.getElementById('n22Nome')||{}).value||'').trim().replace(/\s+/g,' ');
+ if(!nome){toast('Escolha ou escreva o nome do motorista');return}
+ var campos=['emprestimoDesde','emprestimoPara','emprestimoDe'];
+ c.emprestimoDesde=d;c.emprestimoPara=nome;c.emprestimoDe=dePk||'';
+ if(c.oficinaDesde){c.oficinaDesde='';c.oficinaOnde='';campos.push('oficinaDesde','oficinaOnde')}
+ _touchCarro(c,campos);save();closeSheet(2);
+ toast('Emprestado para '+primNome(nome));
+ n22Atualiza(pk);
+}
+function n22Devolveu(pk){
+ var c=S.carros[pk];if(!c)return;
+ c.emprestimoDesde='';c.emprestimoPara='';c.emprestimoDe='';
+ _touchCarro(c,['emprestimoDesde','emprestimoPara','emprestimoDe']);save();closeSheet(2);
+ toast('Devolvido · '+n4Nome(c)+' parado');
+ n22Atualiza(pk);
+}
+function n22Atualiza(pk){
+ try{render()}catch(e){}
+ try{if(window._fichaPk===pk&&document.getElementById('ovSheet').classList.contains('open'))ficha(pk)}catch(e){}
+}
+/* tocar na situação do carro: emprestado abre o empréstimo; sem motorista ganha a opção de emprestar */
+(function(){
+ var o=window.g2Oficina;if(typeof o!=='function'||o._n22)return;
+ var w=function(pk){
+  var c=S.carros[pk];
+  if(c&&!c.oficinaDesde&&g2EmpAtivo(c)){n22Emprestimo(pk);return}
+  o(pk);
+  try{if(c&&n22Pode(c)){var b=document.getElementById('sheetBody2');if(b)b.insertAdjacentHTML('beforeend','<div class="g2grp" style="margin-top:14px">'+_g2Opt('pessoa','Emprestar para um motorista','Sem contrato · sai dos carros parados','n22Emprestimo(\''+pk+'\')')+'</div>')}}catch(e){}
+ };
+ w._n22=1;window.g2Oficina=w;
+})();
+/* o carro do motorista saiu da oficina: pergunta se ele devolveu o carro emprestado */
+(function(){
+ var o=window.g2SalvarOficina;if(typeof o!=='function'||o._n22)return;
+ var w=function(pk,entrar){
+  var r=o.apply(this,arguments);
+  try{if(!entrar){var e=n22EmprestadoPara(pk),c=S.carros[pk];if(e&&c){var epk=normPlaca(e.placa);
+   setTimeout(function(){openSheet('<div class="g2sheetH">'+esc(n4Nome(e))+' · '+esc(fmtPlaca(e.placa))+'</div>'+
+    '<div class="sub" style="margin:0 2px 12px">O '+esc(n4Nome(c))+' saiu da oficina. '+esc(primNome(e.emprestimoPara))+' devolveu o '+esc(n4Nome(e))+' que estava emprestado com ele?</div>'+
+    '<input type="hidden" id="n22Fim" value="'+hoje()+'">'+
+    '<button class="btn ok" onclick="n22Devolveu(\''+epk+'\')">Sim, devolveu</button>'+
+    '<button class="btn sec" onclick="closeSheet(2)">Ainda está com ele</button>',2)},350)}}}catch(x){}
+  return r};
+ w._n22=1;window.g2SalvarOficina=w;
+})();
 
 </script>
 <style id="g20css">
