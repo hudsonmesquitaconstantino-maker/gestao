@@ -1,0 +1,22 @@
+# Robô do km — Cloudflare Worker (plano grátis)
+# Segredos (não ficam aqui): ROBO_ID, WA_KEY
+name = "robo-km"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+[ai]
+binding = "AI"
+
+[triggers]
+# a cada 15 min, das 8h às 20h (Brasília). Pedidos de rotina só seg–sáb, 9h–12h.
+crons = []
+
+[vars]
+FIREBASE_DB = "https://guimas-73e01-default-rtdb.firebaseio.com"
+FIREBASE_API_KEY = "AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw"
+WA_BASE = "https://api.dualhook.com/v25.0"
+PHONE_NUMBER_ID = "1099186106601371"
+WABA_ID = "25817881901186720"
+VERIFY_TOKEN = "guimascar-robo-km"

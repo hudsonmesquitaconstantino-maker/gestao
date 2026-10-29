@@ -1,0 +1,608 @@
+{
+ "conferidoEm": "2026-10-27",
+ "cidade": "Rio de Janeiro",
+ "anoTipo": "ano de fabricação (o primeiro ano do CRLV, ex.: 2019 em 2019/2020)",
+ "fontes": [
+  {
+   "nome": "Uber — veículos elegíveis no Rio de Janeiro (lista oficial, por modelo e ano)",
+   "url": "https://www.uber.com/br/pt-br/eligible-vehicles/?city=rio-de-janeiro"
+  },
+  {
+   "nome": "Uber — mudanças no Black e Comfort a partir de 11/01/2027 (publicado 14/10/2026)",
+   "url": "https://www.uber.com/br/pt-br/blog/mudancas-black-e-comfort-a-partir-de-janeiro-2027/"
+  },
+  {
+   "nome": "Uber Black 2026 — ano mínimo no Rio (Exame, a partir da lista oficial)",
+   "url": "https://exame.com/brasil/uber-atualiza-lista-de-carros-aceitos-em-2026-veja-lista/"
+  },
+  {
+   "nome": "Modelos aceitos no Uber Black e no Comfort (AutoPapo)",
+   "url": "https://autopapo.com.br/noticia/lista-carros-uber-black-comfort-2025/"
+  },
+  {
+   "nome": "99 — lista oficial de carros do 99Plus",
+   "url": "https://99app.com/motorista/categorias/99-plus/"
+  },
+  {
+   "nome": "99 — requisitos 99Pop",
+   "url": "https://99app.com/motorista/veiculos-aceitos/"
+  }
+ ],
+ "avisos": [
+  "Fiat Cronos: entra no Uber Comfort fabricado a partir de 2016 (qualquer Cronos). Quem só entra a partir de 2023 é o Argo (e o Polo hatch).",
+  "Renault Logan saiu do Uber Comfort em 06/07/2026, em qualquer ano.",
+  "A partir de 11/01/2027 o Uber Comfort no Rio passa a exigir 2017 ou mais novo (Cobalt e Etios Sedan: 2019) e tira de vez Argo, Polo hatch, Voyage, Prisma, Yaris hatch e Joy Plus.",
+  "Uber Black no Rio: só modelos da lista, fabricados a partir de 2017 (a partir de 11/01/2027: 2018). Honda City e Nivus/Duster: 2023; VW Virtus: 2025. Cores: preto, chumbo, prata, cinza, azul-marinho, marrom ou branco.",
+  "Saem do Uber Black em 11/01/2027, em qualquer ano: Chevrolet Cruze, VW Nivus e Renault Duster. O VW Virtus sai do Black em 05/07/2027.",
+  "UberX no Rio: 4 portas, 5 lugares e ar, fabricado a partir de 2011. 99Pop: 4 portas, ar e CRLV em dia.",
+  "Uber Comfort exige 100 viagens e nota 4,80; 99Plus exige nota 4,85; Uber Black exige 100 viagens e nota 4,85.",
+  "99Plus no Rio (lista oficial por cidade, conferida em 27/10/2026): Onix Plus, Virtus, Versa e V-Drive entram fabricados a partir de 2018; Cobalt e Onix Plus Joy/Joy Plus não aparecem mais na lista.",
+  "“99Plus ?” = modelo do Black que ainda não foi conferido na lista oficial da 99."
+ ],
+ "modelos": [
+  {
+   "marca": "Toyota",
+   "modelo": "Corolla Cross",
+   "tipo": "SUV",
+   "ux": 2011,
+   "uc": 2016,
+   "uc27": 2017,
+   "p99": null,
+   "ub": 2017,
+   "chave": "\\bCOROLLA\\s*CROSS\\b",
+   "ub27": 2018
+  },
+  {
+   "marca": "Toyota",
+   "modelo": "Corolla",
+   "tipo": "Sedã",
+   "ux": 2011,
+   "uc": 2016,
+   "uc27": 2017,
+   "p99": null,
+   "ub": 2017,
+   "chave": "\\bCOROLLA\\b",
+   "ub27": 2018
+  },
+  {
+   "marca": "Honda",
+   "modelo": "Civic",
+   "tipo": "Sedã",
+   "ux": 2011,
+   "uc": 2016,
+   "uc27": 2017,
+   "p99": null,
+   "ub": 2017,
+   "chave": "\\bCIVIC\\b",
+   "ub27": 2018
+  },
+  {
+   "marca": "Honda",
+   "modelo": "City",
+   "tipo": "Sedã",
+   "ux": 2011,
+   "uc": 2016,
+   "uc27": 2017,
+   "p99": null,
+   "ub": 2023,
+   "chave": "\\bCITY\\b",
+   "ub27": 2023
+  },
+  {
+   "marca": "Honda",
+   "modelo": "HR-V",
+   "tipo": "SUV",
+   "ux": 2011,
+   "uc": 2016,
+   "uc27": 2017,
+   "p99": null,
+   "ub": 2017,
+   "chave": "\\bHR-?\\s?V\\b",
+   "ub27": 2018
+  },
+  {
+   "marca": "Nissan",
+   "modelo": "Sentra",
+   "tipo": "Sedã",
+   "ux": 2011,
+   "uc": 2016,
+   "uc27": 2017,
+   "p99": null,
+   "ub": 2017,
+   "chave": "\\bSENTRA\\b",
+   "ub27": 2018
+  },
+  {
+   "marca": "Nissan",
+   "modelo": "Kicks",
+   "tipo": "SUV",
+   "ux": 2011,
+   "uc": 2016,
+   "uc27": 2017,
+   "p99": null,
+   "ub": 2017,
+   "chave": "\\bKICKS\\b",
+   "ub27": 2018
+  },
+  {
+   "marca": "Volkswagen",
+   "modelo": "Jetta",
+   "tipo": "Sedã",
+   "ux": 2011,
+   "uc": 2016,
+   "uc27": 2017,
+   "p99": null,
+   "ub": 2017,
+   "chave": "\\bJETTA\\b",
+   "ub27": 2018
+  },
+  {
+   "marca": "Volkswagen",
+   "modelo": "T-Cross",
+   "tipo": "SUV",
+   "ux": 2011,
+   "uc": 2016,
+   "uc27": 2017,
+   "p99": null,
+   "ub": 2017,
+   "chave": "\\bT-?\\s?CROSS\\b",
+   "ub27": 2018
+  },
+  {
+   "marca": "Volkswagen",
+   "modelo": "Nivus",
+   "tipo": "SUV",
+   "ux": 2011,
+   "uc": 2016,
+   "uc27": 2017,
+   "p99": null,
+   "ub": 2023,
+   "chave": "\\bNIVUS\\b",
+   "ubSai": "2027-01-11"
+  },
+  {
+   "marca": "Chevrolet",
+   "modelo": "Cruze",
+   "tipo": "Sedã",
+   "ux": 2011,
+   "uc": 2016,
+   "uc27": 2017,
+   "p99": null,
+   "ub": 2017,
+   "chave": "\\bCRUZE\\b",
+   "ubSai": "2027-01-11"
+  },
+  {
+   "marca": "Chevrolet",
+   "modelo": "Tracker",
+   "tipo": "SUV",
+   "ux": 2011,
+   "uc": 2016,
+   "uc27": 2017,
+   "p99": null,
+   "ub": 2017,
+   "chave": "\\bTRACKER\\b",
+   "ub27": 2018
+  },
+  {
+   "marca": "Hyundai",
+   "modelo": "Creta",
+   "tipo": "SUV",
+   "ux": 2011,
+   "uc": 2016,
+   "uc27": 2017,
+   "p99": null,
+   "ub": 2017,
+   "chave": "\\bCRETA\\b",
+   "ub27": 2018
+  },
+  {
+   "marca": "Jeep",
+   "modelo": "Renegade",
+   "tipo": "SUV",
+   "ux": 2011,
+   "uc": 2016,
+   "uc27": 2017,
+   "p99": null,
+   "ub": 2017,
+   "chave": "\\bRENEGADE\\b",
+   "ub27": 2018
+  },
+  {
+   "marca": "Jeep",
+   "modelo": "Compass",
+   "tipo": "SUV",
+   "ux": 2011,
+   "uc": 2016,
+   "uc27": 2017,
+   "p99": null,
+   "ub": 2017,
+   "chave": "\\bCOMPASS\\b",
+   "ub27": 2018
+  },
+  {
+   "marca": "Fiat",
+   "modelo": "Fastback",
+   "tipo": "SUV",
+   "ux": 2011,
+   "uc": 2016,
+   "uc27": 2017,
+   "p99": null,
+   "ub": 2017,
+   "chave": "\\bFASTBACK\\b",
+   "ub27": 2018
+  },
+  {
+   "marca": "Renault",
+   "modelo": "Duster",
+   "tipo": "SUV",
+   "ux": 2011,
+   "uc": 2016,
+   "uc27": 2017,
+   "p99": null,
+   "ub": 2023,
+   "chave": "\\bDUSTER\\b",
+   "ubSai": "2027-01-11"
+  },
+  {
+   "marca": "Chevrolet",
+   "modelo": "Onix Plus",
+   "tipo": "Sedã",
+   "ux": 2011,
+   "uc": 2016,
+   "uc27": 2017,
+   "p99": 2018,
+   "chave": "\\bONIX\\s*(PLUS|SEDAN|SED|SD)\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Chevrolet",
+   "modelo": "Joy Plus",
+   "tipo": "Sedã",
+   "ux": 2011,
+   "uc": 2016,
+   "sai27": true,
+   "p99": 0,
+   "chave": "\\bJOY\\s*PLUS\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Chevrolet",
+   "modelo": "Onix",
+   "tipo": "Hatch",
+   "ux": 2011,
+   "uc": 0,
+   "p99": 0,
+   "chave": "\\bONIX\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Chevrolet",
+   "modelo": "Joy",
+   "tipo": "Hatch",
+   "ux": 2011,
+   "uc": 0,
+   "p99": 0,
+   "chave": "\\bJOY\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Chevrolet",
+   "modelo": "Prisma",
+   "tipo": "Sedã",
+   "ux": 2011,
+   "uc": 2019,
+   "sai27": true,
+   "p99": 0,
+   "chave": "\\bPRISMA\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Chevrolet",
+   "modelo": "Cobalt",
+   "tipo": "Sedã",
+   "ux": 2011,
+   "uc": 2019,
+   "uc27": 2019,
+   "p99": 0,
+   "chave": "\\bCOBALT\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Fiat",
+   "modelo": "Cronos",
+   "tipo": "Sedã",
+   "ux": 2011,
+   "uc": 2016,
+   "uc27": 2017,
+   "p99": 0,
+   "chave": "\\bCRONOS\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Fiat",
+   "modelo": "Grand Siena / Siena",
+   "tipo": "Sedã",
+   "ux": 2011,
+   "uc": 0,
+   "p99": 0,
+   "chave": "\\bSIENA\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Fiat",
+   "modelo": "Argo",
+   "tipo": "Hatch",
+   "ux": 2011,
+   "uc": 2023,
+   "sai27": true,
+   "p99": 0,
+   "chave": "\\bARGO\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Fiat",
+   "modelo": "Mobi",
+   "tipo": "Hatch",
+   "ux": 2011,
+   "uc": 0,
+   "p99": 0,
+   "chave": "\\bMOBI\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Fiat",
+   "modelo": "Uno",
+   "tipo": "Hatch",
+   "ux": 2011,
+   "uc": 0,
+   "p99": 0,
+   "chave": "\\bUNO\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Volkswagen",
+   "modelo": "Virtus",
+   "tipo": "Sedã",
+   "ux": 2011,
+   "uc": 2016,
+   "uc27": 2017,
+   "p99": 2018,
+   "chave": "\\bVIRTUS\\b",
+   "ub": 2025,
+   "ub27": 2025,
+   "ubSai": "2027-07-05"
+  },
+  {
+   "marca": "Volkswagen",
+   "modelo": "Voyage",
+   "tipo": "Sedã",
+   "ux": 2011,
+   "uc": 2019,
+   "sai27": true,
+   "p99": 0,
+   "chave": "\\bVOYAGE\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Volkswagen",
+   "modelo": "Polo Sedan",
+   "tipo": "Sedã",
+   "ux": 2011,
+   "uc": 2016,
+   "uc27": 2017,
+   "p99": 0,
+   "chave": "\\bPOLO\\s*(SEDAN|SED|SD)\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Volkswagen",
+   "modelo": "Polo Track",
+   "tipo": "Hatch",
+   "ux": 2011,
+   "uc": 2016,
+   "uc27": 2017,
+   "p99": 0,
+   "chave": "\\bPOLO\\s*TRACK\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Volkswagen",
+   "modelo": "Polo",
+   "tipo": "Hatch",
+   "ux": 2011,
+   "uc": 2023,
+   "sai27": true,
+   "p99": 0,
+   "chave": "\\bPOLO\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Volkswagen",
+   "modelo": "Gol",
+   "tipo": "Hatch",
+   "ux": 2011,
+   "uc": 0,
+   "p99": 0,
+   "chave": "\\bGOL\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Volkswagen",
+   "modelo": "Fox",
+   "tipo": "Hatch",
+   "ux": 2011,
+   "uc": 0,
+   "p99": 0,
+   "chave": "\\bFOX\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Volkswagen",
+   "modelo": "Up",
+   "tipo": "Hatch",
+   "ux": 2011,
+   "uc": 0,
+   "p99": 0,
+   "chave": "\\bUP\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Renault",
+   "modelo": "Logan",
+   "tipo": "Sedã",
+   "ux": 2011,
+   "uc": 0,
+   "ucObs": "saiu do Comfort em 06/07/2026",
+   "p99": 0,
+   "chave": "\\bLOGAN\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Renault",
+   "modelo": "Sandero / Stepway",
+   "tipo": "Hatch",
+   "ux": 2011,
+   "uc": 0,
+   "p99": 0,
+   "chave": "\\b(SANDERO|STEPWAY)\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Renault",
+   "modelo": "Kwid",
+   "tipo": "Hatch",
+   "ux": 2011,
+   "uc": 0,
+   "p99": 0,
+   "chave": "\\bKWID\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Hyundai",
+   "modelo": "HB20S",
+   "tipo": "Sedã",
+   "ux": 2011,
+   "uc": 2016,
+   "uc27": 2017,
+   "p99": 0,
+   "chave": "\\bHB20\\s?S\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Hyundai",
+   "modelo": "HB20",
+   "tipo": "Hatch",
+   "ux": 2011,
+   "uc": 0,
+   "p99": 0,
+   "chave": "\\bHB20\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Toyota",
+   "modelo": "Etios Sedan",
+   "tipo": "Sedã",
+   "ux": 2011,
+   "uc": 2019,
+   "uc27": 2019,
+   "p99": 0,
+   "chave": "\\bETIOS\\b.*\\b(SEDAN|SED|SD)\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Toyota",
+   "modelo": "Etios",
+   "tipo": "Hatch",
+   "ux": 2011,
+   "uc": 0,
+   "p99": 0,
+   "chave": "\\bETIOS\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Toyota",
+   "modelo": "Yaris Sedan",
+   "tipo": "Sedã",
+   "ux": 2011,
+   "uc": 2016,
+   "uc27": 2017,
+   "p99": 0,
+   "chave": "\\bYARIS\\b.*\\b(SEDAN|SED|SD)\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Toyota",
+   "modelo": "Yaris",
+   "tipo": "Hatch",
+   "ux": 2011,
+   "uc": 2016,
+   "sai27": true,
+   "p99": 0,
+   "chave": "\\bYARIS\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Nissan",
+   "modelo": "V-Drive",
+   "tipo": "Sedã",
+   "ux": 2011,
+   "uc": 2016,
+   "uc27": 2017,
+   "p99": 2018,
+   "chave": "\\bV-?\\s?DRIVE\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Nissan",
+   "modelo": "Versa",
+   "tipo": "Sedã",
+   "ux": 2011,
+   "uc": 2016,
+   "uc27": 2017,
+   "p99": 2018,
+   "chave": "\\bVERSA\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Nissan",
+   "modelo": "March",
+   "tipo": "Hatch",
+   "ux": 2011,
+   "uc": 0,
+   "p99": 0,
+   "chave": "\\bMARCH\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Ford",
+   "modelo": "Ka Sedan",
+   "tipo": "Sedã",
+   "ux": 2011,
+   "uc": 0,
+   "p99": 0,
+   "chave": "\\bKA\\b.*\\b(SEDAN|SED|SD)\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Ford",
+   "modelo": "Ka",
+   "tipo": "Hatch",
+   "ux": 2011,
+   "uc": 0,
+   "p99": 0,
+   "chave": "\\bKA\\b",
+   "ub": 0
+  },
+  {
+   "marca": "Ford",
+   "modelo": "Fiesta",
+   "tipo": "Hatch",
+   "ux": 2011,
+   "uc": 0,
+   "p99": 0,
+   "chave": "\\bFIESTA\\b",
+   "ub": 0
+  }
+ ]
+}
