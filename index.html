@@ -1697,7 +1697,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=287; var APP_DATE='29/10/2026';
+var APP_VER=288; var APP_DATE='30/10/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -13958,6 +13958,170 @@ function _n26Mostra(){try{if(typeof TAB!=='undefined'&&TAB===6)render()}catch(e)
  var v=window.verContratoHtml;if(typeof v==='function'&&!v._n27){var w2=function(){var r=v.apply(this,arguments);
   try{if(!_n27LocOk()){var b=document.getElementById('sheetBody2');if(b&&b.innerHTML&&b.innerHTML.indexOf('n27av')<0)b.insertAdjacentHTML('afterbegin','<div class="n26no n27av" style="margin:0 0 10px">'+AV+'</div>')}}catch(e){}return r};w2._n27=1;window.verContratoHtml=w2}
 })();
+
+/* ===================== v288 — CAUÇÃO PAGA EM PARTES (Hudson 30/10/2026) =====================
+   Ex.: caução de R$ 2.000 → R$ 1.000 na assinatura + R$ 1.000 na segunda-feira (junto com a semana antecipada).
+   O contrato passa a dizer exatamente isso: quanto foi pago no ato, quanto falta e até quando — a quitação da
+   assinatura vale só para o que foi pago no ato, e o saldo é dívida do locatário.
+   ct.caucaoForma = {ato: 1000, parcelas:[{valor:1000, data:'2026-11-02'}]}  (null = caução toda no ato)
+   Vale no Word, na leitura do contrato no app, na tela "Corrigir contrato" e no resumo antes de gerar.
+   A semana antecipada pode ir para a mesma data com um toque (texto da 3.4 deixa claro que NÃO foi paga no ato). */
+var N28={on:false,ato:'',parc:[],junto:false,auto:true};
+var _N28DS=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+function _n28Iso(s){return /^\d{4}-\d{2}-\d{2}$/.test(String(s||''))}
+function _n28Dsem(iso){if(!_n28Iso(iso))return '';var p=iso.split('-');return _N28DS[new Date(+p[0],+p[1]-1,+p[2]).getDay()]}
+function _n28Quando(iso){return _n28Iso(iso)?_n28Dsem(iso)+', '+dataBR(iso):''}
+function _n28ProxSeg(ini){var b=_n28Iso(ini)?ini:hoje();for(var i=1;i<=7;i++){var d=somaDias(b,i);if(_n28Dsem(d)==='segunda-feira')return d}return somaDias(b,1)}
+function _n28R(v){return Math.round((Number(v)||0)*100)/100}
+function _n28M(v){return 'R$ '+fmtBRL(v)+' ('+extenso(v)+')'}
+/* contrato tem caução em partes? (transferência de contrato usa o crédito antigo: aí não se aplica) */
+function n28Ativo(ct){var f=ct&&ct.caucaoForma;return !!(f&&!(Number(ct.caucaoTransferidaValor)>0)&&Number(ct.caucao)>0&&Array.isArray(f.parcelas)&&f.parcelas.some(function(p){return p&&Number(p.valor)>0}))}
+function n28Parcelas(ct){return (ct.caucaoForma.parcelas||[]).filter(function(p){return p&&Number(p.valor)>0}).map(function(p){return {valor:_n28R(p.valor),data:p.data||''}}).sort(function(a,b){return a.data<b.data?-1:1})}
+function n28Saldo(ct){return _n28R(n28Parcelas(ct).reduce(function(s,p){return s+p.valor},0))}
+/* textos da cláusula 4.1 e 4.1.1 */
+function n28Textos(ct){
+ if(!n28Ativo(ct))return null;
+ var ato=_n28R(ct.caucaoForma.ato),ps=n28Parcelas(ct),saldo=n28Saldo(ct);
+ var partes=ps.map(function(p){return _n28M(p.valor)+' a serem pagos até '+_n28Quando(p.data)});
+ if(ato>0)partes.unshift(_n28M(ato)+' pagos neste ato, na assinatura deste contrato');
+ var lista=partes.length>1?partes.slice(0,-1).join('; ')+'; e '+partes[partes.length-1]:partes[0];
+ var p41a='O LOCATÁRIO entregará, a título de CAUÇÃO, a quantia total de ',p41b=_n28M(ct.caucao),p41c=', da seguinte forma: '+lista+'.';
+ var p411=(ato>0?'A quitação dada pelo LOCADOR na assinatura deste contrato refere-se somente ao valor pago neste ato ('+'R$ '+fmtBRL(ato)+'). ':'Nenhum valor da caução é pago na assinatura deste contrato. ')+
+  'O saldo da caução, de '+_n28M(saldo)+', é dívida do LOCATÁRIO e deverá ser pago na'+(ps.length>1?'s datas acima':' data acima')+'. O não pagamento no prazo caracteriza descumprimento deste contrato e sujeita o LOCATÁRIO às mesmas regras de atraso da cláusula 3.3 e de seu Parágrafo Único. Até a quitação total, as regras desta cláusula valem sobre o valor efetivamente pago, sem prejuízo da cobrança do saldo.';
+ return {a:p41a,b:p41b,c:p41c,p41:p41a+p41b+p41c,p411:p411};
+}
+/* ---------- Word ---------- */
+(function(){var o=window.montarDocx;if(typeof o!=='function'||o._n28)return;
+ var w=function(ct,carro){var t=null;try{t=n28Textos(ct)}catch(e){t=null}
+  if(!t||typeof TPL_DOC!=='string')return o.apply(this,arguments);
+  var orig=TPL_DOC,x=TPL_DOC,k=x.indexOf('⟦CAU_N⟧'),a=k<0?-1:Math.max(x.lastIndexOf('<w:p ',k),x.lastIndexOf('<w:p>',k)),b=k<0?-1:x.indexOf('</w:p>',k);
+  if(a<0||b<0)return o.apply(this,arguments);b+=6;
+  var par=x.slice(a,b),A='O LOCATÁRIO entrega neste ato, a título de CAUÇÃO, a quantia de ';
+  if(par.indexOf(A)<0||!/<w:t(?: [^>]*)?>\.<\/w:t>/.test(par))return o.apply(this,arguments);
+  var novo=par.split(A).join(xesc(t.a)).replace(/<w:t(?: [^>]*)?>\.<\/w:t>/,'<w:t xml:space="preserve">'+xesc(t.c)+'</w:t>');
+  var sub=par.replace(/\s*w14:paraId="[^"]*"/g,'').replace(/\s*w14:textId="[^"]*"/g,'').split('4.1. ').join('4.1.1. ').split(A).join(xesc(t.p411)).split('R$ ⟦CAU_N⟧ (⟦CAU_E⟧)').join('').replace(/<w:t(?: [^>]*)?>\.<\/w:t>/,'<w:t></w:t>');
+  if(sub.indexOf('4.1.1. ')<0)return o.apply(this,arguments);
+  try{TPL_DOC=x.slice(0,a)+novo+sub+x.slice(b);return o.apply(this,arguments)}finally{TPL_DOC=orig}};
+ w._n28=1;window.montarDocx=w;})();
+/* ---------- leitura do contrato no app ---------- */
+(function(){var v=window.verContratoHtml;if(typeof v!=='function'||v._n28)return;
+ var w=function(id){var r=v.apply(this,arguments);try{var ct=S.contratos[id],t=n28Textos(ct);if(t){var b=document.getElementById('sheetBody2');
+  var ps=b?b.querySelectorAll('p.cp'):[];for(var i=0;i<ps.length;i++){if(ps[i].textContent.indexOf('a título de CAUÇÃO')>=0&&ps[i].textContent.indexOf('4.1.')>=0){
+   ps[i].innerHTML='<b class="cn">4.1.</b> '+esc(t.a)+'<b>'+esc(t.b)+'</b>'+esc(t.c);
+   ps[i].insertAdjacentHTML('afterend','<p class="cp cind"><b>4.1.1.</b> '+esc(t.p411)+'</p>');break}}}}catch(e){}return r};
+ w._n28=1;window.verContratoHtml=w;})();
+
+/* ---------- semana antecipada: texto da 3.4 sem dizer "no ato" quando não é no ato ---------- */
+(function(){var o=window.ncCl34Auto;if(typeof o!=='function'||o._n28)return;
+ var w=function(){var r=o.apply(this,arguments);try{var el=document.getElementById('ncCl34'),sel=document.getElementById('ncTem34');
+  if(el&&sel&&sel.value==='parcelado'){var t=el.value,P='Do Pagamento Antecipado: No ato da assinatura, o LOCATÁRIO pagará a semana final do contrato de forma antecipada (';
+   if(t.indexOf(P)===0){t='Do Pagamento Antecipado: O LOCATÁRIO pagará a semana final do contrato de forma antecipada ('+t.slice(P.length).replace(/\)\. Da seguinte forma:/,'), da seguinte forma:');
+    var noAto=(NCPARC||[]).some(function(p){return (Number(p.v)||0)>0&&/\bato\b|assinatura|retirada/i.test(p.q||'')});
+    if(!noAto)t+='\nNenhuma parte deste valor é paga na assinatura deste contrato.';el.value=t}}}catch(e){}return r};
+ w._n28=1;window.ncCl34Auto=w;})();
+
+/* ---------- caixa no formulário novo (etapa Condições, antes da semana antecipada) ---------- */
+function _n28Total(){return parseBRL((document.getElementById('ncCaucao')||{}).value||'')||0}
+function _n28Ini(){return (document.getElementById('ncIni')||{}).value||hoje()}
+function n28Reset(){N28.on=false;N28.ato='';N28.parc=[];N28.junto=false;N28.auto=true}
+function n28Box(){
+ var h='<div class="n25q">Como a caução vai ser paga?</div><div class="v100choice"><button type="button" class="v100payopt'+(N28.on?'':' n28on')+'" onclick="n28Set(false)">Toda na assinatura</button><button type="button" class="v100payopt'+(N28.on?' n28on':'')+'" onclick="n28Set(true)">Parte agora, resto depois</button></div>';
+ if(!N28.on)return h;
+ if(!N28.parc.length)N28.parc=[{valor:0,data:_n28ProxSeg(_n28Ini())}];
+ h+='<div class="n25f"><label>Pago agora, na assinatura (R$)</label><input id="n28Ato" inputmode="decimal" placeholder="Ex.: 1.000,00" value="'+esc(N28.ato)+'" oninput="N28.ato=this.value;n28Conta()" onblur="if(parseBRL(this.value)>0){this.value=fmtBRL(parseBRL(this.value));N28.ato=this.value}"></div>';
+ N28.parc.forEach(function(p,i){
+  h+='<div class="n25dup"><div class="n25f"><label>'+(N28.parc.length>1?(i+1)+'º ':'')+'Restante (R$)</label><input id="n28V'+i+'" inputmode="decimal" value="'+(p.valor?fmtBRL(p.valor):'')+'" oninput="N28.auto=false;N28.parc['+i+'].valor=parseBRL(this.value);n28Info()"></div>'+
+   '<div class="n25f"><label>Paga até</label><input type="date" id="n28D'+i+'" value="'+esc(p.data||'')+'" onchange="N28.parc['+i+'].data=this.value;n28Info();n28Junto34()"></div></div>'+
+   '<div class="sub" style="margin:4px 2px 0" id="n28S'+i+'">'+esc(_n28Quando(p.data))+(N28.parc.length>1?' · <a style="color:var(--bad,#B42318)" onclick="N28.parc.splice('+i+',1);n28Desenha()">tirar</a>':'')+'</div>';
+ });
+ h+='<button type="button" class="btn mini sec" style="margin-top:8px" onclick="N28.auto=false;N28.parc.push({valor:0,data:_n28ProxSeg(N28.parc.length?N28.parc[N28.parc.length-1].data:_n28Ini())});n28Desenha()">＋ Dividir o restante em mais uma data</button>';
+ h+='<label style="display:flex;gap:10px;align-items:flex-start;margin-top:12px;font-size:14.5px;line-height:1.35"><input type="checkbox" id="n28Junto" style="width:20px;height:20px;flex:0 0 auto;margin-top:1px"'+(N28.junto?' checked':'')+' onchange="N28.junto=this.checked;n28Junto34()"><span>A <b>semana antecipada</b> também fica para essa data (não é paga na assinatura)</span></label>';
+ return h+'<div class="n25info" id="n28Info"></div>';
+}
+function n28Desenha(){var el=document.getElementById('n28Box');if(!el)return;el.innerHTML=n28Box();if(N28.on)n28Conta()}
+function n28Set(on){N28.on=!!on;if(!on){var j=N28.junto;n28Reset();if(j)try{ncUI34('avista')}catch(e){}}n28Desenha();try{ncResumo()}catch(e){}}
+/* com uma data só, o restante = caução − pago agora (até você mexer no valor do restante) */
+function n28Conta(){if(!N28.on)return;var tot=_n28Total(),ato=parseBRL(N28.ato||'')||0;
+ if(N28.auto&&N28.parc.length===1){N28.parc[0].valor=Math.max(0,_n28R(tot-ato));var e=document.getElementById('n28V0');if(e&&document.activeElement!==e)e.value=N28.parc[0].valor?fmtBRL(N28.parc[0].valor):''}
+ n28Info()}
+function n28DoForm(){if(!N28.on)return null;var ato=_n28R(parseBRL(N28.ato||'')||0),ps=N28.parc.filter(function(p){return Number(p.valor)>0}).map(function(p){return {valor:_n28R(p.valor),data:p.data||''}});
+ return {ato:ato,parcelas:ps}}
+function n28Erro(f,tot,ini){if(!f)return '';if(!(tot>0))return 'Preencha o valor da caução.';if(!f.parcelas.length)return 'Coloque quanto fica para depois.';
+ if(f.parcelas.some(function(p){return !_n28Iso(p.data)}))return 'Coloque a data de cada pagamento que fica para depois.';
+ if(ini&&f.parcelas.some(function(p){return p.data<ini}))return 'A data do restante não pode ser antes do início do contrato.';
+ var s=_n28R(f.ato+f.parcelas.reduce(function(a,p){return a+p.valor},0));if(Math.abs(s-tot)>0.009)return 'A soma (R$ '+fmtBRL(s)+') não fecha com a caução de R$ '+fmtBRL(tot)+'.';return ''}
+function n28Info(){var el=document.getElementById('n28Info');N28.parc.forEach(function(p,i){var s=document.getElementById('n28S'+i);if(s&&s.firstChild&&s.firstChild.nodeType===3)s.firstChild.nodeValue=_n28Quando(p.data)});
+ if(!el)return;var f=n28DoForm(),tot=_n28Total(),er=n28Erro(f,tot,_n28Ini());
+ if(er){el.className='n25info n25aviso';el.innerHTML=esc(er)}
+ else{el.className='n25info';el.innerHTML='No contrato: <b>R$ '+fmtBRL(f.ato)+'</b> pagos na assinatura'+f.parcelas.map(function(p){return ' + <b>R$ '+fmtBRL(p.valor)+'</b> até '+esc(_n28Quando(p.data))}).join('')+'.<br>A assinatura só dá quitação do que foi pago no ato; o restante fica como dívida do motorista, com data.'}
+ try{ncResumo()}catch(e){}}
+/* semana antecipada junto com o restante da caução (1ª data) */
+function n28Junto34(){if(!N28.junto)return;var d=(N28.parc[0]||{}).data,s=parseBRL((document.getElementById('ncSemanal')||{}).value||'')||0;if(!_n28Iso(d))return;
+ try{NCPARC.length=0;NCPARC.push({v:s,q:'até '+_n28Quando(d)});var sel=document.getElementById('ncTem34');if(sel)sel.value='parcelado';ncModo34();ncParcDraw();ncCl34Auto(true);ncResumo()}catch(e){}}
+(function(){var o=window.n3cMonta;if(typeof o!=='function'||o._n28)return;
+ var w=function(){var r=o.apply(this,arguments);try{var d=document.getElementById('n3c34');if(d&&!document.getElementById('n28Box')){n28Reset();
+  var hd=d.previousElementSibling&&d.previousElementSibling.classList.contains('n3h')?d.previousElementSibling:d;
+  hd.insertAdjacentHTML('beforebegin','<div class="n3h">Caução</div><div class="n3grp n3pad" id="n28Box"></div>');n28Desenha();
+  ['ncCaucao','ncIni'].forEach(function(id){var e=document.getElementById(id);if(e){e.addEventListener('input',function(){if(N28.on)n28Conta()});e.addEventListener('change',function(){if(N28.on)n28Conta()})}});
+  var sm=document.getElementById('ncSemanal');if(sm)sm.addEventListener('input',function(){if(N28.junto)n28Junto34()});}}catch(e){}return r};
+ w._n28=1;window.n3cMonta=w;})();
+/* o contrato leva a forma da caução */
+(function(){var o=window.dadosContratoDoForm;if(typeof o!=='function'||o._n28)return;
+ var w=function(){var ct=o.apply(this,arguments);try{if(ct){if(N28.on){var f=n28DoForm(),er=n28Erro(f,Number(ct.caucao)||0,ct.inicio);if(er){toast('Caução: '+er);return null}
+   ct.caucaoForma=f.parcelas.length?f:null}else ct.caucaoForma=null}}catch(e){}return ct};
+ w._n28=1;window.dadosContratoDoForm=w;})();
+/* resumo antes de gerar */
+(function(){var o=window.ncResumo;if(typeof o!=='function'||o._n28)return;
+ var w=function(){var r=o.apply(this,arguments);try{var el=document.getElementById('ncResumo');if(el&&N28.on){var f=n28DoForm();
+  el.querySelectorAll('.rline').forEach(function(l){var lb=l.querySelector('.rlab'),vl=l.querySelector('.rval');if(lb&&vl&&lb.textContent==='Caução'&&f)vl.textContent='R$ '+fmtBRL(_n28Total())+' · R$ '+fmtBRL(f.ato)+' agora'+f.parcelas.map(function(p){return ' + R$ '+fmtBRL(p.valor)+' até '+(_n28Dsem(p.data).slice(0,3))+' '+dataBR(p.data).slice(0,5)}).join('')})}}catch(e){}return r};
+ w._n28=1;window.ncResumo=w;})();
+
+/* ---------- Corrigir contrato: caução em partes e semana antecipada com data ---------- */
+var N28E=null;
+function n28EBox(ct){var f=ct.caucaoForma&&n28Ativo(ct)?ct.caucaoForma:null;
+ N28E={on:!!f,ato:f?fmtBRL(f.ato||0):'',parc:f?n28Parcelas(ct).map(function(p){return {valor:p.valor,data:p.data}}):[],s34:'manter',d34:''};
+ return '<div class="sect" style="margin-top:15px">Como a caução foi / vai ser paga</div><div id="n28EBox"></div>'+
+  (String(ct.cl34||'').trim()&&!(Number(ct.semanaAntecipadaTransferidaValor)>0)?'<div class="sect" style="margin-top:15px">Semana antecipada</div><select id="n28E34" onchange="N28E.s34=this.value;n28EDesenha()"><option value="manter">Manter como está no contrato</option><option value="ato">Paga na assinatura</option><option value="data">Paga depois, numa data</option></select><div id="n28E34d"></div>':'');}
+function n28EDesenha(){var el=document.getElementById('n28EBox');if(!el||!N28E)return;
+ var h='<div class="v100choice"><button type="button" class="v100payopt'+(N28E.on?'':' n28on')+'" onclick="N28E.on=false;n28EDesenha()">Toda na assinatura</button><button type="button" class="v100payopt'+(N28E.on?' n28on':'')+'" onclick="N28E.on=true;n28EDesenha()">Parte agora, resto depois</button></div>';
+ if(N28E.on){var ini=(document.getElementById('ecIni')||{}).value||hoje();if(!N28E.parc.length)N28E.parc=[{valor:0,data:_n28ProxSeg(ini)}];
+  h+='<label>Pago na assinatura (R$)</label><input id="n28EAto" inputmode="decimal" value="'+esc(N28E.ato)+'" oninput="N28E.ato=this.value;n28EConta()">';
+  N28E.parc.forEach(function(p,i){h+='<div class="grid2"><div><label>Restante (R$)</label><input id="n28EV'+i+'" inputmode="decimal" value="'+(p.valor?fmtBRL(p.valor):'')+'" oninput="N28E.parc['+i+'].valor=parseBRL(this.value);N28E.manual=true;n28EInfo()"></div><div><label>Paga até</label><input type="date" value="'+esc(p.data)+'" onchange="N28E.parc['+i+'].data=this.value;n28EInfo()"></div></div>'});
+  h+='<div class="sub" id="n28EInfo" style="margin:4px 0 8px"></div>'}
+ el.innerHTML=h;var d=document.getElementById('n28E34d');
+ if(d)d.innerHTML=N28E.s34==='data'?'<label>Paga até</label><input type="date" id="n28E34data" value="'+esc(N28E.d34||((N28E.parc[0]||{}).data)||'')+'" onchange="N28E.d34=this.value">':'';
+ if(N28E.on)n28EConta()}
+function n28EConta(){if(!N28E||!N28E.on)return;var tot=parseBRL((document.getElementById('ecCaucao')||{}).value||'')||0,ato=parseBRL(N28E.ato||'')||0;
+ if(!N28E.manual&&N28E.parc.length===1){N28E.parc[0].valor=Math.max(0,_n28R(tot-ato));var e=document.getElementById('n28EV0');if(e&&document.activeElement!==e)e.value=N28E.parc[0].valor?fmtBRL(N28E.parc[0].valor):''}n28EInfo()}
+function n28EInfo(){var el=document.getElementById('n28EInfo');if(!el)return;var tot=parseBRL((document.getElementById('ecCaucao')||{}).value||'')||0;
+ var f={ato:_n28R(parseBRL(N28E.ato||'')||0),parcelas:N28E.parc.filter(function(p){return p.valor>0})},er=n28Erro(f,tot,(document.getElementById('ecIni')||{}).value||'');
+ el.innerHTML=er?'<span style="color:var(--warn,#B54708)">'+esc(er)+'</span>':'R$ '+fmtBRL(f.ato)+' na assinatura'+f.parcelas.map(function(p){return ' + R$ '+fmtBRL(p.valor)+' até '+esc(_n28Quando(p.data))}).join('')}
+(function(){var o=window.editarContratoVigente;if(typeof o!=='function'||o._n28)return;
+ var w=function(id){var r=o.apply(this,arguments);try{var ct=S.contratos[id],b=document.getElementById('sheetBody2');var bt=b&&b.querySelector('button.btn.ok');
+  if(ct&&bt){bt.insertAdjacentHTML('beforebegin',n28EBox(ct));n28EDesenha();var cc=document.getElementById('ecCaucao');if(cc)cc.addEventListener('input',n28EConta)}}catch(e){}return r};
+ w._n28=1;window.editarContratoVigente=w;})();
+(function(){var o=window.salvarCorrecaoContrato;if(typeof o!=='function'||o._n28)return;
+ var w=function(id){var ct=S.contratos&&S.contratos[id];if(!ct||!N28E||!document.getElementById('n28EBox'))return o.apply(this,arguments);
+  var tot=parseBRL((document.getElementById('ecCaucao')||{}).value||'')||0,ini=(document.getElementById('ecIni')||{}).value||'';
+  var f=N28E.on?{ato:_n28R(parseBRL(N28E.ato||'')||0),parcelas:N28E.parc.filter(function(p){return p.valor>0}).map(function(p){return {valor:_n28R(p.valor),data:p.data}})}:null;
+  var er=n28Erro(f,tot,ini);if(er){toast('Caução: '+er);return}
+  var cl=String(ct.cl34||''),sem=parseBRL((document.getElementById('ecSemanal')||{}).value||'')||Number(ct.semanal)||0,novo34=cl;
+  if(N28E.s34==='ato')novo34='Do Pagamento Antecipado: No ato da assinatura, o LOCATÁRIO pagará a semana final do contrato de forma antecipada (R$ '+fmtBRL(sem)+').';
+  else if(N28E.s34==='data'){var d=(document.getElementById('n28E34data')||{}).value||'';if(!_n28Iso(d)){toast('Coloque a data da semana antecipada');return}
+   novo34='Do Pagamento Antecipado: O LOCATÁRIO pagará a semana final do contrato de forma antecipada (R$ '+fmtBRL(sem)+'), da seguinte forma:\n• R$ '+fmtBRL(sem)+' ('+valorPorExtenso(sem)+') — até '+_n28Quando(d)+'\nNenhuma parte deste valor é paga na assinatura deste contrato.'}
+  var antF=JSON.stringify(ct.caucaoForma||null),novF=JSON.stringify(f&&f.parcelas.length?f:null),mudou=antF!==novF||novo34!==cl;
+  if(!mudou)return o.apply(this,arguments);
+  /* aplica a forma da caução e a 3.4 junto com o resto da correção (a correção registra a revisão e regera o Word) */
+  var bk={f:ct.caucaoForma,c:ct.cl34};ct.caucaoForma=f&&f.parcelas.length?f:null;ct.cl34=novo34;
+  var cmp=window._ctCamposMudaram,forc=false;
+  window._ctCamposMudaram=function(a,b){var r=cmp(a,b);if(!r.length){forc=true;r=['caucaoForma']}else if(antF!==novF)r.push('caucaoForma');if(novo34!==cl)r.push('cl34');return r};
+  try{o.apply(this,arguments)}finally{window._ctCamposMudaram=cmp}
+  if(S.contratos[id]!==ct||CTEDIT){ct.caucaoForma=bk.f;ct.cl34=bk.c}
+ };
+ w._n28=1;window.salvarCorrecaoContrato=w;})();
+(function(){try{var st=document.createElement('style');st.id='g28css';
+ st.textContent='#n28Box .v100choice,#n28EBox .v100choice{display:grid;grid-template-columns:1fr 1fr}#n28Box .v100payopt,#n28EBox .v100payopt{width:100%}#n28Box .v100payopt.n28on,#n28EBox .v100payopt.n28on{background:#fff!important;color:#111827!important;font-weight:700;box-shadow:0 1px 4px rgba(17,24,39,.16),0 0 0 1.5px rgba(199,122,22,.55)!important}#n28Box .n25dup{margin-top:2px}';
+ document.head.appendChild(st)}catch(e){}})();
 
 </script>
 </body>
