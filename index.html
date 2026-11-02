@@ -1697,7 +1697,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=289; var APP_DATE='02/11/2026';
+var APP_VER=290; var APP_DATE='02/11/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -14338,6 +14338,39 @@ function n29Validade(a,b){var hj=hoje(),lim=String(+hj.slice(0,4)+11)+hj.slice(4
    return o.call(null,fonte,status).then(function(r2){var v=n29Validade(r,r2),j=cnh7Junta(r||null,r2);if(j){if(v)j.validade=v;j._giro=(r2&&r2._giro)||0;j._texto=(r2&&r2._texto)||(r&&r._texto)}return j},function(){return r})},
    function(){return o.call(null,fonte,status)})};
  w._n29=1;window.cnh7Ocr=w;})();
+
+var PIX_CFG={sel:'input[inputmode="decimal"]'};
+/* ===================== VALOR EM REAIS IGUAL AO PIX DO BANCO (Hudson 30/10/2026) =====================
+   Nos campos de dinheiro você só digita os números; os dois últimos viram os centavos e o ponto de milhar
+   entra sozinho: 1 → 0,01 · 10018 → 100,18 · 150000 → 1.500,00. Apagar tira o último número.
+   - Vírgula e ponto digitados por costume são ignorados ("50,00" continua dando 50,00).
+   - Colar um valor ("R$ 1.234,56" ou "1234") entende o valor do jeito de sempre.
+   - Ao tocar num campo que já tem valor, ele aparece completo (ex.: "120" vira "120,00") para continuar daí.
+   - Onde existe valor negativo (desconto), o sinal de menos liga/desliga o negativo.
+   Só muda a DIGITAÇÃO: o valor que o app guarda é o mesmo de antes. */
+(function(){
+ if(window._pixMoeda)return;window._pixMoeda=1;
+ var CFG=window.PIX_CFG||{};var SEL=CFG.sel||'input[inputmode="decimal"]',NEG=CFG.neg||'';
+ function eh(el){try{return !!el&&el.tagName==='INPUT'&&!el.readOnly&&!el.disabled&&el.type!=='date'&&el.matches(SEL)}catch(e){return false}}
+ function podeNeg(el){try{return !!NEG&&el.matches(NEG)}catch(e){return false}}
+ function fmt(dg){dg=String(dg).replace(/^0+/,'');while(dg.length<3)dg='0'+dg;var i=dg.slice(0,-2).replace(/\B(?=(\d{3})+(?!\d))/g,'.');return i+','+dg.slice(-2)}
+ /* valor escrito do jeito antigo ("120", "1.700", "550.50", "R$ 1.234,56") -> centavos */
+ function centavos(v){var s=String(v||'').replace(/R\$\s?/gi,'').replace(/\s/g,'').replace(/-/g,'');if(!/\d/.test(s))return null;
+  if(s.indexOf(',')>=0)s=s.replace(/\./g,'').replace(',','.');else if(/^\d{1,3}(\.\d{3})+$/.test(s))s=s.replace(/\./g,'');
+  var n=parseFloat(s.replace(/[^\d.]/g,''));return isFinite(n)?Math.round(n*100):null}
+ function poe(el,nv){if(el.value===nv)return;el.value=nv;try{el.setSelectionRange(nv.length,nv.length)}catch(e){}}
+ function normaliza(el){var v=el.value;if(!v||!/\d/.test(v))return;var c=centavos(v);if(c==null)return;var neg=podeNeg(el)&&/^\s*-/.test(v);poe(el,(neg?'-':'')+fmt(String(c)))}
+ /* ao entrar no campo: mostra o valor completo (antes do app reagir ao foco) */
+ document.addEventListener('focus',function(e){var el=e.target;if(eh(el))normaliza(el)},true);
+ document.addEventListener('input',function(e){var el=e.target;if(!eh(el))return;var v=el.value,neg=podeNeg(el)&&((v.match(/-/g)||[]).length%2===1);
+  if(e.inputType==='insertFromPaste'||e.inputType==='insertReplacementText'){var c=centavos(v);poe(el,c==null?'':(neg?'-':'')+fmt(String(c)));return}
+  var dg=v.replace(/\D/g,'').replace(/^0+/,'');if(dg.length>11)dg=dg.slice(0,11);
+  poe(el,dg?(neg?'-':'')+fmt(dg):(neg?'-':''))},true);
+ /* teclado numérico nos campos de dinheiro que ainda abriam o teclado de letras */
+ function teclado(r){try{[].forEach.call((r||document).querySelectorAll(SEL),function(el){if(!podeNeg(el)&&el.getAttribute('inputmode')!=='decimal')el.setAttribute('inputmode','decimal')})}catch(e){}}
+ if(CFG.teclado){teclado();try{new MutationObserver(function(ms){for(var i=0;i<ms.length;i++)if(ms[i].addedNodes.length){teclado();return}}).observe(document.documentElement,{childList:true,subtree:true})}catch(e){}}
+ window._pixFmt=fmt;window._pixCentavos=centavos;
+})();
 
 </script>
 </body>
