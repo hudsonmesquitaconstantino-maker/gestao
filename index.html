@@ -1697,7 +1697,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=288; var APP_DATE='30/10/2026';
+var APP_VER=289; var APP_DATE='02/11/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -9871,7 +9871,7 @@ try{if(typeof TAB!=='undefined'&&(TAB===5||TAB===0)&&S)render()}catch(e){}
   if(agora!==aberto){
    aberto=agora;de.classList.toggle('teclado',agora);
    if(agora){var a=document.activeElement;if(campo(a)&&a.closest&&a.closest('.sheet'))setTimeout(function(){try{a.scrollIntoView({block:'center'})}catch(e){}},60)}
-   else if(document.body.style.position==='fixed'){try{window.scrollTo(0,0)}catch(e){}}
+   else if(document.body.style.position==='fixed'){try{Window.prototype.scrollTo.call(window,0,0)}catch(e){}}
   }
  }
  function agenda(){if(!raf)raf=(window.requestAnimationFrame||setTimeout)(aplicar)}
@@ -10462,7 +10462,7 @@ function cnh7Card(){
    var L=[['Nome',d.nome+((d._nomeMrz||d.nomeCortado||d.nomeConfira)?' ⚠️':'')],['CPF',d.cpf?showCPF(d.cpf):''],['RG',d.rg?(d.rg+(d.rgOrg?' · '+d.rgOrg:'')):''],['Nº da CNH',d.cnh],['Validade',d.validade?dataBR(d.validade):''],['Nascimento',d.nasc?dataBR(d.nasc):''],['Categoria',d.cat]];
    h+='<div class="cnh7lido">'+L.map(function(x){return '<div><span>'+x[0]+'</span><b>'+(x[1]?esc(x[1]):'<em>não li</em>')+'</b></div>'}).join('')+'</div>';
    if(d.avisos&&d.avisos.length)h+='<div class="n3info n3alertaBox">'+d.avisos.map(esc).join('<br>')+'</div>';
-   if(d.validade&&d.validade<hoje())h+='<div class="n3info n3alertaBox">⚠️ CNH vencida em '+dataBR(d.validade)+'.</div>';
+   if(d.validade&&d.validade<hoje())h+='<div class="n3info n3alertaBox">⚠️ A validade que eu li ('+dataBR(d.validade)+') já passou. Confira na CNH: se estiver vencida mesmo, peça a nova antes de assinar.</div>';
    if(CNH7.antigo)h+='<div class="cnh7nota">✓ Já foi motorista: endereço e telefone vieram do último contrato de '+esc(CNH7.antigo)+'.</div>';
    h+='<div class="cnh7nota">Confira os campos abaixo com a foto antes de gerar.</div>';
   }
@@ -13968,7 +13968,7 @@ function _n26Mostra(){try{if(typeof TAB!=='undefined'&&TAB===6)render()}catch(e)
    A semana antecipada pode ir para a mesma data com um toque (texto da 3.4 deixa claro que NÃO foi paga no ato). */
 var N28={on:false,ato:'',parc:[],junto:false,auto:true};
 var _N28DS=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
-function _n28Iso(s){return /^\d{4}-\d{2}-\d{2}$/.test(String(s||''))}
+function _n28Iso(s){s=String(s||'');if(!/^\d{4}-\d{2}-\d{2}$/.test(s))return false;var p=s.split('-'),d=new Date(+p[0],+p[1]-1,+p[2]);return d.getFullYear()===+p[0]&&d.getMonth()===+p[1]-1&&d.getDate()===+p[2]}
 function _n28Dsem(iso){if(!_n28Iso(iso))return '';var p=iso.split('-');return _N28DS[new Date(+p[0],+p[1]-1,+p[2]).getDay()]}
 function _n28Quando(iso){return _n28Iso(iso)?_n28Dsem(iso)+', '+dataBR(iso):''}
 function _n28ProxSeg(ini){var b=_n28Iso(ini)?ini:hoje();for(var i=1;i<=7;i++){var d=somaDias(b,i);if(_n28Dsem(d)==='segunda-feira')return d}return somaDias(b,1)}
@@ -13995,12 +13995,13 @@ function n28Textos(ct){
  var w=function(ct,carro){var t=null;try{t=n28Textos(ct)}catch(e){t=null}
   if(!t||typeof TPL_DOC!=='string')return o.apply(this,arguments);
   var orig=TPL_DOC,x=TPL_DOC,k=x.indexOf('⟦CAU_N⟧'),a=k<0?-1:Math.max(x.lastIndexOf('<w:p ',k),x.lastIndexOf('<w:p>',k)),b=k<0?-1:x.indexOf('</w:p>',k);
-  if(a<0||b<0)return o.apply(this,arguments);b+=6;
+  var avisa=function(){try{toast('⚠️ Não consegui escrever a caução em partes no Word — confira a cláusula 4.1 antes de assinar')}catch(e){}};
+  if(a<0||b<0){avisa();return o.apply(this,arguments)}b+=6;
   var par=x.slice(a,b),A='O LOCATÁRIO entrega neste ato, a título de CAUÇÃO, a quantia de ';
-  if(par.indexOf(A)<0||!/<w:t(?: [^>]*)?>\.<\/w:t>/.test(par))return o.apply(this,arguments);
+  if(par.indexOf(A)<0||!/<w:t(?: [^>]*)?>\.<\/w:t>/.test(par)){avisa();return o.apply(this,arguments)}
   var novo=par.split(A).join(xesc(t.a)).replace(/<w:t(?: [^>]*)?>\.<\/w:t>/,'<w:t xml:space="preserve">'+xesc(t.c)+'</w:t>');
   var sub=par.replace(/\s*w14:paraId="[^"]*"/g,'').replace(/\s*w14:textId="[^"]*"/g,'').split('4.1. ').join('4.1.1. ').split(A).join(xesc(t.p411)).split('R$ ⟦CAU_N⟧ (⟦CAU_E⟧)').join('').replace(/<w:t(?: [^>]*)?>\.<\/w:t>/,'<w:t></w:t>');
-  if(sub.indexOf('4.1.1. ')<0)return o.apply(this,arguments);
+  if(sub.indexOf('4.1.1. ')<0){avisa();return o.apply(this,arguments)}
   try{TPL_DOC=x.slice(0,a)+novo+sub+x.slice(b);return o.apply(this,arguments)}finally{TPL_DOC=orig}};
  w._n28=1;window.montarDocx=w;})();
 /* ---------- leitura do contrato no app ---------- */
@@ -14035,20 +14036,25 @@ function n28Box(){
    '<div class="sub" style="margin:4px 2px 0" id="n28S'+i+'">'+esc(_n28Quando(p.data))+(N28.parc.length>1?' · <a style="color:var(--bad,#B42318)" onclick="N28.parc.splice('+i+',1);n28Desenha()">tirar</a>':'')+'</div>';
  });
  h+='<button type="button" class="btn mini sec" style="margin-top:8px" onclick="N28.auto=false;N28.parc.push({valor:0,data:_n28ProxSeg(N28.parc.length?N28.parc[N28.parc.length-1].data:_n28Ini())});n28Desenha()">＋ Dividir o restante em mais uma data</button>';
- h+='<label style="display:flex;gap:10px;align-items:flex-start;margin-top:12px;font-size:14.5px;line-height:1.35"><input type="checkbox" id="n28Junto" style="width:20px;height:20px;flex:0 0 auto;margin-top:1px"'+(N28.junto?' checked':'')+' onchange="N28.junto=this.checked;n28Junto34()"><span>A <b>semana antecipada</b> também fica para essa data (não é paga na assinatura)</span></label>';
+ h+='<label style="display:flex;gap:10px;align-items:flex-start;margin-top:12px;font-size:14.5px;line-height:1.35"><input type="checkbox" id="n28Junto" style="width:20px;height:20px;flex:0 0 auto;margin-top:1px"'+(N28.junto?' checked':'')+' onchange="n28JuntoSet(this.checked)"><span>A <b>semana antecipada</b> também fica para essa data (não é paga na assinatura)</span></label>';
  return h+'<div class="n25info" id="n28Info"></div>';
 }
 function n28Desenha(){var el=document.getElementById('n28Box');if(!el)return;el.innerHTML=n28Box();if(N28.on)n28Conta()}
-function n28Set(on){N28.on=!!on;if(!on){var j=N28.junto;n28Reset();if(j)try{ncUI34('avista')}catch(e){}}n28Desenha();try{ncResumo()}catch(e){}}
+function n28Set(on){N28.on=!!on;if(!on){if(N28.junto)n28JuntoSet(false);n28Reset()}n28Desenha();try{ncResumo()}catch(e){}}
 /* com uma data só, o restante = caução − pago agora (até você mexer no valor do restante) */
 function n28Conta(){if(!N28.on)return;var tot=_n28Total(),ato=parseBRL(N28.ato||'')||0;
  if(N28.auto&&N28.parc.length===1){N28.parc[0].valor=Math.max(0,_n28R(tot-ato));var e=document.getElementById('n28V0');if(e&&document.activeElement!==e)e.value=N28.parc[0].valor?fmtBRL(N28.parc[0].valor):''}
  n28Info()}
-function n28DoForm(){if(!N28.on)return null;var ato=_n28R(parseBRL(N28.ato||'')||0),ps=N28.parc.filter(function(p){return Number(p.valor)>0}).map(function(p){return {valor:_n28R(p.valor),data:p.data||''}});
+function n28DoForm(){if(!N28.on)return null;var ato=_n28R(parseBRL(N28.ato||'')||0),ps=N28.parc.map(function(p){return {valor:_n28R(p.valor),data:p.data||''}});
  return {ato:ato,parcelas:ps}}
-function n28Erro(f,tot,ini){if(!f)return '';if(!(tot>0))return 'Preencha o valor da caução.';if(!f.parcelas.length)return 'Coloque quanto fica para depois.';
- if(f.parcelas.some(function(p){return !_n28Iso(p.data)}))return 'Coloque a data de cada pagamento que fica para depois.';
- if(ini&&f.parcelas.some(function(p){return p.data<ini}))return 'A data do restante não pode ser antes do início do contrato.';
+function n28Erro(f,tot,ini){if(!f)return '';if(!(tot>0))return 'Preencha o valor da caução.';
+ if(!(f.ato>=0))return 'O valor pago agora não pode ser negativo.';
+ if(f.ato>=tot-0.009)return 'Se pagou tudo agora, escolha “Toda na assinatura”.';
+ if(!f.parcelas.length)return 'Coloque quanto fica para depois.';
+ for(var i=0;i<f.parcelas.length;i++){var p=f.parcelas[i],n=f.parcelas.length>1?' ('+(i+1)+'º)':'';
+  if(!(p.valor>0))return 'O restante'+n+' está sem valor — preencha'+(f.parcelas.length>1?' ou toque em “tirar”':'')+'.';
+  if(!_n28Iso(p.data))return 'Coloque uma data válida para o restante'+n+'.';
+  if(ini&&p.data<ini)return 'A data do restante'+n+' não pode ser antes do início do contrato.'}
  var s=_n28R(f.ato+f.parcelas.reduce(function(a,p){return a+p.valor},0));if(Math.abs(s-tot)>0.009)return 'A soma (R$ '+fmtBRL(s)+') não fecha com a caução de R$ '+fmtBRL(tot)+'.';return ''}
 function n28Info(){var el=document.getElementById('n28Info');N28.parc.forEach(function(p,i){var s=document.getElementById('n28S'+i);if(s&&s.firstChild&&s.firstChild.nodeType===3)s.firstChild.nodeValue=_n28Quando(p.data)});
  if(!el)return;var f=n28DoForm(),tot=_n28Total(),er=n28Erro(f,tot,_n28Ini());
@@ -14056,6 +14062,12 @@ function n28Info(){var el=document.getElementById('n28Info');N28.parc.forEach(fu
  else{el.className='n25info';el.innerHTML='No contrato: <b>R$ '+fmtBRL(f.ato)+'</b> pagos na assinatura'+f.parcelas.map(function(p){return ' + <b>R$ '+fmtBRL(p.valor)+'</b> até '+esc(_n28Quando(p.data))}).join('')+'.<br>A assinatura só dá quitação do que foi pago no ato; o restante fica como dívida do motorista, com data.'}
  try{ncResumo()}catch(e){}}
 /* semana antecipada junto com o restante da caução (1ª data) */
+function n28JuntoSet(on){
+ if(on&&!N28.junto){try{var sel=document.getElementById('ncTem34');N28.bk34={sel:sel?sel.value:'avista',parc:JSON.parse(JSON.stringify(NCPARC||[]))}}catch(e){N28.bk34=null}}
+ N28.junto=!!on;
+ if(on){n28Junto34();return}
+ var b=N28.bk34;N28.bk34=null;
+ try{NCPARC.length=0;if(b&&b.parc)b.parc.forEach(function(p){NCPARC.push(p)});ncUI34(b&&b.sel?b.sel:'avista');if(b&&b.sel==='parcelado')ncParcDraw()}catch(e){}}
 function n28Junto34(){if(!N28.junto)return;var d=(N28.parc[0]||{}).data,s=parseBRL((document.getElementById('ncSemanal')||{}).value||'')||0;if(!_n28Iso(d))return;
  try{NCPARC.length=0;NCPARC.push({v:s,q:'até '+_n28Quando(d)});var sel=document.getElementById('ncTem34');if(sel)sel.value='parcelado';ncModo34();ncParcDraw();ncCl34Auto(true);ncResumo()}catch(e){}}
 (function(){var o=window.n3cMonta;if(typeof o!=='function'||o._n28)return;
@@ -14094,7 +14106,7 @@ function n28EDesenha(){var el=document.getElementById('n28EBox');if(!el||!N28E)r
 function n28EConta(){if(!N28E||!N28E.on)return;var tot=parseBRL((document.getElementById('ecCaucao')||{}).value||'')||0,ato=parseBRL(N28E.ato||'')||0;
  if(!N28E.manual&&N28E.parc.length===1){N28E.parc[0].valor=Math.max(0,_n28R(tot-ato));var e=document.getElementById('n28EV0');if(e&&document.activeElement!==e)e.value=N28E.parc[0].valor?fmtBRL(N28E.parc[0].valor):''}n28EInfo()}
 function n28EInfo(){var el=document.getElementById('n28EInfo');if(!el)return;var tot=parseBRL((document.getElementById('ecCaucao')||{}).value||'')||0;
- var f={ato:_n28R(parseBRL(N28E.ato||'')||0),parcelas:N28E.parc.filter(function(p){return p.valor>0})},er=n28Erro(f,tot,(document.getElementById('ecIni')||{}).value||'');
+ var f={ato:_n28R(parseBRL(N28E.ato||'')||0),parcelas:N28E.parc.map(function(p){return {valor:_n28R(p.valor),data:p.data||''}})},er=n28Erro(f,tot,(document.getElementById('ecIni')||{}).value||'');
  el.innerHTML=er?'<span style="color:var(--warn,#B54708)">'+esc(er)+'</span>':'R$ '+fmtBRL(f.ato)+' na assinatura'+f.parcelas.map(function(p){return ' + R$ '+fmtBRL(p.valor)+' até '+esc(_n28Quando(p.data))}).join('')}
 (function(){var o=window.editarContratoVigente;if(typeof o!=='function'||o._n28)return;
  var w=function(id){var r=o.apply(this,arguments);try{var ct=S.contratos[id],b=document.getElementById('sheetBody2');var bt=b&&b.querySelector('button.btn.ok');
@@ -14103,7 +14115,7 @@ function n28EInfo(){var el=document.getElementById('n28EInfo');if(!el)return;var
 (function(){var o=window.salvarCorrecaoContrato;if(typeof o!=='function'||o._n28)return;
  var w=function(id){var ct=S.contratos&&S.contratos[id];if(!ct||!N28E||!document.getElementById('n28EBox'))return o.apply(this,arguments);
   var tot=parseBRL((document.getElementById('ecCaucao')||{}).value||'')||0,ini=(document.getElementById('ecIni')||{}).value||'';
-  var f=N28E.on?{ato:_n28R(parseBRL(N28E.ato||'')||0),parcelas:N28E.parc.filter(function(p){return p.valor>0}).map(function(p){return {valor:_n28R(p.valor),data:p.data}})}:null;
+  var f=N28E.on?{ato:_n28R(parseBRL(N28E.ato||'')||0),parcelas:N28E.parc.map(function(p){return {valor:_n28R(p.valor),data:p.data||''}})}:null;
   var er=n28Erro(f,tot,ini);if(er){toast('Caução: '+er);return}
   var cl=String(ct.cl34||''),sem=parseBRL((document.getElementById('ecSemanal')||{}).value||'')||Number(ct.semanal)||0,novo34=cl;
   if(N28E.s34==='ato')novo34='Do Pagamento Antecipado: No ato da assinatura, o LOCATÁRIO pagará a semana final do contrato de forma antecipada (R$ '+fmtBRL(sem)+').';
@@ -14114,14 +14126,218 @@ function n28EInfo(){var el=document.getElementById('n28EInfo');if(!el)return;var
   /* aplica a forma da caução e a 3.4 junto com o resto da correção (a correção registra a revisão e regera o Word) */
   var bk={f:ct.caucaoForma,c:ct.cl34};ct.caucaoForma=f&&f.parcelas.length?f:null;ct.cl34=novo34;
   var cmp=window._ctCamposMudaram,forc=false;
-  window._ctCamposMudaram=function(a,b){var r=cmp(a,b);if(!r.length){forc=true;r=['caucaoForma']}else if(antF!==novF)r.push('caucaoForma');if(novo34!==cl)r.push('cl34');return r};
+  window._ctCamposMudaram=function(a,b){var r=cmp(a,b).slice();if(antF!==novF)r.push('caucaoForma');if(novo34!==cl)r.push('cl34');return r};
   try{o.apply(this,arguments)}finally{window._ctCamposMudaram=cmp}
-  if(S.contratos[id]!==ct||CTEDIT){ct.caucaoForma=bk.f;ct.cl34=bk.c}
+  if(S.contratos[id]!==ct||CTEDIT){ct.caucaoForma=bk.f;ct.cl34=bk.c;return}
+  try{var rv=(ct.revisoes||[]).filter(function(x){return x&&x.campos&&(x.campos.indexOf('caucaoForma')>=0||x.campos.indexOf('cl34')>=0)}).pop();
+   if(rv){rv.antes=rv.antes||{};rv.depois=rv.depois||{};rv.antes.caucaoForma=bk.f||'toda no ato';rv.depois.caucaoForma=ct.caucaoForma||'toda no ato';if(novo34!==cl){rv.antes.cl34=bk.c||'';rv.depois.cl34=ct.cl34||''}_touchContrato(ct);save()}}catch(e){}
  };
  w._n28=1;window.salvarCorrecaoContrato=w;})();
 (function(){try{var st=document.createElement('style');st.id='g28css';
  st.textContent='#n28Box .v100choice,#n28EBox .v100choice{display:grid;grid-template-columns:1fr 1fr}#n28Box .v100payopt,#n28EBox .v100payopt{width:100%}#n28Box .v100payopt.n28on,#n28EBox .v100payopt.n28on{background:#fff!important;color:#111827!important;font-weight:700;box-shadow:0 1px 4px rgba(17,24,39,.16),0 0 0 1.5px rgba(199,122,22,.55)!important}#n28Box .n25dup{margin-top:2px}';
  document.head.appendChild(st)}catch(e){}})();
+
+/* ===================== v289 — Hudson 02/11/2026 =====================
+   1) Sincronização presa em "enviando… / sincronizando…" (e o app travando ao digitar):
+      a nuvem guarda os dados do jeito dela — tira campos vazios (null), lista com buraco vira objeto,
+      objeto com chaves 0,1,2 volta como lista. O app comparava "o que mandei" com "o que voltou" sem
+      levar isso em conta, achava que era diferente e mandava de novo, sem parar (a cada ~1 s, com o
+      estado inteiro) — por isso a digitação engasgava. Agora a comparação entende o formato da nuvem.
+      Extra: enquanto você digita, o envio espera você parar; e se mesmo assim não convergir, o app
+      espera cada vez mais entre tentativas (em vez de martelar) e anota o que estava diferente.
+   2) Tela pulando para o topo ao fechar o teclado (✓ do teclado): a posição de cada área que rola é
+      guardada quando o campo perde o foco; se algo jogar a tela para cima sem você tocar, ela volta.
+   3) Contrato: termo de devolução avisa quando a caução foi combinada em partes; importar Word
+      reconhece a caução em partes.
+   4) CNH: lê o texto vermelho (validade, nº de registro), lê a CNH digital em PDF pela imagem dela
+      (não pela página inteira) e limpa sujeira no fim do nome. */
+
+/* ---------- 1. sincronização ---------- */
+(function(){
+ function vazio(v){return v===null||v===undefined||(Array.isArray(v)&&!v.length)||(typeof v==='object'&&v&&!Array.isArray(v)&&!Object.keys(v).length)}
+ function arrLike(o){var ks=Object.keys(o);if(!ks.length)return false;var mx=-1;for(var i=0;i<ks.length;i++){if(!/^(0|[1-9]\d*)$/.test(ks[i]))return false;var n=+ks[i];if(n>mx)mx=n}return mx<2*ks.length}
+ var SKIP={editadoEm:1,_campoAt:1,fipeAtualizadoEm:1,restauradoEm:1};
+ function cmp(u,v){var A=JSON.stringify(u),B=JSON.stringify(v);return A<B?-1:(A>B?1:0)}
+ function canon(x,root){
+  if(x===null||x===undefined)return null;
+  if(typeof x==='number')return isFinite(x)?x:null;
+  if(typeof x!=='object')return x;
+  if(Array.isArray(x)||(!root&&arrLike(x))){var vals=Array.isArray(x)?x:Object.keys(x).sort(function(a,b){return a-b}).map(function(k){return x[k]});
+   var a=[];vals.forEach(function(v){var c=canon(v,false);if(!vazio(c))a.push(c)});a.sort(cmp);return a}
+  var o={};Object.keys(x).sort().forEach(function(k){if(root&&(k==='rev'||k==='dev'))return;if(SKIP[k])return;var c=canon(x[k],false);if(vazio(c))return;o[k]=c});return o}
+ window._gCanon=canon;window._g29Canon=canon;
+
+ var G={pushes:[],k:0,pausaAte:0,t:null,tdesde:0};window.G29=G;
+ function difs(a,b){var out=[];try{var A=canon(a||{},true),B=canon(b||{},true);
+  Object.keys(Object.assign({},A,B)).forEach(function(c){if(JSON.stringify(A[c])===JSON.stringify(B[c]))return;var x=A[c]||{},y=B[c]||{};
+   if(typeof x!=='object'||typeof y!=='object'||Array.isArray(x)){out.push(c);return}
+   Object.keys(Object.assign({},x,y)).forEach(function(id){if(JSON.stringify(x[id])===JSON.stringify(y[id]))return;var p=x[id]||{},q=y[id]||{},ks=[];
+    if(typeof p==='object'&&typeof q==='object')Object.keys(Object.assign({},p,q)).forEach(function(k){if(JSON.stringify(p[k])!==JSON.stringify(q[k]))ks.push(k)});
+    out.push(c+'/'+id+(ks.length?' ('+ks.slice(0,4).join(',')+')':''))})})}catch(e){}return out.slice(0,8)}
+ var o=window._refSetSeguro;if(typeof o!=='function'||o._n29)return;
+ var w=function(obj,motivo){
+  var agora=Date.now(),m=String(motivo||'');
+  if(/seed|nuvem-vazia/.test(m))return o.apply(this,arguments);
+  try{if(_gSyncVerde()){G.k=0;G.pushes=[]}}catch(e){}
+  /* digitando: espera parar (no máximo 20 s); os dados já estão guardados no aparelho */
+  if(typeof digitando==='function'&&digitando()){if(!G.tdesde)G.tdesde=agora;
+   if(agora-G.tdesde<20000){try{_gSetDirty(true)}catch(e){}clearTimeout(G.t);G.t=setTimeout(function(){try{_agendarRetrySync(60)}catch(e){}},1500);return Promise.resolve(false)}}
+  G.tdesde=0;
+  /* não convergiu várias vezes seguidas: espera cada vez mais (5 s → 60 s) e anota a diferença */
+  if(agora<G.pausaAte){clearTimeout(G.t);G.t=setTimeout(function(){try{_agendarRetrySync(60)}catch(e){}},G.pausaAte-agora+50);try{_gSetDirty(true)}catch(e){}return Promise.resolve(false)}
+  G.pushes=G.pushes.filter(function(t){return agora-t<40000});G.pushes.push(agora);
+  if(G.pushes.length>=8){G.k=Math.min(G.k+1,4);G.pausaAte=agora+Math.min(60000,5000*Math.pow(2,G.k-1));G.pushes=[];
+   try{localStorage.setItem('gestao_sync_diag',JSON.stringify({em:agora,ver:APP_VER,motivo:m,dif:difs(GSYNC.remoteLast,obj)}))}catch(e){}}
+  return o.apply(this,arguments)};
+ w._n29=1;window._refSetSeguro=w;
+ /* rodapé do "Mais": mostra a anotação, se houver uma recente (para o suporte) */
+ var vm=window.vMais;if(typeof vm==='function'&&!vm._n29){var w2=function(){var h=vm.apply(this,arguments);try{var d=JSON.parse(localStorage.getItem('gestao_sync_diag')||'null');
+  if(d&&Date.now()-d.em<3*86400000&&d.dif&&d.dif.length)h+='<div class="g2ver" style="opacity:.7;font-size:11.5px;margin-top:-6px">Sincronização demorou para fechar em '+new Date(d.em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+' · '+esc(d.dif.join(' · '))+'</div>'}catch(e){}return h};w2._n29=1;window.vMais=w2}
+})();
+
+/* ---------- 2. tela não sobe sozinha quando o teclado fecha ---------- */
+(function(){
+ var guarda=null;
+ function texto(el){return !!el&&(el.tagName==='TEXTAREA'||(el.tagName==='INPUT'&&/^(text|search|tel|email|url|number|password|)$/i.test(el.type||''))||!!el.isContentEditable)}
+ function roladores(el){var a=[];for(var p=el&&el.parentElement;p&&p!==document.documentElement;p=p.parentElement){try{var cs=getComputedStyle(p);if(/(auto|scroll)/.test(cs.overflowY)&&p.scrollHeight>p.clientHeight)a.push(p)}catch(e){}}return a}
+ function para(){guarda=null}
+ function vigia(){if(!guarda)return;if(Date.now()>guarda.ate){guarda=null;return}
+  guarda.m.forEach(function(x){if(!x.sc.isConnected)return;var t=x.sc.scrollTop;if(x.top-t>120){x.sc.scrollTop=x.top}});requestAnimationFrame(vigia)}
+ document.addEventListener('focusout',function(e){if(!texto(e.target))return;var m=roladores(e.target).map(function(sc){return {sc:sc,top:sc.scrollTop}});if(!m.length)return;
+  guarda={m:m,ate:Date.now()+1600};requestAnimationFrame(vigia)},true);
+ /* qualquer toque seu (rolar, tocar em botão) ou outro campo recebendo o foco = você mandou; o app não segura */
+ ['touchstart','touchend','mousedown','mouseup','click','wheel','keydown'].forEach(function(ev){document.addEventListener(ev,para,{passive:true,capture:true})});
+ document.addEventListener('focusin',para,true);
+})();
+
+/* ---------- 3a. termo de devolução: caução combinada em partes ---------- */
+(function(){
+ function aviso(){try{var id=window._termoContratoId,ct=id&&S.contratos[id],old=document.getElementById('n29TermoAviso');if(old)old.remove();
+  if(!ct||typeof n28Ativo!=='function'||!n28Ativo(ct))return;var ps=n28Parcelas(ct),ref=document.getElementById('tvImportPanel');if(!ref)return;
+  ref.insertAdjacentHTML('beforebegin','<div id="n29TermoAviso" class="n26no" style="margin:8px 0">⚠️ A caução deste contrato foi combinada em partes: <b>R$ '+fmtBRL(ct.caucaoForma.ato||0)+'</b> na assinatura'+ps.map(function(p){return ' + <b>R$ '+fmtBRL(p.valor)+'</b> até '+esc(_n28Quando(p.data))}).join('')+'. O crédito abaixo veio com o total (R$ '+fmtBRL(ct.caucao)+'). Se alguma parte não foi paga, corrija o valor antes de fechar o termo.</div>')}catch(e){}}
+ ['tContratoEscolhido','abrirTermo'].forEach(function(nm){var o=window[nm];if(typeof o!=='function'||o._n29)return;var w=function(){var r=o.apply(this,arguments);setTimeout(aviso,80);return r};w._n29=1;window[nm]=w});
+})();
+/* ---------- 3b. importar Word: reconhece a caução em partes ---------- */
+function n29CaucaoDoTexto(T){T=String(T||'');if(!/quantia\s*total\s*de\s*R\$/i.test(T))return null;
+ var ato=0,m=T.match(/R\$\s*([\d.]+,\d{2})\s*\([^)]*\)\s*pagos\s*neste\s*ato/i);if(m)ato=parseBRL(m[1]);
+ var ps=[],re=/R\$\s*([\d.]+,\d{2})\s*\([^)]*\)\s*a\s*serem\s*pagos\s*at[ée]\s*[^,\d]*,?\s*(\d{2})\/(\d{2})\/(\d{4})/gi,x;
+ while((x=re.exec(T)))ps.push({valor:parseBRL(x[1]),data:x[4]+'-'+x[3]+'-'+x[2]});
+ return ps.length?{ato:ato,parcelas:ps}:null}
+(function(){var o=window.impDadosContrato;if(typeof o==='function'&&!o._n29){var w=function(t){var d=o.apply(this,arguments);try{if(d){var f=n29CaucaoDoTexto(t);if(f)d.caucaoForma=f}}catch(e){}return d};w._n29=1;window.impDadosContrato=w}
+ var s=window.salvarContratoImportado;if(typeof s==='function'&&!s._n29){var w2=function(){var cx=window._impCtx,f=cx&&cx.dados&&cx.dados.caucaoForma,pk=cx&&cx.pk,t0=Date.now();var r=s.apply(this,arguments);
+  try{if(f&&pk){var ct=Object.keys(S.contratos).map(function(k){return S.contratos[k]}).filter(function(c){return c.carro===pk&&c.origem==='anexado'&&(Number(c.criadoEm)||0)>=t0-50}).pop();
+   if(ct){ct.caucaoForma=f;_touchContrato(ct);save()}}}catch(e){}return r};w2._n29=1;window.salvarContratoImportado=w2}})();
+
+/* ---------- 4. CNH ---------- */
+/* 4a. cinza feito pelo canal VERDE: o texto vermelho da CNH (validade, nº de registro, categoria) fica escuro
+       como o preto, e o fundo verde/amarelo fica claro. Antes o vermelho virava cinza médio e sumia. */
+(function(){var o=window.cnh7Canvas;if(typeof o!=='function'||o._n29)return;
+ var w=function(fonte,giro,maxLado,grande,contraste){
+  var fw=fonte.naturalWidth||fonte.width,fh=fonte.naturalHeight||fonte.height,esc=Math.min(1,(maxLado||2200)/Math.max(fw,fh));
+  if(Math.max(fw,fh)<1600)esc=1600/Math.max(fw,fh);
+  if(grande)esc=Math.max(esc,Math.min(3,4800/Math.max(fw,fh),Math.sqrt(12e6/(fw*fh))));
+  esc=Math.min(esc,Math.sqrt(14e6/(fw*fh)));
+  var W=Math.round(fw*esc),H=Math.round(fh*esc),cv=document.createElement('canvas'),gira=(giro===90||giro===270);cv.width=gira?H:W;cv.height=gira?W:H;
+  var x=cv.getContext('2d');x.save();x.translate(cv.width/2,cv.height/2);x.rotate((giro||0)*Math.PI/180);x.imageSmoothingQuality='high';x.drawImage(fonte,-W/2,-H/2,W,H);x.restore();
+  try{var im=x.getImageData(0,0,cv.width,cv.height),d=im.data,c=contraste||1.35;for(var i=0;i<d.length;i+=4){var g=0.12*d[i]+0.78*d[i+1]+0.10*d[i+2];g=(g-128)*c+128;g=g<0?0:g>255?255:g;d[i]=d[i+1]=d[i+2]=g}x.putImageData(im,0,0)}catch(e){}
+  return cv};
+ w._n29=1;window.cnh7Canvas=w;})();
+/* 4b. nome: tira sujeira do fim ("JOAO SILVA DA COSTA LL TO ÇO") — palavra curta no fim só fica se aparece de novo no documento (filiação) */
+function n29LimpaNome(nome,raw){
+ var w=String(nome||'').trim().split(/\s+/).filter(Boolean);if(w.length<3)return nome;
+ var U=semAcento(String(raw||'')).toUpperCase(),CON=/^(DA|DE|DO|DAS|DOS|E)$/;
+ function outraVez(t){try{return (U.match(new RegExp('(^|[^A-Z])'+t+'(?![A-Z])','g'))||[]).length>=2}catch(e){return false}}
+ while(w.length>2){var t=semAcento(w[w.length-1]).toUpperCase();
+  if(CON.test(t)||!/[AEIOUY]/.test(t)||!/^[A-Z]+$/.test(t)||(t.length<=3&&!outraVez(t)))w.pop();else break}
+ while(w.length>2&&CON.test(semAcento(w[w.length-1]).toUpperCase()))w.pop();
+ return w.join(' ')}
+(function(){var o=window.cnh7Parse;if(typeof o!=='function'||o._n29)return;
+ var w=function(t){var r=o.apply(this,arguments);try{if(r&&r.nome&&!r._nomeMrz)r.nome=n29LimpaNome(r.nome,t);n29ArrumaNumeros(r,t)}catch(e){}return r};w._n29=1;window.cnh7Parse=w;})();
+/* CPF que não confere: prefere o número ESCRITO no formato de CPF (000.000.000-00); um número solto de 11 dígitos
+   que confere como nº de registro da CNH vai para o campo da CNH, não para o CPF */
+function n29ArrumaNumeros(o,t){if(!o||!o.cpf||cnh7CpfOk(o.cpf))return;
+ var U=semAcento(String(t||'')).toUpperCase(),dg=function(x){return x.replace(/[OQD]/g,'0').replace(/[IL|]/g,'1').replace(/S/g,'5').replace(/B/g,'8').replace(/Z/g,'2').replace(/\D/g,'')};
+ var m=U.match(/([0-9OQDILSBZ]{3})\s?[.,]\s?([0-9OQDILSBZ]{3})\s?[.,]\s?([0-9OQDILSBZ]{3})\s?[-–]\s?([0-9OQDILSBZ]{2})/);
+ var fmt=m?dg(m[1]+m[2]+m[3]+m[4]):'';
+ if(cnh7RegOk(o.cpf)&&(!o.cnh||!cnh7RegOk(o.cnh)))o.cnh=o.cpf;
+ if(fmt&&fmt.length===11&&fmt!==o.cpf)o.cpf=fmt;
+ if(o.cpf===o.cnh)o.cpf=fmt&&fmt!==o.cnh?fmt:'';
+ cnh7Avisos(o)}
+/* 4c. PDF da CNH digital: o PDF traz a CNH como IMAGEM (frente e verso) + QR code. Ler a página inteira
+       encolhia a CNH e misturava cabeçalho/QR no texto. Agora pega as imagens de dentro do PDF e lê cada uma. */
+function n29ImagensPdf(pdfDoc){
+ return pdfDoc.getPage(1).then(function(pg){return pg.getOperatorList().then(function(ops){
+  var nomes=[],OPS=pdfjsLib.OPS;for(var i=0;i<ops.fnArray.length;i++){var f=ops.fnArray[i];if(f===OPS.paintImageXObject||f===OPS.paintJpegXObject){var n=ops.argsArray[i][0];if(nomes.indexOf(n)<0)nomes.push(n)}}
+  return Promise.all(nomes.map(function(n){return new Promise(function(ok){var feito=false,fim=function(v){if(!feito){feito=true;ok(v)}};
+   try{var g=function(o){try{fim(n29ImgCanvas(o))}catch(e){fim(null)}};if(pg.objs.has&&pg.objs.has(n))g(pg.objs.get(n));else pg.objs.get(n,g)}catch(e){fim(null)}setTimeout(function(){fim(null)},4000)})}))
+  .then(function(cs){return cs.filter(function(c){return c&&c.width>=300&&c.height>=200&&c.width*c.height>=150000}).sort(function(a,b){return b.width*b.height-a.width*a.height}).slice(0,3)})})})}
+function n29ImgCanvas(o){if(!o)return null;var cv=document.createElement('canvas'),w=o.width,h=o.height;if(!w||!h)return null;cv.width=w;cv.height=h;var x=cv.getContext('2d');
+ if(o.bitmap){x.drawImage(o.bitmap,0,0);return cv}
+ if(!o.data)return null;var im=x.createImageData(w,h),d=im.data,s=o.data,n=w*h;
+ if(s.length>=n*4){d.set(s.subarray?s.subarray(0,n*4):s.slice(0,n*4))}
+ else if(s.length>=n*3){for(var i=0,j=0;i<n;i++,j+=3){d[i*4]=s[j];d[i*4+1]=s[j+1];d[i*4+2]=s[j+2];d[i*4+3]=255}}
+ else{var rb=Math.ceil(w/8);for(var y=0;y<h;y++)for(var xx=0;xx<w;xx++){var bit=(s[y*rb+(xx>>3)]>>(7-(xx&7)))&1,v=bit?255:0,k=(y*w+xx)*4;d[k]=d[k+1]=d[k+2]=v;d[k+3]=255}}
+ x.putImageData(im,0,0);return cv}
+(function(){var o=window.cnh7LerPdf;if(typeof o!=='function'||o._n29)return;
+ var w=function(b64,status){
+  var buf=b64ToU8(b64).buffer,doTexto=null;
+  return (window.impTextoPdfBruto||impTextoPdf)(buf.slice(0)).then(function(txt){var t=cnh7Parse(txt||'');t._texto=txt;doTexto=t;
+   if(cnh7Pontos(t)>=6&&!t._nomeMrz)return t;
+   return garantirPdfjs().then(function(){return pdfjsLib.getDocument({data:b64ToU8(b64)}).promise}).then(n29ImagensPdf).then(function(cs){
+    if(!cs.length)return o.apply(null,[b64,status]);
+    var junto=null,k=0;
+    function prox(){if(k>=cs.length||(junto&&cnh7Pontos(junto)>=10))return Promise.resolve(junto);var c=cs[k++];if(status)status('Lendo a CNH do PDF…');
+     return cnh7Ocr(c,status).then(function(r){junto=cnh7Junta(junto,r);return prox()},function(){return prox()})}
+    return prox().then(function(r){if(!r||cnh7Pontos(r)<3)return o.apply(null,[b64,status]);
+     /* o que o texto do PDF trouxe de exato (CPF, nº) vale mais */
+     if(doTexto&&cnh7Pontos(doTexto)>0)r=cnh7Junta(r,doTexto);return r});
+   });
+  });
+ };
+ w._n29=1;window.cnh7LerPdf=w;})();
+/* 4d. a CNH pequena dentro da foto/print (ex.: print do PDF aberto no iPhone, CNH ocupando metade da tela):
+       acha o cartão (frente e verso) pelo fundo esverdeado da CNH, recorta e amplia antes de ler. */
+function n29Recortes(fonte){
+ var fw=fonte.naturalWidth||fonte.width,fh=fonte.naturalHeight||fonte.height;if(!fw||!fh)return [];
+ var k=Math.min(1,360/Math.max(fw,fh)),w=Math.max(1,Math.round(fw*k)),h=Math.max(1,Math.round(fh*k)),cv=document.createElement('canvas');cv.width=w;cv.height=h;
+ var x=cv.getContext('2d');x.drawImage(fonte,0,0,w,h);var d;try{d=x.getImageData(0,0,w,h).data}catch(e){return []}
+ function verde(i){var r=d[i],g=d[i+1],b=d[i+2];return g>120&&g>=r+6&&g>=b+4&&!(r>235&&g>235&&b>235)}
+ var lin=new Array(h).fill(0);for(var y=0;y<h;y++)for(var xx=0;xx<w;xx++)if(verde((y*w+xx)*4))lin[y]++;
+ /* faixas de linhas com verde; buracos pequenos (faixa preta do cabeçalho, foto) não cortam o cartão */
+ var bands=[],a=-1,gap=0,G=Math.round(h*0.06);
+ for(var i=0;i<=h;i++){var on=i<h&&lin[i]>w*0.18;if(on){if(a<0)a=i;gap=0;bands.cur=i}else if(a>=0){gap++;if(gap>G||i===h){bands.push([a,bands.cur]);a=-1;gap=0}}}
+ var out=[];bands.filter(function(b){return b[1]-b[0]>=h*0.10}).sort(function(p,q){return (q[1]-q[0])-(p[1]-p[0])}).slice(0,2).forEach(function(fy){
+  var col=new Array(w).fill(0);for(var y2=fy[0];y2<=fy[1];y2++)for(var x2=0;x2<w;x2++)if(verde((y2*w+x2)*4))col[x2]++;
+  var c0=-1,c1=-1,lim=(fy[1]-fy[0]+1)*0.12;for(var j=0;j<w;j++)if(col[j]>lim){if(c0<0)c0=j;c1=j}if(c0<0||c1-c0<w*0.25)return;
+  var top=fy[0],bot=fy[1];/* sobe para pegar o cabeçalho preto do cartão (até 18% da altura dele) */top=Math.max(0,top-Math.round((bot-top)*0.18));
+  var mx=0.02*w,x0=Math.max(0,(c0-mx)/k),y0=Math.max(0,(top-2)/k),x1=Math.min(fw,(c1+1+mx)/k),y1=Math.min(fh,(bot+3)/k),cw=x1-x0,ch=y1-y0;
+  if(cw*ch>fw*fh*0.85)return;
+  var esc=Math.min(4,2200/Math.max(cw,ch),Math.sqrt(10e6/(cw*ch)));if(esc<1)esc=1;
+  var o=document.createElement('canvas');o.width=Math.round(cw*esc);o.height=Math.round(ch*esc);var ox=o.getContext('2d');ox.imageSmoothingQuality='high';ox.drawImage(fonte,x0,y0,cw,ch,0,0,o.width,o.height);out.push(o)});
+ return out}
+function n29Recorte(f){return n29Recortes(f)[0]||null}
+/* preto e branco forte (texto cinza claro e fino da CNH digital some no cinza normal) */
+function n29Binaria(c){var o=document.createElement('canvas');o.width=c.width;o.height=c.height;var x=o.getContext('2d');x.drawImage(c,0,0);
+ try{var im=x.getImageData(0,0,o.width,o.height),d=im.data,h=new Array(256).fill(0),n=d.length/4;
+  for(var i=0;i<d.length;i+=4){var g=Math.round(0.12*d[i]+0.78*d[i+1]+0.10*d[i+2]);d[i]=g;h[g]++}
+  var lo=0,hi=255,acc=0;while(lo<255&&(acc+=h[lo])<n*0.01)lo++;acc=0;while(hi>0&&(acc+=h[hi])<n*0.01)hi--;if(hi<=lo){return c}
+  var t=lo+(hi-lo)*0.84;for(var j=0;j<d.length;j+=4){var v=d[j]>t?255:0;d[j]=d[j+1]=d[j+2]=v}x.putImageData(im,0,0)}catch(e){return c}return o}
+/* validade: entre as leituras, vale a MAIOR data plausível (a validade é sempre a data mais distante da CNH) */
+function n29Validade(a,b){var hj=hoje(),lim=String(+hj.slice(0,4)+11)+hj.slice(4);var vs=[a&&a.validade,b&&b.validade].filter(function(v){return /^\d{4}-\d{2}-\d{2}$/.test(v||'')&&v<=lim});vs.sort();return vs.pop()||''}
+(function(){var o=window.cnh7Ocr;if(typeof o!=='function'||o._n29)return;
+ function bom(r){return r&&cnh7Pontos(r)>=9&&r.validade&&r.validade>=hoje()&&r.nome}
+ /* leitura rápida dos recortes: um leitor só, uma passada em cada versão (cinza e preto-e-branco) */
+ function rapido(rs,status){var fila=[];rs.forEach(function(c){fila.push(function(){return cnh7Canvas(c,0,0,0,1.35)},function(){return n29Binaria(c)})});
+  return cnh7Script(CNH7_TESS).then(function(){return Tesseract.createWorker('por',1,CNH7_OPT)}).then(function(wk){var junto=null,k=0;
+   function prox(){if(k>=fila.length||bom(junto))return Promise.resolve(junto);if(status)status('Achei a CNH na imagem — lendo…');var cv=fila[k++]();
+    return wk.recognize(cv).then(function(r){var tx=(r&&r.data&&r.data.text)||'',p=cnh7Parse(tx),v=n29Validade(junto,p);var a=junto?cnh7Pontos(junto):-1;junto=cnh7Junta(junto,p);if(v)junto.validade=v;if(!junto._texto||cnh7Pontos(junto)>a)junto._texto=tx;return prox()},function(){return prox()})}
+   return prox().then(function(r){try{wk.terminate()}catch(e){}if(r)r._giro=0;return r},function(e){try{wk.terminate()}catch(x){}throw e})})}
+ var w=function(fonte,status){var rs=[];try{rs=n29Recortes(fonte)}catch(e){rs=[]}
+  if(!rs.length)return o.apply(this,arguments);
+  return rapido(rs,status).then(function(r){if(bom(r))return r;
+   return o.call(null,fonte,status).then(function(r2){var v=n29Validade(r,r2),j=cnh7Junta(r||null,r2);if(j){if(v)j.validade=v;j._giro=(r2&&r2._giro)||0;j._texto=(r2&&r2._texto)||(r&&r._texto)}return j},function(){return r})},
+   function(){return o.call(null,fonte,status)})};
+ w._n29=1;window.cnh7Ocr=w;})();
 
 </script>
 </body>
