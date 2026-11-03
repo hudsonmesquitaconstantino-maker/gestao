@@ -1697,7 +1697,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=292; var APP_DATE='03/11/2026';
+var APP_VER=293; var APP_DATE='03/11/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -8965,7 +8965,7 @@ function vManutN3(){
   '<section class="n3passo" hidden>'+
    '<div id="n3QuemBox"><div class="n3h">Quem pagou esta manutenção?</div><div id="n3Quem"></div></div>'+
    '<div class="n3grp n3tot n3totF"><div class="n3f"><span>Total da manutenção</span><b id="mTotG">R$ 0,00</b></div></div>'+
-   '<details class="n3mais n3maisF"><summary>Ajustes do fechamento</summary><div class="n3grp"><label class="n3f"><span>Mês das peças <small>em que fechamento elas entram</small></span><input type="date" id="mPecasData" value="'+hoje()+'" onchange="mRasc();n3DesenhaPecas()"></label></div></details></section>'+
+   '<details class="n3mais n3maisF"><summary>Ajustes do fechamento</summary><div class="n3grp"><label class="n3f"><span>Mês das peças <small>em que fechamento elas entram</small></span><input type="date" id="mPecasData" value="'+hoje()+'" onchange="mRasc();n3DesenhaPecas()"></label></div></details><div id="n3UltBox"></div></section>'+
   n3PassoNav('n3m')+
  '</div>';
  setTimeout(function(){
@@ -8997,6 +8997,7 @@ function n3Zera(){MP=[];MB=[];MFROTA='';MFROTA_PK='';N3.pk='';N3.div=null;N3.bus
 
 /* ---------- 1 · CARRO ---------- */
 function n3DesenhaCarro(){
+ try{setTimeout(n3UltDesenha,0)}catch(e){}
  var box=document.getElementById('n3Carro');if(!box)return;var c=n3Car();
  if(!c){box.innerHTML='<div class="n3busca"><input id="n3Busca" placeholder="Buscar placa, carro ou motorista" autocomplete="off" value="'+esc(N3.busca)+'" oninput="N3.busca=this.value;n3ListaCarros()"></div><div class="n3grp" id="n3Lista"></div>';n3ListaCarros();return}
  box.innerHTML='<div class="n3grp"><div class="n3carro">'+plateHtml(c.placa)+'<div class="n3carroTx"><b>'+esc(tituloCarro(c))+'</b><small>'+(c.motorista?esc(primNome(c.motorista)):'sem motorista')+'</small></div><button class="n3mini" onclick="n3TrocarCarro()">Trocar</button></div></div>';
@@ -9019,7 +9020,7 @@ function n3DataMudou(){
  var i=document.getElementById('mIni'),f=document.getElementById('mFim');if(!i||!f)return;
  if(!document.getElementById('n3Varios').checked)f.value=i.value;
  var d=document.getElementById('mDias');if(d)d.innerHTML=(f.value&&f.value!==i.value)?'⏱ Carro parado <b>'+_diasTxt(i.value,f.value)+'</b> nesta manutenção':'';
- mRasc();
+ mRasc();try{n3UltDesenha()}catch(e){}
 }
 
 /* ---------- 3 e 4 · PEÇAS e MÃO DE OBRA (v210) ----------
@@ -9114,7 +9115,7 @@ function n3DesenhaItens(){
   MB.forEach(function(b,i){g+=N3.ed==='b'+i?n3EdBloco(b,i):n3LinhaBloco(b,i)});
   g+='<button type="button" class="n3itAdd" onclick="n3Novo(\'b\')">＋ Adicionar mão de obra</button></div>';eb.innerHTML=g}
  setTimeout(function(){document.querySelectorAll('.n3ed textarea').forEach(taGrow)},10);
- mTotais();try{n3QuemDesenha()}catch(e){}
+ mTotais();try{n3QuemDesenha()}catch(e){}try{n3UltDesenha()}catch(e){}
 }
 /* nomes antigos continuam funcionando (outras partes do app chamam estes) */
 function n3DesenhaPecas(){n3DesenhaItens()}
@@ -9348,7 +9349,7 @@ function e3Desenha(){
  setTimeout(function(){document.querySelectorAll('#n3e .n3ed textarea').forEach(taGrow)},10);
  var _eI=(document.getElementById('edIni')||{}).value||'',_eF=(document.getElementById('edFim')||{}).value||_eI,_eD=document.getElementById('edDias');
  if(_eD)_eD.innerHTML=_diasManut(_eI,_eF)>1?'⏱ Carro parado <b>'+_diasTxt(_eI,_eF)+'</b> nesta manutenção':'';
- edTotais();try{e3QuemDesenha()}catch(e){}
+ edTotais();try{e3QuemDesenha()}catch(e){}try{e3UltDesenha()}catch(e){}
 }
 function edDesenha(){e3Desenha()}
 function editarManut(id){
@@ -9364,7 +9365,7 @@ function editarManut(id){
    '<div class="n3dupla"><label class="n3f"><span>Início</span><input type="date" id="edIni" onchange="e3Desenha()" value="'+esc(m.dataIni||'')+'"></label>'+
    '<label class="n3f"><span>Final</span><input type="date" id="edFim" onchange="e3Desenha()" value="'+esc(m.dataFim||'')+'"></label></div>'+
    '<div class="n3info" id="edDias"></div>'+
-   '<label class="n3f"><span>Odômetro</span><input id="edOdo" inputmode="numeric" autocomplete="off" value="'+esc(m.odometro?String(m.odometro):'')+'"></label>'+
+   '<label class="n3f"><span>Odômetro</span><input id="edOdo" inputmode="numeric" autocomplete="off" oninput="e3UltDesenha()" value="'+esc(m.odometro?String(m.odometro):'')+'"></label>'+
    (cv?'<label class="n3f"><span>Fechamento financeiro <small>carro em compra e venda</small></span><select id="edFrotaFechamento"><option value=""'+(!m.frotaFechamento?' selected':'')+'>Automático ('+_rotuloFrotaFinanceira(_frotaPadraoCarro(m.carro))+')</option><option value="fabio"'+(m.frotaFechamento==='fabio'?' selected':'')+'>Frota Fábio</option><option value="hudson"'+(m.frotaFechamento==='hudson'?' selected':'')+'>Frota Hudson</option></select></label>':'')+
   '</div>'+
   '<div class="n3h">Peças <b id="edTotP">R$ 0,00</b></div><div id="edPecas"></div>'+
@@ -9372,6 +9373,7 @@ function editarManut(id){
   '<div class="n3h">Quem pagou esta manutenção?</div><div id="e3Quem"></div>'+
   '<div class="n3grp n3tot n3totF"><div class="n3f"><span>Total da manutenção</span><b id="edTotG">R$ 0,00</b></div></div>'+
   '<details class="n3mais n3maisF"><summary>Ajustes do fechamento</summary><div class="n3grp"><label class="n3f"><span>Mês das peças <small>peças sem data própria usam esta</small></span><input type="date" id="edPecasData" value="'+esc(m.dataPecasPadrao||'')+'" onchange="e3Desenha()"></label></div></details>'+
+  '<div id="e3UltBox"></div>'+
  '</div>'+
  '<div class="g2dock e3dock"><button class="btn ok g2dockMain" onclick="e3Salvar()">Salvar alterações</button><button class="btn sec" onclick="closeSheet(2)">Cancelar</button></div>';
  openSheet(h,2);
@@ -9395,6 +9397,7 @@ function n3AutoFuncao(b,inp){
 }
 /* Odômetro: mostra o último km conhecido do carro e avisa se o digitado ficou para trás */
 function n3KmInfo(){
+ try{n3UltDesenha()}catch(e){}
  var el=document.getElementById('mKmInfo'),c=n3Car(),inp=document.getElementById('mOdo');if(!el)return;
  if(!c||!(Number(c.kmUltima)>0)){el.innerHTML='';return}
  var u=Number(c.kmUltima),d=c.kmUltimaData?n3Dm(c.kmUltimaData):'',v=parseInt(String(inp&&inp.value||'').replace(/\D/g,''),10)||0;
@@ -9567,6 +9570,86 @@ function _mpdfEscolha(id,div){
   return blobB64(blob).then(function(b64){abrirPdf(b64,nome.replace(/\.pdf$/i,''),{fileName:nome,share:true,boost:2,light:true})});
  }).catch(function(e){toast('⚠️ Não consegui gerar o PDF: '+(e&&e.message?e.message:e))})
  .then(function(){window._mpdfBusy=false},function(){window._mpdfBusy=false});
+}
+
+/* v293 · ÚLTIMA TROCA DE CADA PEÇA no fim da manutenção (pedido do Hudson 03/11/2026).
+   Para cada peça lançada, mostra a troca ANTERIOR da MESMA peça neste carro (só peças compradas/trocadas,
+   não serviço do mecânico): quando foi (dias/meses), o km, quanto rodou desde então, a peça (marca) e o valor.
+   Só LÊ o histórico — não grava nem muda nada.
+   Criando: compara com todo o histórico do carro. Editando: só o que veio ANTES desta manutenção
+   (ela mesma nunca entra), então a informação continua certa quando você reabre uma manutenção antiga.
+   A peça é reconhecida pelas mesmas famílias do "Tudo que já foi trocado"; peça de lado (pneu, amortecedor,
+   pastilha…) só casa com o mesmo lado quando os dois dizem o lado. Garantia/desconto e gasto avulso não contam. */
+var UT_LADO=/^(Pneu|Amortecedor|Kit do amortecedor|Mola|Pastilha de freio|Disco de freio|Sapata de freio|Tambor de freio|Cilindro de freio|Bieleta|Balança|Pivô|Ponteira de direção|Braço axial|Cubo de roda \/ rolamento|Homocinética \/ trizeta|Coifa|Bucha da barra estabilizadora|Retrovisor|Farol \/ lanterna|Para-choque|Para-lama|Máquina de vidro|Maçaneta \/ puxador|Fechadura \/ miolo)$/;
+function _utPos(t){var l=semAcento(String(t||''));
+ var fr=/(dianteir|frontal|\bfrente\b|\bdiant\b)/.test(l),tr=/(traseir|\btras\b|\batras\b)/.test(l),es=/(esquerd|\besq\b)/.test(l),di=/(direit|\bdir\b)/.test(l);
+ return {e:fr&&!tr?'F':(tr&&!fr?'T':''),l:es&&!di?'E':(di&&!es?'D':'')}}
+function _utCompat(a,b){return !(a.e&&b.e&&a.e!==b.e)&&!(a.l&&b.l&&a.l!==b.l)}
+/* "graxa" citada no meio de outra peça ("kit … e graxa") não transforma a peça em "Graxa" */
+function _utFams(d){var f=_familiasPeca(d,'');
+ if(f.indexOf('Graxa')>=0&&!/^\W*(?:\d+\s*\w{0,6}\s+)?(?:de\s+)?graxa/i.test(semAcento(d)))f=_familiasPeca(String(d).replace(/graxa/gi,' ').replace(/\s+e\s+(?=\s|$)/g,' ').replace(/\s{2,}/g,' ').trim(),'');
+ return f}
+function _utNum(v){return typeof v==='number'?(isFinite(v)?v:0):parseBRL(v)}
+function _utTempo(d){
+ if(d<31)return d+' dia'+(d>1?'s':'');
+ var m=Math.floor(d/30.44),a=Math.floor(m/12),r=m%12;
+ return (a?a+' ano'+(a>1?'s':'')+(r?' e '+r+' '+(r>1?'meses':'mês'):''):m+' '+(m>1?'meses':'mês'))+' ('+d+' dias)';
+}
+function ultimasTrocasPecas(pk,pecas,o){
+ o=o||{};
+ var hist=manutsDoCarro(pk).filter(function(m){var dt=_dtManut(m);return m.id!==o.excl&&!_ehGarantia(m)&&!_ehAvulso(m)&&(!o.data||!dt||dt<=o.data)})
+  .map(function(m){return {m:m,ps:(m.pecas||[]).filter(function(p){return p&&String(p.desc||'').trim()})
+   .map(function(p){return {p:p,f:_utFams(p.desc),pos:_utPos(p.desc)}})}});
+ var out=[],vistos={};
+ (pecas||[]).forEach(function(p,pi){
+  var d=String(p&&p.desc||'').trim();if(!d)return;var pos=_utPos(d);
+  _utFams(d).forEach(function(f){
+   var lado=UT_LADO.test(f),k=f+'|'+(lado?pos.e+pos.l:'');if(vistos[k])return;vistos[k]=1;
+   var ach=null;
+   for(var i=hist.length-1;i>=0&&!ach;i--){
+    var ls=hist[i].ps.filter(function(x){return x.f.indexOf(f)>=0&&(!lado||_utCompat(pos,x.pos))});
+    if(ls.length)ach={m:hist[i].m,ls:ls};
+   }
+   var lt=lado?_ladoTexto(d):'';
+   if(lt&&/^(Pastilha|Mola|Sapata|Bieleta|Balança|Ponteira|Coifa|Bucha|Máquina|Maçaneta|Fechadura|Homocinética)/.test(f))lt=lt.replace(/iro\b/g,'ira').replace(/erdo\b/,'erda').replace(/eito\b/,'eita');
+   /* a mesma linha que vira duas peças com a MESMA troca anterior ("óleo + filtro de óleo") fica numa linha só */
+   var sig=pi+'|'+(ach?ach.m.id+':'+ach.ls.map(function(x){return x.p.desc}).join('¦'):'-')+'|'+lt,u=out[out.length-1];
+   if(u&&u.sig===sig){u.fam+=' + '+f;return}
+   out.push({fam:f,lado:lt,ant:ach,sig:sig});
+  });
+ });
+ return out;
+}
+function ultimasTrocasHtml(pk,pecas,o){
+ o=o||{};if(!pk||!S.carros[pk])return '';
+ var rs=ultimasTrocasPecas(pk,pecas,o);if(!rs.length)return '';
+ var hj=hoje(),ref=o.data||hj,agora=ref>=hj;
+ var h='<div class="n3h">'+(o.excl?'Troca anterior destas peças':'Última troca destas peças')+'</div><div class="n3grp utLista">';
+ rs.forEach(function(r){
+  var tit='<b>'+esc(r.fam)+(r.lado?' <span class="utLado">'+esc(r.lado)+'</span>':'')+'</b>';
+  if(!r.ant){h+='<div class="utIt utNada">'+tit+'<span></span><small>Nenhuma troca anterior registrada neste carro</small></div>';return}
+  var m=r.ant.m,dt=_dtManut(m),odo=_odoManut(m),dias=dt?diasEntre(dt,ref):-1;
+  var val=0,lojas=[],descs=[];
+  r.ant.ls.forEach(function(x){val+=_utNum(x.p.valor);var lj=String(x.p.loja||'').trim();if(lj&&lojas.indexOf(lj)<0)lojas.push(lj);descs.push(String(x.p.desc).trim())});
+  var ws=dt?String(diaSemanaBR(dt)||'').slice(0,3):'';
+  var quando=dt?(dias>0?(agora?'há '+_utTempo(dias):_utTempo(dias)+' antes'):'no mesmo dia')+' · '+(ws?ws+' ':'')+n3Dm(dt):'sem data';
+  var km=odo>0?fmtKm(odo)+' km'+(o.odo>odo?' · rodou '+fmtKm(o.odo-odo)+' km desde então':''):'';
+  var tap=!o.excl&&S.manutencoes[m.id];
+  h+='<div class="utIt'+(tap?' tap" onclick="verManut(\''+m.id+'\')':'')+'">'+tit+'<span class="utV">'+(val>0?'R$ '+fmtBRL(val):'')+(tap?' <i class="utCh">›</i>':'')+'</span>'+
+   '<small>'+esc(quando)+'</small>'+(km?'<small>'+esc(km)+'</small>':'')+
+   '<small class="utPeca">'+esc(descs.join(' + '))+(lojas.length?' <span class="utLoja">· '+esc(lojas.join(', '))+'</span>':'')+'</small></div>';
+ });
+ return h+'</div>';
+}
+function n3UltDesenha(){
+ var b=document.getElementById('n3UltBox');if(!b)return;
+ var g=function(id){return String((document.getElementById(id)||{}).value||'')};
+ b.innerHTML=N3.pk?ultimasTrocasHtml(N3.pk,MP,{data:g('mFim')||g('mIni'),odo:parseInt(g('mOdo').replace(/\D/g,''),10)||0}):'';
+}
+function e3UltDesenha(){
+ var b=document.getElementById('e3UltBox'),m=S.manutencoes[_edMid];if(!b)return;if(!m){b.innerHTML='';return}
+ var g=function(id){return String((document.getElementById(id)||{}).value||'')};
+ b.innerHTML=ultimasTrocasHtml(m.carro,EP,{excl:m.id,data:g('edFim')||g('edIni'),odo:parseInt(g('edOdo').replace(/\D/g,''),10)||0});
 }
 
 /* v217 · "há quantos dias" ao lado da data de cada manutenção (pedido do Hudson 13/10/2026):
@@ -13931,6 +14014,19 @@ function listaAvulsos(){
 </script>
 <style id="g26css">
 .n26ok,.n26no{margin:14px 16px 4px;padding:10px 12px;border-radius:12px;font-size:13.5px;line-height:1.4}.n26ok{background:#EAF7EF;color:#14532D}.n26no{background:#FFF6E8;color:#7A4A00}
+/* v293 · última troca de cada peça (fim da manutenção) */
+.utLista{margin-bottom:8px}
+.utIt{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:10px;align-items:baseline;padding:10px 12px 11px 16px;border-bottom:.5px solid var(--bord);font-family:var(--sf)}
+.utIt:last-child{border-bottom:0}
+.utIt.tap{cursor:pointer}.utIt.tap:active{background:#F2F3F5}
+.utIt>b{font-size:15px;font-weight:600;color:var(--tx)}
+.utLado{font-weight:400;color:var(--tx2)}
+.utV{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;color:var(--tx)}
+.utCh{font-style:normal;font-weight:400;color:#A3A8AF;margin-left:4px}
+.utIt small{grid-column:1/-1;display:block;font-size:13px;color:var(--tx2);margin-top:2px;line-height:1.35}
+.utIt small.utPeca{color:var(--tx);margin-top:4px}
+.utLoja{color:var(--tx2)}
+.utNada small{color:#A3A8AF}
 </style>
 <script>
 /* ===================== v286 — PROTEÇÃO DOS DADOS (Hudson 28-29/10/2026) =====================
