@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="GuimasCar Gestão">
-<meta name="theme-color" content="#0D1117">
+<meta name="theme-color" content="#000000">
 <link rel="apple-touch-icon" href="icone-gestao.png.PNG">
 <style>
 :root{--bg:#0D1117;--card:#161C24;--card2:#1D2530;--bord:#2A3442;--tx:#E6EDF3;--tx2:#9AA3AE;--ac:#2EA8FF;--ok:#2FBF71;--warn:#E8B93D;--red:#E5534B;--placa:#0A3AA8}
@@ -1697,7 +1697,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=298; var APP_DATE='03/11/2026';
+var APP_VER=299; var APP_DATE='03/11/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -14697,5 +14697,70 @@ var PIX_CFG={sel:'input[inputmode="decimal"]'};
 })();
 
 </script>
+<style id="modoEscuro">
+/* ===================== MODO ESCURO (padrão iPhone) — Hudson 03/11/2026 =====================
+   Camada única no fim: só cor/fundo/sombra. Não mexe em dado, função nem layout. Para voltar ao claro, basta tirar este bloco. */
+:root{color-scheme:dark;
+ --bg:#000000;--card:#1C1C1E;--card2:#2C2C2E;--bord:#38383A;--tx:#F5F5F7;--tx2:#A1A1A8;--ac:#F0A02E;--ok:#30D158;--warn:#FFB340;--red:#FF453A;
+ --v99-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 8px 24px rgba(0,0,0,.45);
+ --v102-surface:#1C1C1E;--v102-soft:#2C2C2E;--v102-line:#38383A;--v102-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 10px 30px rgba(0,0,0,.5);--v102-deep:0 18px 48px rgba(0,0,0,.6);
+ --v105-ink:#F5F5F7;--v105-muted:#A1A1A8;--v105-line:#38383A;--v105-soft:#2C2C2E;--v105-amber:#F0A02E;--v105-green:#30D158;
+ --n24verde:#30D158;--n24ambar:#F0A02E;--n24verm:#FF453A;--n24mut:#A1A1A8;
+ --g20bg:#000000;--g20sh:inset 0 1px 0 rgba(255,255,255,.05),0 10px 28px rgba(0,0,0,.5)}
+html:not(.gsplPre),html:not(.gsplPre) body,html:not(.gsplPre) body.locked{background:#000!important;color:var(--tx)}
+/* superfícies */
+:root:is(#escA,html) body:is(#escB,body)>header{background:rgba(0,0,0,.80)!important;-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom:.5px solid rgba(255,255,255,.08)!important;box-shadow:none!important}
+:root:is(#escA,html) body:is(#escB,body) nav,:root:is(#escA,html) body:is(#escB,body) nav.g2nav{background:rgba(28,28,30,.86)!important;-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-color:rgba(255,255,255,.08)!important;box-shadow:0 -1px 0 rgba(255,255,255,.05),0 12px 32px rgba(0,0,0,.6)!important}
+:root:is(#escA,html) body:is(#escB,body) .hbtn{background:#1C1C1E!important;border-color:#2C2C2E!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 4px 12px rgba(0,0,0,.4)!important}
+:root:is(#escA,html) body:is(#escB,body) .sheet{background:#0E0E10!important;color:var(--tx)}
+:root:is(#escA,html) body:is(#escB,body) .shx{background:#2C2C2E!important;color:#F5F5F7!important;box-shadow:none!important}
+:root:is(#escA,html) body:is(#escB,body) .n4row,:root:is(#escA,html) body:is(#escB,body) .n4grp,:root:is(#escA,html) body:is(#escB,body) .v102panel,:root:is(#escA,html) body:is(#escB,body) .v102maintTop,:root:is(#escA,html) body:is(#escB,body) .v102grandTotal,:root:is(#escA,html) body:is(#escB,body) .n3quem>button,:root:is(#escA,html) body:is(#escB,body) .n3ed,:root:is(#escA,html) body:is(#escB,body) #n3mNav,:root:is(#escA,html) body:is(#escB,body) .n3nav{background:#1C1C1E!important}
+:root:is(#escA,html) body:is(#escB,body) .v102sheetIcon{background:#2C2C2E!important}
+:root:is(#escA,html) body:is(#escB,body) .haChip{background:#2C2C2E!important;color:#A1A1A8!important}
+:root:is(#escA,html) body:is(#escB,body) .g20segmk{background:#636366!important;box-shadow:0 3px 8px rgba(0,0,0,.35)!important}
+:root:is(#escA,html) body:is(#escB,body) .n4frota>button,:root:is(#escA,html) body:is(#escB,body) .g2seg>*,:root:is(#escA,html) body:is(#escB,body) .v99seg>*{color:#A1A1A8!important}
+:root:is(#escA,html) body:is(#escB,body) .n4frota>button.on{color:#F5F5F7!important}
+/* campos */
+:root:is(#escA,html) body:is(#escB,body) input,:root:is(#escA,html) body:is(#escB,body) select,:root:is(#escA,html) body:is(#escB,body) textarea{background:#2C2C2E!important;color:#F5F5F7!important;border-color:#3A3A3C!important;caret-color:var(--ac)}
+:root:is(#escA,html) body:is(#escB,body) input::placeholder,:root:is(#escA,html) body:is(#escB,body) textarea::placeholder{color:#6E6E76!important}
+:root:is(#escA,html) body:is(#escB,body) input[type=checkbox]{background:#39393D!important}
+:root:is(#escA,html) body:is(#escB,body) input[type=checkbox]:checked{background:#30D158!important}
+:root:is(#escA,html) body:is(#escB,body) input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.7}
+:root:is(#escA,html) body:is(#escB,body) label.n3f>span,:root:is(#escA,html) body:is(#escB,body) .n3f>span{color:#A1A1A8!important}
+/* avisos e etiquetas coloridas: fundo tingido, texto claro da mesma cor */
+:root:is(#escA,html) body:is(#escB,body) .n26no{background:rgba(240,160,46,.14)!important;color:#FFC46B!important}
+:root:is(#escA,html) body:is(#escB,body) .n24chip.a,:root:is(#escA,html) body:is(#escB,body) .n4cobrar,:root:is(#escA,html) body:is(#escB,body) em.a{background:rgba(240,160,46,.18)!important;color:#FFC46B!important}
+:root:is(#escA,html) body:is(#escB,body) em.r{background:rgba(255,69,58,.18)!important;color:#FF8A80!important}
+:root:is(#escA,html) body:is(#escB,body) .n3h,:root:is(#escA,html) body:is(#escB,body) .n3top p,:root:is(#escA,html) body:is(#escB,body) label.n3f>span small,:root:is(#escA,html) body:is(#escB,body) .n3f>span small{color:#8E8E93!important}
+:root:is(#escA,html) body:is(#escB,body) .n3h b{color:#F5F5F7!important}
+:root:is(#escA,html) body:is(#escB,body) #syncDot{box-shadow:0 0 0 2px #000!important}
+:root:is(#escA,html) body:is(#escB,body) .g2barL{background:#2C2C2E!important}
+:root:is(#escA,html) body:is(#escB,body) .n3grp,:root:is(#escA,html) body:is(#escB,body) .n3lista,:root:is(#escA,html) body:is(#escB,body) .utLista{border-color:#2C2C2E!important}
+:root:is(#escA,html) body:is(#escB,body) .n3quem button:not(.on)>i{border-color:#636366!important}
+:root:is(#escA,html) body:is(#escB,body) .v102service{border-color:#2C2C2E!important}
+:root:is(#escA,html) body:is(#escB,body) .v102settings details,:root:is(#escA,html) body:is(#escB,body) .v102settings>details,:root:is(#escA,html) body:is(#escB,body) .v102sysStats>div,:root:is(#escA,html) body:is(#escB,body) .v102empty,:root:is(#escA,html) body:is(#escB,body) .v102card,:root:is(#escA,html) body:is(#escB,body) .v102tile{background:#1C1C1E!important;border-color:#2C2C2E!important}
+:root:is(#escA,html) body:is(#escB,body) .v102setIcon,:root:is(#escA,html) body:is(#escB,body) .v102roundAction{background:#2C2C2E!important}
+:root:is(#escA,html) body:is(#escB,body) .v102sectionTitle>b{background:#2C2C2E!important;color:#A1A1A8!important}
+/* cores escritas direto no texto do app (style="…") */
+:root:is(#escA,html) body:is(#escB,body) [style*="color:#c0392b" i],:root:is(#escA,html) body:is(#escB,body) [style*="color:#b42318" i],:root:is(#escA,html) body:is(#escB,body) [style*="color:#c33" i],:root:is(#escA,html) body:is(#escB,body) [style*="color:#b33" i]{color:#FF6B5E!important}
+:root:is(#escA,html) body:is(#escB,body) [style*="color:#c77a16" i],:root:is(#escA,html) body:is(#escB,body) [style*="color:#b54708" i]{color:#F0A02E!important}
+:root:is(#escA,html) body:is(#escB,body) [style*="color:#2e7d5b" i]{color:#30D158!important}
+:root:is(#escA,html) body:is(#escB,body) [style*="background:#fff" i],:root:is(#escA,html) body:is(#escB,body) [style*="background:#f4f6f8" i]{background:#1C1C1E!important}
+:root:is(#escA,html) body:is(#escB,body) [style*="background:#fff3f3" i]{background:rgba(255,69,58,.14)!important}
+:root:is(#escA,html) body:is(#escB,body) .sub b{color:inherit}
+/* painéis que ainda eram claros */
+:root:is(#escA,html) body:is(#escB,body) .n24mot>div,:root:is(#escA,html) body:is(#escB,body) .n24st,:root:is(#escA,html) body:is(#escB,body) .n24grp,:root:is(#escA,html) body:is(#escB,body) .cnh7add,:root:is(#escA,html) body:is(#escB,body) .v102info,:root:is(#escA,html) body:is(#escB,body) .orPrev{background:#1C1C1E!important;border-color:#2C2C2E!important;color:#F5F5F7!important}
+:root:is(#escA,html) body:is(#escB,body) .n24stB,:root:is(#escA,html) body:is(#escB,body) .n24add>button{background:#2C2C2E!important;color:#F5F5F7!important;border-color:#3A3A3C!important}
+:root:is(#escA,html) body:is(#escB,body) .n24stT,:root:is(#escA,html) body:is(#escB,body) .n24mot>div b,:root:is(#escA,html) body:is(#escB,body) .n24mot>div{color:#F5F5F7!important}
+:root:is(#escA,html) body:is(#escB,body) .n24mot p,:root:is(#escA,html) body:is(#escB,body) .orProx small,:root:is(#escA,html) body:is(#escB,body) .v102info{color:#A1A1A8!important}
+:root:is(#escA,html) body:is(#escB,body) .orProx{background:rgba(240,160,46,.12)!important;border-color:rgba(240,160,46,.35)!important;color:#FFC46B!important}
+:root:is(#escA,html) body:is(#escB,body) .n3alertaBox,:root:is(#escA,html) body:is(#escB,body) .n3alertaBox b,:root:is(#escA,html) body:is(#escB,body) .n3info.n3alertaBox>b{background:rgba(240,160,46,.12)!important;color:#FFC46B!important}
+:root:is(#escA,html) body:is(#escB,body) .n3alertaBox b{background:none!important}
+:root:is(#escA,html) body:is(#escB,body) .orChip:not(.on){background:#2C2C2E!important;border-color:#3A3A3C!important;color:#F5F5F7!important}
+:root:is(#escA,html) body:is(#escB,body) .btn.sec,:root:is(#escA,html) body:is(#escB,body) .btn.mini:not(.ok):not(.red){background:#2C2C2E!important;color:#F5F5F7!important;border-color:#3A3A3C!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)!important}
+:root:is(#escA,html) body:is(#escB,body) .btn.red:not(.ok){background:rgba(255,69,58,.16)!important;color:#FF6B5E!important;border-color:transparent!important}
+:root:is(#escA,html) body:is(#escB,body) .n25seg button.on{background:#636366!important;color:#F5F5F7!important}
+
+</style>
 </body>
 </html>

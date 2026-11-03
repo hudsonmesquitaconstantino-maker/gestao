@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Multas da Frota</title>
 <meta name="app" content="guimas-multas">
-<meta name="theme-color" content="#F2F3F5">
+<meta name="theme-color" content="#000000">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Multas">
@@ -2517,5 +2517,35 @@ var PIX_CFG={"sel": "input[inputmode=\"decimal\"]"};
 })();
 
 </script>
+<style id="modoEscuro">
+/* ===================== MODO ESCURO (padrão iPhone) — Hudson 03/11/2026 =====================
+   Camada única no fim do app: só cor, fundo e sombra. Não mexe em dado, função nem layout.
+   Paleta igual em todos os apps: fundo preto, cartões #1C1C1E, campos #2C2C2E, texto branco/cinza, âmbar, verde, vermelho do iOS. */
+:root:is(#escA,html):not(.gsplPre),:root:is(#escA,html):not(.gsplPre) body:is(#escB,body){background:#000!important;color:#F5F5F7}
+:root:is(#escA,html) body:is(#escB,body) input,:root:is(#escA,html) body:is(#escB,body) select,:root:is(#escA,html) body:is(#escB,body) textarea{color:#F5F5F7!important;border-color:#3A3A3C!important;caret-color:#F0A02E}
+:root:is(#escA,html) body:is(#escB,body) input::placeholder,:root:is(#escA,html) body:is(#escB,body) textarea::placeholder{color:#6E6E76!important}
+:root:is(#escA,html) body:is(#escB,body) input[type=date]::-webkit-calendar-picker-indicator,:root:is(#escA,html) body:is(#escB,body) input[type=month]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.7}
+/* placa continua placa de verdade: branca, letra preta, faixa azul */
+:root:is(#escA,html) body:is(#escB,body) .plate{background:#F2F2F2!important;border-color:#1b1d22!important}
+:root:is(#escA,html) body:is(#escB,body) .plate b,:root:is(#escA,html) body:is(#escB,body) .plate .num,:root:is(#escA,html) body:is(#escB,body) .plate input{color:#111!important;background:transparent!important}
+:root:is(#escA,html) body:is(#escB,body) .plate i,:root:is(#escA,html) body:is(#escB,body) .plate .top{background:#174A8C!important;color:#fff!important}
+:root:is(#escA,html) body:is(#escB,body) .pl{background:#F2F2F2!important;color:#111!important;border-color:#1b1d22!important}
+
+:root{color-scheme:dark;--bg:#000000;--card:#1C1C1E;--ink:#F5F5F7;--mut:#A1A1A8;--line:#2C2C2E;--soft:#2C2C2E;
+ --amber:#F0A02E;--amber-s:rgba(240,160,46,.14);--green:#30D158;--green-s:rgba(48,209,88,.14);--red:#FF6B5E;--red-s:rgba(255,69,58,.14);--blue:#64A8FF;
+ --g21sh:inset 0 1px 0 rgba(255,255,255,.05),0 10px 28px rgba(0,0,0,.5);--g21bg:#000000}
+:root:is(#escA,html) body:is(#escB,body) header.afHead{background:rgba(0,0,0,.82)!important;-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-color:rgba(255,255,255,.08)!important}
+:root:is(#escA,html) body:is(#escB,body) .g21segmk{background:#636366!important}
+:root:is(#escA,html) body:is(#escB,body) .fchip.on{background:#F5F5F7!important;color:#000!important;border-color:#F5F5F7!important}
+:root:is(#escA,html) body:is(#escB,body) .chip,:root:is(#escA,html) body:is(#escB,body) .fchip:not(.on){background:#2C2C2E!important;color:#F5F5F7!important;border-color:#3A3A3C!important}
+:root:is(#escA,html) body:is(#escB,body) .aviso,:root:is(#escA,html) body:is(#escB,body) .aviso span{background:rgba(240,160,46,.12)!important;color:#FFC46B!important;border-color:rgba(240,160,46,.3)!important}
+:root:is(#escA,html) body:is(#escB,body) .aviso span{background:none!important}
+:root:is(#escA,html) body:is(#escB,body) .aviso .btn.sm{background:#2C2C2E!important;color:#FFC46B!important}
+:root:is(#escA,html) body:is(#escB,body) .bar{background:#2C2C2E!important}
+:root:is(#escA,html) body:is(#escB,body) .nmBusca,:root:is(#escA,html) body:is(#escB,body) .mcF input,:root:is(#escA,html) body:is(#escB,body) .dlg-in input{background:#2C2C2E!important}
+:root:is(#escA,html) body:is(#escB,body) .btn.grn{background:#248A3D!important;color:#fff!important;border-color:transparent!important}
+:root:is(#escA,html) body:is(#escB,body) .fchip.on{color:#000!important}
+
+</style>
 </body>
 </html>
