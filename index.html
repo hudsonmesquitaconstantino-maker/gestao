@@ -1697,7 +1697,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=297; var APP_DATE='03/11/2026';
+var APP_VER=298; var APP_DATE='03/11/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -13623,6 +13623,46 @@ function n24MotAbre(pk){closeSheet(2);window._fichaTab='contrato';window._fichaT
  w._n24m=1;window.vMais=w;})();
 try{if(typeof TAB!=='undefined'&&TAB===6&&S)render()}catch(e){}
 
+/* ---------- v298: QUILOMETRAGEM DA FROTA (Hudson 03/11/2026) ----------
+   Igual à seção Motoristas: lista todos os carros com o último km registrado, do MAIOR para o MENOR,
+   com a data em que foi registrado (e há quanto tempo), a média de km/dia e a estimativa de hoje.
+   Só lê; tocar abre a ficha do carro. */
+var N25KM={f:'todos'};
+function n25KmLista(){
+ return Object.keys(S.carros||{}).map(function(pk){var c=S.carros[pk];return {pk:pk,c:c,km:Number(c.kmUltima||c.kmAtual)||0,dt:c.kmUltimaData||''}})
+  .filter(function(x){if(N25KM.f==='fabio')return !x.c.meuCarro&&x.c.status!=='pessoal';if(N25KM.f==='hudson')return !!x.c.meuCarro&&x.c.status!=='pessoal';return true})
+  .sort(function(a,b){var pa=a.c.status==='pessoal'?1:0,pb=b.c.status==='pessoal'?1:0;return (pa-pb)||(b.km-a.km)||String(a.c.nome||'').localeCompare(String(b.c.nome||''))});
+}
+function n25KmFiltro(f){N25KM.f=f;n25Km()}
+function n25Km(){
+ var l=n25KmLista(),hj=hoje();
+ var seg=[['todos','Todos'],['fabio','Frota Fábio'],['hudson','Frota Hudson']];
+ var H='<div class="g2sheetH">Quilometragem</div><div class="sub" style="margin:-4px 2px 10px">'+l.length+' carro'+(l.length===1?'':'s')+' · do maior km para o menor. Tocar abre a ficha.</div>'+
+  '<div class="n25seg">'+seg.map(function(x){return '<button class="'+(N25KM.f===x[0]?'on':'')+'" onclick="n25KmFiltro(\''+x[0]+'\')">'+x[1]+'</button>'}).join('')+'</div><div class="n4grp n25kmL">';
+ if(!l.length)H+='<div class="n4vazio">Nenhum carro.</div>';
+ l.forEach(function(x){
+  var c=x.c,dias=x.dt?diasEntre(x.dt,hj):-1,ws=x.dt?String(diaSemanaBR(x.dt)||'').slice(0,3):'',kd=_kmDia(x.pk);
+  var quando=x.dt?(ws?ws+' ':'')+n24Dm2(x.dt)+'/'+x.dt.slice(2,4)+(dias>0?' · há '+dias+' dia'+(dias>1?'s':''):' · hoje'):'sem data do km';
+  var velho=dias>30||!x.dt;
+  var est=(kd&&dias>0&&x.km)?'≈ '+fmtKm(kd)+' km/dia · hoje ≈ '+fmtKm(x.km+kd*dias)+' km':(kd?'≈ '+fmtKm(kd)+' km/dia':'');
+  var mot=c.status==='pessoal'?'uso pessoal':(c.motorista?primNome(c.motorista):'sem motorista');
+  H+='<div class="n4row" onclick="n25KmAbre(\''+x.pk+'\')">'+plateHtml(c.placa||x.pk)+'<div class="n4tx"><b>'+esc(tituloCarro(c))+'</b><small>'+esc(mot)+'<br><span'+(velho?' class="n25velho"':'')+'>'+esc(quando)+'</span>'+(est?'<br>'+esc(est):'')+'</small></div>'+
+   '<span class="n4dias"><b>'+(x.km?fmtKm(x.km):'—')+'</b><small>km</small></span></div>';
+ });
+ H+='</div>';
+ openSheet(H,2);
+}
+function n25KmAbre(pk){closeSheet(2);ficha(pk)}
+(function(){var o=window.vMais;if(typeof o!=='function'||o._n25k)return;
+ var w=function(){var h=o.apply(this,arguments);
+  try{var mk='onclick="n24Motoristas()"',i=h.indexOf(mk);if(i>=0){var j=h.indexOf('</button>',i);if(j>=0){j+='</button>'.length;
+   var n=Object.keys(S.carros||{}).length;
+   var b='<button class="g2opt" onclick="n25Km()"><span class="g2ic">'+G2I.carro+'</span><span class="g2optTx"><b>Quilometragem</b><small>km de cada carro, do maior para o menor · '+n+' carros</small></span>'+G2I.chev+'</button>';
+   h=h.slice(0,j)+b+h.slice(j)}}}catch(e){}
+  return h};
+ w._n25k=1;window.vMais=w;})();
+try{if(typeof TAB!=='undefined'&&TAB===6&&S)render()}catch(e){}
+
 /* ---------- v285: NOME DO DOCUMENTO × APELIDO (Hudson 28/10: no documento é um nome, mas chamam por outro) ----------
    O contrato guarda o nome como está no documento. O apelido ("como a gente chama") fica em ct.apelido, em todos os
    contratos do mesmo motorista, e é o que aparece no lugar do primeiro nome em todo o app (lista, ficha, mensagens, Semanal, Multas). */
@@ -14129,6 +14169,11 @@ function listaAvulsos(){
 .utNada small{color:#A3A8AF}
 .utIt small.utNota{color:#B7791A;font-size:12.5px;margin-top:4px}
 .utIt small.fhGap{color:var(--tx2)}
+.n25velho{color:#B7791A;font-weight:600}
+.n25kmL .n4tx small{line-height:1.4;white-space:normal!important;overflow:visible!important}
+.n25seg{display:grid;grid-template-columns:repeat(3,1fr);background:var(--card2);border-radius:11px;padding:2px;margin:0 0 12px}
+.n25seg button{border:0;background:none;border-radius:9px;min-height:36px;font:600 14px var(--sf);color:var(--tx2)}
+.n25seg button.on{background:var(--card);color:var(--tx);box-shadow:0 1px 3px rgba(17,24,39,.14)}
 .fhBusca{margin-top:4px}
 </style>
 <script>
