@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Multas">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icone-180.png">
 <link rel="icon" type="image/png" href="icone-192.png">
@@ -2576,6 +2576,8 @@ html.af body>.afBar{background-color:rgba(28,28,30,0.74)!important}
 :root:is(#escA,html) body:is(#escB,body) .plate b,:root:is(#escA,html) body:is(#escB,body) .plate .num,:root:is(#escA,html) body:is(#escB,body) .plate input{color:#111!important;background:transparent!important}
 :root:is(#escA,html) body:is(#escB,body) .plate i,:root:is(#escA,html) body:is(#escB,body) .plate .top{background:#174A8C!important;color:#fff!important}
 :root:is(#escA,html) body:is(#escB,body) .pl{background:#F2F2F2!important;color:#111!important;border-color:#1b1d22!important}
+/* faixa do relógio: o iPhone pinta a faixa com a cor desta tirinha fixa (#gsTinta) — agora preta como o app */
+:root:is(#escA,html) #gsTinta,:root:is(#escA,html).g21jan #gsTinta{background:#000!important}
 
 :root{color-scheme:dark;--bg:#000000;--card:#1C1C1E;--ink:#F5F5F7;--mut:#A1A1A8;--line:#2C2C2E;--soft:#2C2C2E;
  --amber:#F0A02E;--amber-s:rgba(240,160,46,.14);--green:#30D158;--green-s:rgba(48,209,88,.14);--red:#FF6B5E;--red-s:rgba(255,69,58,.14);--blue:#64A8FF;
