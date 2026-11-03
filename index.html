@@ -1697,7 +1697,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=296; var APP_DATE='03/11/2026';
+var APP_VER=297; var APP_DATE='03/11/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -3784,6 +3784,8 @@ function _fichaTabHtml(pk,T){
   /* v182: peças trocadas (bomba d'água, embreagem, alternador…) logo no topo do Histórico, abertas */
   var COMPS=[['vela','Vela'],['cabos','Cabos de vela'],['embreagem','Embreagem'],['bateria','Bateria'],['alternador','Alternador'],['arranque','Arranque'],['freios','Freios (pastilha)'],['ventoinha','Ventoinha'],['radiador','Radiador'],['caixaDir','Caixa de direção'],['bombaAgua','Bomba d\'água'],['motor','Motor (cabeçote/bloco)']];
   if(!c.temCorreia)COMPS.unshift(['comando','Corrente de comando']);
+  /* v297: lupa dentro do carro — achar uma peça/serviço só deste carro, da troca mais recente para trás */
+  h+='<div class="g2busca fhBusca"><span aria-hidden="true">🔎</span><input id="fhQ" type="search" autocomplete="off" autocorrect="off" placeholder="Buscar peça ou serviço neste carro" oninput="fhBusca(\''+pk+'\',this.value)"></div><div id="fhRes"></div><div id="fhResto">';
   h+='<div class="g2sub" id="g2Pecas"><span>Peças trocadas</span><button class="g2link" onclick="editarTrocas(\''+pk+'\')">Corrigir</button></div><div class="card g2pecas" style="margin:0 0 8px">';
   COMPS.forEach(function(par){var u=(c.ultTrocas||{})[par[0]];
    var val=(u&&(u.km||u.data)?((u.km?fmtKm(u.km)+' km':'')+(u.km&&u.data?' · ':'')+(u.data?dataBR(u.data)+_haCurto(u.data):'')):'—');
@@ -3794,6 +3796,7 @@ function _fichaTabHtml(pk,T){
   h+=grupoCatalogo(pk);
   h+='<div class="g2sub"><span>Manutenções</span><span>'+mans.length+'</span></div>';
   h+=mans.length?'<div class="g2list">'+mans.map(_g2ManRow).join('')+'</div>':'<div class="g2vazio">Nenhuma manutenção registrada.</div>';
+  h+='</div>';
  }else if(T==='contrato'){
   var ct=c.contratoVigenteId?S.contratos[c.contratoVigenteId]:null;if(ct&&ct.tipo==='venda')ct=null;
   var vendas=Object.keys(S.contratos).map(function(k){return S.contratos[k]}).filter(function(x){return x.carro===pk&&x.tipo==='venda'});
@@ -9705,6 +9708,50 @@ function e3UltDesenha(){
  b.innerHTML=ultimasTrocasHtml(m.carro,EP,{blocos:EB,excl:m.id,data:g('edFim')||g('edIni'),odo:parseInt(g('edOdo').replace(/\D/g,''),10)||0});
 }
 
+/* v297 · LUPA NO HISTÓRICO DO CARRO (pedido do Hudson 03/11/2026): digita a peça ou o serviço e vê
+   todas as vezes neste carro, da mais recente para a mais antiga, com data, há quanto tempo, km,
+   o que foi (peça com loja e valor, ou serviço) e quanto rodou entre uma troca e a anterior.
+   Procura no texto das peças e dos serviços e também pelo nome da peça ("óleo" acha "3 litros 5w30…"). Só lê. */
+function _fhNz(t){return semAcento(String(t||'')).replace(/[\u2018\u2019'`\u00b4]/g,'').replace(/[^a-z0-9]+/g,' ').trim()}
+function _fhTok(q){return _fhNz(q).split(' ').filter(Boolean).map(function(w){return w.length>4&&/s$/.test(w)?w.slice(0,-1):w})}
+function fhResultados(pk,q){
+ var tk=_fhTok(q);if(!tk.length)return [];
+ /* a 1ª palavra é a peça; as outras (lado, marca…) podem estar na peça OU no serviço da mesma manutenção
+    ("pneu traseiro" acha a peça "1 pneu meia vida…" cujo serviço diz "traseiro") */
+ var alvo=function(txt,ctx){return _fhNz(txt)+' '+_fhNz(_familiasPeca(txt,ctx||'').join(' '))};
+ var out=[];
+ manutsDoCarro(pk).forEach(function(m){if(_ehGarantia(m)||_ehAvulso(m))return;
+  var ps=(m.pecas||[]).filter(function(p){return p&&String(p.desc||'').trim()&&alvo(p.desc,'').indexOf(tk[0])>=0});
+  var sv=[];(m.blocos||[]).forEach(function(b){var a=b&&b.servicos;(Array.isArray(a)?a:String(a||'').split('\n')).forEach(function(x){x=String(x||'').trim();if(x&&alvo(x,b.titulo).indexOf(tk[0])>=0)sv.push({txt:x,nome:String(b.nome||'').trim(),ctx:b.titulo})})});
+  if(!ps.length&&!sv.length)return;
+  var junto=ps.map(function(p){return alvo(p.desc,'')}).concat(sv.map(function(x){return alvo(x.txt,x.ctx)})).join(' ');
+  if(tk.every(function(w){return junto.indexOf(w)>=0}))out.push({m:m,ps:ps,sv:sv});
+ });
+ return out.reverse();
+}
+function fhBusca(pk,q){
+ var res=document.getElementById('fhRes'),resto=document.getElementById('fhResto');if(!res)return;
+ var tem=_fhTok(q).length;if(resto)resto.style.display=tem?'none':'';
+ if(!tem){res.innerHTML='';return}
+ var rs=fhResultados(pk,q);
+ if(!rs.length){res.innerHTML='<div class="g2vazio">Nada encontrado com “'+esc(q)+'” neste carro.</div>';return}
+ var h='<div class="g2sub"><span>'+rs.length+' vez'+(rs.length>1?'es':'')+' neste carro</span><span>mais recente primeiro</span></div><div class="n3grp utLista">';
+ rs.forEach(function(r,i){
+  var m=r.m,dt=_dtManut(m),odo=_odoManut(m),ws=dt?String(diaSemanaBR(dt)||'').slice(0,3):'';
+  var dias=dt?_haDias(dt):-1,val=0;r.ps.forEach(function(x){val+=_utNum(x.valor)});
+  var quando=dt?(ws?ws+' ':'')+n3Dm(dt):'sem data',ha=dt?(dias>0?'há '+_utTempo(dias):(dias===0?'hoje':'')):'';
+  var ant=rs[i+1],gap='';
+  if(ant){var da=_dtManut(ant.m),oa=_odoManut(ant.m),pt=[];if(dt&&da){var d=diasEntre(da,dt);if(d>0)pt.push(_utTempo(d))}if(odo>0&&oa>0&&odo>oa)pt.push(fmtKm(odo-oa)+' km');if(pt.length)gap='Desde a vez anterior: '+pt.join(' · ')}
+  h+='<div class="utIt tap" onclick="verManut(\''+m.id+'\')"><b>'+esc(quando)+'</b><span class="utV">'+(val>0?'R$ '+fmtBRL(val):'')+' <i class="utCh">›</i></span>'+
+   (ha?'<small>'+esc(ha)+'</small>':'')+(odo>0||m.motorista?'<small>'+(odo>0?fmtKm(odo)+' km':'')+(odo>0&&m.motorista?' · ':'')+(m.motorista?esc(primNome(m.motorista)):'')+'</small>':'');
+  r.ps.forEach(function(x){var v=_utNum(x.valor),lj=String(x.loja||'').trim();h+='<small class="utPeca">'+esc(String(x.desc).trim())+(lj?' <span class="utLoja">· '+esc(lj)+'</span>':'')+(v>0&&r.ps.length>1?' <span class="utLoja">· R$ '+fmtBRL(v)+'</span>':'')+'</small>'});
+  r.sv.forEach(function(x){h+='<small class="utPeca"><span class="utLoja">Serviço:</span> '+esc(x.txt)+(x.nome?' <span class="utLoja">· '+esc(x.nome)+'</span>':'')+'</small>'});
+  if(gap)h+='<small class="utNota fhGap">'+esc(gap)+'</small>';
+  h+='</div>';
+ });
+ res.innerHTML=h+'</div>';
+}
+
 /* v217 · "há quantos dias" ao lado da data de cada manutenção (pedido do Hudson 13/10/2026):
    conta a partir do fim da manutenção até hoje. */
 function _haDias(iso){var re=/^\d{4}-\d{2}-\d{2}$/;if(!iso||!re.test(iso))return -1;var n=diasEntre(iso,hoje());return n<0?-1:n}
@@ -14081,6 +14128,8 @@ function listaAvulsos(){
 .utLoja{color:var(--tx2)}
 .utNada small{color:#A3A8AF}
 .utIt small.utNota{color:#B7791A;font-size:12.5px;margin-top:4px}
+.utIt small.fhGap{color:var(--tx2)}
+.fhBusca{margin-top:4px}
 </style>
 <script>
 /* ===================== v286 — PROTEÇÃO DOS DADOS (Hudson 28-29/10/2026) =====================
