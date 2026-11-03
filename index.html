@@ -1697,7 +1697,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=295; var APP_DATE='03/11/2026';
+var APP_VER=296; var APP_DATE='03/11/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -9602,7 +9602,10 @@ function _utTempo(d){
 /* v295 (Hudson 03/11): peça de LADO compara posição por posição — dianteiro esquerdo, dianteiro direito,
    traseiro esquerdo, traseiro direito. O lado vem da própria peça ou, se ela não diz, do serviço da mão de obra
    da mesma manutenção ("Troca do pneu dianteiro lado direito…"). Vale para o histórico também. */
-var UT_POS={DE:'dianteiro esquerdo',DD:'dianteiro direito',TE:'traseiro esquerdo',TD:'traseiro direito'};
+/* v296: peça que é do EIXO (jogo de pastilha, disco, sapata, tambor, cilindro, bucha da barra) só compara dianteiro × traseiro — não tem lado */
+var UT_EIXO=/^(Pastilha de freio|Disco de freio|Sapata de freio|Tambor de freio|Cilindro de freio|Bucha da barra estabilizadora)$/;
+function _utEixos(ps){if(!ps)return null;var r=[];ps.forEach(function(x){var e=x.charAt(0);if(r.indexOf(e)<0)r.push(e)});return r.length===1?r:null}
+var UT_POS={D:'dianteiro',T:'traseiro',DE:'dianteiro esquerdo',DD:'dianteiro direito',TE:'traseiro esquerdo',TD:'traseiro direito'};
 function _utPosSet(t){
  var raw=String(t||''),l=semAcento(raw);
  if(/\bos\s+quatro\b|\bquatro\s+(?:pneus?|amortecedor|molas?|rodas?)|\b4\s*(?:pneus?|amortecedor(?:es)?|molas?)\b|todos\s+os\s+(?:pneus|amortecedores|molas)|jogo\s+(?:de\s+)?(?:4|quatro)\b|jogo\s+completo/.test(l))return ['DE','DD','TE','TD'];
@@ -9614,6 +9617,9 @@ function _utPosSet(t){
 }
 /* posições de uma peça: a da própria descrição; se não tiver, a dos serviços da mesma manutenção que falam da mesma peça */
 function _utPosDe(desc,servs,f){
+ if(UT_EIXO.test(f)){var e=_utEixos(_utPosSet(desc));if(e)return e;var ue=[];
+  (servs||[]).forEach(function(sv){if(_utFams(sv.txt,sv.ctx).indexOf(f)<0)return;var q=_utEixos(_utPosSet(sv.txt));if(q&&ue.indexOf(q[0])<0)ue.push(q[0])});
+  return ue.length===1?ue:null}
  var p=_utPosSet(desc);if(p)return p;var u=[];
  (servs||[]).forEach(function(sv){if(_utFams(sv.txt,sv.ctx).indexOf(f)<0)return;var q=_utPosSet(sv.txt);if(q)q.forEach(function(x){if(u.indexOf(x)<0)u.push(x)})});
  return u.length?u:null;
@@ -9621,7 +9627,7 @@ function _utPosDe(desc,servs,f){
 function _utServs(blocos){var r=[];(blocos||[]).forEach(function(b){if(!b)return;var sv=b.servicos;(Array.isArray(sv)?sv:String(sv||'').split('\n')).forEach(function(x){x=String(x||'').trim();if(x)r.push({txt:x,ctx:b.titulo||''})})});return r}
 function _utRotulo(ps,f){
  if(!ps||!ps.length)return '';var k=ps.slice().sort().join(','),t;
- if(ps.length===4)t='os quatro';else if(k==='DD,DE')t='dianteiro';else if(k==='TD,TE')t='traseiro';else if(k==='DE,TE')t='esquerdo';else if(k==='DD,TD')t='direito';
+ if(ps.length===1&&UT_POS[ps[0]]&&ps[0].length===1)t=UT_POS[ps[0]];else if(ps.length===4)t='os quatro';else if(k==='DD,DE')t='dianteiro';else if(k==='TD,TE')t='traseiro';else if(k==='DE,TE')t='esquerdo';else if(k==='DD,TD')t='direito';
  else t=['DE','DD','TE','TD'].filter(function(x){return ps.indexOf(x)>=0}).map(function(x){return UT_POS[x]}).join(' e ');
  if(/^(Pastilha|Mola|Sapata|Bieleta|Balança|Ponteira|Coifa|Bucha|Máquina|Maçaneta|Fechadura|Homocinética)/.test(f))t=t.replace(/iro\b/g,'ira').replace(/erdo\b/g,'erda').replace(/eito\b/g,'eita');
  return t;
@@ -9655,7 +9661,8 @@ function ultimasTrocasPecas(pk,pecas,o){
    grupos.forEach(function(g){
     var lt=lado&&g.ps?_utRotulo(g.ps,f):'',k=f+'|'+lt;if(vistos[k])return;vistos[k]=1;
     var nota='';
-    if(lado&&!cur)nota='Lado não informado nesta manutenção — escreva o lado na peça ou no serviço para comparar o lado certo';
+    if(UT_EIXO.test(f)){}
+    else if(lado&&!cur)nota='Lado não informado nesta manutenção — escreva o lado na peça ou no serviço para comparar o lado certo';
     else if(g.ant&&g.ant.semLado)nota='Naquela troca o lado não foi escrito';
     var antLado='';if(lado&&!cur&&g.ant){var pa=g.ant.ls[0].pos[f];if(pa)antLado=_utRotulo(pa,f)}
     var sig=pi+'|'+g.sg+'|'+lt+'|'+(g.ant?g.ant.m.id+':'+g.ant.ls.map(function(x){return x.p.desc}).join('¦'):'-'),u=out[out.length-1];
