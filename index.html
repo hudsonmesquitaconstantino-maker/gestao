@@ -1697,7 +1697,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=299; var APP_DATE='03/11/2026';
+var APP_VER=300; var APP_DATE='03/11/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -14698,6 +14698,225 @@ var PIX_CFG={sel:'input[inputmode="decimal"]'};
 
 </script>
 <style id="modoEscuro">
+/* camada automática: toda regra clara do app ganha a versão escura */
+.chip.warn{border-color:rgba(255,179,64,.40)}
+.btn{color:#F5F5F7}
+.btn.ok{color:#F5F5F7}
+.btn.ok{color:#F5F5F7}
+header{background-color:rgba(44,44,46,0.82)!important}
+nav{background-color:rgba(28,28,30,0.90)!important}
+.appbar,.topbar,.hdr{background-color:rgba(44,44,46,0.80)!important}
+nav,.nav,.tabbar{background-color:rgba(28,28,30,0.85)!important}
+.v99hero{background:#1C1C1E}
+details.v99details[open]>.v99summary{background-color:#1C1C1E}
+.v99actions .btn.mini{background-color:#1C1C1E}
+.v99seg{background-color:#2C2C2E}
+.v99segbtn.on{background-color:#1C1C1E}
+.v99form #mPecas .grid3 input,.v99form #mPecas .grid3 textarea{background-color:#1C1C1E}
+#fBusca{background-color:#1C1C1E!important}
+.shx{background-color:rgba(44,44,46,0.90)!important}
+.v100formHero{background:#1C1C1E}
+.v100step{background-color:#2C2C2E;border-color:#3A3A3C}
+.v100step.on{background-color:#1C1C1E}
+.v100panel{background-color:#1C1C1E}
+.v100panelIcon{background-color:#2C2C2E}
+.v100panel input,.v100panel select,.v100panel textarea{background-color:#1C1C1E;border-color:#3A3A3C}
+.v100panel input:focus,.v100panel select:focus,.v100panel textarea:focus{background-color:#1C1C1E}
+.v100vehicle{background-color:#1C1C1E;border-color:#3A3A3C}
+.v100carBadge{background-color:#1C1C1E}
+.v100miniChip{background-color:#1C1C1E}
+.v100item{background-color:#1C1C1E;border-color:#3A3A3C}
+.v100pieceGrid input,.v100pieceGrid textarea,.v100laborGrid input,.v100laborGrid textarea{background-color:#1C1C1E}
+.v100add{border-color:#3A3A3C!important;background-color:#1C1C1E!important}
+.v100summary{background-color:#1C1C1E;border-color:#3A3A3C}
+.v100choice{background-color:#2C2C2E}
+.v100payopt.on{background-color:#1C1C1E}
+.v125pixTypeSelect{border-color:#3A3A3C!important;background-color:#1C1C1E!important;color:#F5F5F7!important}
+.v124transferSelect{border-color:#3A3A3C!important;background-color:#1C1C1E!important;color:#F5F5F7!important}
+#ncParcBox{background-color:#1C1C1E;border-color:#3A3A3C}
+#ncParcLista>.grid2{background-color:#1C1C1E;border-color:#3A3A3C}
+.v100review{background:#1C1C1E}
+body{background:#2C2C2E!important}
+.hbtn{background-color:rgba(28,28,30,0.72)!important}
+.hbtn:active{background-color:#1C1C1E!important}
+input:focus,select:focus,textarea:focus{background-color:#1C1C1E!important}
+.v102roundAction{background-color:#1C1C1E}
+.v102sheetIcon{background:#1C1C1E}
+.v102panel{background-color:#1C1C1E}
+.v102panel input,.v102panel select,.v102panel textarea{background-color:#1C1C1E}
+.v102info{background-color:#1C1C1E}
+.v102empty{background-color:#1C1C1E}
+.v102sectionTitle b{background-color:#2C2C2E}
+.v102carTask>span{background-color:rgba(255,179,64,.16)}
+.v102sysStats>div{background-color:#1C1C1E}
+.v102settings>details{background-color:#1C1C1E}
+.v102setIcon{background-color:#2C2C2E}
+.v102status{background-color:#1C1C1E}
+.v102maintTop{background-color:#1C1C1E}
+.v102service{border-bottom-color:#3A3A3C}
+.v102grandTotal{background:#1C1C1E}
+#tvPecas .prow,#tvInteg .prow2,#tvDeb .prow2,#tvCred .prow2{background-color:#1C1C1E}
+#tvBlocos>.card{background-color:#1C1C1E!important}
+.v138contractBox{background-color:#1C1C1E}
+.v138contractBox select{background-color:#1C1C1E!important}
+.v138contractNote{background-color:#1C1C1E}
+.v138contractNote.current{color:#FF695E}
+.v138contractNote.history{color:#30D158}
+.v138pickTop .v138check{border-color:#3A3A3C;background-color:#1C1C1E}
+.v138pickTop.on .v138check{background-color:#2C2C2E;color:#30D158}
+.v138pickTop.on .v138pickText{color:#30D158}
+.v137impMaint.selected{background-color:#1C1C1E}
+.mv-head{background-color:#1C1C1E}
+details.v99details>summary:active,.v102settings>details>summary:active{background-color:#1C1C1E}
+.mono{background-color:#1C1C1E!important;color:#F5F5F7!important;border-color:#3A3A3C!important}
+#toast{background-color:#1C1C1E!important;color:#F5F5F7!important}
+.v100formHero.v105formHero{background:#1C1C1E!important}
+.v100step{background-color:rgba(28,28,30,0.64)!important;border-color:#3A3A3C!important}
+.v100step strong{background-color:#2C2C2E!important;color:#A1A1A8!important}
+.v100step.on{background-color:rgba(255,179,64,.16)!important}
+.v100step.done{background-color:#2C2C2E!important}
+.v100panel{background-color:#1C1C1E!important}
+.v100panelIcon{background-color:#2C2C2E!important}
+.v100panel input,.v100panel select,.v100panel textarea,.v102panel input,.v102panel select,.v102panel textarea{background-color:#1C1C1E!important;border-color:#3A3A3C!important}
+.v100panel input:focus,.v100panel select:focus,.v100panel textarea:focus,.v102panel input:focus,.v102panel select:focus,.v102panel textarea:focus{background-color:#1C1C1E!important}
+.v100item{background-color:#1C1C1E!important;border-color:#3A3A3C!important}
+.v100remove{background-color:#2C2C2E!important;color:#FF695E!important}
+.v100add{background-color:#1C1C1E!important;color:#A1A1A8!important;border-color:#3A3A3C!important}
+.v100summary{background-color:#1C1C1E!important;border-color:#3A3A3C!important}
+.v100sumTotal{border-top-color:#3A3A3C!important}
+.v105saved{background:#1C1C1E}
+.v105savedHead{border-bottom-color:#3A3A3C}
+.v105savedCheck{background-color:#2C2C2E}
+.v105editFlow .v100item{background-color:#1C1C1E!important}
+.v105review{background:#1C1C1E!important;border-color:#3A3A3C!important}
+.n3sw input[type=checkbox]{background-color:#2C2C2E}
+.n3sw input[type=checkbox]::after{background-color:#1C1C1E}
+.n3alertaBox{background-color:rgba(255,179,64,.16);color:#FFB340!important}
+.n3busca input{background-color:#2C2C2E}
+.n3row:active,.n3ult:active{background-color:#2C2C2E}
+.n3av{background-color:#2C2C2E}
+.n3val{background-color:#2C2C2E}
+.n3extra{background-color:#1C1C1E}
+.n3sug{background-color:#1C1C1E}
+.n3profs .n3chip{background-color:#2C2C2E}
+.n3chipS{background-color:rgba(255,179,64,.16);color:#FFB340}
+.n3pe{background-color:rgba(28,28,30,0.88)}
+.n3seg i{background-color:#3A3A3C}
+.n3nav{background-color:#2C2C2E}
+.n3card{background-color:#1C1C1E;border-color:#3A3A3C}
+.n3cardH{background-color:#2C2C2E;border-bottom-color:#3A3A3C}
+.n3cardH>span{color:#A1A1A8}
+.n3addCard{border-color:#3A3A3C}
+.n3grp{border-color:#3A3A3C}
+.n3h{color:#A1A1A8!important}
+.n3 .n3f>span{color:#F5F5F7!important}
+.n3 .n3f.n3col>span{color:#A1A1A8!important}
+.n3 .n3f input:not([type=checkbox]),.n3 .n3f select,.n3 .n3f textarea,.n3 .n3ta{color:#F5F5F7!important}
+.n3grp{border-color:#3A3A3C!important}
+.n3card{border-color:#3A3A3C!important}
+.n3cardH{background-color:#1C1C1E!important;border-bottom-color:#3A3A3C!important}
+.n3cardH>span{color:#A1A1A8!important}
+.n3it:active{background-color:#2C2C2E}
+.n3tag{color:#FFB340;background-color:rgba(255,179,64,.16)}
+.n3itAdd:active{background-color:#2C2C2E}
+.n3ed{background-color:#1C1C1E}
+#n3m label.n3f:not(.n3sw)>span{color:#A1A1A8!important}
+#n3m label.n3f:not(.n3sw) input:not([type=checkbox]),#n3m label.n3f:not(.n3sw) textarea,#n3m label.n3f:not(.n3sw) select{background-color:#2C2C2E!important;border-color:#3A3A3C!important;color:#F5F5F7!important}
+#n3m label.n3f:not(.n3sw) input:focus,#n3m label.n3f:not(.n3sw) textarea:focus,#n3m label.n3f:not(.n3sw) select:focus{background-color:#1C1C1E!important}
+#n3m .n3ed{background-color:#2C2C2E!important}
+#n3m .n3ed label.n3f:not(.n3sw) input:not([type=checkbox]),#n3m .n3ed label.n3f:not(.n3sw) textarea{background-color:#1C1C1E!important}
+#n3e label.n3f:not(.n3sw)>span{color:#A1A1A8!important}
+#n3e label.n3f:not(.n3sw) input:not([type=checkbox]),#n3e label.n3f:not(.n3sw) textarea,#n3e label.n3f:not(.n3sw) select{background-color:#2C2C2E!important;border-color:#3A3A3C!important;color:#F5F5F7!important}
+#n3e label.n3f:not(.n3sw) input:focus,#n3e label.n3f:not(.n3sw) textarea:focus,#n3e label.n3f:not(.n3sw) select:focus{background-color:#1C1C1E!important}
+#n3e .n3ed{background-color:#2C2C2E!important}
+#n3e .n3ed label.n3f:not(.n3sw) input:not([type=checkbox]),#n3e .n3ed label.n3f:not(.n3sw) textarea{background-color:#1C1C1E!important}
+#n3e .n3top p{color:#A1A1A8}
+.sheet:has(#n3e){background-color:#2C2C2E!important}
+.haChip{background-color:#2C2C2E;color:#A1A1A8}
+.n4row:active{background-color:#2C2C2E}
+.n4a{color:#FFB340}
+.n4cobrar{background-color:rgba(255,179,64,.16);color:#FFB340}
+.n4okIc{background-color:#2C2C2E}
+.n4semMot{background-color:rgba(255,179,64,.16);color:#FFB340}
+.n4semMot span{color:#FFB340}
+.n4frota{background-color:#2C2C2E}
+.n4frota button{color:#A1A1A8}
+.n4frota button.on{background-color:#1C1C1E;color:#F5F5F7}
+html{background-color:#1C1C1E!important}
+body{background-color:#2C2C2E!important}
+.n22bt{background-color:#2C2C2E;color:#30D158}
+.n22com{color:#30D158}
+.n24resL em.r{color:#FF695E}
+.n24resL em.a{background-color:rgba(255,179,64,.16);color:#FFB340}
+.n24bar{background-color:#2C2C2E}
+.n4tx>small.n24prox{color:#F5F5F7}
+.n24chip{background-color:#2C2C2E;color:#A1A1A8}
+.n24chip.a{background-color:rgba(255,179,64,.16);color:#FFB340}
+.n24chip.r{background-color:rgba(255,105,94,.16)}
+.n24seg button.on{background-color:#1C1C1E;color:#F5F5F7}
+.n24box{background-color:#1C1C1E}
+.n24grp{background-color:#1C1C1E}
+.n24todo{border-bottom-color:#3A3A3C}
+.n24ck{border-color:#3A3A3C;background-color:#1C1C1E}
+.n24mv button,.n24mv i{background-color:#2C2C2E;color:#A1A1A8}
+.n24mv button.n24x.conf{background-color:rgba(255,105,94,.16)}
+.n24mv button.n24ok{background-color:#2C2C2E}
+.n24add input{border-color:#3A3A3C;background-color:#1C1C1E}
+.n24add button{background-color:rgba(255,179,64,.16);color:#FFB340}
+.n24feitos{border-top-color:#3A3A3C}
+.n24pz{border-bottom-color:#3A3A3C}
+.n24ring{background-color:#2C2C2E;color:#A1A1A8}
+.n24ring.a{background-color:rgba(255,179,64,.16);color:#FFB340}
+.n24ring.r{background-color:rgba(255,105,94,.16)}
+.n24detAdd input{border-color:#3A3A3C;background-color:#1C1C1E}
+.n24fl{background-color:#2C2C2E}
+.n24fl span{color:#A1A1A8}
+.n24fl.urg{background-color:rgba(255,179,64,.16)}
+.n24fl.urg i{color:#FFB340}
+.n3quem button{background-color:#1C1C1E}
+.n3quem button i{border-color:#3A3A3C}
+.n3quem button.on{background-color:#1C1C1E}
+.n3quemErr .n3quem button{border-color:rgba(255,105,94,.40)}
+.n24etp .n24etR{border-bottom-color:#3A3A3C}
+.n24etR>i{background-color:#3A3A3C}
+.n24mot>div{background-color:#2C2C2E}
+.n24mot b{color:#F5F5F7}
+.n24mot p{color:#A1A1A8}
+.n24edIn{background-color:#1C1C1E}
+.n24st{background-color:#2C2C2E;border-color:#3A3A3C}
+.n24st.ofi{background-color:rgba(255,179,64,.16);border-color:rgba(255,179,64,.40)}
+.n24st.casa{background-color:#2C2C2E;border-color:rgba(100,168,255,.40)}
+.n24st.pro{background-color:#2C2C2E;border-color:rgba(48,209,88,.40)}
+.n24st.rod{background-color:#2C2C2E}
+.n24stT{color:#F5F5F7}
+.n24stL{color:#A1A1A8}
+.n24stL b{color:#F5F5F7}
+.n24stB{background-color:rgba(28,28,30,0.85);color:#F5F5F7}
+.n24stH{background-color:rgba(28,28,30,0.70)}
+.n24stH summary{color:#A1A1A8}
+.n24stH .n24etR{border-top-color:#3A3A3C}
+.n24mud{background-color:#1C1C1E}
+.n24mudH button{background-color:#2C2C2E;color:#A1A1A8}
+.n24dsem{color:#FFB340}
+.n25f label{color:#A1A1A8}
+.n25f input{border-color:#3A3A3C;background-color:#1C1C1E}
+.n25info{background-color:#2C2C2E;color:#30D158}
+.n25dia{color:#A1A1A8}
+.n25dia small{color:#A1A1A8}
+.n25info.n25aviso{background-color:rgba(255,179,64,.16);color:#FFB340}
+.n25sobra{color:#FFB340}
+html body>header{background-color:rgba(44,44,46,0.78)!important}
+html body>header .hbtn{background-color:rgba(28,28,30,0.80)!important}
+html body nav.g2nav{background-color:rgba(28,28,30,0.74)!important}
+html body .g20segmk{background-color:#1C1C1E}
+html body .n4grp>.n4row{background-color:#1C1C1E}
+html body .n4grp>.n4row:active{background-color:#1C1C1E!important}
+.n26ok{background-color:#2C2C2E;color:#30D158}
+.n26no{background-color:rgba(255,179,64,.16);color:#FFB340}
+.utIt.tap:active{background-color:#2C2C2E}
+input.ocrConfira{background-color:rgba(255,179,64,.16)!important}
+#n28Box .v100payopt.n28on,#n28EBox .v100payopt.n28on{background-color:#1C1C1E!important;color:#F5F5F7!important}
+
 /* ===================== MODO ESCURO (padrão iPhone) — Hudson 03/11/2026 =====================
    Camada única no fim: só cor/fundo/sombra. Não mexe em dado, função nem layout. Para voltar ao claro, basta tirar este bloco. */
 :root{color-scheme:dark;
@@ -14721,7 +14940,7 @@ html:not(.gsplPre),html:not(.gsplPre) body,html:not(.gsplPre) body.locked{backgr
 :root:is(#escA,html) body:is(#escB,body) .n4frota>button,:root:is(#escA,html) body:is(#escB,body) .g2seg>*,:root:is(#escA,html) body:is(#escB,body) .v99seg>*{color:#A1A1A8!important}
 :root:is(#escA,html) body:is(#escB,body) .n4frota>button.on{color:#F5F5F7!important}
 /* campos */
-:root:is(#escA,html) body:is(#escB,body) input,:root:is(#escA,html) body:is(#escB,body) select,:root:is(#escA,html) body:is(#escB,body) textarea{background:#2C2C2E!important;color:#F5F5F7!important;border-color:#3A3A3C!important;caret-color:var(--ac)}
+:root:is(#escA,html) body:is(#escB,body) input:not(.cdoc *),:root:is(#escA,html) body:is(#escB,body) select:not(.cdoc *),:root:is(#escA,html) body:is(#escB,body) textarea:not(.cdoc *){background:#2C2C2E!important;color:#F5F5F7!important;border-color:#3A3A3C!important;caret-color:var(--ac)}
 :root:is(#escA,html) body:is(#escB,body) input::placeholder,:root:is(#escA,html) body:is(#escB,body) textarea::placeholder{color:#6E6E76!important}
 :root:is(#escA,html) body:is(#escB,body) input[type=checkbox]{background:#39393D!important}
 :root:is(#escA,html) body:is(#escB,body) input[type=checkbox]:checked{background:#30D158!important}
@@ -14742,11 +14961,11 @@ html:not(.gsplPre),html:not(.gsplPre) body,html:not(.gsplPre) body.locked{backgr
 :root:is(#escA,html) body:is(#escB,body) .v102setIcon,:root:is(#escA,html) body:is(#escB,body) .v102roundAction{background:#2C2C2E!important}
 :root:is(#escA,html) body:is(#escB,body) .v102sectionTitle>b{background:#2C2C2E!important;color:#A1A1A8!important}
 /* cores escritas direto no texto do app (style="…") */
-:root:is(#escA,html) body:is(#escB,body) [style*="color:#c0392b" i],:root:is(#escA,html) body:is(#escB,body) [style*="color:#b42318" i],:root:is(#escA,html) body:is(#escB,body) [style*="color:#c33" i],:root:is(#escA,html) body:is(#escB,body) [style*="color:#b33" i]{color:#FF6B5E!important}
-:root:is(#escA,html) body:is(#escB,body) [style*="color:#c77a16" i],:root:is(#escA,html) body:is(#escB,body) [style*="color:#b54708" i]{color:#F0A02E!important}
-:root:is(#escA,html) body:is(#escB,body) [style*="color:#2e7d5b" i]{color:#30D158!important}
-:root:is(#escA,html) body:is(#escB,body) [style*="background:#fff" i],:root:is(#escA,html) body:is(#escB,body) [style*="background:#f4f6f8" i]{background:#1C1C1E!important}
-:root:is(#escA,html) body:is(#escB,body) [style*="background:#fff3f3" i]{background:rgba(255,69,58,.14)!important}
+:root:is(#escA,html) body:is(#escB,body) [style*="color:#c0392b" i]:not(.cdoc *),:root:is(#escA,html) body:is(#escB,body) [style*="color:#b42318" i]:not(.cdoc *),:root:is(#escA,html) body:is(#escB,body) [style*="color:#c33" i]:not(.cdoc *),:root:is(#escA,html) body:is(#escB,body) [style*="color:#b33" i]:not(.cdoc *){color:#FF6B5E!important}
+:root:is(#escA,html) body:is(#escB,body) [style*="color:#c77a16" i]:not(.cdoc *),:root:is(#escA,html) body:is(#escB,body) [style*="color:#b54708" i]:not(.cdoc *){color:#F0A02E!important}
+:root:is(#escA,html) body:is(#escB,body) [style*="color:#2e7d5b" i]:not(.cdoc *){color:#30D158!important}
+:root:is(#escA,html) body:is(#escB,body) [style*="background:#fff" i]:not(.cdoc *),:root:is(#escA,html) body:is(#escB,body) [style*="background:#f4f6f8" i]:not(.cdoc *){background:#1C1C1E!important}
+:root:is(#escA,html) body:is(#escB,body) [style*="background:#fff3f3" i]:not(.cdoc *){background:rgba(255,69,58,.14)!important}
 :root:is(#escA,html) body:is(#escB,body) .sub b{color:inherit}
 /* painéis que ainda eram claros */
 :root:is(#escA,html) body:is(#escB,body) .n24mot>div,:root:is(#escA,html) body:is(#escB,body) .n24st,:root:is(#escA,html) body:is(#escB,body) .n24grp,:root:is(#escA,html) body:is(#escB,body) .cnh7add,:root:is(#escA,html) body:is(#escB,body) .v102info,:root:is(#escA,html) body:is(#escB,body) .orPrev{background:#1C1C1E!important;border-color:#2C2C2E!important;color:#F5F5F7!important}
@@ -14760,6 +14979,16 @@ html:not(.gsplPre),html:not(.gsplPre) body,html:not(.gsplPre) body.locked{backgr
 :root:is(#escA,html) body:is(#escB,body) .btn.sec,:root:is(#escA,html) body:is(#escB,body) .btn.mini:not(.ok):not(.red){background:#2C2C2E!important;color:#F5F5F7!important;border-color:#3A3A3C!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)!important}
 :root:is(#escA,html) body:is(#escB,body) .btn.red:not(.ok){background:rgba(255,69,58,.16)!important;color:#FF6B5E!important;border-color:transparent!important}
 :root:is(#escA,html) body:is(#escB,body) .n25seg button.on{background:#636366!important;color:#F5F5F7!important}
+
+/* topo sólido: no iPhone o vidro fosco deixava o título "GuimasCar Gestão" borrado */
+:root:is(#escA,html) body:is(#escB,body)>header{background:#000!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+:root:is(#escA,html) body:is(#escB,body)>header h1,:root:is(#escA,html) body:is(#escB,body)>header h1 b{text-shadow:none!important;filter:none!important;-webkit-font-smoothing:antialiased}
+/* oficina na tela inicial */
+:root:is(#escA,html) body:is(#escB,body) .n24bar{background:#3A3A3C!important}
+:root:is(#escA,html) body:is(#escB,body) .n4tx>small.n24prox{color:#A1A1A8!important}
+/* documentos (contrato) continuam papel branco, como impressos */
+:root:is(#escA,html) body:is(#escB,body) .cdoc{color-scheme:light;--tx:#12141A;--tx2:#6A7078;--card:#FFFFFF;--card2:#F5F6F8;--bord:#E3E5E9;--ac:#C77A16;--ok:#1E7D52;--red:#C0392B;background:#FFFFFF!important;color:#12141A!important}
+:root:is(#escA,html) body:is(#escB,body) .g2chip.on{background:#F5F5F7!important;color:#000!important}
 
 </style>
 </body>

@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Multas">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icone-180.png">
 <link rel="icon" type="image/png" href="icone-192.png">
@@ -2518,6 +2518,52 @@ var PIX_CFG={"sel": "input[inputmode=\"decimal\"]"};
 
 </script>
 <style id="modoEscuro">
+/* camada automática: toda regra clara do app ganha a versão escura */
+header{background-color:rgba(44,44,46,0.88)}
+.btn:hover{border-color:#3A3A3C}
+.aviso{border-color:rgba(255,179,64,.40);color:#FFB340}
+.aviso.red{border-color:rgba(255,105,94,.40)}
+.bar{background-color:#2C2C2E}
+.car.open{border-color:#3A3A3C}
+.tg.fin{background-color:#2C2C2E}
+.tg.par{background-color:#2C2C2E;color:#A1A1A8}
+.conf{background-color:#1C1C1E}
+.conf.on{border-color:rgba(48,209,88,.40)}
+.wa{border-color:rgba(48,209,88,.40)}
+.wa.on{background-color:#1C1C1E}
+.body{background-color:#1C1C1E}
+.chip{background-color:#1C1C1E}
+.fine{border-bottom-color:#3A3A3C}
+.mi{background-color:#1C1C1E}
+.mi.vazio{border-color:rgba(255,179,64,.40);background-color:#1C1C1E}
+.obs{background-color:#1C1C1E}
+.docbox{border-color:rgba(255,179,64,.40);background-color:#1C1C1E}
+.docbox .li{color:#F5F5F7}
+.mres .li{border-bottom-color:#3A3A3C}
+.add{background-color:#1C1C1E;border-color:#3A3A3C}
+.add input[type=date]{background-color:#1C1C1E}
+.seg{background-color:#2C2C2E}
+.seg button.on{background-color:#1C1C1E}
+.drow{border-bottom-color:#3A3A3C}
+.dl{border-bottom-color:#3A3A3C}
+.dl input[type=date]{background-color:#1C1C1E}
+.hist{background-color:#1C1C1E}
+.hi{color:#F5F5F7}
+.f input,.f select{background-color:#1C1C1E}
+.mu2alerta{color:#FFB340;border-color:rgba(255,179,64,.40)}
+.mcIn .bar{background-color:#2C2C2E}
+.mcData.obr{background-color:rgba(255,179,64,.16);color:#FFB340}
+.mcF input{background-color:#1C1C1E}
+.mcAddRow input{background-color:#1C1C1E}
+.nmBusca{background-color:#2C2C2E}
+.nmF input[type=date],.nmF input[inputmode]{background-color:#1C1C1E}
+#mc .mcAt .chip.on{background-color:#2C2C2E}
+html.af body>header.afHead{background-color:rgba(44,44,46,0.82)!important}
+.syncpill{background-color:rgba(28,28,30,0.85)!important}
+html.af body>.afBar{background-color:rgba(28,28,30,0.74)!important}
+.bottombar .btn.ghost,.bottom .menuBtn{background-color:#1C1C1E!important}
+.g21segmk{background-color:#1C1C1E}
+
 /* ===================== MODO ESCURO (padrão iPhone) — Hudson 03/11/2026 =====================
    Camada única no fim do app: só cor, fundo e sombra. Não mexe em dado, função nem layout.
    Paleta igual em todos os apps: fundo preto, cartões #1C1C1E, campos #2C2C2E, texto branco/cinza, âmbar, verde, vermelho do iOS. */
@@ -2545,6 +2591,10 @@ var PIX_CFG={"sel": "input[inputmode=\"decimal\"]"};
 :root:is(#escA,html) body:is(#escB,body) .nmBusca,:root:is(#escA,html) body:is(#escB,body) .mcF input,:root:is(#escA,html) body:is(#escB,body) .dlg-in input{background:#2C2C2E!important}
 :root:is(#escA,html) body:is(#escB,body) .btn.grn{background:#248A3D!important;color:#fff!important;border-color:transparent!important}
 :root:is(#escA,html) body:is(#escB,body) .fchip.on{color:#000!important}
+/* etiquetas que usavam a cor do texto como fundo (nome do motorista etc.) */
+:root:is(#escA,html) body:is(#escB,body) .tg.mot{background:#3A3A3C!important;color:#F5F5F7!important}
+:root:is(#escA,html) body:is(#escB,body) .logo{background:#1C1C1E!important;color:#F5F5F7!important}
+:root:is(#escA,html) body:is(#escB,body) .btn.obr.on{background:#F5F5F7!important;border-color:#F5F5F7!important;color:#000!important}
 
 </style>
 </body>
