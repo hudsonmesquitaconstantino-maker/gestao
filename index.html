@@ -1697,7 +1697,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=290; var APP_DATE='02/11/2026';
+var APP_VER=291; var APP_DATE='03/11/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -3658,6 +3658,7 @@ function abrirLancar(){
   _g2Opt('chave','Manutenção','Peças, mão de obra e dias parado','closeSheet(2);go(1)')+
   _g2Opt('troca','Troca de óleo','Só o km — o app calcula a próxima troca','oleoRapidoEscolher()')+
   _g2Opt('tag','Desconto na fatura','Peça que o fornecedor vai descontar na fatura','abrirGarantia()')+
+  _g2Opt('carro','Gasto de carro fora da frota','Carro vendido/excluído: escreva o carro e entra na fatura do fornecedor','abrirAvulso()')+
   _g2Opt('km','Quilometragem','Escolha o carro e digite o km','g2EscolherCarro(\'km\')')+
   _g2Opt('doc','Contrato de locação','Puxa os dados do carro','closeSheet(2);go(2)')+
   _g2Opt('nota','Observação','Geral ou de um carro','closeSheet(2);obsNova()')+
@@ -7733,7 +7734,7 @@ function textoFechamento(ym,nomeForn){
  var pks=Object.keys(f.carros);
  pks.filter(function(gk){return !f.carros[gk].pessoal}).forEach(function(gk){
   var c=f.carros[gk],pk=c.pk,car=S.carros[pk];
-  x+=(car?tituloCarro(car):pk)+' ('+fmtPlaca(pk).split('-')[0]+')\n';
+  x+=(typeof _nomeFech==='function'?_nomeFech(pk,car):(car?tituloCarro(car):pk)+' ('+fmtPlaca(pk).split('-')[0]+')')+'\n';
   c.itens.forEach(function(i){x+=_linhaFatura(i)});
   x+='Subtotal: '+_fmtValSinal(c.sub)+'\n\n';
  });
@@ -7741,7 +7742,7 @@ function textoFechamento(ym,nomeForn){
  if(pess.length)x+='*👤 VEÍCULOS SEPARADOS (HUDSON)*\n\n';
  pess.forEach(function(gk){
   var c=f.carros[gk],pk=c.pk,car=S.carros[pk];
-  x+=(car?tituloCarro(car):pk)+' ('+fmtPlaca(pk).split('-')[0]+')\n';
+  x+=(typeof _nomeFech==='function'?_nomeFech(pk,car):(car?tituloCarro(car):pk)+' ('+fmtPlaca(pk).split('-')[0]+')')+'\n';
   c.itens.forEach(function(i){x+=_linhaFatura(i)});
   x+='Subtotal: '+_fmtValSinal(c.sub)+'\n\n';
  });
@@ -7972,7 +7973,7 @@ function vHistorico(){
    var c=S.carros[pk];
    h+='<div class="mvrow tap" onclick="hFiltraPlaca(\''+fmtPlaca(pk)+'\')">'+
     '<b class="hplc">'+esc(fmtPlaca(pk))+'</b>'+
-    '<div class="grow">'+esc(c?tituloCarro(c):pk)+'</div>'+
+    '<div class="grow">'+esc(c?tituloCarro(c):(typeof _nomeAvulso==='function'?_nomeAvulso(pk):pk))+'</div>'+
     '<div class="mvval">R$ '+fmtBRL(tot[pk])+'</div></div>';
   });
   h+='<div class="sub" style="margin-top:6px">Toque num carro para ver só as manutenções dele.</div></details></div>';
@@ -7986,14 +7987,14 @@ function vHistorico(){
   h+='<div class="card v99histcard" id="hFech"><details'+(window._fechAberto?' open':'')+' ontoggle="window._fechAberto=this.open"><summary class="v99summary"><span>📅 Fechamento por fornecedor</span><span>'+_nomeMes(ym)+' ›</span></summary>';
   h+='<label>M\u00eas</label><select onchange="window._fechAberto=true;window._fechMes=this.value;render()">';
   meses.forEach(function(x){h+='<option value="'+x+'"'+(x===ym?' selected':'')+'>'+_nomeMes(x)+'</option>'});
-  h+='</select>';h+='<div style="margin:8px 0 4px"><span class="chip tap" onclick="listaGarantias()">🏷 Descontos na fatura</span> <span class="chip tap" onclick="abrirGarantia()">＋ lançar desconto</span></div>';
+  h+='</select>';h+='<div style="margin:8px 0 4px"><span class="chip tap" onclick="listaGarantias()">🏷 Descontos na fatura</span> <span class="chip tap" onclick="abrirGarantia()">＋ lançar desconto</span> <span class="chip tap" onclick="listaAvulsos()">🚗 carro fora da frota</span></div>';
   if(!f.fornecedores.length)h+='<div class="sub" style="margin-top:6px">Sem gastos neste m\u00eas.</div>';
   f.fornecedores.forEach(function(fo){
    var det='';
    Object.keys(fo.carros).forEach(function(gk){
     var cc=fo.carros[gk],pk=cc.pk,car=S.carros[pk];
     det+='<div class="mvrow" style="opacity:.85"><b class="hplc">'+esc(fmtPlaca(pk))+'</b>'+
-      '<div class="grow">'+esc(car?tituloCarro(car):pk)+' <span class="chip">'+(cc.pessoal?'Hudson':'Fábio')+'</span></div>'+
+      '<div class="grow">'+esc(car?tituloCarro(car):(typeof _nomeAvulso==='function'?_nomeAvulso(pk):pk))+' <span class="chip">'+(cc.pessoal?'Hudson':'Fábio')+'</span></div>'+
       '<div class="mvval">'+_fmtValSinal(cc.sub)+'</div></div>';
     cc.itens.forEach(function(it){
      det+='<div class="sub" style="margin:0 0 2px 8px">'+(it.data?dataBR(it.data)+' \u00b7 ':'')+
@@ -13847,6 +13848,85 @@ var G20_LOGO="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAQDAwQDAwQ
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',liga);else liga();
 })();
+
+</script>
+<script>
+/* ===================== v291 — GASTO DE CARRO FORA DA FROTA NO FECHAMENTO (Hudson 03/11/2026) =====================
+   Carro vendido/excluído do Gestão não aparece mais na lista de carros, mas o fornecedor ainda cobra no fim do mês
+   (ex.: palheta comprada no Abraão para o carro que acabou de sair). Agora dá para lançar o gasto ESCREVENDO o carro
+   à mão ("Gol 2015 vendido"): entra no fechamento do fornecedor, na Frota Fábio ou Hudson e no texto "copiar fatura",
+   igual a um carro de verdade. Não cria carro na frota, não mexe em trocas/km nem em estatística de carro. */
+function _ehAvulso(m){return !!(m&&m.avulso)}
+function _pkAvulso(pk){return typeof pk==='string'&&pk.charAt(0)==='~'}
+function _nomeAvulso(pk){return _pkAvulso(pk)?pk.slice(1):pk}
+/* a placa do carro fora da frota aparece como "fora da frota" */
+(function(){var o=window.fmtPlaca;if(typeof o!=='function'||o._v291)return;var w=function(p){if(_pkAvulso(p))return 'fora da frota';return o.apply(this,arguments)};w._v291=1;window.fmtPlaca=fmtPlaca=w;})();
+/* nunca vira troca de peça / km */
+(function(){var o=window.detectarComponentes;if(typeof o!=='function'||o._v291)return;var w=function(m){if(_ehAvulso(m))return{comps:{},proxOleo:0,proxCorreia:0};return o.apply(this,arguments)};w._v291=1;window.detectarComponentes=detectarComponentes=w;})();
+function _nomeFech(pk,car){if(car)return tituloCarro(car)+' ('+fmtPlaca(pk).split('-')[0]+')';return _nomeAvulso(pk)+(_pkAvulso(pk)?' (fora da frota)':'')}
+function _carrosAvulsosUsados(){var v={};Object.keys(S.manutencoes||{}).forEach(function(k){var m=S.manutencoes[k];if(_ehAvulso(m))v[_nomeAvulso(m.carro)]=1});return Object.keys(v).sort()}
+var AVU_ED=null,AVU_FROTA='';
+function abrirAvulso(id){
+ var m=id?S.manutencoes[id]:null;AVU_ED=m?m.id:null;AVU_FROTA=m?(m.frotaFechamento||''):'';
+ var p=m?(m.pecas||[])[0]||{}:{};
+ var h='<div class="v102sheetHero"><div class="v102sheetIcon">🚗</div><div><div class="v102eyebrow">FORNECEDOR</div><h3>'+(m?'Editar gasto':'Carro fora da frota')+'</h3><div class="sub">Para carro que não está mais no Gestão (vendido, excluído). Entra no fechamento do fornecedor como um carro normal.</div></div></div>'+
+  '<div class="v102panel">'+
+  '<label>Fornecedor</label><select id="gaFornSel" onchange="garFornSel()"><option value="">— escolha —</option>'+_garOpcoesForn(m?p.loja:'')+'<option value="__outro">Outro (digitar o nome)</option></select>'+
+  '<input id="gaForn" type="hidden" value="'+esc(m?p.loja:'')+'"><div id="gaFornOutroW" style="display:none"><label>Nome do fornecedor</label><input id="gaFornOutro" autocomplete="off" placeholder="Nome do fornecedor" oninput="document.getElementById(\'gaForn\').value=this.value.trim()"></div>'+
+  '<label>Carro <span class="v102optional">escreva como quiser</span></label><input id="avCarro" list="avCarrosL" autocomplete="off" value="'+esc(m?_nomeAvulso(m.carro):'')+'" placeholder="Ex.: Gol 2015 vendido"><datalist id="avCarrosL">'+_carrosAvulsosUsados().map(function(n){return '<option value="'+esc(n)+'">'}).join('')+'</datalist>'+
+  '<label>Peça / serviço</label><input id="avDesc" value="'+esc(m?p.desc:'')+'" placeholder="Ex.: Jogo de palheta">'+
+  '<label>Valor (R$)</label><input id="avValor" inputmode="decimal" value="'+(m?fmtBRL(m.total):'')+'" placeholder="0,00">'+
+  '<label>Data <span class="v102optional">define o mês da fatura</span></label><input type="date" id="avData" value="'+esc(m?(p.data||m.dataIni):hoje())+'">'+
+  '<label>Qual frota paga</label><div class="v100choice" id="avFrota"><button type="button" class="v100payopt'+(AVU_FROTA==='hudson'?' on':'')+'" onclick="avFrota(\'hudson\')">Frota Hudson</button><button type="button" class="v100payopt'+(AVU_FROTA==='fabio'?' on':'')+'" onclick="avFrota(\'fabio\')">Frota Fábio</button></div>'+
+  '</div><div class="v102actionbar"><button class="btn ok v102primary" onclick="salvarAvulso()">'+(m?'Salvar':'Lançar no fechamento')+'</button>'+
+  (m?'<button class="btn red" onclick="excluirAvulso(\''+m.id+'\')">🗑 Excluir</button>':'')+
+  '<button class="btn sec" onclick="closeSheet(2)">Cancelar</button></div>';
+ openSheet(h,2);
+}
+function avFrota(f){AVU_FROTA=f;[].forEach.call(document.querySelectorAll('#avFrota button'),function(b){b.classList.toggle('on',(f==='hudson')===/Hudson/.test(b.textContent))})}
+function salvarAvulso(){
+ function g(id){return ((document.getElementById(id)||{}).value||'').trim()}
+ var forn=g('gaForn'),car=g('avCarro').replace(/^~+/,''),desc=g('avDesc'),v=_r2(parseBRL(g('avValor'))),dt=g('avData');
+ if(!forn){toast('Escolha o fornecedor');return}
+ if(!car){toast('Escreva o carro (ex.: Gol 2015 vendido)');return}
+ if(!desc){toast('Escreva a peça ou o serviço');return}
+ if(!(v>0)){toast('Valor inválido');return}
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(dt)){toast('Data inválida');return}
+ if(AVU_FROTA!=='hudson'&&AVU_FROTA!=='fabio'){toast('Escolha qual frota paga');return}
+ var n=Date.now(),id=AVU_ED||('avu_'+n),ant=AVU_ED?S.manutencoes[AVU_ED]:null;
+ var m={id:id,carro:'~'+car,motorista:'',dataIni:dt,dataFim:dt,dataPecasPadrao:dt,odometro:0,avulso:true,
+  pecas:[{desc:desc,loja:forn,valor:v,data:dt,pendenteFinanceiro:false}],blocos:[],
+  frotaFechamento:AVU_FROTA,texto:'',origem:'avulso',criadoEm:(ant&&ant.criadoEm)||n,editadoEm:n};
+ S.manutencoes[id]=normManut(m);
+ save();try{_avisoFaturaPaga(S.manutencoes[id])}catch(e){}
+ closeSheet(2);try{render()}catch(e){}
+ toast('🚗 '+car+': R$ '+fmtBRL(v)+' na fatura de '+forn+' ('+_nomeMes(dt.slice(0,7))+')');
+}
+function excluirAvulso(id){
+ ask('Excluir este gasto?','Sai do fechamento do fornecedor.','Excluir',function(){
+  S.apagados=S.apagados||{};S.apagados[id]=Date.now();delete S.manutencoes[id];save();closeSheet(2);try{render()}catch(e){}toast('Gasto excluído')});
+}
+function listaAvulsos(){
+ var gs=Object.keys(S.manutencoes||{}).map(function(k){return S.manutencoes[k]}).filter(_ehAvulso).sort(function(a,b){return String(b.dataIni).localeCompare(String(a.dataIni))});
+ var h='<div class="v102sheetHero"><div class="v102sheetIcon">🚗</div><div><div class="v102eyebrow">FORNECEDORES</div><h3>Carros fora da frota</h3><div class="sub">Gastos de carros que não estão mais no Gestão. Entram no fechamento do fornecedor do mês.</div></div></div>'+
+  '<button class="btn ok" onclick="abrirAvulso()">＋ Lançar gasto</button>';
+ if(!gs.length)h+='<div class="v102info" style="margin-top:10px">Nenhum lançado ainda.</div>';
+ else{h+='<div class="v102panel" style="margin-top:10px">';
+  gs.forEach(function(m){var p=(m.pecas||[])[0]||{};
+   h+='<div class="mvrow tap" onclick="abrirAvulso(\''+m.id+'\')"><div class="grow"><b>'+esc(_nomeAvulso(m.carro))+'</b> · '+esc(p.desc||'')+
+    '<div class="sub">'+esc(p.loja||'')+' · '+esc(_nomeMes(String(m.dataIni).slice(0,7)))+' · '+(m.frotaFechamento==='hudson'?'Frota Hudson':'Frota Fábio')+'</div></div><div class="mvval">R$ '+fmtBRL(m.total)+'</div></div>'});
+  h+='</div>'}
+ h+='<div class="v102actionbar"><button class="btn sec" onclick="closeSheet(2)">Fechar</button></div>';
+ openSheet(h,2);
+}
+/* abrir pelo histórico vai direto para a edição */
+(function(){var o=window.verManut;if(typeof o!=='function'||o._v291)return;
+ var w=function(id){var m=S.manutencoes&&S.manutencoes[id];if(_ehAvulso(m))return abrirAvulso(id);return o.apply(this,arguments)};
+ w._v291=1;window.verManut=verManut=w;})();
+/* o mês atual sempre aparece no fechamento (dá para lançar mesmo antes da 1ª manutenção do mês) */
+(function(){var o=window.mesesComGasto;if(typeof o!=='function'||o._v291)return;var w=function(){var r=o.apply(this,arguments)||[],ym=hoje().slice(0,7);if(r.indexOf(ym)<0){r=r.slice();r.unshift(ym);r.sort().reverse()}return r};w._v291=1;window.mesesComGasto=mesesComGasto=w;})();
+/* fatura no WhatsApp: "▸ GOL 2015 (FORA DA FROTA)" */
+(function(){var o=window._waCarro;if(typeof o!=='function'||o._v291)return;var w=function(car,pk){if(!car&&_pkAvulso(pk))return (_nomeAvulso(pk)+' (fora da frota)').toUpperCase();return o.apply(this,arguments)};w._v291=1;window._waCarro=_waCarro=w;})();
 
 </script>
 <style id="g26css">
