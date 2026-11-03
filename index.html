@@ -1697,7 +1697,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=293; var APP_DATE='03/11/2026';
+var APP_VER=294; var APP_DATE='03/11/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -3191,6 +3191,10 @@ function _familiasPeca(raw,contexto){
   if(f[0]==='Ar-condicionado'&&!casou&&/(ar\s*-?\s*condicionado|climatiz)/.test(ctx)&&/(gas|contraste|oleo|valvula|condensador|evaporador|compressor|limpez)/.test(base))casou=true;
   if(!casou)continue;
   if(f[3]&&f[3].test(full))continue;
+  /* v294 (Hudson 03/11): peça que só ACOMPANHA outra não é troca dela — "capa da correia dentada / suporte do calço do motor"
+     não trocou a correia nem o calço. (A próxima troca da correia já ignorava capa/suporte; o catálogo e o resumo agora também.) */
+  if(f[0]==='Correia dentada'&&/(?:\bcapa|\btampa|protetor|protecao|suporte|carenagem|cobertura)\s+(?:d[aoe]s?\s+)?correia/.test(base)&&!/\bkit\b.{0,25}correia\s+dentada/.test(base))continue;
+  if(f[0]==='Coxim/calço do motor/câmbio'&&/suporte\s+(?:d[aoe]s?\s+)?(?:coxim|calco)/.test(base)&&!/(?:\bcom|\+|\be)\s+(?:o\s+)?(?:coxim|calco)/.test(base))continue;
   /* "óleo" sozinho é insuficiente: evita carga de gás com óleo, óleo em sensor etc. */
   if(f[0]==='Óleo do motor'){
    var _oleoFluido=/troca(?:r|do|dos|da|de)?\s+(?:d[eo]s?\s+)?oleo|\b\d+\s*litros?\b|\b\d{1,2}\s*w\s*-?\s*\d{2}\b|lubrificante/.test(base);
