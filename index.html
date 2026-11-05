@@ -1697,7 +1697,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=301; var APP_DATE='03/11/2026';
+var APP_VER=302; var APP_DATE='05/11/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -10387,7 +10387,7 @@ function cnh7Parse(texto){
  /* o CPF vem rotulado; se houver mais de um válido, o mais perto do rótulo */
  var pCpf=flat.search(/\bCPF\b/);
  if(cpfOk.length){o.cpf=cpfOk[0];if(pCpf>=0&&cpfOk.length>1){var best=null,bd=1e9;cpfOk.forEach(function(v){var p=flat.replace(/[^0-9OQDILSBZ]/g,function(ch){return ch}).indexOf(v);var dd=Math.abs(p-pCpf);if(p>=0&&dd<bd){bd=dd;best=v}});if(best)o.cpf=best}}
- else if(cpfs.length){o.cpf=cpfs[0];o.avisos.push('CPF lido não confere (dígito) — confira')}
+ else if(cpfs.length){o.cpfDuvida=cpfs[0]} /* v302: CPF que não confere pelo dígito NUNCA entra (antes entrava o nº da assinatura digital do verso) */
 
  /* Nº de REGISTRO da CNH: 11 dígitos, diferente do CPF */
  var reReg=/(?:^|[^0-9])([0-9OQDILSBZ]{11})(?![0-9])/g,regs=[];
@@ -10463,7 +10463,12 @@ function cnh7Parse(texto){
  /* v223: a UF às vezes sai borrada ("RJ" -> "R)"); perto do rótulo aceita sem a UF */
  if(!mr&&pRg>=0){mr=zona.match(new RegExp('([0-9OQDILSBZ][0-9OQDILSBZX.\\-]{3,16})\\s*[\\-/]?\\s*('+ORG+')\\b'));if(mr)mr[3]=''}
  if(mr){var num=mr[1].replace(/[^0-9X.\-]/g,function(ch){return ch}).replace(/[OQDILSBZ]/g,function(ch){return digitos(ch)});
-  if(num.replace(/\D/g,'')!==o.cpf){o.rg=num.replace(/[.\-]+$/,'');o.rgOrg=mr[2]+(mr[3]?'/'+mr[3]:'')}}
+  if(num.replace(/\D/g,'')!==o.cpf){o.rg=num.replace(/[.\-]+$/,'');o.rgOrg=mr[2]+(mr[3]?'/'+mr[3]:'');
+   /* v302: RG de MG vem com a sigla grudada ("MG24603461 PC MG"): a sigla igual à UF do órgão faz parte do número */
+   var ixr=(zona.match(reRg)?zona:flat).indexOf(mr[0]),src=(zona.match(reRg)?zona:flat);if(mr[3]&&ixr>=2&&src.slice(ixr-2,ixr)===mr[3]&&!/[A-Z]/.test(src.charAt(ixr-3)||''))o.rg=mr[3]+o.rg;
+   /* UF tem que existir (OCR leu "PC MC" no lugar de "PC MG"): UF inexistente não conta como leitura do órgão */
+   var UFS='AC AL AP AM BA CE DF ES GO MA MT MS MG PA PB PR PE PI RJ RN RS RO RR SC SP SE TO';if(mr[3]&&UFS.indexOf(mr[3])<0){o.rgOrg='';if(/^[A-Z]{2}\d/.test(o.rg)&&UFS.indexOf(o.rg.slice(0,2))<0)o.rg=o.rg.slice(2)}
+   o.rgs=[{v:o.rg,org:o.rgOrg}]}}
 
  cnh7AplicaMrz(o,cnh7Mrz(linhas,digitos));
  /* categoria: A, B, AB, C, D, E, AC, AD, AE.
@@ -10476,6 +10481,8 @@ function cnh7Parse(texto){
   var ult=-1,rn=/\d{3,}/g,mn;while((mn=rn.exec(zc)))ult=mn.index+mn[0].length;
   if(ult>=0)zc=zc.slice(ult);
   var m2=zc.match(/\b(AB|AC|AD|AE)\b/)||(ult>=0?zc.match(/^[\W_]{0,6}(A|B|C|D|E)\b/):null);if(m2)o.cat=m2[1]}
+ if(o.cat)o.cats=[o.cat];
+ cnh7Avisos(o);
  return o;
 }
 /* v223: as 3 linhas de código do rodapé da CNH (I<BRA...). Letra própria para máquina, o OCR lê
@@ -10517,8 +10524,24 @@ function cnh7AplicaMrz(o,r){
  o.mrz=!!(r.cnh||r.validade||r.nome);
  cnh7Avisos(o);return o;
 }
+/* v302: RG e categoria não têm dígito para conferir. Só entram quando DUAS leituras diferentes da mesma CNH
+   dão o mesmo valor (ou quando vêm do texto do PDF, que é exato). Leituras que não batem = campo vazio + aviso. */
+function cnh7Vota(lista,chave){var c={},best=null,bc=0;(lista||[]).forEach(function(x){var k=chave(x);if(!k)return;c[k]=(c[k]||0)+1;if(c[k]>bc){bc=c[k];best=x}});return {best:best,n:bc,total:(lista||[]).length,difs:Object.keys(c).length}}
+function cnh7Decide(o){
+ if(o.rgs&&o.rgs.length){var kRg=function(x){return String(x.v||'').replace(/[^0-9A-Z]/g,'')},v=cnh7Vota(o.rgs,kRg);
+  /* RG não tem dígito verificador: só entra se TODAS as leituras (2 ou mais) derem exatamente o mesmo número */
+  if(v.best&&((v.n>=2&&v.difs===1)||o._exato)){var mesmos=o.rgs.filter(function(x){return kRg(x)===kRg(v.best)}),comSigla=mesmos.filter(function(x){return /^[A-Z]{2}\d/.test(x.v)})[0],comOrg=mesmos.filter(function(x){return x.org})[0];
+   o.rg=(comSigla||v.best).v;o.rgOrg=(comOrg||v.best).org||'';o.rgOk=true;o.rgDuvida=false}else{o.rg='';o.rgOk=false;o.rgDuvida=true;
+   var vo=cnh7Vota(o.rgs,function(x){return x.org||''});o.rgOrg=(vo.best&&(vo.n>=2||o._exato))?vo.best.org:''}}
+ if(o.cats&&o.cats.length){var w=cnh7Vota(o.cats,function(x){return x});
+  if(w.best&&(w.n>=2||o._exato)&&w.difs===1){o.cat=w.best;o.catOk=true}else if(w.best&&w.n>=2&&w.n>w.total/2){o.cat=w.best;o.catOk=true}else{o.cat='';o.catOk=false}}
+ if(o.cpf&&!cnh7CpfOk(o.cpf)){o.cpfDuvida=o.cpf;o.cpf=''}
+}
 function cnh7Avisos(o){
+ cnh7Decide(o);
  o.avisos=[];
+ if(!o.cpf&&(o.cpfDuvida||o.nome||o.cnh))o.avisos.push('Não consegui ler o CPF com certeza — digite olhando a CNH');
+ if(o.rgDuvida)o.avisos.push('Não consegui ler o RG com certeza — digite olhando a CNH');
  if(o.cpf&&!cnh7CpfOk(o.cpf))o.avisos.push('CPF lido não confere (dígito) — confira');
  if(o.cnh&&!cnh7RegOk(o.cnh))o.avisos.push('Nº da CNH lido não confere (dígito) — confira');
  if(o.nomeCortado)o.avisos.push('Nome lido da faixa de baixo da CNH, onde vem ABREVIADO — confira letra por letra');
@@ -10534,9 +10557,8 @@ function cnh7Junta(a,b){
   if(b.nome&&(!b._nomeMrz||!a.nome||a._nomeMrz)){a.nome=b.nome;a.nomeCortado=b.nomeCortado;a._nomeMrz=b._nomeMrz;a.nomeConfira=b.nomeConfira}
   else if(b.nome&&a.nome){var tk=b.nome.split(' '),cmp=cnh7NomePelaMrz(a.nome,tk)||cnh7JuntaMrz(a.nome,tk);if(cmp)a.nome=cmp;else a.nomeConfira=true}
   a.mrz=true}
- ['nome','nasc','validade','cat'].forEach(function(k){if(!a[k]&&b[k])a[k]=b[k]});
- if(!a.rg&&b.rg){a.rg=b.rg;a.rgOrg=b.rgOrg}
- else if(b.rg&&a.rg===b.rg&&String(b.rgOrg||'').length>String(a.rgOrg||'').length)a.rgOrg=b.rgOrg;
+ ['nome','nasc','validade'].forEach(function(k){if(!a[k]&&b[k])a[k]=b[k]});
+ a.rgs=(a.rgs||[]).concat(b.rgs||[]);a.cats=(a.cats||[]).concat(b.cats||[]);if(!a.cpfDuvida&&b.cpfDuvida)a.cpfDuvida=b.cpfDuvida;
  return cnh7Avisos(a);
 }
 
@@ -10558,13 +10580,18 @@ function cnh7Canvas(fonte,giro,maxLado,grande,contraste){
 }
 /* v264: CPF que não confere pelo dígito não vale ponto — assim o app tenta a leitura ampliada em vez de parar com o CPF errado */
 function cnh7Pontos(o){return (o.nome?3:0)+(o.cpf&&cnh7CpfOk(o.cpf)?3:0)+(o.cnh&&cnh7RegOk(o.cnh)?2:(o.cnh?1:0))+(o.validade?1:0)+(o.rg?1:0)+(o.cat?1:0)}
+/* v302: tudo conferido? (CPF e nº da CNH pelo dígito, nome/datas pela faixa, RG e categoria por 2 leituras iguais) */
+function cnh7Completo(o){return !!(o&&o.nome&&o.cpf&&cnh7CpfOk(o.cpf)&&o.cnh&&cnh7RegOk(o.cnh)&&o.validade&&o.rgOk)}
 function cnh7Ocr(fonte,status){
  return cnh7Script(CNH7_TESS).then(function(){
   return Tesseract.createWorker('por',1,CNH7_OPT);
  }).then(function(wk){
-  /* v223: [giro, ampliada, contraste]. Em pé normal primeiro (como antes: se já leu o principal, para).
-     Senão, em pé AMPLIADA (2 contrastes) juntando o que cada leitura achou. Só se em pé não deu
-     nada gira a foto; a melhor rotação ganha também a leitura ampliada. */
+  return _cnh7Inteira(wk,fonte,status).then(function(m){try{wk.terminate()}catch(e){}return m},function(e){try{wk.terminate()}catch(x){}throw e});
+ });
+}
+function _cnh7Inteira(wk,fonte,status){
+  /* v223: [giro, ampliada, contraste]. Em pé normal primeiro. Depois em pé AMPLIADA (2 contrastes) juntando
+     o que cada leitura achou (v302: só para quando está TUDO conferido). Só se em pé não deu nada gira a foto. */
   var por={},txt={},fila=[[0,0,1.35],[0,1,1],[0,1,1.35],[90,0,1.35],[270,0,1.35],[180,0,1.35]],extra=false;
   function pts(g){return por[g]?cnh7Pontos(por[g]):-1}
   function melhorGiro(){var bg=0;[90,270,180].forEach(function(g){if(pts(g)>pts(bg))bg=g});return bg}
@@ -10575,28 +10602,26 @@ function cnh7Ocr(fonte,status){
     else return Promise.resolve();
    }
    var t=fila[k],g=t[0];
-   if(k===1&&pts(0)>=8)return Promise.resolve();          /* em pé já leu o principal: para */
+   if(k===1&&cnh7Completo(por[0]))return Promise.resolve();
    if(k===3&&pts(0)>=6)return Promise.resolve();          /* em pé funcionou: não gira */
    if(k>=3&&k<6&&pts(melhorGiro())>=8)return Promise.resolve();
-   if(k>=6&&pts(g)>=10)return Promise.resolve();
+   if(k>=6&&cnh7Completo(por[g]))return Promise.resolve();
    if(status)status(g?'A foto parece de lado — tentando girar…':(t[1]?'Ampliando a CNH para ler melhor…':'Lendo a CNH…'));
    return wk.recognize(cnh7Canvas(fonte,g,0,t[1],t[2])).then(function(r){
     var tx=(r&&r.data&&r.data.text)||'',o=cnh7Parse(tx);
     var antes=pts(g);por[g]=cnh7Junta(por[g],o);if(cnh7Pontos(por[g])>antes||!txt[g])txt[g]=tx;
-    if(k===2&&pts(0)>=8)return;                           /* em pé ampliada resolveu */
+    if(k===2&&cnh7Completo(por[0]))return;
     return tenta(k+1);
    });
   }
-  return tenta(0).then(function(){try{wk.terminate()}catch(e){}var bg=pts(0)>=pts(melhorGiro())?0:melhorGiro();var melhor=por[bg]||{avisos:[]};melhor._giro=bg;melhor._texto=txt[bg]||'';return melhor},
-   function(e){try{wk.terminate()}catch(x){}throw e});
- });
+  return tenta(0).then(function(){var bg=pts(0)>=pts(melhorGiro())?0:melhorGiro();var melhor=por[bg]||{avisos:[]};melhor._giro=bg;melhor._texto=txt[bg]||'';return melhor});
 }
 function cnh7Img(b64,mime){return new Promise(function(ok,no){var im=new Image();im.onload=function(){ok(im)};im.onerror=function(){no(new Error('imagem inválida'))};im.src='data:'+mime+';base64,'+b64})}
 /* PDF: texto direto; se for só imagem, renderiza a 1ª página e faz OCR */
 function cnh7LerPdf(b64,status){
  var buf=b64ToU8(b64).buffer;
  return (window.impTextoPdfBruto||impTextoPdf)(buf.slice(0)).then(function(txt){
-  var o=cnh7Parse(txt||'');
+  var o=cnh7Parse(txt||'');if(_ocrUtil(txt)){o._exato=true;cnh7Avisos(o)}
   if(cnh7Pontos(o)>=6&&!o._nomeMrz){o._texto=txt;return o}
   var doTexto=o;
   return garantirPdfjs().then(function(){return pdfjsLib.getDocument({data:b64ToU8(b64)}).promise}).then(function(pdf){return pdf.getPage(1)}).then(function(pg){
@@ -10652,7 +10677,7 @@ function cnh7Card(){
   h+='<div class="cnh7top">'+thumb+'<div class="cnh7tx"><b>CNH anexada</b><small>'+(CNH7.lendo?esc(CNH7.msg||'Lendo…'):(d?'Vai ficar guardada neste contrato':'Não consegui ler — preencha abaixo'))+'</small></div><button class="n3mini" onclick="cnh7Escolher()">Trocar</button></div>';
   if(CNH7.lendo)h+='<div class="cnh7bar"><i></i></div>';
   if(d&&!CNH7.lendo){
-   var L=[['Nome',d.nome+((d._nomeMrz||d.nomeCortado||d.nomeConfira)?' ⚠️':'')],['CPF',d.cpf?showCPF(d.cpf):''],['RG',d.rg?(d.rg+(d.rgOrg?' · '+d.rgOrg:'')):''],['Nº da CNH',d.cnh],['Validade',d.validade?dataBR(d.validade):''],['Nascimento',d.nasc?dataBR(d.nasc):''],['Categoria',d.cat]];
+   var L=[['Nome',d.nome+((d._nomeMrz||d.nomeCortado||d.nomeConfira)?' ⚠️':'')],['CPF',d.cpf?showCPF(d.cpf):''],['RG',d.rg?(d.rg+(d.rgOrg?' · '+d.rgOrg:'')):''],['Nº da CNH',d.cnh],['Validade',d.validade?dataBR(d.validade):''],['Nascimento',d.nasc?dataBR(d.nasc):'']].concat(d.cat?[['Categoria',d.cat]]:[]);
    h+='<div class="cnh7lido">'+L.map(function(x){return '<div><span>'+x[0]+'</span><b>'+(x[1]?esc(x[1]):'<em>não li</em>')+'</b></div>'}).join('')+'</div>';
    if(d.avisos&&d.avisos.length)h+='<div class="n3info n3alertaBox">'+d.avisos.map(esc).join('<br>')+'</div>';
    if(d.validade&&d.validade<hoje())h+='<div class="n3info n3alertaBox">⚠️ A validade que eu li ('+dataBR(d.validade)+') já passou. Confira na CNH: se estiver vencida mesmo, peça a nova antes de assinar.</div>';
@@ -10691,6 +10716,8 @@ function cnh7Preenche(d){
  if(d.rgOrg)set('ncRgOrg',d.rgOrg);
  if(d.cnh)set('ncCnh',d.cnh);
  if(d.validade)set('ncCnhVal',d.validade);
+ /* v302: o que não deu para ler com certeza fica vazio e marcado em amarelo até você digitar */
+ [['ncCpf',!d.cpf],['ncRgNum',d.rgDuvida],['ncRgOrg',d.rgDuvida&&!d.rgOrg]].forEach(function(z){var e=document.getElementById(z[0]);if(!e)return;e.classList.toggle('ocrConfira',!!z[1]);if(z[1]&&!e._cnhMarca){e._cnhMarca=1;e.addEventListener('input',function(){e.classList.remove('ocrConfira')})}});
  /* motorista que já teve contrato (mesmo CPF): traz endereço e telefone do último contrato,
     só nos campos vazios — a CNH manda nos dados pessoais, o contrato antigo no endereço */
  try{if(d.cpf){var ant=n3cMotoristas().filter(function(x){return String((x.locatario||{}).cpf||'').replace(/\D/g,'')===d.cpf})[0];
@@ -14568,14 +14595,14 @@ function n29CaucaoDoTexto(T){T=String(T||'');if(!/quantia\s*total\s*de\s*R\$/i.t
 /* 4a. cinza feito pelo canal VERDE: o texto vermelho da CNH (validade, nº de registro, categoria) fica escuro
        como o preto, e o fundo verde/amarelo fica claro. Antes o vermelho virava cinza médio e sumia. */
 (function(){var o=window.cnh7Canvas;if(typeof o!=='function'||o._n29)return;
- var w=function(fonte,giro,maxLado,grande,contraste){
+ var w=function(fonte,giro,maxLado,grande,contraste,classico){
   var fw=fonte.naturalWidth||fonte.width,fh=fonte.naturalHeight||fonte.height,esc=Math.min(1,(maxLado||2200)/Math.max(fw,fh));
   if(Math.max(fw,fh)<1600)esc=1600/Math.max(fw,fh);
   if(grande)esc=Math.max(esc,Math.min(3,4800/Math.max(fw,fh),Math.sqrt(12e6/(fw*fh))));
   esc=Math.min(esc,Math.sqrt(14e6/(fw*fh)));
   var W=Math.round(fw*esc),H=Math.round(fh*esc),cv=document.createElement('canvas'),gira=(giro===90||giro===270);cv.width=gira?H:W;cv.height=gira?W:H;
   var x=cv.getContext('2d');x.save();x.translate(cv.width/2,cv.height/2);x.rotate((giro||0)*Math.PI/180);x.imageSmoothingQuality='high';x.drawImage(fonte,-W/2,-H/2,W,H);x.restore();
-  try{var im=x.getImageData(0,0,cv.width,cv.height),d=im.data,c=contraste||1.35;for(var i=0;i<d.length;i+=4){var g=0.12*d[i]+0.78*d[i+1]+0.10*d[i+2];g=(g-128)*c+128;g=g<0?0:g>255?255:g;d[i]=d[i+1]=d[i+2]=g}x.putImageData(im,0,0)}catch(e){}
+  try{var im=x.getImageData(0,0,cv.width,cv.height),d=im.data,c=contraste||1.35;var kr=classico?0.3:0.12,kg=classico?0.59:0.78,kb=classico?0.11:0.10;for(var i=0;i<d.length;i+=4){var g=kr*d[i]+kg*d[i+1]+kb*d[i+2];g=(g-128)*c+128;g=g<0?0:g>255?255:g;d[i]=d[i+1]=d[i+2]=g}x.putImageData(im,0,0)}catch(e){}
   return cv};
  w._n29=1;window.cnh7Canvas=w;})();
 /* 4b. nome: tira sujeira do fim ("JOAO SILVA DA COSTA LL TO ÇO") — palavra curta no fim só fica se aparece de novo no documento (filiação) */
@@ -14660,8 +14687,18 @@ function n29Binaria(c){var o=document.createElement('canvas');o.width=c.width;o.
   var t=lo+(hi-lo)*0.84;for(var j=0;j<d.length;j+=4){var v=d[j]>t?255:0;d[j]=d[j+1]=d[j+2]=v}x.putImageData(im,0,0)}catch(e){return c}return o}
 /* validade: entre as leituras, vale a MAIOR data plausível (a validade é sempre a data mais distante da CNH) */
 function n29Validade(a,b){var hj=hoje(),lim=String(+hj.slice(0,4)+11)+hj.slice(4);var vs=[a&&a.validade,b&&b.validade].filter(function(v){return /^\d{4}-\d{2}-\d{2}$/.test(v||'')&&v<=lim});vs.sort();return vs.pop()||''}
+/* v302: ainda faltou CPF ou RG conferido? mais 2 leituras com o cinza comum (no print pequeno o CPF preto
+   sai melhor assim) — cada leitura nova vota no RG; o que continuar sem certeza fica vazio para digitar */
+function cnh7Reforco(j,rs,fonte,status){
+ if(!j||((j.cpf&&cnh7CpfOk(j.cpf))&&j.rgOk))return Promise.resolve(j);
+ var fila=[];if(rs&&rs[0])fila.push(function(){return cnh7Canvas(rs[0],0,0,0,1.35,1)},function(){return cnh7Canvas(rs[0],0,0,1,1,1)});
+ fila.push(function(){return cnh7Canvas(fonte,j._giro||0,0,1,1.35,1)});
+ return cnh7Script(CNH7_TESS).then(function(){return Tesseract.createWorker('por',1,CNH7_OPT)}).then(function(wk){var k=0;
+  function prox(){if(k>=fila.length||((j.cpf&&cnh7CpfOk(j.cpf))&&j.rgOk))return Promise.resolve(j);if(status)status('Conferindo CPF e RG mais uma vez…');
+   return wk.recognize(fila[k++]()).then(function(r){var p=cnh7Parse((r&&r.data&&r.data.text)||''),g=j._giro,t=j._texto,va=j.validade;j=cnh7Junta(j,p);j._giro=g;j._texto=t;if(va)j.validade=va;return prox()},function(){return prox()})}
+  return prox().then(function(x){try{wk.terminate()}catch(e){}return x},function(){try{wk.terminate()}catch(e){}return j})},function(){return j})}
 (function(){var o=window.cnh7Ocr;if(typeof o!=='function'||o._n29)return;
- function bom(r){return r&&cnh7Pontos(r)>=9&&r.validade&&r.validade>=hoje()&&r.nome}
+ function bom(r){return r&&cnh7Completo(r)&&r.validade>=hoje()} /* v302: só para quando CPF/nº conferem e o RG foi lido igual 2 vezes */
  /* leitura rápida dos recortes: um leitor só, uma passada em cada versão (cinza e preto-e-branco) */
  function rapido(rs,status){var fila=[];rs.forEach(function(c){fila.push(function(){return cnh7Canvas(c,0,0,0,1.35)},function(){return n29Binaria(c)})});
   return cnh7Script(CNH7_TESS).then(function(){return Tesseract.createWorker('por',1,CNH7_OPT)}).then(function(wk){var junto=null,k=0;
@@ -14672,7 +14709,7 @@ function n29Validade(a,b){var hj=hoje(),lim=String(+hj.slice(0,4)+11)+hj.slice(4
   if(!rs.length)return o.apply(this,arguments);
   return rapido(rs,status).then(function(r){if(bom(r))return r;
    return o.call(null,fonte,status).then(function(r2){var v=n29Validade(r,r2),j=cnh7Junta(r||null,r2);if(j){if(v)j.validade=v;j._giro=(r2&&r2._giro)||0;j._texto=(r2&&r2._texto)||(r&&r._texto)}return j},function(){return r})},
-   function(){return o.call(null,fonte,status)})};
+   function(){return o.call(null,fonte,status)}).then(function(j){return cnh7Reforco(j,rs,fonte,status)})};
  w._n29=1;window.cnh7Ocr=w;})();
 
 var PIX_CFG={sel:'input[inputmode="decimal"]'};
@@ -15004,6 +15041,15 @@ html:not(.gsplPre),html:not(.gsplPre) body,html:not(.gsplPre) body.locked{backgr
 :root:is(#escA,html) body:is(#escB,body) .cdoc{color-scheme:light;--tx:#12141A;--tx2:#6A7078;--card:#FFFFFF;--card2:#F5F6F8;--bord:#E3E5E9;--ac:#C77A16;--ok:#1E7D52;--red:#C0392B;background:#FFFFFF!important;color:#12141A!important}
 :root:is(#escA,html) body:is(#escB,body) .g2chip.on{background:#F5F5F7!important;color:#000!important}
 
+
+/* v302: campos em linha (rótulo à esquerda, valor à direita) ficam SEM caixa, como no claro — antes o fundo cinza
+   pegava só parte da linha e parecia quebrado (contrato, manutenção, edição, busca) */
+:root:is(#escA,html) body:is(#escB,body) .n3f input:not([type=checkbox]):not(.ocrConfira),:root:is(#escA,html) body:is(#escB,body) .n3f select,:root:is(#escA,html) body:is(#escB,body) .n3f textarea,:root:is(#escA,html) body:is(#escB,body) .g2busca input{background:transparent!important;border:0!important;box-shadow:none!important}
+:root:is(#escA,html) body:is(#escB,body) .n3f input:not([type=checkbox]):not(.ocrConfira):focus,:root:is(#escA,html) body:is(#escB,body) .n3f select:focus,:root:is(#escA,html) body:is(#escB,body) .n3f textarea:focus{background:transparent!important}
+:root:is(#escA,html) body:is(#escB,body) .n3f input::placeholder,:root:is(#escA,html) body:is(#escB,body) .n3f textarea::placeholder{color:#636366!important}
+:root:is(#escA,html) body:is(#escB,body) input.ocrConfira,:root:is(#escA,html) body:is(#escB,body) .n3f input.ocrConfira{background:rgba(255,179,64,.18)!important;border:1.5px solid #FFB340!important;border-radius:8px!important}
+/* barra Continuar/Gerar: sem o brilho branco em volta; some no fundo preto como no claro some no cinza */
+:root:is(#escA,html) body:is(#escB,body) .n3nav{background:#000!important;box-shadow:0 -10px 16px #000!important}
 </style>
 </body>
 </html>
