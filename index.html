@@ -15090,6 +15090,26 @@ html:not(.gsplPre),html:not(.gsplPre) body,html:not(.gsplPre) body.locked{backgr
    não aparece pedaço do formulário entre o Salvar e a barra flutuante. */
 :root:is(#escA,html) body:is(#escB,body) #n3mNav.n3nav,:root:is(#escA,html) body:is(#escB,body) .n3nav{background:#000!important}
 :root:is(#escA,html) body:is(#escB,body) .n3nav::after{content:'';position:absolute;left:-16px;right:-16px;top:calc(100% - 14px);height:170px;background:#000;pointer-events:none;z-index:-1}
+
+/* v307 (Hudson 06/11): "Consultar veículos" estava com caixas claras e letra apagada no escuro */
+:root:is(#escA,html) body:is(#escB,body) .vcAviso{background:#2A2112!important;border-color:#5A4520!important;color:#F3D9A8!important}
+:root:is(#escA,html) body:is(#escB,body) .vcSec{color:#8E8E93!important}
+:root:is(#escA,html) body:is(#escB,body) .vcResumo{color:#E5E5EA!important}
+:root:is(#escA,html) body:is(#escB,body) .vcBox{background:#1C1C1E!important;box-shadow:none!important}
+:root:is(#escA,html) body:is(#escB,body) .vcCar,:root:is(#escA,html) body:is(#escB,body) .vcMod{background:#1C1C1E!important;border-bottom-color:#2C2C2E!important}
+:root:is(#escA,html) body:is(#escB,body) .vcCarTx b,:root:is(#escA,html) body:is(#escB,body) .vcMod b{color:#fff!important}
+:root:is(#escA,html) body:is(#escB,body) .vcCarTx small,:root:is(#escA,html) body:is(#escB,body) .vcMod small{color:#8E8E93!important}
+:root:is(#escA,html) body:is(#escB,body) .vcMais summary{color:#C7C7CC!important}
+:root:is(#escA,html) body:is(#escB,body) .vcSim{background:#12301F!important;color:#6EE7A0!important;border-color:#1E5236!important}
+:root:is(#escA,html) body:is(#escB,body) .vcNao{background:#2C2C2E!important;color:#AEAEB2!important;border-color:#3A3A3C!important}
+:root:is(#escA,html) body:is(#escB,body) .vcAte{background:#33250D!important;color:#FBBF5A!important;border-color:#5A4318!important}
+:root:is(#escA,html) body:is(#escB,body) .vcBusca{background:#1C1C1E!important;border-color:#3A3A3C!important;color:#fff!important}
+:root:is(#escA,html) body:is(#escB,body) .vcChips button{background:#1C1C1E!important;border-color:#3A3A3C!important;color:#E5E5EA!important}
+:root:is(#escA,html) body:is(#escB,body) .vcChips button.on{background:#fff!important;border-color:#fff!important;color:#000!important}
+:root:is(#escA,html) body:is(#escB,body) .vcMarca{color:#C7C7CC!important}
+:root:is(#escA,html) body:is(#escB,body) .vcObs{color:#FBBF5A!important}
+:root:is(#escA,html) body:is(#escB,body) .vcFonte{color:#8E8E93!important}
+:root:is(#escA,html) body:is(#escB,body) .vcFonte a{color:#64A8FF!important}
 </style>
 <script id="tecladoBarra">/* Hudson 06/11: com o teclado aberto, a barra flutuante de baixo some (não cobre o que você está digitando) */
 (function(){var R=document.documentElement;function campo(e){if(!e)return false;var t=e.tagName;if(t==='TEXTAREA'||t==='SELECT'||e.isContentEditable)return true;return t==='INPUT'&&!/^(button|submit|reset|checkbox|radio|range|color|file|image|hidden)$/i.test(e.type||'')}
