@@ -1697,7 +1697,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=304; var APP_DATE='05/11/2026';
+var APP_VER=305; var APP_DATE='05/11/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -2120,8 +2120,8 @@ function alertasCarro(c){
   else if(f2<=8000){a.push({n:'yel',t:'⚙️ Correia dentada perto: faltam '+fmtKm(f2)+' km (troca aos '+fmtKm(c.proxCorreiaKm)+')'})}}
  var ano=(new Date()).getFullYear();
  if(c.exercicioCRLV&&parseInt(c.exercicioCRLV,10)<ano)a.push({n:'red',t:'📄 CRLV atrasado (exercício '+c.exercicioCRLV+')'});
- if(semAcento(c.combustivel||'').indexOf('gnv')>=0&&c.gnvExercicio&&parseInt(c.gnvExercicio,10)<ano)a.push({n:'red',t:'🔥 Vistoria do GNV atrasada (exercício '+c.gnvExercicio+')'});
- if(semAcento(c.combustivel||'').indexOf('gnv')>=0&&c.gnvRequalif){var hjR=hoje();
+ if(temGnv(c)&&c.gnvExercicio&&parseInt(c.gnvExercicio,10)<ano)a.push({n:'red',t:'🔥 Vistoria do GNV atrasada (exercício '+c.gnvExercicio+')'});
+ if(temGnv(c)&&c.gnvRequalif){var hjR=hoje();
   if(c.gnvRequalif<hjR)a.push({n:'red',t:'🧯 Requalificação do cilindro GNV VENCIDA em '+dataBR(c.gnvRequalif)});
   else if(c.gnvRequalif.slice(0,4)===String(ano))a.push({n:'yel',t:'🧯 Requalificação do cilindro GNV vence este ano em '+dataBR(c.gnvRequalif)});}
  /* observações com data: vencidas e as da próxima semana */
@@ -3380,13 +3380,14 @@ function _fichaV180(pk){window._fichaPk=pk;
  h+='<button class="btn mini sec" onclick="pedirArquivo(\''+pk+'/crlv\',\'application/pdf\',\''+pk+'\')">🔄 '+(c.temCrlv?'Substituir':'Anexar')+' CRLV</button>';
  if(c.temCrlv||c.temGnvDoc)h+='<button class="btn mini sec" onclick="varrerDocsAuto({pk:\''+pk+'\',force:true})">📄 Reler documentos deste carro</button>';
  if(c.temCrlv){var _fal=faltaDoCrlv(c);if(c.crlvSemTexto)h+='<div class="sub" style="color:var(--warn)">⚠ CRLV sem texto (foto ou digitalizado) — o app não consegue ler. Baixe o CRLV-e digital pelo app do Detran ou preencha em ✏️ Editar dados.</div>';else if(_fal.length)h+='<div class="sub" style="color:var(--warn)">⚠ Não achei no CRLV: '+esc(_fal.join(', '))+'</div>';}
- if(semAcento(c.combustivel||'').indexOf('gnv')>=0||c.temGnvDoc){
+ if(temGnv(c)){
   h+='<div class="sect">Vistoria do GNV (anual)</div>';
   h+='<div class="kv"><b>Exercício da vistoria</b><span>'+esc(c.gnvExercicio||'—')+'</span></div>';
   h+='<div class="kv"><b>Requalificação do cilindro</b><span>'+(c.gnvRequalif?dataBR(c.gnvRequalif):'—')+'</span></div>';
   h+=c.temGnvDoc?'<button class="btn mini" onclick="verDoc(\''+pk+'/gnv\',\'Vistoria GNV '+esc(fmtPlaca(c.placa))+'\',\''+pk+'\',\'gnv\')">👁 Ver PDF</button>':'<div class="sub">Nenhum laudo de vistoria anexado.</div>';
   h+='<button class="btn mini sec" onclick="pedirArquivo(\''+pk+'/gnv\',\'application/pdf\',\''+pk+'\',\'temGnvDoc\')">🔄 '+(c.temGnvDoc?'Substituir':'Anexar')+' laudo do GNV</button>';
  }
+ if(!temGnv(c))h+='<button class="btn mini sec" onclick="pedirArquivo(\''+pk+'/gnv\',\'application/pdf\',\''+pk+'\',\'temGnvDoc\')">🔥 Tem GNV? Anexar laudo da vistoria</button>';
  h+='<div class="sect">Procedência</div>';
  h+='<div class="kv"><b>Leilão</b><span>'+esc(c.procLeilao||'Não')+'</span></div>';
  h+='<div class="kv"><b>Financiado</b><span>'+esc(c.procFinanciado||'Não')+'</span></div>';
@@ -3730,7 +3731,7 @@ function _g2Saude(c,pk){
   else h+=_g2Barra('Correia dentada','sem previsão','',4,'var(--bord)','','editarProg(\''+pk+'\')')}
  var ano=(new Date()).getFullYear(),crlvOk=!c.exercicioCRLV||parseInt(c.exercicioCRLV,10)>=ano;
  h+=_g2Barra('Documento (CRLV)',c.exercicioCRLV?(crlvOk?'exercício '+c.exercicioCRLV+' em dia':'exercício '+c.exercicioCRLV+' atrasado'):'sem CRLV lido',crlvOk?'':'g2red',100,c.exercicioCRLV?(crlvOk?VERD:VERM):'var(--bord)','','fichaTab(\'docs\')');
- if(semAcento(c.combustivel||'').indexOf('gnv')>=0){
+ if(temGnv(c)){
   var vOk=!c.gnvExercicio||parseInt(c.gnvExercicio,10)>=ano,rq=c.gnvRequalif||'',rqV=rq&&rq<hoje(),rqA=rq&&!rqV&&rq.slice(0,4)===String(ano);
   var tx=!vOk?'vistoria '+c.gnvExercicio+' atrasada':(rqV?'cilindro vencido':(rqA?'cilindro vence em '+dataBR(rq):(c.gnvExercicio?'vistoria '+c.gnvExercicio+' em dia':'sem laudo lido')));
   var bad=!vOk||rqV;h+=_g2Barra('GNV',tx,bad?'g2red':rqA?'g2amb':'',100,bad?VERM:rqA?AMA:(c.gnvExercicio?VERD:'var(--bord)'),rq&&!rqV&&!rqA?'cilindro: requalificar em '+dataBR(rq):'','fichaTab(\'docs\')');
@@ -3847,10 +3848,11 @@ function _fichaTabHtml(pk,T){
    ((c.temCrlv||c.temGnvDoc)?'<button class="btn mini sec" onclick="varrerDocsAuto({pk:\''+pk+'\',force:true})">Reler documentos</button>':'')+'</div>';
   if(!c.temCrlv)h+='<div class="g2vazio">Nenhum CRLV anexado.</div>';
   if(c.temCrlv){var _fal=faltaDoCrlv(c);if(c.crlvSemTexto)h+='<div class="g2aviso g2aviso-amb">CRLV sem texto (foto ou digitalizado): o app não consegue ler. Baixe o CRLV-e digital pelo app do Detran ou preencha em Editar dados.</div>';else if(_fal.length)h+='<div class="g2aviso g2aviso-amb">Não achei no CRLV: '+esc(_fal.join(', '))+'</div>';else if(!c.motorCodigo&&/_L(9[4-9]|\d{3})$/.test(String(c.lidoCrlv||'')))h+='<div class="g2aviso g2aviso-amb">O CRLV não trouxe o código do motor de forma legível. Se precisar, preencha em Editar.</div>'}
-  if(semAcento(c.combustivel||'').indexOf('gnv')>=0||c.temGnvDoc){
+  if(temGnv(c)){
    h+='<div class="g2sub"><span>GNV</span></div><div class="kv"><b>Vistoria (exercício)</b><span>'+esc(c.gnvExercicio||'—')+'</span><b>Requalificação do cilindro</b><span>'+(c.gnvRequalif?dataBR(c.gnvRequalif):'—')+'</span></div>';
    h+='<div class="g2btns">'+(c.temGnvDoc?'<button class="btn mini ok" onclick="enviarDoc(\''+pk+'/gnv\',\''+pk+'\')">📤 Enviar laudo</button><button class="btn mini" onclick="verDoc(\''+pk+'/gnv\',\'Vistoria GNV '+esc(fmtPlaca(c.placa))+'\',\''+pk+'\',\'gnv\')">Ver laudo</button>':'')+'<button class="btn mini sec" onclick="pedirArquivo(\''+pk+'/gnv\',\'application/pdf\',\''+pk+'\',\'temGnvDoc\')">'+(c.temGnvDoc?'Substituir':'Anexar')+' laudo do GNV</button></div>';
   }
+  if(!temGnv(c))h+='<div class="g2btns"><button class="btn mini sec" onclick="pedirArquivo(\''+pk+'/gnv\',\'application/pdf\',\''+pk+'\',\'temGnvDoc\')">🔥 Tem GNV? Anexar laudo da vistoria</button></div>';
   h+='<div class="g2sub"><span>Dados do veículo</span><button class="g2link" onclick="formCarro(\''+pk+'\')">Editar</button></div><div class="kv">'+
    '<b>Modelo (CRLV)</b><span>'+esc(c.modeloCRLV||'—')+'</span><b>Motorista atual</b><span>'+(c.motorista?esc(c.motorista):'—')+'</span><b>Ano fab/mod</b><span>'+esc(c.ano||'—')+'</span><b>Cor</b><span>'+esc(c.cor||'—')+'</span><b>Combustível</b><span>'+esc(c.combustivel||'—')+'</span><b>Potência</b><span>'+esc(c.potencia||'—')+'</span>'+
    '<b>Chassi</b><span style="font-family:Menlo,monospace;font-size:12px">'+esc(c.chassi||'—')+'</span><b>Renavam</b><span>'+esc(c.renavam||'—')+'</span><b>Código do motor</b><span style="font-family:Menlo,monospace;font-size:12px">'+esc(c.motorCodigo||'—')+'</span><b>Código do rádio</b><span>'+esc(c.codigoRadio||'—')+'</span>'+
@@ -8732,6 +8734,9 @@ function impRequalif(texto){
 }
 /* Exercício da vistoria de GNV. O CSV do Denatran NÃO tem a palavra "exercício":
    o ano vem no número do CSV (…-66/2026) ou na data da inspeção. */
+/* v305 (Hudson 06/11): carro com GNV — o CRLV às vezes escreve "GÁS NATURAL" (sem a sigla GNV), ou o kit foi instalado
+   e ainda não está no documento. Tem GNV se: o combustível diz GNV / GÁS NATURAL / GÁS, ou já tem laudo anexado. */
+function temGnv(c){if(!c)return false;if(c.temGnvDoc)return true;var s=semAcento(c.combustivel||'');return /gnv|gas natural|(^|[\/\s,])gas($|[\/\s,])/.test(s)}
 function impExercGnv(texto){
  /* v157: o laudo novo pode citar o CSV anterior (…/2025) junto do atual (…/2026). Antes valia o
     PRIMEIRO número achado, e o exercício ficava preso no ano velho. Agora vale o MAIOR ano entre
