@@ -1697,7 +1697,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=306; var APP_DATE='05/11/2026';
+var APP_VER=307; var APP_DATE='05/11/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -3118,7 +3118,9 @@ var FAMILIAS=[
  ['Cubo de roda / rolamento',/cubo\s+de\s+roda|rolamento\s+(?:de|da|do)?\s*roda|rolamento\s+(?:dianteir|traseir)/,null,/alternador|embreagem|arranque|motor\s+de\s+partida/],
  ['Homocinética / trizeta',/homocinetica|trizeta|semi\s*-?\s*eixo/,null,null],
  ['Coifa',/coifa/,null,null],
- ['Pneu',/\bpneu/,null,/estepe|calibr/],
+ /* v307 (Hudson 06/11): "step"/"estepe" é o pneu reserva — família própria, nunca confunde com os pneus do carro */
+ ['Pneu do estepe',/pneu.{0,30}(?:estepe|\bstep+e?\b)|(?:estepe|\bstep+e?\b).{0,30}pneu|^\W*(?:\d+\s*(?:un\.?|x)?\s*)?(?:troca\w*\s+(?:d[oe]\s+)?)?(?:estepe|step+e?)\b/,null,/calibr/],
+ ['Pneu',/\bpneu/,null,/estepe|\bstep+e?\b|calibr/],
  ['Alinhamento',/alinhament/,null,/para\s*-?\s*choque|parachoque|lataria|motor|comando|cabecote|valvula|tampa\s+de\s+valvula|porta\s*-?\s*malas?|painel|capo|para\s*-?\s*lama|paralama|\bporta\b/],
  ['Balanceamento',/balancea/,null,null],
  ['Cambagem',/cambagem/,null,null],
@@ -3262,10 +3264,10 @@ function catalogoCarro(pk){
    var sv=b&&b.servicos;var arr=Array.isArray(sv)?sv:String(sv||'').split('\n'),ctx=(b&&b.titulo)||'';
    arr.forEach(function(x){x=String(x||'').trim();if(x)linhas.push({txt:x,ctx:ctx})});
   });
-  (m.pecas||[]).forEach(function(p){if(p&&p.desc)linhas.push({txt:String(p.desc).trim(),ctx:''})});
-  var vistasAqui={};
+  (m.pecas||[]).forEach(function(p){if(p&&p.desc)linhas.push({txt:String(p.desc).trim(),ctx:'',peca:1})});
+  var vistasAqui={},_svC=_utServs(m.blocos);
   linhas.forEach(function(l){
-   _familiasPeca(l.txt,l.ctx).forEach(function(f){
+   (l.peca?_utEstepe(l.txt,_familiasPeca(l.txt,''),_svC):_familiasPeca(l.txt,l.ctx)).forEach(function(f){
     if(!f||vistasAqui[f])return;      /* mesma peça repetida na manutenção conta 1 vez */
     vistasAqui[f]=1;
     var atual=mapa[f];
@@ -6712,7 +6714,7 @@ function detectarComponentes(m){
   }
 
   /* PNEUS: somente substituição. Remendo/macarrão/vulcanização e serviços de roda não contam. */
-  if(/\bpneu/.test(l)&&sub&&!/estepe|calibr|alinham|balancea|rodizio|conserto|remendo|reparo|furo|macarrao|vulcaniz|cogumelo/.test(l)){
+  if(/\bpneu/.test(l)&&sub&&!/estepe|\bstep+e?\b|calibr|alinham|balancea|rodizio|conserto|remendo|reparo|furo|macarrao|vulcaniz|cogumelo/.test(l)){
    var ps=_posRodas(l);if(ps.length){addPos(pneuPos,ps);if(tipo==='servico')addPos(pneuServPos,ps);else addPos(pneuPecaPos,ps)}
   }
   /* MOLAS: somente substituição. Encapar/calço/mangueira não contam. */
@@ -9641,6 +9643,12 @@ function _utPosDe(desc,servs,f){
  (servs||[]).forEach(function(sv){if(_utFams(sv.txt,sv.ctx).indexOf(f)<0)return;var q=_utPosSet(sv.txt);if(q)q.forEach(function(x){if(u.indexOf(x)<0)u.push(x)})});
  return u.length?u:null;
 }
+/* v307: a peça só diz "1 pneu meia vida…", mas o serviço da mesma manutenção diz "troca do pneu do step" e nenhum serviço
+   fala de pneu numa roda do carro → a peça é o pneu do ESTEPE (compara só com estepe; não mexe nos pneus do carro). */
+function _utEstepe(desc,fs,servs){
+ if(fs.indexOf('Pneu')<0||_utPosSet(desc))return fs;var est=false,carro=false;
+ (servs||[]).forEach(function(sv){var fz=_utFams(sv.txt,sv.ctx);if(fz.indexOf('Pneu do estepe')>=0)est=true;else if(fz.indexOf('Pneu')>=0&&_utPosSet(sv.txt))carro=true});
+ if(!est||carro)return fs;var r=[];fs.forEach(function(f){f=f==='Pneu'?'Pneu do estepe':f;if(r.indexOf(f)<0)r.push(f)});return r}
 function _utServs(blocos){var r=[];(blocos||[]).forEach(function(b){if(!b)return;var sv=b.servicos;(Array.isArray(sv)?sv:String(sv||'').split('\n')).forEach(function(x){x=String(x||'').trim();if(x)r.push({txt:x,ctx:b.titulo||''})})});return r}
 function _utRotulo(ps,f){
  if(!ps||!ps.length)return '';var k=ps.slice().sort().join(','),t;
@@ -9653,7 +9661,7 @@ function ultimasTrocasPecas(pk,pecas,o){
  o=o||{};
  var hist=manutsDoCarro(pk).filter(function(m){var dt=_dtManut(m);return m.id!==o.excl&&!_ehGarantia(m)&&!_ehAvulso(m)&&(!o.data||!dt||dt<=o.data)})
   .map(function(m){var sv=_utServs(m.blocos);return {m:m,ps:(m.pecas||[]).filter(function(p){return p&&String(p.desc||'').trim()})
-   .map(function(p){var fs=_utFams(p.desc),pos={};fs.forEach(function(f){if(UT_LADO.test(f))pos[f]=_utPosDe(p.desc,sv,f)});return {p:p,f:fs,pos:pos}})}});
+   .map(function(p){var fs=_utEstepe(p.desc,_utFams(p.desc),sv),pos={};fs.forEach(function(f){if(UT_LADO.test(f))pos[f]=_utPosDe(p.desc,sv,f)});return {p:p,f:fs,pos:pos}})}});
  var servsAtual=_utServs(o.blocos||[]);
  function busca(f,pos){ /* pos: uma posição (DE…) ou null = qualquer */
   var achou=null,semLado=null;
@@ -9669,7 +9677,7 @@ function ultimasTrocasPecas(pk,pecas,o){
  var out=[],vistos={};
  (pecas||[]).forEach(function(p,pi){
   var d=String(p&&p.desc||'').trim();if(!d)return;
-  _utFams(d).forEach(function(f){
+  _utEstepe(d,_utFams(d),servsAtual).forEach(function(f){
    var lado=UT_LADO.test(f),cur=lado?_utPosDe(d,servsAtual,f):null;
    var grupos=[];
    if(lado&&cur){cur.forEach(function(ps){var a=busca(f,ps),sg=a?a.m.id+':'+a.ls.map(function(x){return x.p.desc}).join('¦')+(a.semLado?'?':''):'-';
@@ -15077,6 +15085,11 @@ html:not(.gsplPre),html:not(.gsplPre) body,html:not(.gsplPre) body.locked{backgr
 
 /* teclado aberto: esconde a barra flutuante */
 :root:is(#escA,html).tecladoAberto body:is(#escB,body) nav.g2nav{display:none!important}
+
+/* v307 (Hudson 06/11): embaixo do "Salvar" que fica preso, fundo sólido até a borda da tela —
+   não aparece pedaço do formulário entre o Salvar e a barra flutuante. */
+:root:is(#escA,html) body:is(#escB,body) #n3mNav.n3nav,:root:is(#escA,html) body:is(#escB,body) .n3nav{background:#000!important}
+:root:is(#escA,html) body:is(#escB,body) .n3nav::after{content:'';position:absolute;left:-16px;right:-16px;top:calc(100% - 14px);height:170px;background:#000;pointer-events:none;z-index:-1}
 </style>
 <script id="tecladoBarra">/* Hudson 06/11: com o teclado aberto, a barra flutuante de baixo some (não cobre o que você está digitando) */
 (function(){var R=document.documentElement;function campo(e){if(!e)return false;var t=e.tagName;if(t==='TEXTAREA'||t==='SELECT'||e.isContentEditable)return true;return t==='INPUT'&&!/^(button|submit|reset|checkbox|radio|range|color|file|image|hidden)$/i.test(e.type||'')}
