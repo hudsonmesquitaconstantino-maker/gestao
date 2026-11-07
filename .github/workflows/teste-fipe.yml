@@ -5,19 +5,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          U=https://media.githubusercontent.com/media/fipex-labs/dataset/main/2026/11/fipex-prices.csv
-          curl -sL -o f.csv -w "HTTP %{http_code} %{size_download}\n" $U
-          head -3 f.csv
+          curl -sL -o r.csv -w "RAW HTTP %{http_code} %{size_download}\n" https://raw.githubusercontent.com/fipex-labs/dataset/main/2026/11/fipex-prices.csv; head -c 300 r.csv; echo
+          curl -sL -o r.pq -w "RAWPQ HTTP %{http_code} %{size_download}\n" https://raw.githubusercontent.com/fipex-labs/dataset/main/2026/11/fipex-prices.parquet; head -c 200 r.pq | strings | head -3
+          curl -s "https://api.github.com/repos/fipex-labs/dataset/git/trees/main?recursive=1" | python3 -c 'import sys,json;t=json.load(sys.stdin)["tree"];[print(x["path"],x.get("size")) for x in t if x["path"].startswith("2026/1") or x["path"].startswith(".git")]'
+          curl -sL -o latest.pq -w "PQ HTTP %{http_code} %{size_download}\n" https://github.com/fipex-labs/dataset/releases/latest/download/fipex-prices-latest.parquet
+          pip -q install pyarrow pandas >/dev/null 2>&1
           python3 - <<'PY'
-          import csv,collections
-          r=list(csv.DictReader(open('f.csv',encoding='utf-8'),delimiter='\t'))
-          print('linhas',len(r),'colunas',list(r[0].keys()))
-          print('tipos',collections.Counter(x['tipo_veiculo'] for x in r))
-          print('meses',collections.Counter((x['mes_referencia'],x['ano_referencia']) for x in r).most_common(3))
-          c=[x for x in r if x['tipo_veiculo'] in('1','carro','Carro','carros')]
-          print('carros',len(c),'marcas',len(set(x['nome_marca'] for x in c)),'codigos',len(set(x['codigo_fipe'] for x in c)))
-          for x in c:
-            if 'Mobi' in x['nome_modelo'] and x['ano_modelo'] in('2020','2025'): print(x); break
-          for x in c:
-            if 'Cronos' in x['nome_modelo'] and x['ano_modelo']=='2019': print(x); break
+          import pandas as pd
+          d=pd.read_parquet('latest.pq')
+          print(d.dtypes.to_dict()); print(len(d))
+          print(d.groupby(['ano_referencia','mes_referencia']).size().tail(3))
+          n=d[(d.ano_referencia==d.ano_referencia.max())]; n=n[n.mes_referencia==n.mes_referencia.max()]
+          print('mes atual linhas',len(n), n.tipo_veiculo.value_counts().to_dict())
+          c=n[n.tipo_veiculo==n.tipo_veiculo.value_counts().index[0]]
+          print(c[c.nome_modelo.str.contains('MOBI LIKE',case=False)].head(3).to_dict('records'))
+          print(c[c.nome_modelo.str.contains('CRONOS',case=False)&(c.ano_modelo==2019)].head(2).to_dict('records'))
+          print('marcas',c.nome_marca.nunique(),'modelos',c.nome_modelo.nunique(),'codigos',c.codigo_fipe.nunique())
           PY
