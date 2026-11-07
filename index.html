@@ -1697,7 +1697,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=308; var APP_DATE='05/11/2026';
+var APP_VER=309; var APP_DATE='05/11/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -12069,7 +12069,7 @@ window.fipeVincular=fipeVincular=function(pk){
  if(!m||!mo||!a){toast('Escolha marca, modelo e ano');return}
  toast('💰 Buscando valor na FIPE…');
  fetch(FIPE+'/marcas/'+m+'/modelos/'+mo+'/anos/'+a).then(function(r){return r.json()}).then(function(d){
-  if(d&&d.error)throw new Error(/limite/i.test(d.error)?'limite':'erro');
+  if(d&&d.error)throw new Error(/limite/i.test(d.error)?'limite':/fipe\.org/i.test(d.error)?'fonte':'erro');
   var v=parseBRL(d.Valor||'');
   if(!v){toast('⚠️ FIPE não retornou valor');return}
   var c=S.carros[pk];
@@ -12152,7 +12152,7 @@ function fcFipeAuto(manual){
   if(r.modelo&&r.ano){inf.innerHTML=(r.certeza?'✅ ':'🔎 ')+'<b>'+esc(r.marca.nome)+' · '+esc(r.modelo.nome)+' · '+esc(r.ano.nome)+'</b><br><span class="sub">'+(r.certeza?'Escolhido pelo CRLV. Pode trocar se não for essa versão.':'Tem versões parecidas — confira se é essa.')+'</span>';fcFipeValor()}
   else if(r.modelo){inf.innerHTML='⚠️ Achei o modelo, mas não o ano '+(r.info.anoMod||'')+' — escolha a versão e o ano.';if(!r.anos)fcFipeModelo()}
   else inf.innerHTML='⚠️ Não achei a versão — escolha na lista.';
- }).catch(function(e){inf.innerHTML=esc(_fipeErroTxt(e))+'<br><span class="sub">Dá para criar o carro sem a FIPE e vincular depois na ficha.</span>'});
+ }).catch(function(e){inf.innerHTML=esc(_fipeErroTxt(e))+(e&&e.message==='fonte'?'':'<br><span class="sub">Dá para criar o carro sem a FIPE e vincular depois na ficha.</span>')});
 }
 function fcFipeMarca(){
  var m=document.getElementById('fcFpM').value;FC_FIPE={m:m};document.getElementById('fcFpVal').innerHTML='';
@@ -12172,7 +12172,7 @@ function fcFipeValor(){
  FC_FIPE={m:m,mo:mo,a:a};if(!a){box.innerHTML='';return}
  box.innerHTML='buscando valor…';
  fetch(FIPE+'/marcas/'+m+'/modelos/'+mo+'/anos/'+a).then(function(r){return r.json()}).then(function(d){
-  if(d&&d.error)throw new Error(/limite/i.test(d.error)?'limite':'erro');
+  if(d&&d.error)throw new Error(/limite/i.test(d.error)?'limite':/fipe\.org/i.test(d.error)?'fonte':'erro');
   var v=parseBRL(d.Valor||'');if(!document.getElementById('fcFpA')||document.getElementById('fcFpA').value!==a)return;
   FC_FIPE.v=v;FC_FIPE.mes=(d.MesReferencia||'').trim();FC_FIPE.cod=d.CodigoFipe||'';
   box.innerHTML=v?'Valor FIPE: <b>R$ '+fmtBRL(v)+'</b> <span class="sub">('+esc(FC_FIPE.mes)+')</span>':'';
@@ -15218,6 +15218,62 @@ function desfazerTrocaBateria(id){var m=S.manutencoes[id];if(!_ehTrocaBat(m))ret
  w._bat=1;for(var k in o)if(Object.prototype.hasOwnProperty.call(o,k))w[k]=o[k];w._bat=1;window.catalogoCarro=catalogoCarro=w})();
 (function(){var o=window._valManutHtml;if(typeof o!=='function'||o._bat)return;
  var w=function(m){if(_ehTrocaBat(m))return '<div style="font-weight:700;text-align:right;color:var(--tx2,#8E8E93)">🔋 troca<div style="font-size:11px;font-weight:600">sem valor</div></div>';return o.apply(this,arguments)};w._bat=1;window._valManutHtml=_valManutHtml=w})();
+</script>
+<script id="fipeAuto">/* v309 (Hudson 07/11): o site oficial da FIPE (fipe.org.br) parou de responder aos serviços grátis que o app usa
+   (parallelum v1/v2 e BrasilAPI devolvem "failed to locate the information on fipe.org" — não é o app).
+   1) A mensagem diz isso claramente e que dá para criar o carro sem a FIPE.
+   2) Carro sem FIPE vinculada (e sem valor de referência digitado) fica na fila: quando a FIPE voltar, o app acha a versão
+      pelo CRLV e, SE tiver certeza, vincula sozinho e passa a atualizar o valor todo dia, como os outros. Sem certeza, avisa
+      para conferir na ficha. Nunca troca um valor que você digitou.
+   3) Enquanto a FIPE estiver fora, o app testa 1 vez e espera 3 horas (não gasta o limite diário de consultas). */
+function _fipePendentes(){if(!S||!S.carros)return [];var d=hoje();
+ return Object.keys(S.carros).filter(function(k){var c=S.carros[k];if(!c||c.fipeM||c.fipeNaoBuscar)return false;
+  if(/vendid|baixad/i.test(String(c.status||'')))return false;if(!(c.modeloCRLV||c.nome))return false;
+  if(!c.fipeBuscar&&Number(c.valorRef)>0)return false;
+  try{return localStorage.getItem('gestao_fipe_auto_'+k)!==d}catch(e){return true}})}
+function _fipeAutoVincular(lista){var feitos=[],conferir=[],i=0;lista=lista.slice(0,3);
+ return new Promise(function(fim){(function next(){
+  if(i>=lista.length){
+   if(feitos.length){save();try{render()}catch(e){}toast('💰 FIPE vinculada sozinha: '+feitos.join(', '))}
+   else if(conferir.length)toast('💰 A FIPE voltou — confira a versão do '+conferir.join(', ')+' na ficha (💰 Tabela FIPE)');
+   return fim(feitos.length)}
+  var pk=lista[i++],c=S.carros[pk];try{localStorage.setItem('gestao_fipe_auto_'+pk,hoje())}catch(e){}
+  fipeAcharAuto(c).then(function(r){
+   if(r&&r.marca&&r.modelo&&r.ano&&r.certeza){c.fipeM=r.marca.codigo;c.fipeMo=r.modelo.codigo;c.fipeA=r.ano.codigo;delete c.fipeBuscar;
+    try{_touchCarro(c,['fipeM','fipeMo','fipeA'])}catch(e){}feitos.push(c.nome||fmtPlaca(pk))}
+   else if(r&&r.marca){c.fipeNaoBuscar=1;delete c.fipeBuscar;conferir.push(c.nome||fmtPlaca(pk))}
+   next()}).catch(function(){next()})})()})}
+(function(){
+ /* erro da fonte oficial vira mensagem própria */
+ var oErr=window._fipeErroTxt;
+ window._fipeErroTxt=_fipeErroTxt=function(e){if(e&&e.message==='fonte')return '⚠️ O site oficial da FIPE (fipe.org.br) está fora do ar para todos os apps agora — não é o seu. Crie o carro assim mesmo: quando a FIPE voltar, o app vincula e atualiza sozinho.';return oErr(e)};
+ var oGet=window.fipeGet;
+ window.fipeGet=fipeGet=function(path,cacheKey){var c=cacheKey?_fipeCacheGet(cacheKey):null;if(c)return Promise.resolve(c);
+  return fetch(FIPE+path).then(function(r){return r.json()}).then(function(d){
+   if(d&&d.error){throw new Error(/limite/i.test(d.error)?'limite':/fipe\.org/i.test(d.error)?'fonte':'erro')}
+   if(cacheKey)_fipeCacheSet(cacheKey,d);return d})};
+ /* atualização diária: testa a FIPE uma vez antes; fora do ar → espera 3h; no ar → vincula os pendentes e atualiza os valores */
+ var oAt=window.atualizarFipe;if(typeof oAt!=='function'||oAt._auto)return;
+ var w=function(force){var self=this,args=arguments;if(!S||!S.carros)return;
+  var esp=0;try{esp=+localStorage.getItem('gestao_fipe_espera')||0}catch(e){}
+  if(!force&&esp>Date.now())return;
+  var pend=_fipePendentes(),feito=false;try{feito=localStorage.getItem('gestao_fipe_dia')===hoje()}catch(e){}
+  if(!force&&feito&&!pend.length)return;
+  fetch(FIPE+'/marcas').then(function(r){return r.json()}).then(function(d){if(!Array.isArray(d))throw new Error('fonte');
+   try{localStorage.removeItem('gestao_fipe_espera')}catch(e){}
+   try{_fipeCacheSet('marcas',d)}catch(e){}
+   return _fipeAutoVincular(pend)}).then(function(n){return oAt.apply(self,[force||n>0])})
+  .catch(function(){try{localStorage.setItem('gestao_fipe_espera',String(Date.now()+3*36e5))}catch(e){}if(force)toast(_fipeErroTxt({message:'fonte'}))})};
+ w._auto=1;window.atualizarFipe=atualizarFipe=w;
+ /* carro novo criado sem FIPE entra na fila */
+ var oSal=window.salvarCarro;if(typeof oSal==='function'&&!oSal._fa){var ws=function(pk){
+  var placa='';try{placa=normPlaca((document.getElementById('fc_placa')||{}).value||'')}catch(e){}
+  var existia=!!(placa&&S.carros&&S.carros[placa]),r=oSal.apply(this,arguments);
+  try{var c=!pk&&placa&&S.carros[placa];if(c&&!existia&&!c.fipeM){c.fipeBuscar=Date.now();save();setTimeout(function(){atualizarFipe()},4000)}}catch(e){}
+  return r};ws._fa=1;ws._v238=1;window.salvarCarro=salvarCarro=ws}
+ /* desvincular = não buscar sozinho de novo */
+ var oDes=window.fipeDesvincular;if(typeof oDes==='function'&&!oDes._fa){var wd=function(pk){var c=S.carros[pk];if(c){c.fipeNaoBuscar=1;delete c.fipeBuscar}return oDes.apply(this,arguments)};wd._fa=1;window.fipeDesvincular=fipeDesvincular=wd}
+})();
 </script>
 </body>
 </html>
