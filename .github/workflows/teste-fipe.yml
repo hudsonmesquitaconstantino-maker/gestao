@@ -4,21 +4,14 @@ jobs:
   t:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - run: |
-          curl -sL -o r.csv -w "RAW HTTP %{http_code} %{size_download}\n" https://raw.githubusercontent.com/fipex-labs/dataset/main/2026/11/fipex-prices.csv; head -c 300 r.csv; echo
-          curl -sL -o r.pq -w "RAWPQ HTTP %{http_code} %{size_download}\n" https://raw.githubusercontent.com/fipex-labs/dataset/main/2026/11/fipex-prices.parquet; head -c 200 r.pq | strings | head -3
-          curl -s "https://api.github.com/repos/fipex-labs/dataset/git/trees/main?recursive=1" | python3 -c 'import sys,json;t=json.load(sys.stdin)["tree"];[print(x["path"],x.get("size")) for x in t if x["path"].startswith("2026/1") or x["path"].startswith(".git")]'
-          curl -sL -o latest.pq -w "PQ HTTP %{http_code} %{size_download}\n" https://github.com/fipex-labs/dataset/releases/latest/download/fipex-prices-latest.parquet
-          pip -q install pyarrow pandas >/dev/null 2>&1
-          python3 - <<'PY'
-          import pandas as pd
-          d=pd.read_parquet('latest.pq')
-          print(d.dtypes.to_dict()); print(len(d))
-          print(d.groupby(['ano_referencia','mes_referencia']).size().tail(3))
-          n=d[(d.ano_referencia==d.ano_referencia.max())]; n=n[n.mes_referencia==n.mes_referencia.max()]
-          print('mes atual linhas',len(n), n.tipo_veiculo.value_counts().to_dict())
-          c=n[n.tipo_veiculo==n.tipo_veiculo.value_counts().index[0]]
-          print(c[c.nome_modelo.str.contains('MOBI LIKE',case=False)].head(3).to_dict('records'))
-          print(c[c.nome_modelo.str.contains('CRONOS',case=False)&(c.ano_modelo==2019)].head(2).to_dict('records'))
-          print('marcas',c.nome_marca.nunique(),'modelos',c.nome_modelo.nunique(),'codigos',c.codigo_fipe.nunique())
-          PY
+          pip -q install pandas pyarrow
+          curl -sfL -o /tmp/f.parquet https://github.com/fipex-labs/dataset/releases/download/v2026.11.0/fipex-prices-latest.parquet
+          python3 .github/fipe/gerar.py /tmp/f.parquet v2026.11.0 fipe
+          du -sh fipe; ls fipe/marca | wc -l; ls fipe/cod | wc -l; cat fipe/info.json
+          ls -S -l fipe/marca | head -4; ls -S -l fipe/cod | head -3
+          head -c 300 fipe/marcas.json; echo
+          python3 -c 'import json;d=json.load(open("fipe/marca/mx-fiat.json"));m=[x for x in d["modelos"] if "MOBI LIKE" in x["nome"]][:2];print(m)'
+          python3 -c 'import json;d=json.load(open("fipe/cod/001.json"));print("001461-3",d.get("001461-3"))'
+          gzip -c fipe/marca/mx-fiat.json | wc -c; cat fipe/cod/*.json | gzip | wc -c
