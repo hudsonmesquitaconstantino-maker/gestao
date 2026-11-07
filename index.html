@@ -1697,7 +1697,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=307; var APP_DATE='05/11/2026';
+var APP_VER=308; var APP_DATE='05/11/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -3369,12 +3369,12 @@ function _fichaV180(pk){window._fichaPk=pk;
    /* Se sabemos qual manutenção gerou esta troca, a linha abre direto nela. */
    var abre=(u&&u.mid&&S.manutencoes&&S.manutencoes[u.mid]);
    h+='<div class="kv'+(abre?' tap':'')+'"'+(abre?' onclick="verManut(\''+u.mid+'\')"':'')+'>'+
-      '<b>'+par[1]+'</b><span>'+val+(abre?' <span style="opacity:.45">›</span>':'')+'</span></div>';
+      '<b>'+par[1]+'</b><span>'+val+(par[0]==='bateria'&&typeof _batVeioTxt==='function'?_batVeioTxt(u):'')+(abre?' <span style="opacity:.45">›</span>':'')+'</span></div>';
   });
   h+=grupoRodas(c,'pneu','🛞 Pneus');
   h+=grupoRodas(c,'amort','🔧 Amortecedores');
   h+=grupoRodas(c,'mola','🌀 Molas');
-  h+='<button class="btn mini sec" onclick="recalcTrocasUI(\''+pk+'\')">🔄 Recalcular do histórico</button></div></details>';
+  h+='<button class="btn mini sec" onclick="abrirTrocaBateria(\''+pk+'\')">🔋 Trocar bateria com outro carro</button><button class="btn mini sec" onclick="recalcTrocasUI(\''+pk+'\')">🔄 Recalcular do histórico</button></div></details>';
  })();
  h+='<div class="sect">Gastos de manutenção</div>'+gastosCarroHtml(pk);
  h+='<details class="v99details"><summary class="v99summary"><span>📄 Documentação</span><span>CRLV '+esc(c.exercicioCRLV||'—')+' ›</span></summary><div class="v99detailbody"><div class="sect">Documento CRLV</div>';
@@ -3793,9 +3793,9 @@ function _fichaTabHtml(pk,T){
   COMPS.forEach(function(par){var u=(c.ultTrocas||{})[par[0]];
    var val=(u&&(u.km||u.data)?((u.km?fmtKm(u.km)+' km':'')+(u.km&&u.data?' · ':'')+(u.data?dataBR(u.data)+_haCurto(u.data):'')):'—');
    var abre=(u&&u.mid&&S.manutencoes&&S.manutencoes[u.mid]);
-   h+='<div class="kv'+(abre?' tap':'')+'"'+(abre?' onclick="verManut(\''+u.mid+'\')"':'')+'><b>'+par[1]+'</b><span>'+val+(abre?' <span style="opacity:.45">›</span>':'')+'</span></div>'});
+   h+='<div class="kv'+(abre?' tap':'')+'"'+(abre?' onclick="verManut(\''+u.mid+'\')"':'')+'><b>'+par[1]+'</b><span>'+val+(par[0]==='bateria'&&typeof _batVeioTxt==='function'?_batVeioTxt(u):'')+(abre?' <span style="opacity:.45">›</span>':'')+'</span></div>'});
   h+=grupoRodas(c,'pneu','Pneus')+grupoRodas(c,'amort','Amortecedores')+grupoRodas(c,'mola','Molas');
-  h+='<button class="btn mini sec" onclick="recalcTrocasUI(\''+pk+'\')">Recalcular do histórico</button></div>';
+  h+='<button class="btn mini sec" onclick="abrirTrocaBateria(\''+pk+'\')">🔋 Trocar bateria com outro carro</button><button class="btn mini sec" onclick="recalcTrocasUI(\''+pk+'\')">Recalcular do histórico</button></div>';
   h+=grupoCatalogo(pk);
   h+='<div class="g2sub"><span>Manutenções</span><span>'+mans.length+'</span></div>';
   h+=mans.length?'<div class="g2list">'+mans.map(_g2ManRow).join('')+'</div>':'<div class="g2vazio">Nenhuma manutenção registrada.</div>';
@@ -15115,6 +15115,109 @@ html:not(.gsplPre),html:not(.gsplPre) body,html:not(.gsplPre) body.locked{backgr
 (function(){var R=document.documentElement;function campo(e){if(!e)return false;var t=e.tagName;if(t==='TEXTAREA'||t==='SELECT'||e.isContentEditable)return true;return t==='INPUT'&&!/^(button|submit|reset|checkbox|radio|range|color|file|image|hidden)$/i.test(e.type||'')}
 function upd(){var vv=window.visualViewport,kb=vv?(window.innerHeight-vv.height*vv.scale>140):false;R.classList.toggle('tecladoAberto',campo(document.activeElement)||kb)}
 document.addEventListener('focusin',upd,true);document.addEventListener('focusout',function(){setTimeout(upd,150)},true);if(window.visualViewport)window.visualViewport.addEventListener('resize',upd)})();
+</script>
+<script id="trocaBateria">/* v308 (Hudson 07/11): TROCAR BATERIA ENTRE DOIS CARROS.
+   A bateria do carro A vai para o B e a do B vai para o A. Fica um registro no histórico de cada um
+   (sem valor, não entra em gasto nem fechamento) e a IDADE SEGUE A BATERIA: o carro passa a mostrar a data em que
+   aquela bateria foi comprada (com loja e descrição), "veio do Onix em 07/11". Uma troca de bateria de verdade
+   lançada depois no carro volta a valer normalmente. "Desfazer troca" apaga os dois registros e tudo volta. */
+function _ehTrocaBat(m){return !!(m&&m.origem==='trocaBateria'&&m.trocaBateria)}
+function _batTrocasDe(pk){return Object.keys(S.manutencoes||{}).map(function(k){return S.manutencoes[k]})
+ .filter(function(m){return _ehTrocaBat(m)&&m.carro===pk&&!(S.apagados&&S.apagados[m.id])})
+ .sort(function(a,b){return String(a.dataIni||'').localeCompare(String(b.dataIni||''))||(Number(a.criadoEm)||0)-(Number(b.criadoEm)||0)})}
+/* o que o registro de troca diz sobre a bateria que FICOU no carro */
+function _batDoRegistro(rec){var t=rec.trocaBateria||{},r=t.recebida||{},odo=Number(rec.odometro)||0,kr=(r.kmRodado===0||r.kmRodado>0)?Number(r.kmRodado):null;
+ return {km:(odo>0&&kr!==null)?Math.max(0,odo-kr):0,data:r.data||'',src:'troca',mid:rec.id,de:t.com||'',em:rec.dataIni||'',compradaNo:r.compradaNo||'',desc:r.desc||'',loja:r.loja||''}}
+/* retrato da bateria que está no carro AGORA (para gravar na troca) */
+function _batSnap(pk,kmAgora){var c=S.carros[pk]||{},u=(c.ultTrocas||{}).bateria;if(!u)return {data:'',kmRodado:null,compradaNo:'',desc:'',loja:''};
+ var o={data:u.data||'',kmRodado:(kmAgora>0&&u.km>0&&kmAgora>=u.km)?kmAgora-u.km:null,compradaNo:'',desc:'',loja:''};
+ if(u.src==='troca'){o.compradaNo=u.compradaNo||u.de||'';o.desc=u.desc||'';o.loja=u.loja||''}
+ else{o.compradaNo=pk;var m=u.mid&&S.manutencoes&&S.manutencoes[u.mid];
+  if(m)(m.pecas||[]).some(function(p){if(/bateria/i.test(p.desc||'')&&!/terminal|borne|cabo|suporte/i.test(p.desc||'')){o.desc=p.desc||'';o.loja=p.loja||'';return true}})}
+ return o}
+/* depois do recálculo normal: se a última coisa que aconteceu com a bateria deste carro foi uma troca entre carros, ela manda */
+function _batPass(pk){var c=S.carros[pk];if(!c)return;c.ultTrocas=c.ultTrocas||{};var u=c.ultTrocas.bateria,tr=_batTrocasDe(pk),ult=tr[tr.length-1];
+ if(u&&u.src==='troca'&&(!ult||!S.manutencoes[u.mid]||S.manutencoes[u.mid].carro!==pk)){
+  var best=null;manutsDoCarro(pk).forEach(function(m){if(_ehTrocaBat(m))return;var d;try{d=detectarComponentes(m)}catch(e){return}if(d&&d.comps&&d.comps.bateria)best=_trocaMaisNova(best,{km:_odoManut(m),data:_dtManut(m)||hoje(),src:'auto',mid:m.id})});
+  if(best)c.ultTrocas.bateria=best;else{var leg=null;try{leg=_trocaLegadaV97(pk,'bateria')}catch(e){}if(leg)c.ultTrocas.bateria=leg;else delete c.ultTrocas.bateria}
+  u=c.ultTrocas.bateria}
+ if(!ult)return;
+ var depois=manutsDoCarro(pk).some(function(m){if(_ehTrocaBat(m))return false;var d;try{d=detectarComponentes(m)}catch(e){return false}if(!d||!d.comps||!d.comps.bateria)return false;
+  var dm=_dtManut(m)||'';return dm>ult.dataIni||(dm===ult.dataIni&&(Number(m.criadoEm)||0)>(Number(ult.criadoEm)||0))});
+ if(depois)return;
+ if(u&&u.src==='manual'&&(Number(u.editadoEm)||0)>(Number(ult.criadoEm)||0))return;
+ c.ultTrocas.bateria=_batDoRegistro(ult)}
+(function(){var o=window.recalcTrocasCarro;if(typeof o!=='function'||o._bat)return;
+ var w=function(pk){var r=o.apply(this,arguments);try{_batPass(pk)}catch(e){}return r};w._bat=1;window.recalcTrocasCarro=recalcTrocasCarro=w})();
+/* texto curto "veio do Onix em 07/11" */
+function _batVeioTxt(u){if(!u||u.src!=='troca')return '';var o=S.carros[u.de];
+ return '<br><span style="display:inline-block;margin-top:2px;font-size:12.5px;color:var(--tx2,#8E8E93)">🔋 veio do '+esc(o?tituloCarro(o):fmtPlaca(u.de))+' em '+esc(dataBR(u.em).slice(0,5))+(u.data?'':' · idade desconhecida')+'</span>'}
+function _batDescCarro(pk){var c=S.carros[pk]||{},u=(c.ultTrocas||{}).bateria;if(!u||!(u.data||u.km))return 'sem registro de quando foi comprada';
+ var s=u.data?'comprada '+dataBR(u.data)+_haCurto(u.data):'idade desconhecida';
+ if(u.src==='troca'){var o=S.carros[u.compradaNo];if(u.compradaNo&&u.compradaNo!==pk)s+=' · comprada para o '+(o?tituloCarro(o):fmtPlaca(u.compradaNo))}
+ var d=u.src==='troca'?u:_batSnap(pk,0);if(d.loja)s+=' · '+d.loja;return s}
+/* ---------- tela: trocar ---------- */
+function abrirTrocaBateria(pk){var c=S.carros[pk];if(!c)return;window._btPk=pk;
+ var outros=Object.keys(S.carros).filter(function(k){return k!==pk&&S.carros[k]&&!_carroForaDaFrotaBat(S.carros[k])})
+  .sort(function(a,b){return String(tituloCarro(S.carros[a])).localeCompare(String(tituloCarro(S.carros[b])))});
+ var h='<div class="v102sheetHero"><div class="v102sheetIcon">🔋</div><div><div class="v102eyebrow">BATERIA</div><h3>Trocar bateria com outro carro</h3><div class="sub">A bateria de um vai para o outro. A idade de cada bateria vai junto com ela.</div></div></div>'+
+  '<div class="v102panel"><div class="v102maintTop"><div>'+plateHtml(c.placa||pk)+'</div><div class="grow"><strong>'+esc(tituloCarro(c))+'</strong><small>Bateria de agora: '+esc(_batDescCarro(pk))+'</small></div></div>'+
+  '<label>Trocar com qual carro?</label><select id="btOutro" onchange="btAtualiza(1)"><option value="">— escolha —</option>'+outros.map(function(k){return '<option value="'+esc(k)+'">'+esc(tituloCarro(S.carros[k])+' · '+fmtPlaca(k))+'</option>'}).join('')+'</select>'+
+  '<label>Data da troca</label><input type="date" id="btData" value="'+hoje()+'" onchange="btAtualiza()">'+
+  '<label>Km do '+esc(tituloCarro(c))+' <span class="v102optional">opcional</span></label><input id="btKmA" inputmode="numeric" autocomplete="off" value="'+(Number(c.kmUltima)>0?Number(c.kmUltima):'')+'" oninput="this.value=this.value.replace(/\\D/g,\'\');btAtualiza()" placeholder="km no painel">'+
+  '<div id="btKmBw" style="display:none"><label id="btKmBl">Km do outro carro <span class="v102optional">opcional</span></label><input id="btKmB" inputmode="numeric" autocomplete="off" oninput="this.value=this.value.replace(/\\D/g,\'\');btAtualiza()" placeholder="km no painel"></div>'+
+  '<div id="btRes"></div></div>'+
+  '<div class="v102actionbar"><button class="btn ok v102primary" id="btOk" onclick="salvarTrocaBateria()" disabled>Trocar as baterias</button><button class="btn sec" onclick="closeSheet(2)">Cancelar</button></div>';
+ openSheet(h,2)}
+function _carroForaDaFrotaBat(c){return /vendid|baixad|devolvid/i.test(String(c.status||''))}
+function btAtualiza(mudouCarro){var a=window._btPk,b=(document.getElementById('btOutro')||{}).value,res=document.getElementById('btRes'),ok=document.getElementById('btOk'),bw=document.getElementById('btKmBw');if(!res)return;
+ if(!b){res.innerHTML='';bw.style.display='none';ok.disabled=true;return}
+ var cb=S.carros[b];bw.style.display='';document.getElementById('btKmBl').innerHTML='Km do '+esc(tituloCarro(cb))+' <span class="v102optional">opcional</span>';
+ if(mudouCarro)document.getElementById('btKmB').value=Number(cb.kmUltima)>0?Number(cb.kmUltima):'';
+ var ca=S.carros[a];ok.disabled=false;
+ res.innerHTML='<div class="v102info" style="margin-top:12px;line-height:1.5"><b>Depois da troca:</b><br>• <b>'+esc(tituloCarro(ca))+'</b> fica com a bateria do '+esc(tituloCarro(cb))+' ('+esc(_batDescCarro(b))+')<br>• <b>'+esc(tituloCarro(cb))+'</b> fica com a bateria do '+esc(tituloCarro(ca))+' ('+esc(_batDescCarro(a))+')<br><span style="opacity:.75">Fica registrado no histórico dos dois, sem valor.</span></div>'}
+function salvarTrocaBateria(){var a=window._btPk,b=(document.getElementById('btOutro')||{}).value,d=(document.getElementById('btData')||{}).value;
+ if(!a||!b||!S.carros[a]||!S.carros[b]){toast('Escolha o outro carro');return}
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(d||'')){toast('Data inválida');return}
+ var kA=parseInt((document.getElementById('btKmA')||{}).value,10)||0,kB=parseInt((document.getElementById('btKmB')||{}).value,10)||0;
+ var sA=_batSnap(a,kA),sB=_batSnap(b,kB),n=Date.now(),idA='bat_'+n+'_'+a,idB='bat_'+n+'_'+b,ca=S.carros[a],cb=S.carros[b];
+ var mk=function(id,pk,km,outro,par,recebida,saiu){return normManut({id:id,carro:pk,motorista:(S.carros[pk].motorista||''),dataIni:d,dataFim:d,dataPecasPadrao:d,odometro:km,pecas:[],blocos:[],
+  texto:'🔋 Bateria trocada com o '+tituloCarro(S.carros[outro])+' ('+fmtPlaca(outro)+')',origem:'trocaBateria',trocaBateria:{com:outro,par:par,recebida:recebida,saiu:saiu},criadoEm:n,editadoEm:n})};
+ S.manutencoes[idA]=mk(idA,a,kA,b,idB,sB,sA);S.manutencoes[idB]=mk(idB,b,kB,a,idA,sA,sB);
+ try{recalcTrocasCarro(a)}catch(e){}try{recalcTrocasCarro(b)}catch(e){}
+ save();closeSheet(2);render();toast('🔋 Baterias trocadas: '+tituloCarro(ca)+' ↔ '+tituloCarro(cb))}
+/* ---------- tela: ver a troca no histórico ---------- */
+function verTrocaBateria(id){var m=S.manutencoes[id];if(!_ehTrocaBat(m))return;var t=m.trocaBateria,c=S.carros[m.carro]||{nome:m.carro,placa:m.carro},o=S.carros[t.com],on=o?tituloCarro(o):fmtPlaca(t.com);
+ var bat=function(x,quem){x=x||{};var s=[];s.push(x.data?'comprada '+dataBR(x.data)+_haCurto(x.data):'idade desconhecida');
+  if(x.compradaNo&&S.carros[x.compradaNo]&&x.compradaNo!==quem)s.push('comprada para o '+tituloCarro(S.carros[x.compradaNo]));
+  if(x.loja)s.push(x.loja);if(x.kmRodado>0)s.push('tinha rodado '+fmtKm(x.kmRodado)+' km');return s.join(' · ')};
+ var h='<div class="v102sheetHero"><div class="v102sheetIcon">🔋</div><div><div class="v102eyebrow">HISTÓRICO</div><h3>Troca de bateria</h3><div class="sub">'+esc(tituloCarro(c))+' ↔ '+esc(on)+' · '+esc(periodoTexto(m.dataIni,m.dataFim))+'</div></div></div>'+
+  '<div class="v102panel"><div class="v102panelHead"><span>⬇️</span><div><b>Recebeu a bateria do '+esc(on)+'</b><small>'+esc(bat(t.recebida,t.com))+'</small></div></div>'+
+  ((t.recebida&&t.recebida.desc)?'<div class="v102service">'+esc(t.recebida.desc)+'</div>':'')+'</div>'+
+  '<div class="v102panel"><div class="v102panelHead"><span>⬆️</span><div><b>Mandou a bateria dele para o '+esc(on)+'</b><small>'+esc(bat(t.saiu,m.carro))+'</small></div></div>'+
+  ((t.saiu&&t.saiu.desc)?'<div class="v102service">'+esc(t.saiu.desc)+'</div>':'')+'</div>'+
+  (m.odometro?'<div class="v102info">Km do '+esc(tituloCarro(c))+' na troca: <b>'+fmtKm(m.odometro)+' km</b></div>':'')+
+  '<div class="v102actionbar"><button class="btn red" onclick="desfazerTrocaBateria(\''+id+'\')">↩️ Desfazer troca</button><button class="btn sec" onclick="closeSheet(2)">Fechar</button></div>';
+ openSheet(h,2)}
+function desfazerTrocaBateria(id){var m=S.manutencoes[id];if(!_ehTrocaBat(m))return;var par=m.trocaBateria.par,a=m.carro,b=m.trocaBateria.com;
+ ask('Desfazer a troca de bateria?','Os dois carros voltam a mostrar a bateria que tinham antes. Sai do histórico dos dois.','Desfazer',function(){var n=Date.now();
+  [id,par].forEach(function(x){if(x&&S.manutencoes[x]){S.apagados[x]=n;delete S.manutencoes[x]}});
+  try{recalcTrocasCarro(a)}catch(e){}try{if(b&&S.carros[b])recalcTrocasCarro(b)}catch(e){}
+  save();closeSheet(2);render();toast('↩️ Troca desfeita')})}
+(function(){var o=window.verManut;if(typeof o!=='function'||o._bat)return;
+ var w=function(id){var m=S.manutencoes&&S.manutencoes[id];if(_ehTrocaBat(m))return verTrocaBateria(id);return o.apply(this,arguments)};w._bat=1;window.verManut=verManut=w})();
+(function(){var o=window._g2ManRow;if(typeof o!=='function'||o._bat)return;
+ var w=function(m){if(!_ehTrocaBat(m))return o.apply(this,arguments);var x=S.carros[m.trocaBateria.com];
+  return '<div class="g2row g2rowM tap" onclick="verManut(\''+m.id+'\')"><div class="g2rowTx"><div class="g2t">'+esc(periodoTexto(m.dataIni,m.dataFim))+'</div><div class="g2s">🔋 Bateria trocada com o '+esc(x?tituloCarro(x):fmtPlaca(m.trocaBateria.com))+'</div></div><div class="g2val" style="color:var(--tx2,#8E8E93)">sem valor</div></div>'};
+ w._bat=1;window._g2ManRow=_g2ManRow=w})();
+/* "Tudo que já foi trocado": a bateria que está no carro é a que veio na troca, não a antiga dele */
+(function(){var o=window.catalogoCarro;if(typeof o!=='function'||o._bat)return;
+ var w=function(pk){var r=o.apply(this,arguments);try{var u=((S.carros[pk]||{}).ultTrocas||{}).bateria;if(!u||u.src!=='troca')return r;var x=S.carros[u.de];
+  r=r.filter(function(it){return it.nome!=='Bateria'});r.push({nome:'Bateria (veio do '+(x?tituloCarro(x):fmtPlaca(u.de))+' em '+dataBR(u.em).slice(0,5)+')',km:u.km,data:u.data,mid:u.mid,lado:''});
+  r.sort(function(a,b){return (b.data||'').localeCompare(a.data||'')})}catch(e){}return r};
+ w._bat=1;for(var k in o)if(Object.prototype.hasOwnProperty.call(o,k))w[k]=o[k];w._bat=1;window.catalogoCarro=catalogoCarro=w})();
+(function(){var o=window._valManutHtml;if(typeof o!=='function'||o._bat)return;
+ var w=function(m){if(_ehTrocaBat(m))return '<div style="font-weight:700;text-align:right;color:var(--tx2,#8E8E93)">🔋 troca<div style="font-size:11px;font-weight:600">sem valor</div></div>';return o.apply(this,arguments)};w._bat=1;window._valManutHtml=_valManutHtml=w})();
 </script>
 </body>
 </html>
