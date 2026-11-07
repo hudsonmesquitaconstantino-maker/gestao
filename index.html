@@ -1697,7 +1697,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=310; var APP_DATE='05/11/2026';
+var APP_VER=311; var APP_DATE='05/11/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -15320,6 +15320,107 @@ function _fipeAutoVincular(lista){var feitos=[],conferir=[],i=0;lista=lista.slic
   return r};ws._fa=1;ws._v238=1;window.salvarCarro=salvarCarro=ws}
  /* desvincular = não buscar sozinho de novo */
  var oDes=window.fipeDesvincular;if(typeof oDes==='function'&&!oDes._fa){var wd=function(pk){var c=S.carros[pk];if(c){c.fipeNaoBuscar=1;delete c.fipeBuscar}return oDes.apply(this,arguments)};wd._fa=1;window.fipeDesvincular=fipeDesvincular=wd}
+})();
+</script>
+<script id="fipeConf">/* v311 (Hudson 07/11): CONFERÊNCIA DA FIPE — "que as FIPEs sejam o modelo certo; se não identificar, eu confiro".
+   • Todo dia o valor de cada carro atualiza sozinho (com as reservas); na virada do mês todos passam para a tabela nova
+     e o Resultados recebe junto (lê o valor do Gestão).
+   • O app CONFERE a versão de cada carro com o CRLV (marca, modelo, motor, ano). Vai para a sua conferência:
+     - carro sem FIPE; - versão que o app achou mas não teve certeza (sugestão); - versão vinculada SOZINHA (você dá o ok uma vez);
+     - versão que não bate com o CRLV; - carro que não atualizou para a tabela do mês.
+   • "Está certo" grava a sua conferência: aquela versão não é perguntada de novo (só se mudar). */
+var _FC_AUD=null;
+function _fcLe(){if(_FC_AUD)return _FC_AUD;try{_FC_AUD=JSON.parse(localStorage.getItem('gestao_fipe_aud')||'{}')}catch(e){_FC_AUD={}}return _FC_AUD}
+function _fcGrava(){try{localStorage.setItem('gestao_fipe_aud',JSON.stringify(_FC_AUD||{}))}catch(e){}}
+function _fcCarros(){return Object.keys(S&&S.carros||{}).filter(function(k){var c=S.carros[k];return c&&!/vendid|baixad/i.test(String(c.status||''))&&(c.modeloCRLV||c.nome)})}
+function _fcJson(p){return fetch('fipe/'+p,{cache:'no-cache'}).then(function(r){if(!r.ok)throw new Error('esp');return r.json()})}
+function _fcMesRef(){var a=_fcLe();return a._mes||''}
+function _fcMesNum(s){var M=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];s=String(s||'').toLowerCase();
+ var m=s.match(/([a-zç]+)\s*(?:de\s*)?\/?\s*(\d{4})/);if(!m)return 0;var i=M.indexOf(m[1]);return i<0?0:(+m[2])*12+i}
+/* confere 1 carro pela cópia da tabela: a versão vinculada é a melhor para o CRLV? o ano bate? */
+function _fcAudita(pk,marcas){var c=S.carros[pk],info=fipeInfoCarro(c),mk=fipeMarcaDoCrlv(c.modeloCRLV,marcas);
+ var r={mo:String(c.fipeMo||''),cod:c.fipeCodigo||'',em:Date.now(),ok:true,motivo:'',melhor:null,nome:''};
+ if(!mk){r.ok=false;r.motivo='marca do CRLV não reconhecida';return Promise.resolve(r)}
+ return _fcJson('marca/'+mk.codigo+'.json').then(function(m){
+  var rk=fipeOrdenar(m.modelos.map(function(x){return {codigo:x.codigo,nome:x.nome,anos:x.anos}}),info).filter(function(x){return x.s>-99});
+  var temAno=function(x){return info.anoMod?x.m.anos.filter(function(a){return a[0].indexOf(String(info.anoMod)+'-')===0})[0]:null};
+  var rkA=rk.slice(0,6).filter(function(x){return temAno(x)}),best=rkA[0]||rk[0];
+  if(best){var an=temAno(best);
+   r.melhor={m:mk.codigo,mo:best.m.codigo,nome:best.m.nome,a:an?an[0]:'',anoNome:an?an[1]:'',v:an?an[2]:0,s:best.s,certeza:!!(an&&best===rk[0]&&(rk.length===1||best.s-rk[1].s>=3))}}
+  if(!c.fipeM)return r;
+  var lig=c.fipeCodigo?m.modelos.filter(function(x){return x.codigo==='mc-'+c.fipeCodigo})[0]:null;
+  if(!lig&&c.fipeCodigo)return _fcJson('cod/'+c.fipeCodigo.slice(0,3)+'.json').then(function(g){var l=(g[c.fipeCodigo]||[])[0];if(l)r.nome=l[4];return _fcCompara(r,c,info,best)},function(){return _fcCompara(r,c,info,best)});
+  if(lig)r.nome=lig.nome;return _fcCompara(r,c,info,best)})}
+function _fcCompara(r,c,info,best){
+ if(!r.nome){r.ok=false;r.motivo='não deu para ler a versão vinculada';return r}
+ var s=fipeScore(r.nome,info);
+ if(s<=-99){r.ok=false;r.motivo='a versão vinculada é de outro modelo';return r}
+ if(best&&best.s-s>=4){r.ok=false;r.motivo='o CRLV combina mais com outra versão';return r}
+ var ya=+String(c.fipeA||'').split('-')[0]||0;if(info.anoMod&&ya&&ya!==32000&&ya!==info.anoMod){r.ok=false;r.motivo='ano da FIPE ('+ya+') diferente do CRLV ('+info.anoMod+')';return r}
+ return r}
+/* roda a conferência de todos (cópia da tabela; só o que mudou) */
+function fcAuditar(forca){var a=_fcLe();
+ return _fcJson('info.json').then(function(inf){var novoMes=a._ref!==inf.ref;a._mes=inf.mes;a._ref=inf.ref;
+  return _fcJson('marcas.json').then(function(ms){var lista=_fcCarros().filter(function(pk){var c=S.carros[pk],x=a[pk];
+    return forca||novoMes||!x||x.mo!==String(c.fipeMo||'')||x.cod!==(c.fipeCodigo||'')||x.crlv!==(c.modeloCRLV||'')+'|'+(c.ano||'')}),i=0;
+   return new Promise(function(fim){(function next(){if(i>=lista.length){_fcGrava();return fim()}var pk=lista[i++],c=S.carros[pk];
+    _fcAudita(pk,ms).then(function(r){r.crlv=(c.modeloCRLV||'')+'|'+(c.ano||'');a[pk]=r;next()},function(){next()})})()})})}).catch(function(){})}
+/* situação de cada carro */
+function fcSituacao(pk){var c=S.carros[pk],a=_fcLe(),x=a[pk]||{},ref=a._mes||'';
+ var conf=c.fipeConferido&&String(c.fipeConferidoMo||'')===String(c.fipeMo||'');
+ if(!c.fipeM)return c.fipeSugestao||(x.melhor&&x.melhor.mo)?{t:'sug',txt:'Sem FIPE — o app sugere uma versão'}:{t:'sem',txt:'Sem FIPE vinculada'};
+ if(!conf&&x.ok===false)return {t:'duv',txt:'Confira: '+x.motivo};
+ if(!conf&&c.fipeAuto)return {t:'auto',txt:'Vinculada sozinha — confira uma vez'};
+ if(ref&&c.fipeMes&&_fcMesNum(c.fipeMes)<_fcMesNum(ref))return {t:'vel',txt:'Ainda na tabela de '+String(c.fipeMes).replace(/ de \d{4}/,'')+' (tabela atual: '+ref+')'};
+ return {t:'ok',txt:conf?'Conferida por você':'Versão bate com o CRLV'}}
+function fcPendentes(){return _fcCarros().filter(function(pk){return fcSituacao(pk).t!=='ok'})}
+/* ---------- tela ---------- */
+function abrirConfFipe(){var a=_fcLe(),cs=_fcCarros(),pend=fcPendentes();
+ var ord={sem:0,sug:1,duv:2,auto:3,vel:4,ok:5};cs.sort(function(x,y){var a1=ord[fcSituacao(x).t],b1=ord[fcSituacao(y).t];return a1-b1||String(S.carros[x].nome||'').localeCompare(String(S.carros[y].nome||''))});
+ var atual=cs.filter(function(pk){var c=S.carros[pk];return c.fipeM&&a._mes&&_fcMesNum(c.fipeMes)>=_fcMesNum(a._mes)}).length,lig=cs.filter(function(pk){return S.carros[pk].fipeM}).length;
+ var h='<div class="v102sheetHero"><div class="v102sheetIcon">💰</div><div><div class="v102eyebrow">TABELA FIPE</div><h3>Conferência da FIPE</h3><div class="sub">'+(a._mes?'Tabela de '+esc(a._mes)+' · '+atual+' de '+lig+' carros atualizados':'Conferindo…')+'</div></div></div>';
+ h+=pend.length?'<div class="v102info" style="margin-bottom:10px">'+pend.length+' carro'+(pend.length>1?'s':'')+' para você conferir. O resto o app já confirmou pelo CRLV.</div>':'<div class="v102info" style="margin-bottom:10px">✅ Tudo conferido. Os valores atualizam sozinhos todo dia e o Resultados recebe junto.</div>';
+ h+='<div class="v102panel" style="padding:4px 0">'+cs.map(function(pk){var c=S.carros[pk],s=fcSituacao(pk),x=a[pk]||{},sug=c.fipeSugestao||(x.melhor&&!c.fipeM?x.melhor:null)||(s.t==='duv'&&x.melhor&&x.melhor.mo!=='mc-'+c.fipeCodigo?x.melhor:null);
+  var cor=s.t==='ok'?'#30D158':s.t==='vel'?'#FFD60A':'#FF9F0A';
+  var b='<div style="padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.08)"><div style="display:flex;gap:10px;align-items:center">'+plateHtml(c.placa||pk)+'<div style="flex:1;min-width:0"><b>'+esc(c.nome||pk)+'</b><small style="display:block;color:var(--tx2,#8E8E93)">CRLV: '+esc((c.modeloCRLV||'—')+' · '+(c.ano||''))+'</small></div></div>';
+  b+=c.fipeM?'<div style="margin-top:8px;font-size:14px">FIPE: <b>'+esc(x.nome||('código '+(c.fipeCodigo||'?')))+'</b>'+(c.fipeA?' · '+esc(String(c.fipeA).split('-')[0].replace('32000','Zero KM')):'')+(c.valorRef?' · R$ '+fmtBRL(c.valorRef):'')+(c.fipeMes?' <span style="color:var(--tx2,#8E8E93)">('+esc(String(c.fipeMes).trim())+')</span>':'')+'</div>':'';
+  b+='<div style="margin-top:6px;font-size:13px;font-weight:600;color:'+cor+'">'+(s.t==='ok'?'✓ ':'● ')+esc(s.txt)+'</div>';
+  if(sug&&s.t!=='ok')b+='<div style="margin-top:6px;font-size:13.5px">O app sugere: <b>'+esc(sug.nome||'')+'</b>'+(sug.anoNome?' · '+esc(sug.anoNome):'')+(sug.v?' · R$ '+fmtBRL(sug.v/100):'')+'</div>';
+  var bt=[];
+  if(sug&&sug.a&&s.t!=='ok')bt.push('<button class="btn mini ok" onclick="fcUsar(\''+pk+'\')">Usar a sugerida</button>');
+  if((s.t==='auto'||s.t==='duv')&&c.fipeM)bt.push('<button class="btn mini ok" onclick="fcCerto(\''+pk+'\')">✓ Está certo</button>');
+  if(s.t==='vel')bt.push('<button class="btn mini sec" onclick="fcAtualizar()">Atualizar agora</button>');
+  if(s.t!=='ok'||c.fipeM)bt.push('<button class="btn mini sec" onclick="closeSheet(2);fipeFluxo(\''+pk+'\')">'+(c.fipeM?'Trocar versão':'Escolher versão')+'</button>');
+  if(bt.length)b+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">'+bt.join('')+'</div>';
+  return b+'</div>'}).join('')+'</div>';
+ h+='<div class="v102actionbar"><button class="btn sec" onclick="closeSheet(2)">Fechar</button></div>';openSheet(h,2)}
+function fcCerto(pk){var c=S.carros[pk];c.fipeConferido=Date.now();c.fipeConferidoMo=String(c.fipeMo||'');delete c.fipeAuto;try{_touchCarro(c,['fipeConferido','fipeConferidoMo'])}catch(e){}save();toast('✓ FIPE conferida: '+(c.nome||pk));abrirConfFipe();try{render()}catch(e){}}
+function fcUsar(pk){var c=S.carros[pk],x=_fcLe()[pk]||{},s=c.fipeSugestao&&c.fipeSugestao.a?c.fipeSugestao:x.melhor;if(!s||!s.a)return;
+ toast('💰 Buscando valor…');fetch(FIPE+'/marcas/'+s.m+'/modelos/'+s.mo+'/anos/'+s.a).then(function(r){return r.json()}).then(function(d){var v=parseBRL(d&&d.Valor||'');if(!v)throw new Error('fonte');
+  c.fipeM=s.m;c.fipeMo=s.mo;c.fipeA=s.a;c.valorRef=v;c.fipeMes=String(d.MesReferencia||'').trim();c.fipeAtualizadoEm=Date.now();c.fipeCodigo=d.CodigoFipe||c.fipeCodigo||'';
+  c.fipeConferido=Date.now();c.fipeConferidoMo=String(s.mo);delete c.fipeSugestao;delete c.fipeAuto;delete c.fipeBuscar;delete c.fipeNaoBuscar;
+  try{_touchCarro(c,['fipeM','fipeMo','fipeA','fipeCodigo','fipeConferido','fipeConferidoMo'])}catch(e){}save();toast('✅ '+(d.Modelo||'')+' — R$ '+fmtBRL(v));
+  fcAuditar().then(function(){abrirConfFipe();try{render()}catch(e){}})}).catch(function(e){toast(_fipeErroTxt(e))})}
+function fcAtualizar(){toast('💰 Atualizando a FIPE…');try{localStorage.removeItem('gestao_fipe_espera')}catch(e){}atualizarFipe(true);setTimeout(function(){abrirConfFipe();try{render()}catch(e){}},6000)}
+(function(){
+ /* vínculo automático: com certeza vincula e marca "vinculada sozinha" (você confere 1 vez); sem certeza vira SUGESTÃO */
+ var oAV=window._fipeAutoVincular;
+ window._fipeAutoVincular=_fipeAutoVincular=function(lista){lista=(lista||[]).filter(function(pk){return !S.carros[pk].fipeSugestao});
+  var antes={};lista.forEach(function(pk){antes[pk]=S.carros[pk].fipeM});
+  return fipeAcharSug(lista).then(function(){return oAV(lista.filter(function(pk){return !S.carros[pk].fipeSugestao}))}).then(function(n){
+   lista.forEach(function(pk){var c=S.carros[pk];if(c.fipeM&&!antes[pk]){c.fipeAuto=Date.now();delete c.fipeNaoBuscar}});return n})};
+ function fipeAcharSug(lista){var i=0;return new Promise(function(fim){(function next(){if(i>=Math.min(3,lista.length))return fim();var pk=lista[i++],c=S.carros[pk];
+  fipeAcharAuto(c).then(function(r){if(r&&r.modelo&&!(r.certeza&&r.ano)){c.fipeSugestao={m:r.marca.codigo,mo:r.modelo.codigo,a:(r.ano||{}).codigo||'',nome:r.modelo.nome,anoNome:(r.ano||{}).nome||''};delete c.fipeBuscar}next()}).catch(function(){next()})})()})}
+ var oP=window._fipePendentes;window._fipePendentes=_fipePendentes=function(){return oP().filter(function(pk){return !S.carros[pk].fipeSugestao})};
+ /* depois do valor do dia, roda a conferência */
+ var oAt=window.atualizarFipe;window.atualizarFipe=atualizarFipe=function(){var r=oAt.apply(this,arguments);setTimeout(function(){fcAuditar().then(function(){try{if(TAB===5)render()}catch(e){}})},8000);return r};
+ /* linha no resumo de Pendências */
+ var oH=window.vHoje;window.vHoje=vHoje=function(){var h=oH.apply(this,arguments);try{var n=fcPendentes().length;if(!n)return h;
+  var btn='<button class="n24resL" onclick="abrirConfFipe()"><em class="a">'+n+'</em><span>FIPE para conferir</span><i>›</i></button>';
+  if(h.indexOf('<div class="n24resOk">Nada pendente hoje.</div>')>=0)return h.replace('<div class="n24resOk">Nada pendente hoje.</div>',btn);
+  var k=h.indexOf('<div class="n24resN">');return k>=0?h.slice(0,k)+btn+h.slice(k):h}catch(e){return h}};
+ if(CARRO_CAMPOS_EDIT.indexOf('fipeConferido')<0)CARRO_CAMPOS_EDIT.push('fipeConferido','fipeConferidoMo');
+ setTimeout(function(){if(S)fcAuditar().then(function(){try{if(TAB===5)render()}catch(e){}})},5000);
 })();
 </script>
 </body>
