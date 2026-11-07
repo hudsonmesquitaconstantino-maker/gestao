@@ -1,0 +1,11 @@
+name: teste-fipe
+on: push
+jobs:
+  t:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          H='Origin: https://hudsonmesquitaconstantino-maker.github.io'
+          for u in https://parallelum.com.br/fipe/api/v1/carros/marcas https://parallelum.com.br/fipe/api/v1/carros/marcas/21/modelos https://parallelum.com.br/fipe/api/v1/carros/marcas/21/modelos/4828/anos https://fipe.parallelum.com.br/api/v2/cars/brands https://fipe.parallelum.com.br/api/v2/cars/brands/21/models https://fipe.parallelum.com.br/api/v2/cars/brands/21/models/4828/years https://fipe.parallelum.com.br/api/v2/cars/brands/21/models/4828/years/2019-1 https://parallelum.com.br/fipe/api/v1/carros/marcas/21/modelos/4828/anos/2019-1 https://brasilapi.com.br/api/fipe/marcas/v1/carros; do
+            echo "=== $u"; curl -s -m 20 -D - -H "$H" "$u" -o body.txt | grep -iE "^HTTP|access-control-allow-origin|x-ratelimit|retry-after"; head -c 400 body.txt; echo
+          done
