@@ -5,11 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          B=https://veiculos.fipe.org.br/api/veiculos
-          A=(-s -m 25 -H 'Referer: https://veiculos.fipe.org.br/' -H 'Content-Type: application/x-www-form-urlencoded; charset=UTF-8' -H 'X-Requested-With: XMLHttpRequest' -H 'User-Agent: Mozilla/5.0')
-          echo "== tabelas"; curl "${A[@]}" -w "\nHTTP %{http_code}\n" -X POST $B/ConsultarTabelaDeReferencia | head -c 300; echo
-          T=$(curl "${A[@]}" -X POST $B/ConsultarTabelaDeReferencia | python3 -c 'import sys,json;print(json.load(sys.stdin)[0]["Codigo"])' 2>/dev/null); echo "tabela=$T"
-          echo "== marcas"; curl "${A[@]}" -w "\nHTTP %{http_code}\n" -X POST $B/ConsultarMarcas -d "codigoTabelaReferencia=$T&codigoTipoVeiculo=1" | head -c 300; echo
-          echo "== modelos fiat"; curl "${A[@]}" -w "\nHTTP %{http_code}\n" -X POST $B/ConsultarModelos -d "codigoTabelaReferencia=$T&codigoTipoVeiculo=1&codigoMarca=21" | head -c 300; echo
-          T2=$(curl "${A[@]}" -X POST $B/ConsultarTabelaDeReferencia | python3 -c 'import sys,json;print(json.load(sys.stdin)[1]["Codigo"])' 2>/dev/null); echo "tabela anterior=$T2"
-          echo "== marcas mes anterior"; curl "${A[@]}" -w "\nHTTP %{http_code}\n" -X POST $B/ConsultarMarcas -d "codigoTabelaReferencia=$T2&codigoTipoVeiculo=1" | head -c 200; echo
+          H='Origin: https://hudsonmesquitaconstantino-maker.github.io'
+          for u in https://parallelum.com.br/fipe/api/v1/carros/marcas https://parallelum.com.br/fipe/api/v1/carros/marcas/21/modelos https://fipe.parallelum.com.br/api/v2/cars/brands https://brasilapi.com.br/api/fipe/marcas/v1/carros https://brasilapi.com.br/api/fipe/preco/v1/001505-0; do
+            echo "=== $u"; curl -s -m 20 -D - -H "$H" "$u" -o body.txt | grep -iE "^HTTP|access-control-allow-origin"; head -c 250 body.txt; echo
+          done
