@@ -4,14 +4,10 @@ jobs:
   t:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
       - run: |
-          pip -q install pandas pyarrow
-          curl -sfL -o /tmp/f.parquet https://github.com/fipex-labs/dataset/releases/download/v2026.11.0/fipex-prices-latest.parquet
-          python3 .github/fipe/gerar.py /tmp/f.parquet v2026.11.0 fipe
-          du -sh fipe; ls fipe/marca | wc -l; ls fipe/cod | wc -l; cat fipe/info.json
-          ls -S -l fipe/marca | head -4; ls -S -l fipe/cod | head -3
-          head -c 300 fipe/marcas.json; echo
-          python3 -c 'import json;d=json.load(open("fipe/marca/mx-fiat.json"));m=[x for x in d["modelos"] if "MOBI LIKE" in x["nome"]][:2];print(m)'
-          python3 -c 'import json;d=json.load(open("fipe/cod/001.json"));print("001461-3",d.get("001461-3"))'
-          gzip -c fipe/marca/mx-fiat.json | wc -c; cat fipe/cod/*.json | gzip | wc -c
+          B=https://hudsonmesquitaconstantino-maker.github.io/gestao
+          curl -s $B/fipe/info.json; echo
+          curl -s -o /dev/null -w "marcas %{http_code} %{size_download}\n" $B/fipe/marcas.json
+          curl -s $B/fipe/marca/mx-fiat.json | python3 -c 'import sys,json;d=json.load(sys.stdin);print(d["mes"],len(d["modelos"]),[m for m in d["modelos"] if m["nome"].startswith("MOBI LIKE 1.0")][0]["anos"][:3])'
+          curl -s $B/fipe/cod/001.json | python3 -c 'import sys,json;print(json.load(sys.stdin)["001461-3"][:2])'
+          curl -s $B/index.html | grep -o "var APP_VER=[0-9]*"
