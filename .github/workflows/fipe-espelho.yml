@@ -1,0 +1,39 @@
+name: FIPE espelho
+# Todo dia confere se saiu tabela FIPE nova no dataset público fipex-labs e atualiza a cópia em /fipe.
+# O app usa essa cópia quando as APIs da FIPE ao vivo estão fora do ar.
+on:
+  schedule:
+    - cron: '37 9 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/fipe-espelho.yml', '.github/fipe/gerar.py']
+permissions:
+  contents: write
+concurrency: fipe-espelho
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ver se tem tabela nova
+        id: v
+        run: |
+          TAG=$(curl -s https://api.github.com/repos/fipex-labs/dataset/releases/latest | python3 -c 'import sys,json;print(json.load(sys.stdin).get("tag_name",""))')
+          ATUAL=$(python3 -c 'import json;print(json.load(open("fipe/info.json"))["fonte"].split()[-1])' 2>/dev/null || echo "")
+          echo "tag=$TAG atual=$ATUAL"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          if [ -n "$TAG" ] && [ "$TAG" != "$ATUAL" ]; then echo "novo=1" >> $GITHUB_OUTPUT; fi
+      - name: Gerar espelho
+        if: steps.v.outputs.novo == '1'
+        run: |
+          pip -q install pandas pyarrow
+          curl -sfL -o /tmp/f.parquet https://github.com/fipex-labs/dataset/releases/download/${{ steps.v.outputs.tag }}/fipex-prices-latest.parquet
+          python3 .github/fipe/gerar.py /tmp/f.parquet ${{ steps.v.outputs.tag }} fipe
+      - name: Publicar
+        if: steps.v.outputs.novo == '1'
+        run: |
+          git config user.name "FIPE espelho"
+          git config user.email "actions@users.noreply.github.com"
+          git add fipe
+          git diff --cached --quiet || (git commit -q -m "FIPE espelho: $(python3 -c 'import json;print(json.load(open("fipe/info.json"))["mes"])')" && git push)

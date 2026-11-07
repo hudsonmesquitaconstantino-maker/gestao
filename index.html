@@ -1697,7 +1697,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=309; var APP_DATE='05/11/2026';
+var APP_VER=310; var APP_DATE='05/11/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -15218,6 +15218,53 @@ function desfazerTrocaBateria(id){var m=S.manutencoes[id];if(!_ehTrocaBat(m))ret
  w._bat=1;for(var k in o)if(Object.prototype.hasOwnProperty.call(o,k))w[k]=o[k];w._bat=1;window.catalogoCarro=catalogoCarro=w})();
 (function(){var o=window._valManutHtml;if(typeof o!=='function'||o._bat)return;
  var w=function(m){if(_ehTrocaBat(m))return '<div style="font-weight:700;text-align:right;color:var(--tx2,#8E8E93)">🔋 troca<div style="font-size:11px;font-weight:600">sem valor</div></div>';return o.apply(this,arguments)};w._bat=1;window._valManutHtml=_valManutHtml=w})();
+</script>
+<script id="fipeReserva">/* v310 (Hudson 07/11): FIPE com RESERVAS — "se um cair, tem outro".
+   Ordem: 1) parallelum v1  2) parallelum v2 (mesmos códigos)  3) BrasilAPI (pelo código FIPE)
+          4) ESPELHO PRÓPRIO em /fipe — cópia da tabela FIPE do mês (carros), atualizada sozinha todo dia por um robô
+             do GitHub a partir do dataset público fipex-labs (CC0). Não depende de site nenhum estar no ar na hora.
+   Funciona por baixo de todas as telas (carro novo, ficha, valor do dia, vínculo automático): nenhuma tela muda.
+   Fonte que falhou fica 30 min de castigo (não gasta o limite de consultas). */
+(function(){
+ if(window._fipeRes)return;window._fipeRes=1;
+ var F1='https://parallelum.com.br/fipe/api/v1/carros',F2='https://fipe.parallelum.com.br/api/v2/cars',BA='https://brasilapi.com.br/api/fipe/preco/v1/';
+ var nf=window.fetch.bind(window),ESP='fipe/',cache={},fora={};
+ function caiu(k){fora[k]=Date.now()+30*60*1000}
+ function noAr(k){return !(fora[k]>Date.now())}
+ function resp(o){return new Response(JSON.stringify(o),{status:200,headers:{'Content-Type':'application/json'}})}
+ function esp(p){if(cache[p])return Promise.resolve(cache[p]);
+  return nf(ESP+p,{cache:'no-cache'}).then(function(r){if(!r.ok)throw new Error('esp');return r.json()}).then(function(d){cache[p]=d;return d})}
+ function valido(d){return d&&!d.error&&!(d.message&&!Array.isArray(d))}
+ function vivo(k,url,map){if(!noAr(k))return Promise.reject(new Error('fora'));
+  return nf(url).then(function(r){return r.json()}).then(function(d){if(!valido(d)){caiu(k);throw new Error(d&&d.error||'erro')}return map?map(d):d},function(e){caiu(k);throw e})}
+ /* espelho no formato da parallelum v1 */
+ function espV1(path){var p=path.split('/').filter(Boolean);/* marcas / X / modelos / Y / anos / Z */
+  if(p.length===1)return esp('marcas.json');
+  var mk=p[1];if(mk.indexOf('mx-')!==0)return Promise.reject(new Error('sem espelho'));
+  return esp('marca/'+mk+'.json').then(function(m){
+   if(p.length===3)return {modelos:m.modelos.map(function(x){return {codigo:x.codigo,nome:x.nome}}),anos:[]};
+   var mo=m.modelos.filter(function(x){return x.codigo===p[3]})[0];if(!mo)throw new Error('modelo');
+   if(p.length===5)return mo.anos.map(function(a){return {codigo:a[0],nome:a[1]}});
+   var a=mo.anos.filter(function(a){return a[0]===p[5]})[0];if(!a)throw new Error('ano');
+   return {Valor:'R$ '+fmtBRL(a[2]/100),Marca:m.marca,Modelo:mo.nome,AnoModelo:+a[0].split('-')[0],Combustivel:a[1].replace(/^\S+\s/,''),CodigoFipe:mo.codigo.slice(3),MesReferencia:m.mes,Fonte:'espelho'}})}
+ /* v2 → formato v1 */
+ function v2url(path){var p=path.split('/').filter(Boolean),u=F2+'/brands';if(p.length>=2)u+='/'+p[1];if(p.length>=3)u+='/models';if(p.length>=4)u+='/'+p[3];if(p.length>=5)u+='/years';if(p.length>=6)u+='/'+p[5];return u}
+ function v2map(path){var n=path.split('/').filter(Boolean).length;return function(d){
+  if(n===1||n===5)return d.map(function(x){return {codigo:x.code,nome:x.name}});
+  if(n===3)return {modelos:d.map(function(x){return {codigo:x.code,nome:x.name}}),anos:[]};
+  return {Valor:d.price,Marca:d.brand,Modelo:d.model,AnoModelo:d.modelYear,Combustivel:d.fuel,CodigoFipe:d.codeFipe,MesReferencia:d.referenceMonth}}}
+ /* espelho no formato da BrasilAPI (preço pelo código FIPE) */
+ function espBA(cod){return esp('info.json').then(function(inf){return esp('cod/'+cod.slice(0,3)+'.json').then(function(g){var l=g[cod];if(!l)throw new Error('cod');
+  return l.map(function(x){return {valor:'R$ '+fmtBRL(x[2]/100),marca:x[3],modelo:x[4],anoModelo:x[0],combustivel:x[1],codigoFipe:cod,mesReferencia:inf.mes}})})})}
+ window.fetch=function(u,o){var s=typeof u==='string'?u:(u&&u.url)||'';
+  if(s.indexOf(F1)===0){var path=s.slice(F1.length)||'/marcas';
+   if(/\/mx-/.test(path))return espV1(path).then(resp);           /* carro ligado pelo espelho */
+   return vivo('v1',s).catch(function(){return vivo('v2',v2url(path),v2map(path))}).catch(function(){return espV1(path)}).then(resp,function(){return resp({error:'fipe.org not responding'})})}
+  if(s.indexOf(BA)===0){var cod=decodeURIComponent(s.slice(BA.length));
+   return vivo('ba',s,function(d){if(!Array.isArray(d))throw new Error('ba');return d}).catch(function(){return espBA(cod)}).then(resp,function(){return resp({message:'Fonte de dados FIPE temporariamente indisponível',type:'internal'})})}
+  return nf(u,o)};
+ window._fipeFontes=function(){return {foraAte:fora,espelho:cache['info.json']||null}};
+})();
 </script>
 <script id="fipeAuto">/* v309 (Hudson 07/11): o site oficial da FIPE (fipe.org.br) parou de responder aos serviços grátis que o app usa
    (parallelum v1/v2 e BrasilAPI devolvem "failed to locate the information on fipe.org" — não é o app).
