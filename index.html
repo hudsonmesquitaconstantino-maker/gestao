@@ -1697,7 +1697,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=312; var APP_DATE='05/11/2026';
+var APP_VER=313; var APP_DATE='05/11/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -2105,6 +2105,7 @@ function buscaMatch(hay,q){
  if(!termos.length)return true;
  return termos.every(function(t){return hay.indexOf(t)>=0});
 }
+function _alRank(x){return x.n==='red'?0:x.q?1:2}
 function alertasCarro(c){
  var a=[];var km=c.kmUltima||c.kmAtual||0;
  /* carro em processo de venda ao motorista: a manutenção passa a ser do comprador,
@@ -2132,10 +2133,14 @@ function alertasCarro(c){
    if(o.carro!==pk||o.feito||!o.quando)return;
    var tx=o.texto.length>64?o.texto.slice(0,64)+'…':o.texto;
    var _ds=(typeof diaSemanaBR==='function'&&diaSemanaBR(o.quando))?' ('+diaSemanaBR(o.quando)+')':'';
-   if(o.quando<hj)a.push({n:'red',t:'📝 VENCIDA '+dataBR(o.quando)+_ds+' — '+tx});
-   else if(o.quando<=lim)a.push({n:'yel',t:'📝 '+dataBR(o.quando)+_ds+' — '+tx});
+   if(o.quando<hj)a.push({n:'red',t:'📝 VENCIDA '+dataBR(o.quando)+_ds+' — '+tx,q:o.quando});
+   else if(o.quando<=lim)a.push({n:'yel',t:'📝 '+dataBR(o.quando)+_ds+' — '+tx,q:o.quando});
   });
  }catch(e){}
+ /* v313 (Hudson 09/11): ordem de prioridade — 1º o que está VENCIDO (óleo, correia, documento, lembrete atrasado),
+    2º os afazeres com data, do mais perto para o mais longe, 3º os avisos de "está chegando" (óleo/correia perto, cilindro este ano). */
+ a.forEach(function(x,i){x._i=i});
+ a.sort(function(x,y){var rx=_alRank(x),ry=_alRank(y);return (rx-ry)||String(x.q||'').localeCompare(String(y.q||''))||(x._i-y._i)});
  return a;
 }
 
@@ -3546,6 +3551,8 @@ function _g2Curto(c,a){
 }
 function _g2Ativo(c){return c&&c.status!=='pessoal'}
 /* semáforo: 'red' agir · 'amb' acompanhar · 'ok' em dia */
+function g2OrdemPend(a,b){var ta=_g2Al(a)[0]||{},tb=_g2Al(b)[0]||{},ra=_alRank(ta),rb=_alRank(tb);
+ return (ra-rb)||(ra===1?String(ta.q).localeCompare(String(tb.q)):0)||(g2Nota(b)-g2Nota(a))}
 function g2Nivel(c){var al=_g2Al(c);if(al.some(function(a){return a.n==='red'}))return 'red';return al.length?'amb':'ok'}
 function g2Nota(c){var s=0,km=_g2Km(c);_g2Al(c).forEach(function(a){s+=a.n==='red'?3:1});
  var f=(Number(c.proxOleoKm)||0)-km;if(c.proxOleoKm&&km&&f<=2000)s+=Math.max(0,(2000-f)/2000);return s}
@@ -9880,7 +9887,7 @@ function _n4Pend(){
   h+='</div>';
  }
  /* 2 · RODANDO COM PENDÊNCIA: um carro por linha, o mais grave primeiro */
- comPend.sort(function(a,b){var na=g2Nivel(a)==='red'?0:1,nb=g2Nivel(b)==='red'?0:1;return (na-nb)||(g2Nota(b)-g2Nota(a))});
+ comPend.sort(g2OrdemPend);
  h+='<div class="n4h"><span>Rodando com pendência</span><span>'+comPend.length+'</span></div>';
  if(comPend.length){
   h+='<div class="n4grp">';
@@ -13337,7 +13344,7 @@ function _n4Pend(){
   h+='</div>';
  }
  /* 6 · RODANDO COM PENDÊNCIA */
- comPend.sort(function(a,b){var na=g2Nivel(a)==='red'?0:1,nb=g2Nivel(b)==='red'?0:1;return (na-nb)||(g2Nota(b)-g2Nota(a))});
+ comPend.sort(g2OrdemPend);
  h+='<div class="n4h" id="n24sRod"><span>Rodando com pendência</span><span>'+comPend.length+'</span></div>';
  if(comPend.length){
   h+='<div class="n4grp">';
