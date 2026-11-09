@@ -1697,7 +1697,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=313; var APP_DATE='05/11/2026';
+var APP_VER=314; var APP_DATE='05/11/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -15438,6 +15438,24 @@ function fcAtualizar(){toast('💰 Atualizando a FIPE…');try{localStorage.remo
  if(CARRO_CAMPOS_EDIT.indexOf('fipeConferido')<0)CARRO_CAMPOS_EDIT.push('fipeConferido','fipeConferidoMo','fipeAuto','fipeAutoMo','fipeSugestao','fipeBuscar','fipeNaoBuscar');
  setTimeout(function(){if(S)fcAuditar().then(function(){try{if(TAB===5)render()}catch(e){}})},5000);
 })();
+</script>
+<script id="barraFirme">/* Hudson 09/11: no iPhone (app da tela de início, iOS 26) a barra flutuante de baixo às vezes "afunda" e fica cortada
+   embaixo — bug do próprio iOS (WebKit 301108: a altura da tela fica errada depois de rolar/abrir janela).
+   Aqui o app mede onde a barra ESTÁ e onde DEVERIA estar (10 px acima da faixa do gesto de início) e corrige na hora. */
+(function(){var SEL='nav.g2nav';
+ var st=window.navigator.standalone===true||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||window.__barraTeste;if(!st)return;
+ var probe=document.createElement('div');probe.style.cssText='position:fixed;left:0;bottom:0;width:0;height:0;padding-bottom:env(safe-area-inset-bottom,0px);visibility:hidden;pointer-events:none';
+ (document.body||document.documentElement).appendChild(probe);
+ var raf=0;function ajusta(){raf=0;var els=document.querySelectorAll(SEL);for(var i=0;i<els.length;i++){var el=els[i],cs=getComputedStyle(el);
+   if(cs.display==='none'||!(cs.position==='fixed'||cs.position==='absolute'))continue;
+   if(innerWidth>innerHeight||document.documentElement.classList.contains('tecladoAberto')){el.style.translate='';continue}
+   var H=window.__barraTela||screen.height;if(!(H>0)||Math.abs(H-innerHeight)>160){el.style.translate='';continue}
+   var cur=parseFloat(String(el.style.translate||'').split(' ')[1])||0,r=el.getBoundingClientRect(),base=r.bottom-cur,alvo=H-(probe.offsetHeight||0)-10,d=Math.round(alvo-base);
+   if(Math.abs(d)<=2||Math.abs(d)>140)d=0;var v=d?'0 '+d+'px':'';if(el.style.translate!==v)el.style.translate=v}}
+ function pede(){if(!raf)raf=requestAnimationFrame(ajusta)}
+ ['scroll','resize','orientationchange','pageshow','touchend','focusout'].forEach(function(e){addEventListener(e,pede,{passive:true})});
+ if(window.visualViewport){visualViewport.addEventListener('resize',pede);visualViewport.addEventListener('scroll',pede)}
+ document.addEventListener('visibilitychange',pede);setInterval(pede,1200);setTimeout(pede,300);pede();window._barraAjusta=ajusta})();
 </script>
 </body>
 </html>
