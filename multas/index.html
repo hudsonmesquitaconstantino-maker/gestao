@@ -466,7 +466,8 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
  if(!full){
   try{de.appendChild(el)}catch(e){}
   try{if(!document.getElementById('gsTinta')){var tt=document.createElement('div');tt.id='gsTinta';tt.setAttribute('aria-hidden','true');
-   tt.style.cssText='position:fixed;left:0;right:0;top:0;height:7px;z-index:2147482000;background:#EEF0F4;pointer-events:none;transition:background-color .35s ease';
+   /* Multas v47 (12/11): a tirinha fica ACIMA da abertura e já nasce preta — o iPhone pintava a faixa do relógio com o cinza claro da tela de abertura do sistema e ela ficava presa */
+   tt.style.cssText='position:fixed;left:0;right:0;top:0;height:7px;z-index:2147483647;background:#000;pointer-events:none';
    de.appendChild(tt)}}catch(e){}
  }
  de.classList.add('gsplOn','gsplPre');setTimeout(function(){de.classList.remove('gsplOn','gsplFull','gsplPre')},MAX+2000);
