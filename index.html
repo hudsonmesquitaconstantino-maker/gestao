@@ -1697,7 +1697,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=315; var APP_DATE='05/11/2026';
+var APP_VER=316; var APP_DATE='05/11/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -10475,7 +10475,8 @@ function cnh7Parse(texto){
  }
 
  /* RG + órgão emissor + UF: "123456789 DETRAN RJ" / "12.345.678-9 SSP RJ" */
- var ORG='DETRAN|SSP|IFP|DIC|PC|SDS|SESP|SEJUSP|SESPDS|IIRGD|IGP|PCRJ|SESPDC|SSPDS|SEDS|SECC|PM|MD|MEX|MAER|MM|DPF|CNT|OAB|CRM|CREA|IPF|DGPC|SJS|SJTC|SPTC|POLITEC|SEPC|ITEP|IML|ITB|SSPRJ';
+ /* v316 (Hudson 13/11): CNH com identidade militar "5168902 MB RJ" não era lida — faltavam os órgãos militares e outros comuns */
+ var ORG='DETRAN|SSP|IFP|DIC|PC|SDS|SESP|SEJUSP|SESPDS|IIRGD|IGP|PCRJ|SESPDC|SSPDS|SEDS|SECC|PM|MD|MEX|MAER|MM|DPF|CNT|OAB|CRM|CREA|IPF|DGPC|SJS|SJTC|SPTC|POLITEC|SEPC|ITEP|IML|ITB|SSPRJ|MB|EB|FAB|COMAER|CBMERJ|CBM|PMERJ|PMESP|PMMG|PCDF|PCMG|PCPR|SSPDF|SEGUP|SESEG|DPT|IDENT|CGPI|DUREX|SPMAF|MTE|CORECON|CRC|CRO|CRF|CREFITO|COREN';
  var reRg=new RegExp('([0-9OQDILSBZ][0-9OQDILSBZX.\\-]{3,16})\\s*[\\-/]?\\s*('+ORG+')\\s*[\\-/]?\\s*([A-Z]{2})\\b');
  var pRg=flat.search(/IDENTIDADE|DOC\.?\s*IDENT/);
  var zona=pRg>=0?flat.slice(pRg,pRg+160):flat;
