@@ -1697,7 +1697,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=317; var APP_DATE='15/11/2026';
+var APP_VER=318; var APP_DATE='15/11/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -13600,15 +13600,30 @@ function n24Motorista(ct){
  if(cur)dias+=diasEntre(cur.ini,cur.fim);
  var nCt=0;cps.forEach(function(x){nCt+=x.n});
  var carros={};cps.forEach(function(x){carros[x.carro]=1});
- return {dias:dias,desde:cps[0].ini,contrato:nCt,carros:Object.keys(carros).length,voltas:blocos,venda:venda};
+ return {dias:dias,desde:cps[0].ini,contrato:nCt,carros:Object.keys(carros).length,voltas:blocos,venda:venda,cps:cps};
 }
+/* v318 (Hudson 15/11): deixar claro o tempo com a gente × o tempo NESTE carro, e em quais carros ele já esteve */
+function _n24PorCarro(cps){var por={};cps.forEach(function(x){(por[x.carro]=por[x.carro]||[]).push({ini:x.ini,fim:x.fim})});
+ var out=[];Object.keys(por).forEach(function(pk){var l=por[pk].sort(function(a,b){return a.ini.localeCompare(b.ini)}),d=0,cur=null,ult=null;
+  l.forEach(function(x){if(!cur||x.ini>somaDias(cur.fim,1)){if(cur)d+=diasEntre(cur.ini,cur.fim);cur={ini:x.ini,fim:x.fim}}else if(x.fim>cur.fim)cur.fim=x.fim});
+  if(cur){d+=diasEntre(cur.ini,cur.fim);ult=cur}
+  out.push({pk:pk,ini:l[0].ini,fim:l.reduce(function(m,x){return x.fim>m?x.fim:m},l[0].fim),dias:d,atualIni:ult?ult.ini:l[0].ini})});
+ return out.sort(function(a,b){return a.ini.localeCompare(b.ini)})}
+function _n24NomeCarro(pk){var c=S.carros&&S.carros[pk];return (c?tituloCarro(c)+' · ':'')+fmtPlaca(pk)}
 function n24MotHtml(ct){var m=n24Motorista(ct);if(!m)return '';
  var me=Math.floor(m.dias/30.44),a=Math.floor(me/12),mm=me%12;
  var tempo=a?(a+' ano'+(a>1?'s':'')+(mm?' e '+mm+' '+(mm>1?'meses':'mês'):'')):me?me+' '+(me>1?'meses':'mês'):'';
- var vd=m.venda;
- return '<div class="n24mot"><div><b>'+m.dias+'</b><small>dia'+(m.dias===1?'':'s')+' com a gente</small></div>'+(vd?'<div><b class="n24motV">Compra e venda</b><small>desde '+n24Dm(vd.inicio)+'</small></div>':'<div><b>'+m.contrato+'º</b><small>contrato</small></div>')+
-  '<p>'+esc(primNome(ct.locatario.nome))+' está com a gente desde '+n24Dm(m.desde)+(tempo?' ('+tempo+')':'')+'.'+(vd?n24LinhaVenda(m,vd):' Cada renovação de 3 meses conta como um contrato.')+
-  (m.carros>1?' Já passou por '+m.carros+' carros.':'')+(m.voltas>1?' Saiu e voltou '+(m.voltas-1)+' vez'+(m.voltas>2?'es':'')+' — os dias contam só o tempo com contrato.':'')+'</p></div>';
+ var vd=m.venda,h=hoje(),pc=_n24PorCarro(m.cps||[]),aqui=pc.filter(function(x){return x.pk===ct.carro})[0],ant=pc.filter(function(x){return x.pk!==ct.carro});
+ var c=S.carros&&S.carros[ct.carro],nomeC=c?String(tituloCarro(c)).split(' ')[0]:'carro';nomeC=nomeC.charAt(0).toUpperCase()+nomeC.slice(1).toLowerCase();
+ var diasAqui=aqui?diasEntre(aqui.atualIni,h<aqui.fim?h:aqui.fim):0;
+ var x='<div class="n24mot'+(m.carros>1?' n24mot3':'')+'"><div><b>'+m.dias+'</b><small>dia'+(m.dias===1?'':'s')+' com a gente</small></div>'+
+  (m.carros>1&&aqui?'<div><b>'+diasAqui+'</b><small>dia'+(diasAqui===1?'':'s')+' neste '+esc(nomeC)+'</small></div>':'')+
+  (vd?'<div><b class="n24motV">Compra e venda</b><small>desde '+n24Dm(vd.inicio)+'</small></div>':'<div><b>'+m.contrato+'º</b><small>contrato</small></div>');
+ x+='<p>'+esc(primNome(ct.locatario.nome))+' está com a gente desde '+n24Dm(m.desde)+(tempo?' ('+tempo+')':'')+'.';
+ if(m.carros>1&&aqui)x+=' Neste carro ('+esc(_n24NomeCarro(ct.carro))+') desde '+n24Dm(aqui.atualIni)+'.';
+ x+=(vd?n24LinhaVenda(m,vd):' Cada renovação de 3 meses conta como um contrato.')+(m.voltas>1?' Saiu e voltou '+(m.voltas-1)+' vez'+(m.voltas>2?'es':'')+' — os dias contam só o tempo com contrato.':'')+'</p>';
+ if(ant.length)x+='<div class="n24motAnt"><small>'+(ant.length>1?'Carros anteriores':'Carro anterior')+'</small>'+ant.map(function(y){return '<span><b>'+esc(_n24NomeCarro(y.pk))+'</b><em>'+n24Dm(y.ini)+' → '+n24Dm(y.fim)+' · '+y.dias+' dia'+(y.dias===1?'':'s')+'</em></span>'}).join('')+'</div>';
+ return x+'</div>';
 }
 (function(){
  var o=window._fichaTabHtml;if(typeof o!=='function'||o._n24)return;
@@ -15154,6 +15169,13 @@ html:not(.gsplPre),html:not(.gsplPre) body,html:not(.gsplPre) body.locked{backgr
 .viAv .g{flex:1;min-width:0}.viAv .t{font-size:14px;font-weight:650;margin-bottom:4px}
 .viAv input{margin:0;padding:8px 10px;font-size:14px}
 .viX{flex-shrink:0;border:0;background:transparent;color:var(--tx2);font-size:16px;padding:6px}
+.n24mot.n24mot3{grid-template-columns:1fr 1fr 1fr}
+.n24mot.n24mot3 b{font-size:21px}
+.n24motAnt{grid-column:1/-1;background:transparent!important;padding:2px 0 0!important}
+.n24motAnt>small{display:block;margin:0 0 4px}
+.n24motAnt span{display:block;padding:8px 0;border-top:.5px solid rgba(255,255,255,.1)}
+.n24motAnt span b{font-size:14px!important;font-weight:650!important;letter-spacing:0!important;display:block!important}
+.n24motAnt span em{display:block;font-style:normal;font-size:12.5px;color:var(--n24mut);margin-top:2px}
 .viCarr{margin:0 0 8px}
 .viDesenho{background:#F7F9FB!important;padding:0!important;overflow:hidden}
 </style>
