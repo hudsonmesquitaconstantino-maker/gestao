@@ -1697,7 +1697,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=320; var APP_DATE='17/11/2026';
+var APP_VER=321; var APP_DATE='18/11/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -8068,7 +8068,7 @@ function vHistorico(){
   var db=semAcento(m.motorista+' '+m.carro+' '+fmtPlaca(m.carro)+' '+(c.nome||'')+' '+tituloCarro(c)+' '+mTexto(m));
   h+='<div class="card tap" data-hbusca="'+esc(db)+'" onclick="verManut(\''+m.id+'\')"><div class="row">'+plateHtml(c.placa)+
    '<div class="grow"><div class="tit" style="font-size:14px">'+esc(tituloCarro(c))+'</div>'+
-   '<div class="sub">'+esc(periodoTexto(m.dataIni,m.dataFim))+_diasChip(m.dataIni,m.dataFim)+_haChip(m)+' · '+esc(primNome(m.motorista))+'</div></div>'+
+   '<div class="sub">'+esc(periodoTexto(m.dataIni,m.dataFim))+_diasChip(m.dataIni,m.dataFim)+_haChip(m)+(function(){try{var _s=manutSit(m);return _s==='aberta'?' <span class="msitTag ab" style="margin:0">em aberto</span>':(_s==='semkm'?' <span class="msitTag km" style="margin:0">falta o km</span>':'')}catch(e){return ''}})()+' · '+esc(primNome(m.motorista))+'</div></div>'+
    _valManutHtml(m)+'</div></div>';
  });
  return h;
@@ -8975,7 +8975,7 @@ function vManutN3(){
  N3P.n3m={unica:1,temCarro:function(){return !!N3.pk},at:0,nomes:N3M_NOMES,fim:'Salvar manutenção',salvar:n3Salvar,
   pode:function(at){if(at===0&&!N3.pk){toast('Escolha o carro');return false}return true},
   semNav:function(at){return at===0&&!N3.pk},
-  ao:function(at){}};
+  ao:function(at){try{n3SitDesenha()}catch(e){}}};
  var h='<div class="n3" id="n3m">'+
   '<div class="n3top"><h2>Nova manutenção</h2></div><div class="n3h">Carro</div>'+
   '<select id="mCarro" hidden onchange="mPuxaCarro();mRasc()"><option value=""></option>'+opcoesCarros(N3.pk)+'</select><div id="mCarroInfo" hidden></div><div id="mSaida" hidden></div>'+
@@ -8989,7 +8989,7 @@ function vManutN3(){
     '<label class="n3f n3sw"><span>Ficou mais de um dia</span><input type="checkbox" id="n3Varios" onchange="n3Varios(this.checked)"></label>'+
     '<label class="n3f" id="n3FimRow" hidden><span>Até</span><input type="date" id="mFim" value="'+hoje()+'" onchange="n3DataMudou()"></label>'+
     '<div class="n3info" id="mDias"></div>'+
-    '<label class="n3f"><span>Odômetro</span><input id="mOdo" inputmode="numeric" autocomplete="off" placeholder="km" oninput="mRasc();n3KmInfo()"></label><div class="n3info" id="mKmInfo"></div>'+
+    '<label class="n3f"><span>Odômetro</span><input id="mOdo" inputmode="numeric" autocomplete="off" placeholder="km" oninput="mRasc();n3KmInfo();try{n3SitDesenha()}catch(e){}"></label><div class="n3info" id="mKmInfo"></div>'+
    '</div>'+
    '<div id="mFrotaFinanceiraBox" class="n3grp n3pad" style="display:none"></div>'+
   '</section>'+
@@ -8999,6 +8999,7 @@ function vManutN3(){
   '<section class="n3passo" hidden><div class="n3h">Mão de obra <b id="mTotM">R$ 0,00</b></div><div id="n3Blocos"></div></section>'+
   /* 5 · conferir e salvar */
   '<section class="n3passo" hidden>'+
+   '<div id="n3Sit"></div>'+
    '<div id="n3QuemBox"><div class="n3h">Quem pagou esta manutenção?</div><div id="n3Quem"></div></div>'+
    '<div class="n3grp n3tot n3totF"><div class="n3f"><span>Total da manutenção</span><b id="mTotG">R$ 0,00</b></div></div>'+
    '<details class="n3mais n3maisF"><summary>Ajustes do fechamento</summary><div class="n3grp"><label class="n3f"><span>Mês das peças <small>em que fechamento elas entram</small></span><input type="date" id="mPecasData" value="'+hoje()+'" onchange="mRasc();n3DesenhaPecas()"></label></div></details><div id="n3UltBox"></div></section>'+
@@ -9182,8 +9183,9 @@ function n3Salvar(){
  gerarManut();
  var novo='';Object.keys(S.manutencoes||{}).forEach(function(k){if(!antes[k])novo=k});
  if(!novo){MP=bkP;return}
- try{var _nm=S.manutencoes[novo];var _dv=!_mot?0:(N3.div==null?null:N3.div);if(_nm&&_dv!=null){_nm.divMot=_dv;_nm.editadoEm=Date.now();save()}}catch(e){}
- N3.div=null;
+ var _sit=_n3SitAtual();
+ try{var _nm=S.manutencoes[novo];var _dv=!_mot?0:(N3.div==null?null:N3.div);if(_nm){if(_dv!=null)_nm.divMot=_dv;_nm.situacao=_sit;_nm.editadoEm=Date.now();save()}}catch(e){}
+ N3.div=null;N3.sit=null;
  N3.pk='';N3.abertas={};MP=[];MB=[];N3P.n3m=null;
  try{render()}catch(e){}
  setTimeout(function(){verManut(novo)},60);
@@ -9390,7 +9392,7 @@ function e3Desenha(){
 function edDesenha(){e3Desenha()}
 function editarManut(id){
  var m=S.manutencoes[id];if(!m)return;
- _edMid=id;E3.ed='';E3.div=divMotEfetivo(m);
+ _edMid=id;E3.ed='';E3.div=divMotEfetivo(m);E3.sit=manutSit(m)==='aberta'?'aberta':'fechada';
  EP=(m.pecas||[]).map(function(p){return {valor:p.valor?fmtBRL(p.valor):'',desc:p.desc||'',loja:p.loja||'',data:p.data||'',pendenteFinanceiro:!!p.pendenteFinanceiro}});
  EB=(m.blocos||[]).map(function(b){return {titulo:b.titulo||'Mecânico',nome:b.nome||'',valor:tNum(b.valor)?fmtBRL(tNum(b.valor)):'',servicos:(Array.isArray(b.servicos)?b.servicos.join('\n'):String(b.servicos||'')),dataIni:b.dataIni||'',dataFim:b.dataFim||'',pendenteFinanceiro:!!b.pendenteFinanceiro}});
  var c=S.carros[m.carro]||{nome:m.carro,placa:m.carro,motor:''},cv=contratoVendaVigenteDoCarro(m.carro);
@@ -9401,9 +9403,10 @@ function editarManut(id){
    '<div class="n3dupla"><label class="n3f"><span>Início</span><input type="date" id="edIni" onchange="e3Desenha()" value="'+esc(m.dataIni||'')+'"></label>'+
    '<label class="n3f"><span>Final</span><input type="date" id="edFim" onchange="e3Desenha()" value="'+esc(m.dataFim||'')+'"></label></div>'+
    '<div class="n3info" id="edDias"></div>'+
-   '<label class="n3f"><span>Odômetro</span><input id="edOdo" inputmode="numeric" autocomplete="off" oninput="e3UltDesenha()" value="'+esc(m.odometro?String(m.odometro):'')+'"></label>'+
+   '<label class="n3f"><span>Odômetro</span><input id="edOdo" inputmode="numeric" autocomplete="off" oninput="e3UltDesenha();try{_msitE3Desenha()}catch(e){}" value="'+esc(m.odometro?String(m.odometro):'')+'"></label>'+
    (cv?'<label class="n3f"><span>Fechamento financeiro <small>carro em compra e venda</small></span><select id="edFrotaFechamento"><option value=""'+(!m.frotaFechamento?' selected':'')+'>Automático ('+_rotuloFrotaFinanceira(_frotaPadraoCarro(m.carro))+')</option><option value="fabio"'+(m.frotaFechamento==='fabio'?' selected':'')+'>Frota Fábio</option><option value="hudson"'+(m.frotaFechamento==='hudson'?' selected':'')+'>Frota Hudson</option></select></label>':'')+
   '</div>'+
+  '<div id="e3Sit"></div>'+
   '<div class="n3h">Peças <b id="edTotP">R$ 0,00</b></div><div id="edPecas"></div>'+
   '<div class="n3h">Mão de obra <b id="edTotM">R$ 0,00</b></div><div id="edBlocos"></div>'+
   '<div class="n3h">Quem pagou esta manutenção?</div><div id="e3Quem"></div>'+
@@ -9413,10 +9416,10 @@ function editarManut(id){
  '</div>'+
  '<div class="g2dock e3dock"><button class="btn ok g2dockMain" onclick="e3Salvar()">Salvar alterações</button><button class="btn sec" onclick="closeSheet(2)">Cancelar</button></div>';
  openSheet(h,2);
- setTimeout(e3Desenha,30);
+ setTimeout(e3Desenha,30);setTimeout(function(){try{_msitE3Desenha()}catch(e){}},35);
 }
 function e3Salvar(){e3Fecha();
- try{var m=S.manutencoes[_edMid],mot=String((document.getElementById('edMot')||{}).value||'').trim();if(!_n3MotReal(mot))mot='';if(m){var dv=mot?E3.div:0;if(dv===0||dv===50||dv===100)m.divMot=dv}}catch(e){}
+ try{var m=S.manutencoes[_edMid],mot=String((document.getElementById('edMot')||{}).value||'').trim();if(!_n3MotReal(mot))mot='';if(m){var dv=mot?E3.div:0;if(dv===0||dv===50||dv===100)m.divMot=dv;if(E3.sit==='aberta'||E3.sit==='fechada'){m.situacao=E3.sit;if(E3.sit==='aberta')m.semKmOk=false}}}catch(e){}
  salvarEdicaoManut()}
 
 /* ---------- inteligência comum (criar e editar) ---------- */
@@ -12720,7 +12723,8 @@ function htmlFornAno(){
 }
 function _hSegBar(seg,sub){
  function b(k,t){return '<span class="v99segbtn'+(seg===k?' on':'')+'" onclick="hSeg(\''+k+'\')">'+t+'</span>'}
- var h='<div class="hsegTop"><div class="v99seg">'+b('manut','Manutenções')+b('forn','Fornecedores')+b('carros','Por carro')+'</div>';
+ var _na=0;try{_na=nManutsPend()}catch(e){}
+ var h='<div class="hsegTop"><div class="v99seg">'+b('abertas','Em aberto'+(_na?'<span class="msitN">'+_na+'</span>':''))+b('manut','Manutenções')+b('forn','Fornecedores')+b('carros','Por carro')+'</div>';
  if(seg==='forn')h+='<div class="v99seg" style="grid-template-columns:repeat(2,1fr);margin-top:6px"><span class="v99segbtn'+(sub!=='ano'?' on':'')+'" onclick="hFSub(\'mes\')">Fatura do mês</span><span class="v99segbtn'+(sub==='ano'?' on':'')+'" onclick="hFSub(\'ano\')">No ano</span></div>';
  return h+'</div>';
 }
@@ -12729,6 +12733,7 @@ function hFSub(k){window._hFSub=k;window._fechAberto=true;render()}
 (function(){var o=window.vHistorico;if(typeof o!=='function'||o._v244)return;
  var w=function(){
   var seg=window._hSeg||'manut',sub=window._hFSub||'mes',h=o.apply(this,arguments);
+  if(seg==='abertas'){var _i0=h.indexOf('<div class="search">');return '<div id="hWrap" data-seg="abertas">'+(_i0>=0?h.slice(0,_i0):'')+_hSegBar(seg,sub)+vManutAbertas()+'</div>'}
   var i=h.indexOf('<div class="search">');var bar=_hSegBar(seg,sub);
   h=i>=0?h.slice(0,i)+bar+h.slice(i):bar+h;
   if(seg==='forn'&&sub==='ano')h+=htmlFornAno();
@@ -13290,8 +13295,9 @@ function _n4Pend(){
  if(nPar)lin.push(['a',nPar,'carro'+(nPar>1?'s':'')+' parado'+(nPar>1?'s':'')+(sem>0?' · R$ '+fmtBRL(sem)+' por semana':''),pro.length?'n24sPro':(ofi.length?'n24sOfi':'n24sCasa')]);
  if(ctr.length)lin.push(['',ctr.length,(ctr.length===1?'contrato renova em '+(ctr[0].dias===0?'hoje':ctr[0].dias+' dia'+(ctr[0].dias>1?'s':''))+' ('+primNome(ctr[0].c.motorista)+')':'contratos renovam nos próximos 7 dias'),'n24sPrazos']);
  if(oleo)lin.push(['r',oleo,'óleo'+(oleo>1?'s':'')+' vencido'+(oleo>1?'s':''),'n24sRod']);
+ try{var _pks={};cs.forEach(function(c){_pks[n4Pk(c)]=1});var _mab=nManutsPend(function(pk){return !!_pks[pk]});if(_mab)lin.push(['a',_mab,'manutenç'+(_mab>1?'ões':'ão')+' em aberto','@abrirManutAbertas'])}catch(e){}
  h+='<section class="n24res"><div class="n24resT">'+(new Date().getHours()<12?'Bom dia':new Date().getHours()<18?'Boa tarde':'Boa noite')+' · '+_g2Data().toLowerCase()+'</div>'+
-  (lin.length?lin.map(function(l){return '<button class="n24resL" onclick="n24Vai(\''+l[3]+'\')"><em class="'+l[0]+'">'+l[1]+'</em><span>'+esc(l[2])+'</span><i>›</i></button>'}).join(''):'<div class="n24resOk">Nada pendente hoje.</div>')+
+  (lin.length?lin.map(function(l){return '<button class="n24resL" onclick="'+(String(l[3]).charAt(0)==='@'?String(l[3]).slice(1)+'()':'n24Vai(\''+l[3]+'\')')+'"><em class="'+l[0]+'">'+l[1]+'</em><span>'+esc(l[2])+'</span><i>›</i></button>'}).join(''):'<div class="n24resOk">Nada pendente hoje.</div>')+
   '<div class="n24resN"><button onclick="FROTA_F=\'rodando\';BUSCA_F=\'\';go(0)"><b>'+nRod+'</b><span>rodando</span></button><button onclick="FROTA_F=\'pronto\';BUSCA_F=\'\';go(0)"><b>'+pro.length+'</b><span>prontos</span></button><button onclick="FROTA_F=\'oficina\';BUSCA_F=\'\';go(0)"><b>'+ofi.length+'</b><span>na oficina</span></button><button onclick="FROTA_F=\'casa\';BUSCA_F=\'\';go(0)"><b>'+casa.length+'</b><span>em casa</span></button></div></section>';
 
  /* 1 · PRONTOS PARA ALUGAR */
@@ -15777,5 +15783,116 @@ function _vistPdfBuild(doc,v,c,png){
 function _vistHex(h){h=h.replace('#','');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]}
 
 </script>
+<script>
+/* ===================== v321 (Hudson 18/11): MANUTENÇÃO EM ABERTO × FECHADA =====================
+   Cada manutenção ganha uma situação escolhida à mão: "em aberto" (ainda vou mexer) ou "fechada" (já fez, tudo certo).
+   Regra do Hudson: sem km a manutenção NÃO está fechada — fica pendente em "Falta o km".
+   Manutenção antiga (lançada antes desta versão, sem situação): com km = fechada; sem km mas o carro tem manutenção
+   mais nova com km = fechada; sem km e com data nos últimos 30 dias = "Falta o km"; sem km e mais antiga = grupo "Antigas sem km" (fechado, não conta nas pendências).
+   Só grava os campos novos situacao / semKmOk; nada do histórico, valores ou fechamento muda. */
+var MSIT_DIAS_LEG=30;
+/* só para o começo (manutenções lançadas antes da v321, sem situação): se o MESMO carro tem uma manutenção
+   mais nova com km, a antiga sem km não precisa de km — o carro já tem um km mais recente. */
+var _msitKmT=0,_msitKmM=null;
+function _msitUltKm(){var t=Date.now();if(_msitKmM&&t-_msitKmT<1500)return _msitKmM;var mp={};
+ Object.keys(S&&S.manutencoes||{}).forEach(function(k){var m=S.manutencoes[k];if(!m||!(Number(m.odometro)>0))return;var d=String(m.dataFim||m.dataIni||'').slice(0,10);if(d>(mp[m.carro]||''))mp[m.carro]=d});
+ _msitKmT=t;_msitKmM=mp;return mp}
+function _msitDs(iso,ano){if(!/^\d{4}-\d{2}-\d{2}/.test(iso||''))return '';var d=new Date(String(iso).slice(0,10)+'T12:00:00');return ['dom','seg','ter','qua','qui','sex','sáb'][d.getDay()]+' '+iso.slice(8,10)+'/'+iso.slice(5,7)+(ano?'/'+iso.slice(2,4):'')}
+function manutSit(m){
+ if(!m||(typeof _ehGarantia==='function'&&_ehGarantia(m)))return 'fechada';
+ var km=Number(m.odometro)>0;
+ if(m.situacao==='aberta')return 'aberta';
+ if(km||m.semKmOk)return 'fechada';
+ if(m.situacao==='fechada')return 'semkm';
+ var d=String(m.dataFim||m.dataIni||'').slice(0,10);
+ if(/^\d{4}-\d{2}-\d{2}$/.test(d)&&(_msitUltKm()[m.carro]||'')>d)return 'fechada';
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(d))return 'antiga';
+ return diasEntre(d,hoje())<=MSIT_DIAS_LEG?'semkm':'antiga';
+}
+function manutsAbertas(okPk){var r={aberta:[],semkm:[],antiga:[]};
+ Object.keys(S&&S.manutencoes||{}).forEach(function(k){var m=S.manutencoes[k];if(!m)return;if(!m.id)m.id=k;if(okPk&&!okPk(m.carro))return;var s=manutSit(m);if(r[s])r[s].push(m)});
+ var by=function(a,b){return String(b.dataIni||'').localeCompare(String(a.dataIni||''))||((Number(b.criadoEm)||0)-(Number(a.criadoEm)||0))};
+ r.aberta.sort(by);r.semkm.sort(by);r.antiga.sort(by);return r}
+function nManutsPend(okPk){var r=manutsAbertas(okPk);return r.aberta.length+r.semkm.length}
+function _msitResumo(m){var t=[];(m.blocos||[]).forEach(function(b){(Array.isArray(b.servicos)?b.servicos:String(b.servicos||'').split('\n')).forEach(function(s){s=String(s||'').trim();if(s)t.push(s)})});
+ (m.pecas||[]).forEach(function(p){if(p&&p.desc)t.push(p.desc)});if(!t.length&&m.texto)t.push(String(m.texto).split('\n').filter(function(x){return x.trim()}).slice(1,2).join(''));
+ var s=t.slice(0,3).join(', ');return s.length>95?s.slice(0,93)+'…':s}
+function _msitCarro(m){return S.carros[m.carro]||{nome:(typeof _nomeAvulso==='function'?_nomeAvulso(m.carro):m.carro),placa:m.carro}}
+function _msitRow(m){
+ var c=_msitCarro(m),s=manutSit(m),km=Number(m.odometro)>0,ini=String(m.dataIni||'').slice(0,10),n=_haDias(ini),np=(m.pecas||[]).length,nb=(m.blocos||[]).length,inf=[];
+ if(ini)inf.push('desde '+_msitDs(ini)+(n>0?' · '+_haTxt(n):''));
+ if(np)inf.push(np+(np>1?' peças':' peça'));if(nb)inf.push(nb+(nb>1?' serviços':' serviço'));
+ var tag=s==='aberta'?'<span class="msitTag ab">em aberto'+(km?'':' · sem km')+'</span>':'<span class="msitTag km">falta o km</span>';
+ var rs=_msitResumo(m);
+ return '<div class="card tap msitCard" onclick="verManut(\''+m.id+'\')"><div class="row">'+plateHtml(c.placa||m.carro)+
+  '<div class="grow"><div class="tit" style="font-size:14px">'+esc(tituloCarro(c))+'</div><div class="sub">'+esc(inf.join(' · '))+'</div>'+
+  (rs?'<div class="msitRes">'+esc(rs)+'</div>':'')+tag+'</div>'+(Number(m.total)?_valManutHtml(m):'')+'</div></div>'}
+function vManutAbertas(){_msitKmM=null;
+ var r=manutsAbertas(),h='<div class="sub msitIntro">Manutenção fica aqui até você fechar. Sem km ela continua pendente.</div>';
+ h+='<div class="msitSec"><span>🔧 Em aberto</span><b>'+r.aberta.length+'</b></div>';
+ h+=r.aberta.length?r.aberta.map(_msitRow).join(''):'<div class="card"><div class="sub">Nenhuma manutenção em aberto. Ao lançar, escolha "Em aberto" no último passo.</div></div>';
+ if(r.semkm.length)h+='<div class="msitSec"><span>📏 Falta o km</span><b>'+r.semkm.length+'</b></div><div class="sub msitIntro">Sem o km a manutenção não fecha. Toque e coloque o km.</div>'+r.semkm.map(_msitRow).join('');
+ if(r.antiga.length){
+  h+='<details class="card msitAnt"'+(window._msitAntOpen?' open':'')+' ontoggle="window._msitAntOpen=this.open"><summary><span>🗂 Antigas sem km</span><b>'+r.antiga.length+' ›</b></summary>'+
+   '<div class="sub" style="margin:6px 0 8px">Lançadas há mais de '+MSIT_DIAS_LEG+' dias sem km. Não contam nas pendências. Se achar o km, toque e coloque; se não tem como saber, toque em "não tem km".</div>';
+  r.antiga.forEach(function(m){var c=_msitCarro(m);
+   h+='<div class="mvrow msitAntRow"><b class="hplc tap" onclick="verManut(\''+m.id+'\')">'+esc(fmtPlaca(c.placa||m.carro))+'</b>'+
+    '<div class="grow tap" onclick="verManut(\''+m.id+'\')"><small>'+esc(_msitDs(m.dataIni,1))+'</small> '+esc(_msitResumo(m)||tituloCarro(c))+'</div>'+
+    '<button class="msitNk" onclick="manutSemKm(\''+m.id+'\')">não tem km</button></div>'});
+  h+='</details>';
+ }
+ return h}
+function abrirManutAbertas(){window._hSeg='abertas';go(3)}
+function _msitSalva(m,camp){_msitKmM=null;m.editadoEm=Date.now();save();try{render()}catch(e){}if(window._fichaPk===m.carro){try{ficha(m.carro)}catch(e){}}}
+function manutSetSit(id,s){var m=S.manutencoes[id];if(!m)return;m.situacao=s;if(s==='aberta')m.semKmOk=false;_msitSalva(m);
+ toast(s==='aberta'?'🔧 Manutenção em aberto':(Number(m.odometro)>0?'✅ Manutenção fechada':'📏 Fechada, mas falta o km'));try{verManut(id)}catch(e){}}
+function manutFechar(id){var m=S.manutencoes[id];if(!m)return;
+ if(!(Number(m.odometro)>0)){toast('📏 Coloque o km para fechar');editarManut(id);
+  setTimeout(function(){E3.sit='fechada';_msitE3Desenha();var o=document.getElementById('edOdo');if(o){try{o.scrollIntoView({block:'center'})}catch(e){}try{o.focus()}catch(e){}}},150);return}
+ manutSetSit(id,'fechada')}
+function manutSemKm(id){var m=S.manutencoes[id];if(!m)return;
+ ask('Não tem km?','Esta manutenção antiga fica fechada sem km e sai das pendências. Se um dia achar o km, é só editar.','Fechar sem km',function(){m.semKmOk=true;m.situacao='fechada';_msitSalva(m);toast('🗂 Fechada sem km');var sh=document.getElementById('ovSheet2');if(sh&&sh.classList.contains('open')){try{verManut(id)}catch(e){}}})}
+function _msitPanel(m){
+ var s=manutSit(m),id=m.id,km=Number(m.odometro)>0,ini=String(m.dataIni||'').slice(0,10),n=_haDias(ini);
+ if(s==='aberta')return '<div class="msitP ab"><div class="msitPt"><b>🔧 Em aberto</b><small>'+(ini?'desde '+esc(_msitDs(ini))+(n>0?' · '+_haTxt(n):''):'')+(km?'':' · sem km')+'</small></div>'+
+  '<button class="btn ok" onclick="manutFechar(\''+id+'\')">'+(km?'✓ Fechar manutenção':'Colocar km e fechar')+'</button></div>';
+ if(s==='semkm'||s==='antiga')return '<div class="msitP km"><div class="msitPt"><b>📏 Falta o km</b><small>Sem km a manutenção fica pendente.</small></div>'+
+  '<button class="btn ok" onclick="manutFechar(\''+id+'\')">Colocar km</button>'+
+  '<div class="msitPl">'+(s==='antiga'?'<span onclick="manutSemKm(\''+id+'\')">não tem km</span>':'')+'<span onclick="manutSetSit(\''+id+'\',\'aberta\')">ainda está em aberto</span></div></div>';
+ if(_ehGarantia&&_ehGarantia(m))return '';
+ return '<div class="msitP fe"><div class="msitPt"><b>✅ Fechada</b><small>'+(km?fmtKm(m.odometro)+' km':'sem km (antiga)')+'</small></div><div class="msitPl"><span onclick="manutSetSit(\''+id+'\',\'aberta\')">reabrir</span></div></div>'}
+/* toggle (lançar e editar) */
+function _msitTg(cur,fn,km){
+ return '<div class="n3h">Situação</div><div class="msitTg"><button type="button" class="'+(cur==='aberta'?'on ab':'')+'" onclick="'+fn+'(\'aberta\')"><b>🔧 Em aberto</b><small>ainda vou mexer</small></button>'+
+  '<button type="button" class="'+(cur==='fechada'?'on fe':'')+'" onclick="'+fn+'(\'fechada\')"><b>✅ Fechada</b><small>já fez, tudo certo</small></button></div>'+
+  (cur==='fechada'&&!km?'<div class="n3info"><span class="n3alerta">📏 Sem km ela fica pendente em "Falta o km" até você colocar.</span></div>':'')}
+function _n3SitAtual(){if(N3.sit==='aberta'||N3.sit==='fechada')return N3.sit;var v=parseInt(String((document.getElementById('mOdo')||{}).value||'').replace(/\D/g,''),10)||0;return v>0?'fechada':'aberta'}
+function n3SitDesenha(){var el=document.getElementById('n3Sit');if(!el)return;var v=parseInt(String((document.getElementById('mOdo')||{}).value||'').replace(/\D/g,''),10)||0;el.innerHTML=_msitTg(_n3SitAtual(),'n3SitSet',v>0)}
+function n3SitSet(v){N3.sit=v;n3SitDesenha()}
+function _msitE3Desenha(){var el=document.getElementById('e3Sit');if(!el)return;var v=parseInt(String((document.getElementById('edOdo')||{}).value||'').replace(/\D/g,''),10)||0;el.innerHTML=_msitTg(E3.sit,'e3SitSet',v>0)}
+function e3SitSet(v){E3.sit=v;_msitE3Desenha()}
+/* detalhe da manutenção: mostra a situação no topo */
+(function(){var o=window.verManut;if(typeof o!=='function'||o._msit)return;
+ var w=function(id){var r=o.apply(this,arguments);try{_msitKmM=null;var m=S.manutencoes&&S.manutencoes[id];var b=document.getElementById('sheetBody2');if(m&&b&&!b.querySelector('.msitP')){var p=_msitPanel(m);if(p){var t=b.querySelector('.v102maintTop');if(t)t.insertAdjacentHTML('beforebegin',p);else{var f=b.firstElementChild;if(f)f.insertAdjacentHTML('afterend',p);else b.insertAdjacentHTML('afterbegin',p)}}}}catch(e){}return r};
+ w._msit=1;window.verManut=verManut=w})();
+(function(){if(document.getElementById('msitCss'))return;var st=document.createElement('style');st.id='msitCss';st.textContent=
+ '#hWrap .hsegTop .v99seg:first-child{grid-template-columns:repeat(4,1fr)}#hWrap .hsegTop .v99seg:first-child .v99segbtn{font-size:12.5px;padding-left:2px;padding-right:2px;white-space:nowrap}'+
+ '.v99segbtn .msitN{display:inline-block;min-width:16px;padding:0 4px;margin-left:3px;border-radius:8px;background:#E8590C;color:#fff;font-size:11px;font-weight:800;line-height:16px}'+
+ '#hWrap[data-seg=abertas] #hTot,#hWrap[data-seg=abertas] #hFech{display:none!important}'+
+ '.msitIntro{margin:0 2px 10px}.msitSec{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:15px;margin:14px 4px 8px}.msitSec b{font-size:13px;background:rgba(232,89,12,.14);color:#E8590C;border-radius:9px;padding:1px 8px}'+
+ '.msitRes{font-size:12.5px;color:var(--mu,#6B7280);margin-top:3px;line-height:1.3}'+
+ '.msitTag{display:inline-block;margin-top:6px;font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px;letter-spacing:.2px}.msitTag.ab{background:rgba(232,89,12,.14);color:#E8590C}.msitTag.km{background:rgba(202,138,4,.16);color:#A16207}'+
+ '.msitAnt summary{display:flex;justify-content:space-between;align-items:center;font-weight:800;cursor:pointer;list-style:none}.msitAnt summary::-webkit-details-marker{display:none}.msitAnt summary b{color:var(--mu,#6B7280);font-size:13px}'+
+ '.msitAntRow{align-items:center;gap:8px}.msitAntRow .grow{font-size:13px;line-height:1.3;min-width:0}.msitAntRow small{color:var(--mu,#6B7280);font-weight:700}'+
+ '.msitNk{border:0;background:rgba(127,127,127,.14);color:inherit;font:700 12px inherit;padding:6px 9px;border-radius:9px;white-space:nowrap}'+
+ '.msitP{border-radius:16px;padding:12px 14px;margin:0 0 12px}.msitP.ab{background:rgba(232,89,12,.12)}.msitP.km{background:rgba(202,138,4,.14)}.msitP.fe{background:rgba(46,125,91,.12);display:flex;justify-content:space-between;align-items:center}'+
+ '.msitPt b{display:block;font-size:16px}.msitPt small{color:var(--mu,#6B7280);font-size:13px}.msitP .btn{margin:10px 0 0;width:100%}'+
+ '.msitPl{display:flex;gap:16px;justify-content:center;margin-top:8px;font-size:13px;font-weight:700;color:var(--mu,#6B7280)}.msitP.fe .msitPl{margin:0}.msitPl span{cursor:pointer;text-decoration:underline;text-underline-offset:3px}'+
+ '.msitTg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 6px}.msitTg button{border:1.5px solid rgba(127,127,127,.25);background:transparent;color:inherit;border-radius:14px;padding:11px 8px;text-align:center;font:inherit;cursor:pointer}'+
+ '.msitTg button b{display:block;font-size:15px}.msitTg button small{display:block;font-size:12px;color:var(--mu,#6B7280);margin-top:2px}'+
+ '.msitTg button.on.ab{border-color:#E8590C;background:rgba(232,89,12,.12)}.msitTg button.on.fe{border-color:#2E7D5B;background:rgba(46,125,91,.12)}';
+ document.head.appendChild(st)})();
+</script>
+
 </body>
 </html>
