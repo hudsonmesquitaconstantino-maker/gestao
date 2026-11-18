@@ -1697,7 +1697,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=322; var APP_DATE='18/11/2026';
+var APP_VER=323; var APP_DATE='18/11/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -9449,7 +9449,9 @@ function n3KmInfo(){
    Folha A4 única: se a manutenção for grande, o documento inteiro é reduzido na proporção para caber em UMA
    página (igual ao termo); só se ficar pequeno demais (abaixo de 70%) ele continua em outra página. */
 function _mpdfNum(m){return 'MN-'+String(m.id||'').replace(/^mn_?/,'').toUpperCase().slice(-6)}
-function _mpdfFileName(m,c,div){return 'Relatorio-Manutencao-'+(div?'Dividida-':'')+fmtPlaca(c&&c.placa||'VEICULO')+'-'+String(m.dataFim||m.dataIni||hoje()).split('-').reverse().join('-')+'.pdf'}
+/* v323 (Hudson 18/11): o nome e o título do relatório dizem quem paga — 100% GuimasCar, dividida ou 100% do motorista */
+function _mpdfQuem(div){div=Number(div)||0;return div>=100?'100% do motorista':(div>0?'Manutenção dividida · '+(100-div)+'% GuimasCar / '+div+'% motorista':'100% GuimasCar')}
+function _mpdfFileName(m,c,div){return 'Relatorio-Manutencao-'+(div>=100?'100-Motorista-':(div>0?'Dividida-':'100-GuimasCar-'))+fmtPlaca(c&&c.placa||'VEICULO')+'-'+String(m.dataFim||m.dataIni||hoje()).split('-').reverse().join('-')+'.pdf'}
 function _mpdfEscala(m,c,div){
  try{var J=window.jspdf&&window.jspdf.jsPDF;if(!J)return 1;var MIN=0.7,s=1;
   for(var i=0;i<6;i++){var d=new J({orientation:'portrait',unit:'mm',format:[210/s,4000],compress:true,putOnlyUsedFonts:true});
@@ -9477,7 +9479,7 @@ function _mpdfBuild(doc,m,carro,_o){
   }else{
    try{doc.addImage(TERMO_LOGO_DATA,'PNG',M,6,55,16.1)}catch(e){}
    font(15,'bold',C.navy);doc.text(['RELATÓRIO DE','MANUTENÇÃO'],74,11.5,{lineHeightFactor:1.05});
-   font(7.2,DIV?'bold':'normal',C.teal);doc.text(DIV?'Manutenção dividida · '+(100-DIV)+'% GuimasCar / '+DIV+'% motorista':'Registro de serviço executado',PW-M,23,{align:'right'});
+   font(7.6,'bold',C.teal);doc.text(DIV>=100?'Manutenção 100% do motorista':(DIV?'Manutenção dividida · '+(100-DIV)+'% GuimasCar / '+DIV+'% motorista':'Manutenção 100% GuimasCar'),PW-M,23,{align:'right'});
    fill(C.navy);doc.rect(M,27,W-25,0.8,'F');fill(C.teal);doc.rect(PW-M-25,27,18,0.8,'F');fill(C.gold);doc.rect(PW-M-7,27,7,0.8,'F');
    y=30;info();
   }
@@ -9564,12 +9566,15 @@ function _mpdfBuild(doc,m,carro,_o){
    doc.text('GuimasCar · Relatório de manutenção · '+fmtPlaca(carro.placa),M,PH-2);doc.text('Página '+i+' de '+n,PW-M,PH-2,{align:'right'})}
  }
  function divisao(){
-  if(!DIV)return;
+  var _motR=String(m.motorista||'').trim();if(typeof _n3MotReal==='function'&&!_n3MotReal(_motR))_motR='';
+  if(!DIV){if(!_motR)return;var nm0=_tpdfSafe(_motR);ensure(16);
+   fill(C.teal);doc.roundedRect(M,y,W,6.3,1.1,1.1,'F');font(9.3,'bold',C.white);doc.text('QUEM PAGA',M+3,y+4.5);doc.text('100% GuimasCar',M+W-3,y+4.5,{align:'right'});y+=6.3;
+   font(7.6,'normal',C.text);doc.text(split('O motorista '+nm0+' não paga nada desta manutenção.',W-6,7.6,'normal').slice(0,1),M+3,y+4.8);y+=10;return}
   var tot=tp+tm,vm=Math.round(tot*DIV)/100,vg=Math.round((tot-vm)*100)/100,nome=_tpdfSafe(m.motorista||'motorista');
   ensure(26);
-  fill(C.teal);doc.roundedRect(M,y,W,6.3,1.1,1.1,'F');font(9.3,'bold',C.white);doc.text('DIVISÃO DA MANUTENÇÃO',M+3,y+4.5);doc.text((100-DIV)+'% / '+DIV+'%',M+W-3,y+4.5,{align:'right'});y+=6.3;
-  font(7.4,'normal',C.text);doc.text('GuimasCar ('+(100-DIV)+'%)',M+3,y+4.8);font(7.8,'bold',C.text);doc.text(_tpdfMoney(vg),M+W-3,y+4.8,{align:'right'});
-  line(C.grid);doc.line(M,y+7,M+W,y+7);y+=7;
+  fill(C.teal);doc.roundedRect(M,y,W,6.3,1.1,1.1,'F');font(9.3,'bold',C.white);doc.text(DIV>=100?'QUEM PAGA':'DIVISÃO DA MANUTENÇÃO',M+3,y+4.5);doc.text(DIV>=100?'100% do motorista':(100-DIV)+'% / '+DIV+'%',M+W-3,y+4.5,{align:'right'});y+=6.3;
+  if(DIV<100){font(7.4,'normal',C.text);doc.text('GuimasCar ('+(100-DIV)+'%)',M+3,y+4.8);font(7.8,'bold',C.text);doc.text(_tpdfMoney(vg),M+W-3,y+4.8,{align:'right'});
+  line(C.grid);doc.line(M,y+7,M+W,y+7);y+=7;}
   fill(C.gold);doc.rect(M,y,W,9,'F');font(8.2,'bold',C.white);var rot=split('A CARGO DO MOTORISTA '+nome.toUpperCase()+' ('+DIV+'%)',W-50,8.2,'bold');doc.text(rot.slice(0,1),M+3,y+5.9);
   font(12,'bold',C.white);doc.text(_tpdfMoney(vm),M+W-3,y+6.2,{align:'right'});y+=12;
  }
@@ -9586,9 +9591,10 @@ function verTermoManut(id){
  var nome=primNome(m.motorista||'')||'o motorista',tot=Number(m.total)||0;
  var old=document.getElementById('mpdfEsc');if(old)old.remove();
  var d=document.createElement('div');d.id='mpdfEsc';d.className='mpdfEsc';
- d.innerHTML='<div class="mpdfCard"><h3>Relatório de manutenção</h3><p>Esta manutenção foi dividida com '+esc(nome)+'?</p>'+
-  '<button class="mpdfOp" onclick="_mpdfEscolha(\''+id+'\',0)"><b>Não foi dividida</b><small>Só o registro do serviço · total R$ '+fmtBRL(tot)+'</small></button>'+
+ d.innerHTML='<div class="mpdfCard"><h3>Relatório de manutenção</h3><p>Quem pagou esta manutenção?</p>'+
+  '<button class="mpdfOp" onclick="_mpdfEscolha(\''+id+'\',0)"><b>100% GuimasCar</b><small>'+esc(nome)+' não paga nada · total R$ '+fmtBRL(tot)+'</small></button>'+
   '<button class="mpdfOp" onclick="_mpdfEscolha(\''+id+'\',50)"><b>Dividida 50% / 50%</b><small>'+esc(nome)+' paga R$ '+fmtBRL(Math.round(tot*50)/100)+'</small></button>'+
+  '<button class="mpdfOp" onclick="_mpdfEscolha(\''+id+'\',100)"><b>100% do motorista</b><small>'+esc(nome)+' paga tudo · R$ '+fmtBRL(tot)+'</small></button>'+
   '<div class="mpdfOutra"><span>Outra divisão: '+esc(nome)+' paga</span><input id="mpdfPct" inputmode="numeric" maxlength="3" placeholder="%"><button onclick="_mpdfEscolha(\''+id+'\',parseInt(document.getElementById(\'mpdfPct\').value,10)||0)">Gerar</button></div>'+
   '<button class="mpdfX" onclick="document.getElementById(\'mpdfEsc\').remove()">Cancelar</button></div>';
  d.addEventListener('click',function(e){if(e.target===d)d.remove()});
