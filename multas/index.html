@@ -602,6 +602,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
 <div id="toast" role="status"></div>
 
 <script>
+const APP_VER = 48;
 const SEED = ``; /* v40: a lista inicial (Renavam, CPF, placas e multas) saiu do código — tudo já está na nuvem */
 
 const KEY = 'guimas_multas_v1';
@@ -1044,7 +1045,7 @@ function renderAvisos(){
 function renderMeta(){
   const d = S.atualizadoEm ? new Date(S.atualizadoEm) : null;
   const st = {ok:['ok','nuvem em dia'], env:['env','sincronizando…'], err:['err','sem nuvem — salvo só aqui'], off:['','offline — salvo só aqui']}[sinc] || ['',''];
-  $('#meta').innerHTML = `<span class="dot ${st[0]}"></span>${st[1]} · ${S.veiculos.length} carros` + (d ? ` · ${d.toLocaleDateString('pt-BR')} ${d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}` : '');
+  $('#meta').innerHTML = `v${APP_VER} · <span class="dot ${st[0]}"></span>${st[1]} · ${S.veiculos.length} carros` + (d ? ` · ${d.toLocaleDateString('pt-BR')} ${d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}` : '');
 }
 
 function render(){
