@@ -1697,7 +1697,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=326; var APP_DATE='24/11/2026';
+var APP_VER=327; var APP_DATE='24/11/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -5679,8 +5679,16 @@ function reativarContrato(id){
  if(termos.length)msg+=' '+termos.length+' termo'+(termos.length>1?'s':'')+' de devolução vinculado'+(termos.length>1?'s':'')+' será'+(termos.length>1?'ão':'')+' marcado'+(termos.length>1?'s':'')+' como REVOGADO, sem apagar os dados.';
  ask('Reativar este contrato?',msg,'Reativar contrato',function(){_reativarContratoCommit(id)});
 }
-function _reativarContratoCommit(id){
- if(!_gSyncVerde()){toast('⛔ Para reativar contrato, aguarde o indicador verde e confirmado de sincronização.');return}
+/* v327 (Hudson 24/11): não exige mais o indicador verde. A reativação é feita direto na nuvem (transação),
+   juntando o que está no aparelho com o que está na nuvem — então basta estar conectado.
+   Sem conexão, espera sozinha até 20 s antes de avisar. */
+function _reativarContratoCommit(id,_t){
+ _t=_t||0;
+ if(!REF||!_connOk||!_gotCloud){
+  if(_t===0)toast('⏳ Conectando à nuvem para reativar…');
+  if(_t<20){setTimeout(function(){_reativarContratoCommit(id,_t+1)},1000);return}
+  toast('⚠️ Sem conexão com a nuvem. Verifique a internet e tente de novo — nada foi alterado.');return
+ }
  var ts=Date.now(),dia=hoje(),erro='',pk='',revogados=0;
  var local;try{local=normState(JSON.parse(JSON.stringify(S)))}catch(e){toast('⛔ Não consegui preparar a reativação');return}
  REF.transaction(function(cur){
