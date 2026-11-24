@@ -1697,7 +1697,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=325; var APP_DATE='22/11/2026';
+var APP_VER=326; var APP_DATE='24/11/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -7445,15 +7445,19 @@ function mAtualizaSteps(){
  var done=[a,b,c,false],cur=!a?0:(!b?1:(!c?2:3));
  for(var i=0;i<st.length;i++){st[i].classList.toggle('done',!!done[i]);st[i].classList.toggle('on',i===cur)}
 }
+/* v326 (Hudson 24/11): nunca dizer "Copiado" com a área de transferência vazia — texto vazio avisa em vez de copiar nada */
 function copiarTexto(t){
+ t=(t==null?'':String(t));
+ if(!t.trim()){toast('⚠️ Não achei texto para copiar');return}
  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){toast('📋 Copiado!')},function(){copiarFallback(t)})}
  else copiarFallback(t);
 }
 function copiarFallback(t){
- var ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';
- document.body.appendChild(ta);ta.focus();ta.select();
- try{document.execCommand('copy');toast('📋 Copiado!')}catch(e){toast('Segure no texto e copie manualmente')}
+ var ta=document.createElement('textarea');ta.value=t;ta.setAttribute('readonly','');ta.style.position='fixed';ta.style.top='0';ta.style.left='0';ta.style.opacity='0';ta.style.fontSize='16px';
+ document.body.appendChild(ta);ta.focus();ta.select();try{ta.setSelectionRange(0,t.length)}catch(e){}
+ var ok=false;try{ok=document.execCommand('copy')}catch(e){}
  document.body.removeChild(ta);
+ toast(ok?'📋 Copiado!':'Segure no texto e copie manualmente');
 }
 function copiarManut(id){copiarTexto(S.manutencoes[id].texto)}
 function mTexto(m){
@@ -12450,37 +12454,44 @@ window.textoFechamento=textoFechamento=function(ym,nomeForn){
 
 /* ---------- MANUTENÇÃO ---------- */
 window.buildManutTexto=buildManutTexto=function(m,carro){
- carro=carro||{};var t='';
+ carro=carro||{};var t='';var _pcs=m.pecas||[],_bls=m.blocos||[];
  if(m.garantia){
   var p=(m.pecas||[])[0]||{};
   return '*🏷 DESCONTO NA FATURA — '+String(p.loja||'').toUpperCase()+'*\n'+WA_LINHA+'\n'+
-   '*Veículo:* '+(carro.nome||'')+(carro.motor?' '+carro.motor:'')+'\n*Placa:* '+fmtPlaca(carro.placa||m.carro)+'\n*Data:* '+dataBR(m.dataIni)+'\n'+
+   '*Veículo:* '+(carro.nome||'')+(carro.motor?' '+carro.motor:'')+(carro.placa?'\n*Placa:* '+fmtPlaca(carro.placa):'')+'\n*Data:* '+dataBR(m.dataIni)+'\n'+
    '• *'+_waVal(m.total)+'* — '+String(p.desc||'').replace(/^(DESCONTO|GARANTIA)\s*[—-]\s*/i,'')+'\n'+(m.texto?'_'+m.texto+'_\n':'');
  }
  var dias=_diasTxt(m.dataIni,m.dataFim);
  t+='*🔧 MANUTENÇÃO — '+String((carro.nome||'')+(carro.motor?' '+carro.motor:'')).toUpperCase()+'*\n'+WA_LINHA+'\n';
- t+='*Placa:* '+fmtPlaca(carro.placa||m.carro)+'\n';
+ if(carro.placa)t+='*Placa:* '+fmtPlaca(carro.placa)+'\n';
  if(m.motorista)t+='*Motorista:* '+m.motorista+'\n';
  t+='*Data:* '+periodoTexto(m.dataIni,m.dataFim)+(dias?' _('+dias+')_':'')+'\n';
  if(m.odometro)t+='*Odômetro:* '+fmtKm(m.odometro)+' km\n';
- if(m.pecas.length){
+ if(_pcs.length){
   t+='\n*🔩 PEÇAS'+(m.totalPecas>0?' — R$ '+fmtBRL(m.totalPecas):'')+'*\n';
-  m.pecas.forEach(function(p){t+='• '+(p.valor?'*'+_waVal(p.valor)+'* — ':'')+p.desc+(p.loja?' _('+p.loja+')_':'')+'\n'});
+  _pcs.forEach(function(p){t+='• '+(p.valor?'*'+_waVal(p.valor)+'* — ':'')+p.desc+(p.loja?' _('+p.loja+')_':'')+'\n'});
  }
- if(m.blocos.length){
-  m.blocos.forEach(function(b){
+ if(_bls.length){
+  _bls.forEach(function(b){
    t+='\n*🛠 MÃO DE OBRA'+(b.valor?' — R$ '+fmtBRL(b.valor):'')+'*\n';
    t+='*'+(b.titulo||'Mecânico')+':* '+(b.nome||'')+'\n';
    (b.servicos||[]).forEach(function(s){t+='• '+s+'\n'});
   });
  }
+ /* observação solta (ex.: troca de bateria) entra no texto; mensagem antiga completa não */
+ var _ob=String(m.texto||'').trim();if(_ob&&!/^\*(VE[ÍI]CULO|🔧|🏷)/.test(_ob))t+='\n'+_ob+'\n';
  if(m.total>0)t+='\n'+WA_LINHA+'\n*💰 TOTAL: R$ '+fmtBRL(m.total)+'*';
  return t;
 };
-/* copiar sempre no padrão novo (registros do app); histórico importado do WhatsApp fica como veio */
+/* v326 (Hudson 24/11): copiar SEMPRE monta o texto na hora com os dados atuais da manutenção.
+   Antes o histórico importado do WhatsApp copiava o texto guardado — que em quase todos está vazio —
+   e o app dizia "Copiado!" sem copiar nada. Carro avulso (~) usa o nome, sem placa. */
+function _carroDaManut(m){var c=S.carros&&S.carros[m.carro];if(c)return c;var k=String(m.carro||'');
+ if(k.charAt(0)==='~')return {nome:k.slice(1),placa:''};return {nome:'',placa:k}}
 window.copiarManut=copiarManut=function(id){
- var m=S.manutencoes[id];if(!m)return;var t=m.texto;
- if(m.origem!=='whatsapp'){try{t=buildManutTexto(m,S.carros[m.carro]||{nome:'',placa:m.carro})}catch(e){t=m.texto}}
+ var m=S.manutencoes&&S.manutencoes[id];if(!m){toast('⚠️ Manutenção não encontrada');return}var t='';
+ try{t=buildManutTexto(m,_carroDaManut(m))}catch(e){t=''}
+ if(!String(t).trim())t=m.texto||'';
  copiarTexto(t);
 };
 
@@ -12527,8 +12538,7 @@ window.buildTermoTexto=buildTermoTexto=function(t,carro){
 window.copiarTermo=copiarTermo=function(id){
  var t=S.termos[id];if(!t)return;var tx=t.texto;
  try{var c=S.carros[t.carro];if(c&&Array.isArray(t.pecas)&&Array.isArray(t.blocos)&&Array.isArray(t.integrais)&&Array.isArray(t.debitos)&&Array.isArray(t.creditos))tx=buildTermoTexto(t,c)}catch(e){tx=t.texto}
- if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(tx).then(function(){toast('📋 Copiado')},function(){toast('Segure no texto e copie manualmente')});
- else toast('Segure no texto e copie manualmente');
+ copiarTexto(tx);
 };
 
 /* ===== v241 — FATURA, MANUTENÇÃO E TERMO EM FORMATO "CUPOM" (colunas alinhadas) =====
@@ -12616,16 +12626,19 @@ window.buildManutTexto=buildManutTexto=function(m,carro){
  if(m.motorista)L.push(_waRot('Motorista',m.motorista));
  L.push(_waRot('Data',_waPeriodo(m.dataIni,m.dataFim)));if(dias&&m.dataFim&&m.dataFim!==m.dataIni)L.push('Dias: '+String(dias).replace(/\D/g,''));
  if(m.odometro)L.push('Odômetro: '+fmtKm(m.odometro)+' km');
- if(m.pecas.length){
+ var _pcs=m.pecas||[];
+ if(_pcs.length){
   L.push('','PEÇAS');
-  m.pecas.forEach(function(p){L.push(_waItem(p.desc+(p.loja?' ('+p.loja+')':''),_waV(p.valor)))});
-  if(m.pecas.filter(function(p){return _waV(p.valor)!=null}).length>1)L.push(_waItem('Total peças',m.totalPecas,WA_W-24));
+  _pcs.forEach(function(p){L.push(_waItem(p.desc+(p.loja?' ('+p.loja+')':''),_waV(p.valor)))});
+  if(_pcs.filter(function(p){return _waV(p.valor)!=null}).length>1)L.push(_waItem('Total peças',m.totalPecas,WA_W-24));
  }
- m.blocos.forEach(function(b){
+ (m.blocos||[]).forEach(function(b){
   L.push('','MÃO DE OBRA');
   L.push(_waItem((b.titulo||'Mecânico')+': '+(b.nome||''),_waV(b.valor)));
   (b.servicos||[]).forEach(function(s){L.push(_waPend(s,'- ',1))});
  });
+ /* v326: observação solta (ex.: troca de bateria) entra no texto; mensagem antiga completa não */
+ var _ob=String(m.texto||'').trim();if(_ob&&!/^\*(VE[ÍI]CULO|🔧|🏷)/.test(_ob)){L.push('');_waQuebra(_ob,WA_W).forEach(function(x){L.push(x)})}
  var t='*🔧 MANUTENÇÃO — '+_waCarro(carro,pk)+'*\n'+_waBloco(L);
  if(m.total>0)t+='\n*💰 TOTAL: R$ '+fmtBRL(m.total)+'*';
  return t;
