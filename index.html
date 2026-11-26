@@ -1697,7 +1697,7 @@ html.gsplOn.gsplFull,html.gsplOn.gsplFull body,html.gsplOn.gsplFull body.locked{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ===================== GUIMASCAR GESTÃO — NÚCLEO ===================== */
-var APP_VER=327; var APP_DATE='24/11/2026';
+var APP_VER=328; var APP_DATE='26/11/2026';
 /* v154: o número no topo vem de APP_VER (antes era texto fixo e mostrava versão velha). */
 (function(){function _verNum(){var e=document.getElementById('verNum');if(e)e.textContent='v'+APP_VER}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_verNum);else _verNum()})();
 var firebaseConfig={apiKey:"AIzaSyCOFRrTkOF0s3fs4-43IyO1NNVpBscRquw",authDomain:"guimas-73e01.firebaseapp.com",databaseURL:"https://guimas-73e01-default-rtdb.firebaseio.com",projectId:"guimas-73e01",storageBucket:"guimas-73e01.firebasestorage.app",messagingSenderId:"331815846980",appId:"1:331815846980:web:14440afc3186b0f1082811"};
@@ -13330,13 +13330,13 @@ function _n4Pend(){
  /* resumo do dia */
  var lin=[];
  if(urg.length)lin.push(['r',urg.length,(urg.length===1?'prazo do Detran: '+pdTitulo(urg[0].p).toLowerCase()+' '+fmtPlaca(urg[0].c.placa)+(urg[0].dias<0?' (venceu)':urg[0].dias===0?' (hoje)':' ('+urg[0].dias+' dia'+(urg[0].dias>1?'s':'')+')'):'prazos do Detran nos próximos 7 dias'),'n24sPrazos']);
- if(nPar)lin.push(['a',nPar,'carro'+(nPar>1?'s':'')+' parado'+(nPar>1?'s':'')+(sem>0?' · R$ '+fmtBRL(sem)+' por semana':''),pro.length?'n24sPro':(ofi.length?'n24sOfi':'n24sCasa')]);
+ if(nPar)lin.push(['a',nPar,'carro'+(nPar>1?'s':'')+' parado'+(nPar>1?'s':'')+(sem>0?' · R$ '+fmtBRL(sem)+' por semana':''),pro.length?'n24sPro':(casa.length?'n24sCasa':'n24sOfi')]);
  if(ctr.length)lin.push(['',ctr.length,(ctr.length===1?'contrato renova em '+(ctr[0].dias===0?'hoje':ctr[0].dias+' dia'+(ctr[0].dias>1?'s':''))+' ('+primNome(ctr[0].c.motorista)+')':'contratos renovam nos próximos 7 dias'),'n24sPrazos']);
  if(oleo)lin.push(['r',oleo,'óleo'+(oleo>1?'s':'')+' vencido'+(oleo>1?'s':''),'n24sRod']);
  try{var _pks={};cs.forEach(function(c){_pks[n4Pk(c)]=1});var _mab=nManutsPend(function(pk){return !!_pks[pk]});if(_mab)lin.push(['a',_mab,'manutenç'+(_mab>1?'ões':'ão')+' em aberto','@abrirManutAbertas'])}catch(e){}
  h+='<section class="n24res"><div class="n24resT">'+(new Date().getHours()<12?'Bom dia':new Date().getHours()<18?'Boa tarde':'Boa noite')+' · '+_g2Data().toLowerCase()+'</div>'+
   (lin.length?lin.map(function(l){return '<button class="n24resL" onclick="'+(String(l[3]).charAt(0)==='@'?String(l[3]).slice(1)+'()':'n24Vai(\''+l[3]+'\')')+'"><em class="'+l[0]+'">'+l[1]+'</em><span>'+esc(l[2])+'</span><i>›</i></button>'}).join(''):'<div class="n24resOk">Nada pendente hoje.</div>')+
-  '<div class="n24resN"><button onclick="FROTA_F=\'rodando\';BUSCA_F=\'\';go(0)"><b>'+nRod+'</b><span>rodando</span></button><button onclick="FROTA_F=\'pronto\';BUSCA_F=\'\';go(0)"><b>'+pro.length+'</b><span>prontos</span></button><button onclick="FROTA_F=\'oficina\';BUSCA_F=\'\';go(0)"><b>'+ofi.length+'</b><span>na oficina</span></button><button onclick="FROTA_F=\'casa\';BUSCA_F=\'\';go(0)"><b>'+casa.length+'</b><span>em casa</span></button></div></section>';
+  '<div class="n24resN"><button onclick="FROTA_F=\'rodando\';BUSCA_F=\'\';go(0)"><b>'+nRod+'</b><span>rodando</span></button><button onclick="FROTA_F=\'pronto\';BUSCA_F=\'\';go(0)"><b>'+pro.length+'</b><span>prontos</span></button><button onclick="FROTA_F=\'casa\';BUSCA_F=\'\';go(0)"><b>'+casa.length+'</b><span>em casa</span></button><button onclick="FROTA_F=\'oficina\';BUSCA_F=\'\';go(0)"><b>'+ofi.length+'</b><span>na oficina</span></button></div></section>';
 
  /* 1 · PRONTOS PARA ALUGAR */
  function diasParado(c){return n24DiasParado(c)}
@@ -13353,7 +13353,17 @@ function _n4Pend(){
    h+=linha(c,(et.antes.length?'Pronto há '+n24DiasTx(et.dias)+' · parado desde '+n24Dm2(et.ini):'Pronto para alugar'+(x?' · parado desde '+n24Dm2(x.d):'')),diasParado(c),(ab.length?'<small class="n24prox">Falta: '+esc(ab[0].txt)+(ab.length>1?' · +'+(ab.length-1):'')+'</small>':'')+(dt.length?'<small class="n24det">'+esc(pdTitulo(dt[0]))+' · '+esc(pdSub(dt[0]))+'</small>':'')+(al.length?'<small class="n4al">'+n4AlTx(c,al)+'</small>':''))});
   h+='</div>';
  }
- /* 2 · NA OFICINA */
+ /* 2 · EM CASA — v328 (Hudson 26/11): vem antes da oficina, para ver logo o que está aqui em casa */
+ if(casa.length){
+  casa.sort(function(a,b){return g2OficinaDias(b)-g2OficinaDias(a)});
+  h+='<div class="n4h" id="n24sCasa"><span>Em casa</span><span>'+casa.length+'</span></div><div class="n4grp">';
+  casa.forEach(function(c){var pk=n4Pk(c),pr=prog(pk);
+   var et=n24Etapa(c);
+   var sub=[et.antes.length?'Em casa há '+n24DiasTx(et.dias):'',c.motorista?esc(primNome(c.motorista)):'',pr.txt||(et.antes.length?'':'desde '+n24Dm2(c.oficinaDesde))].filter(Boolean).join(' · ');
+   h+=linha(c,sub,g2OficinaDias(c),pr.extra)});
+  h+='</div>';
+ }
+ /* 3 · NA OFICINA */
  if(ofi.length){
   ofi.sort(function(a,b){return g2OficinaDias(b)-g2OficinaDias(a)});
   h+='<div class="n4h" id="n24sOfi"><span>Na oficina</span><span>'+ofi.length+'</span></div><div class="n4grp">';
@@ -13362,16 +13372,6 @@ function _n4Pend(){
    var sub=[(c.oficinaOnde?esc(c.oficinaOnde):'oficina')+(et.antes.length?' há '+n24DiasTx(et.dias):''),c.motorista?esc(primNome(c.motorista)):'',pr.txt].filter(Boolean).join(' · ');
    h+=linha(c,sub,g2OficinaDias(c),pr.extra+(_e?'<small class="n22com">Rodando com o '+esc(n4Nome(_e))+' · '+esc(fmtPlaca(_e.placa))+' emprestado</small>':''));
   });
-  h+='</div>';
- }
- /* 3 · EM CASA */
- if(casa.length){
-  casa.sort(function(a,b){return g2OficinaDias(b)-g2OficinaDias(a)});
-  h+='<div class="n4h" id="n24sCasa"><span>Em casa</span><span>'+casa.length+'</span></div><div class="n4grp">';
-  casa.forEach(function(c){var pk=n4Pk(c),pr=prog(pk);
-   var et=n24Etapa(c);
-   var sub=[et.antes.length?'Em casa há '+n24DiasTx(et.dias):'',c.motorista?esc(primNome(c.motorista)):'',pr.txt||(et.antes.length?'':'desde '+n24Dm2(c.oficinaDesde))].filter(Boolean).join(' · ');
-   h+=linha(c,sub,g2OficinaDias(c),pr.extra)});
   h+='</div>';
  }
  if(sem>0)h+='<div class="n4nota">Parados, deixam de render cerca de <b>R$ '+fmtBRL(sem)+' por semana</b> (pela última semanal de cada carro).</div>';
