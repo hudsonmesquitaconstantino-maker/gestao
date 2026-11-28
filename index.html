@@ -8550,6 +8550,11 @@ function _ctLayout(x){var L=CT_LAY;
  x=x.replace(/w:w="(9360|8900|3420|5480|4647|4713|4540|4820)"/g,function(a,v){return 'w:w="'+L.M[v]+'"'});
  /* v331: todo quadro centralizado na folha, alinhado com as linhas do cabeçalho e do rodapé */
  x=x.replace(/<w:tblLayout w:type="fixed"\/>/g,'<w:jc w:val="center"/><w:tblLayout w:type="fixed"/>');
+ /* v331: faixa azul de título nunca fica sozinha no pé da página — vai junto com o quadro dela */
+ x=x.replace(/<w:tbl>(?:(?!<w:tbl>)[\s\S])*?<\/w:tbl>(<w:p[ >](?:(?!<\/w:p>)[\s\S])*?<\/w:p>)?/g,function(tb){
+  var txt=tb.replace(/<[^>]+>/g,'').trim();
+  if(txt.length>80||!/^(CLÁUSULA |IDENTIFICAÇÃO DAS PARTES)/.test(txt))return tb;
+  return tb.replace(/<w:pPr>/g,'<w:pPr><w:keepNext/>').replace(/(<w:p)( [^>]*)?\/>$/,'$1$2><w:pPr><w:keepNext/></w:pPr></w:p>')});
  x=x.replace(/<w:p w14:paraId="779ECCD5"[^>]*\/><w:sectPr/,'<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/><w:rPr><w:sz w:val="2"/><w:szCs w:val="2"/></w:rPr></w:pPr></w:p><w:sectPr');
  return x}
 function montarDocx(ct,carro){
